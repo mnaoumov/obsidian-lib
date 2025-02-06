@@ -1,18 +1,18 @@
 /**
- * @packageDocumentation NumberComponent
- * Contains a component that displays and edits a number.
+ * @packageDocumentation DateComponent
+ * Contains a component that displays and edits a date.
  */
 
 import moment from 'moment';
 
-import { TypedTextComponent } from './TypedTextComponent.ts';
+import { TypedRangeTextComponent } from './TypedRangeTextComponent.ts';
 
 const DATE_FORMAT = 'YYYY-MM-DD';
 
 /**
- * A component that displays and edits a number.
+ * A component that displays and edits a date.
  */
-export class DateComponent extends TypedTextComponent<Date> {
+export class DateComponent extends TypedRangeTextComponent<Date> {
   /**
    * Creates a new date component.
    *
