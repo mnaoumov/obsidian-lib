@@ -11,15 +11,15 @@ import {
   ValueComponent
 } from 'obsidian';
 
-import type { ValidatorElement } from '../../HTMLElement.ts';
+import type { ValidatorElement } from '../../../HTMLElement.ts';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import type { initPluginContext } from '../Plugin/PluginContext.ts';
+import type { initPluginContext } from '../../Plugin/PluginContext.ts';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import type { SettingEx } from '../SettingEx.ts';
+import type { SettingEx } from '../../SettingEx.ts';
 import type { ValueComponentWithChangeTracking } from './ValueComponentWithChangeTracking.ts';
 
-import { CssClass } from '../../CssClass.ts';
-import { getPluginId } from '../Plugin/PluginId.ts';
+import { CssClass } from '../../../CssClass.ts';
+import { getPluginId } from '../../Plugin/PluginId.ts';
 
 /**
  * A dropdown component that can be used to select a value from a list.
