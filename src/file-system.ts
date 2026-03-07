@@ -22,9 +22,9 @@ import {
 import {
   extname,
   resolve
-} from '../Path.ts';
-import { trimEnd } from '../String.ts';
-import { ensureNonNullable } from '../TypeGuards.ts';
+} from '../path.ts';
+import { trimEnd } from '../string.ts';
+import { ensureNonNullable } from '../type-guards.ts';
 
 /**
  * A file extension for `base` files.

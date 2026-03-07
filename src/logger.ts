@@ -9,8 +9,8 @@ import type { Promisable } from 'type-fest';
 import {
   getLibDebugger,
   printWithStackTrace
-} from '../Debug.ts';
-import { getStackTrace } from '../Error.ts';
+} from '../debug.ts';
+import { getStackTrace } from '../error.ts';
 
 /**
  * Invokes a function and logs the start, end, and duration of the invocation.

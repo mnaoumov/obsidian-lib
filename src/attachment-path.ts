@@ -14,7 +14,7 @@ import type {
 
 import { parentFolderPath } from 'obsidian-typings/implementations';
 
-import type { PathOrFile } from './FileSystem.ts';
+import type { PathOrFile } from './file-system.ts';
 
 import {
   basename,
@@ -22,19 +22,19 @@ import {
   extname,
   join,
   makeFileName
-} from '../Path.ts';
+} from '../path.ts';
 import {
   normalize,
   replaceAll,
   trimStart
-} from '../String.ts';
+} from '../string.ts';
 import {
   getFileOrNull,
   getFolder,
   getFolderOrNull,
   getPath,
   MARKDOWN_FILE_EXTENSION
-} from './FileSystem.ts';
+} from './file-system.ts';
 
 /**
  * A context for an attachment path.

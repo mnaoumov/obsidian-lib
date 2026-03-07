@@ -13,11 +13,11 @@ import type {
 
 import { FuzzySuggestModal } from 'obsidian';
 
-import type { PromiseResolve } from '../../Async.ts';
+import type { PromiseResolve } from '../../async.ts';
 
-import { CssClass } from '../../CssClass.ts';
-import { addPluginCssClasses } from '../Plugin/PluginContext.ts';
-import { showModal } from './ModalBase.ts';
+import { CssClass } from '../../css-class.ts';
+import { addPluginCssClasses } from '../plugin/plugin-context.ts';
+import { showModal } from './modal-base.ts';
 
 /**
  * Options for {@link selectItem}.

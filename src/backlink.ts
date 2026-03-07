@@ -11,24 +11,24 @@ import type { TFile } from 'obsidian';
 import type {
   DataviewInlineApi,
   Link
-} from './Dataview.ts';
+} from './dataview.ts';
 import type {
   PathOrAbstractFile,
   PathOrFile
-} from './FileSystem.ts';
+} from './file-system.ts';
 
-import { ensureNonNullable } from '../TypeGuards.ts';
-import { renderCallout } from './Callout.ts';
-import { renderPaginatedTable } from './Dataview.ts';
-import { fixTitle } from './DataviewLink.ts';
+import { ensureNonNullable } from '../type-guards.ts';
+import { renderCallout } from './callout.ts';
+import { renderPaginatedTable } from './dataview.ts';
+import { fixTitle } from './dataview-link.ts';
 import {
   getAbstractFileOrNull,
   getMarkdownFiles,
   isFile,
   isFolder
-} from './FileSystem.ts';
-import { generateMarkdownLink } from './Link.ts';
-import { getBacklinksForFileSafe } from './MetadataCache.ts';
+} from './file-system.ts';
+import { generateMarkdownLink } from './link.ts';
+import { getBacklinksForFileSafe } from './metadata-cache.ts';
 
 /**
  * Options for {@link renderDelayedBacklinksForFolder}.

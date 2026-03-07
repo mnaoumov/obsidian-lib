@@ -19,32 +19,32 @@ import {
   parentFolderPath
 } from 'obsidian-typings/implementations';
 
-import type { RetryOptions } from '../Async.ts';
-import type { PathOrFile } from './FileSystem.ts';
-import type { CombinedFrontmatter } from './Frontmatter.ts';
+import type { RetryOptions } from '../async.ts';
+import type { PathOrFile } from './file-system.ts';
+import type { CombinedFrontmatter } from './frontmatter.ts';
 
-import { getNestedPropertyValue } from '../ObjectUtils.ts';
-import { ensureNonNullable } from '../TypeGuards.ts';
-import { getObsidianDevUtilsState } from './App.ts';
-import { retryWithTimeoutNotice } from './AsyncWithNotice.ts';
+import { getNestedPropertyValue } from '../object-utils.ts';
+import { ensureNonNullable } from '../type-guards.ts';
+import { getObsidianDevUtilsState } from './app.ts';
+import { retryWithTimeoutNotice } from './async-with-notice.ts';
 import {
   getFile,
   getFileOrNull,
   getFolder,
   getPath,
   isFile
-} from './FileSystem.ts';
-import { parseFrontmatter } from './Frontmatter.ts';
+} from './file-system.ts';
+import { parseFrontmatter } from './frontmatter.ts';
 import {
   isFrontmatterLinkCacheWithOffsets,
   toFrontmatterLinkCacheWithOffsets
-} from './FrontmatterLinkCacheWithOffsets.ts';
+} from './frontmatter-link-cache-with-offsets.ts';
 import { t } from './i18n/i18n.ts';
-import { sortReferences } from './Reference.ts';
+import { sortReferences } from './reference.ts';
 import {
   readSafe,
   saveNote
-} from './Vault.ts';
+} from './vault.ts';
 
 /**
  * Options for {@link getBacklinksForFileSafe}.

@@ -6,7 +6,7 @@
 
 /* v8 ignore start -- Interface-only module; no runtime code to test. */
 
-import type { PluginTypesBase } from '../Plugin/PluginTypesBase.ts';
+import type { PluginTypesBase } from '../plugin/plugin-types-base.ts';
 
 import { DEFAULT_NS } from './i18n.ts';
 

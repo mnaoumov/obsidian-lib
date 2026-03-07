@@ -7,22 +7,22 @@
 import type { App } from 'obsidian';
 import type { Promisable } from 'type-fest';
 
-import type { ValueWrapper } from './App.ts';
+import type { ValueWrapper } from './app.ts';
 
 import {
   abortSignalAny,
   abortSignalNever
-} from '../AbortController.ts';
+} from '../abort-controller.ts';
 import {
   addErrorHandler,
   invokeAsyncSafely
-} from '../Async.ts';
-import { getStackTrace } from '../Error.ts';
-import { noop } from '../Function.ts';
-import { getObsidianDevUtilsState } from './App.ts';
-import { runWithTimeoutNotice } from './AsyncWithNotice.ts';
+} from '../async.ts';
+import { getStackTrace } from '../error.ts';
+import { noop } from '../function.ts';
+import { getObsidianDevUtilsState } from './app.ts';
+import { runWithTimeoutNotice } from './async-with-notice.ts';
 import { t } from './i18n/i18n.ts';
-import { invokeAsyncAndLog } from './Logger.ts';
+import { invokeAsyncAndLog } from './logger.ts';
 
 /**
  * Options for the {@link addToQueueAndWait} function.

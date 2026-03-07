@@ -11,13 +11,13 @@ import type { App } from 'obsidian';
 import { t } from 'i18next';
 import { ButtonComponent } from 'obsidian';
 
-import type { PromiseResolve } from '../../Async.ts';
+import type { PromiseResolve } from '../../async.ts';
 
-import { CssClass } from '../../CssClass.ts';
+import { CssClass } from '../../css-class.ts';
 import {
   ModalBase,
   showModal
-} from './ModalBase.ts';
+} from './modal-base.ts';
 
 /**
  * Options for {@link alert}.

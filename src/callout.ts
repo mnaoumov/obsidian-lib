@@ -4,17 +4,17 @@
  * This module provides utility functions for rendering callouts in Dataview.
  */
 
-import type { MaybeReturn } from '../Type.ts';
-import type { ValueProvider } from '../ValueProvider.ts';
-import type { DataviewInlineApi } from './Dataview.ts';
-import type { AddToQueueParams } from './Queue.ts';
+import type { MaybeReturn } from '../type.ts';
+import type { ValueProvider } from '../value-provider.ts';
+import type { DataviewInlineApi } from './dataview.ts';
+import type { AddToQueueParams } from './queue.ts';
 
-import { normalizeOptionalProperties } from '../ObjectUtils.ts';
-import { ensureNonNullable } from '../TypeGuards.ts';
-import { resolveValue } from '../ValueProvider.ts';
-import { getRenderedContainer } from './Dataview.ts';
+import { normalizeOptionalProperties } from '../object-utils.ts';
+import { ensureNonNullable } from '../type-guards.ts';
+import { resolveValue } from '../value-provider.ts';
+import { getRenderedContainer } from './dataview.ts';
 import { t } from './i18n/i18n.ts';
-import { addToQueue } from './Queue.ts';
+import { addToQueue } from './queue.ts';
 
 /**
  * Enum representing the mode of a callout.

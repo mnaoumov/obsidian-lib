@@ -8,20 +8,20 @@ import type { Promisable } from 'type-fest';
 
 import { Notice } from 'obsidian';
 
-import { abortSignalNever } from '../AbortController.ts';
+import { abortSignalNever } from '../abort-controller.ts';
 import {
   invokeAsyncSafely,
   requestAnimationFrameAsync
-} from '../Async.ts';
-import { getLibDebugger } from '../Debug.ts';
+} from '../async.ts';
+import { getLibDebugger } from '../debug.ts';
 import {
   ASYNC_WRAPPER_ERROR_MESSAGE,
   CustomStackTraceError,
   emitAsyncErrorEvent,
   getStackTrace
-} from '../Error.ts';
-import { noop } from '../Function.ts';
-import { addPluginCssClasses } from './Plugin/PluginContext.ts';
+} from '../error.ts';
+import { noop } from '../function.ts';
+import { addPluginCssClasses } from './plugin/plugin-context.ts';
 
 /**
  * Options for {@link loop}.

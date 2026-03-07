@@ -6,7 +6,7 @@
 
 import { moment } from 'obsidian';
 
-import { TypedTransformer } from './TypedTransformer.ts';
+import { TypedTransformer } from './typed-transformer.ts';
 
 /**
  * A transformer that converts a Duration to an ISO string and back.

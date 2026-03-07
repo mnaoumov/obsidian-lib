@@ -6,7 +6,7 @@
 
 import { Platform } from 'obsidian';
 
-import { oneOf } from '../RegExp.ts';
+import { oneOf } from '../reg-exp.ts';
 
 /**
  * Holds a validation message.

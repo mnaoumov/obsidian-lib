@@ -10,9 +10,9 @@ import {
   stringifyYaml
 } from 'obsidian';
 
-import type { GenericObject } from '../TypeGuards.ts';
+import type { GenericObject } from '../type-guards.ts';
 
-import { insertAt } from '../String.ts';
+import { insertAt } from '../string.ts';
 
 /**
  * A combined front matter of a document.

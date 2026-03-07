@@ -12,26 +12,26 @@ import type {
   MarkdownSectionInformation
 } from 'obsidian';
 
-import type { ValueProvider } from '../ValueProvider.ts';
-import type { CodeBlockMarkdownInformation } from './CodeBlockMarkdownInformation.ts';
+import type { ValueProvider } from '../value-provider.ts';
+import type { CodeBlockMarkdownInformation } from './code-block-markdown-information.ts';
 
-import { abortSignalAny } from '../AbortController.ts';
-import { requestAnimationFrameAsync } from '../Async.ts';
+import { abortSignalAny } from '../abort-controller.ts';
+import { requestAnimationFrameAsync } from '../async.ts';
 import {
   ensureLfEndings,
   getLfNormalizedOffsetToOriginalOffsetMapper,
   hasSingleOccurrence,
   indent,
   unindent
-} from '../String.ts';
-import { assertNonNullable } from '../TypeGuards.ts';
-import { resolveValue } from '../ValueProvider.ts';
-import { getFileOrNull } from './FileSystem.ts';
+} from '../string.ts';
+import { assertNonNullable } from '../type-guards.ts';
+import { resolveValue } from '../value-provider.ts';
+import { getFileOrNull } from './file-system.ts';
 import {
   invokeWithFileSystemLock,
   process,
   saveNote
-} from './Vault.ts';
+} from './vault.ts';
 
 /**
  * Options for {@link getCodeBlockMarkdownInfo}.

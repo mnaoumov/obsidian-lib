@@ -27,63 +27,63 @@ import remarkParse from 'remark-parse';
 import { wikiLinkPlugin } from 'remark-wiki-link';
 import { visit } from 'unist-util-visit';
 
-import type { MaybeReturn } from '../Type.ts';
-import type { GenericObject } from '../TypeGuards.ts';
-import type { FileChange } from './FileChange.ts';
-import type { PathOrFile } from './FileSystem.ts';
-import type { ProcessOptions } from './Vault.ts';
+import type { MaybeReturn } from '../type.ts';
+import type { GenericObject } from '../type-guards.ts';
+import type { FileChange } from './file-change.ts';
+import type { PathOrFile } from './file-system.ts';
+import type { ProcessOptions } from './vault.ts';
 
-import { abortSignalNever } from '../AbortController.ts';
+import { abortSignalNever } from '../abort-controller.ts';
 import {
   normalizeOptionalProperties,
   toJson
-} from '../ObjectUtils.ts';
+} from '../object-utils.ts';
 import {
   basename,
   dirname,
   extname,
   join,
   relative
-} from '../Path.ts';
+} from '../path.ts';
 import {
   normalize,
   replaceAll,
   trimEnd
-} from '../String.ts';
+} from '../string.ts';
 import {
   assertNonNullable,
   ensureNonNullable
-} from '../TypeGuards.ts';
+} from '../type-guards.ts';
 import { isUrl } from '../url.ts';
-import { getObsidianDevUtilsState } from './App.ts';
+import { getObsidianDevUtilsState } from './app.ts';
 import {
   applyContentChanges,
   applyFileChanges,
   isCanvasChange,
   isContentChange
-} from './FileChange.ts';
+} from './file-change.ts';
 import {
   getFile,
   getPath,
   isCanvasFile,
   isMarkdownFile,
   MARKDOWN_FILE_EXTENSION
-} from './FileSystem.ts';
+} from './file-system.ts';
 import {
   getAllLinks,
   getBacklinksForFileSafe,
   getCacheSafe,
   parseMetadata,
   tempRegisterFilesAndRun
-} from './MetadataCache.ts';
+} from './metadata-cache.ts';
 import {
   getNewLinkFormat,
   shouldUseWikilinks
-} from './ObsidianSettings.ts';
+} from './obsidian-settings.ts';
 import {
   isCanvasFileNodeReference,
   referenceToFileChange
-} from './Reference.ts';
+} from './reference.ts';
 
 const ESCAPED_WIKILINK_DIVIDER = '\\|';
 

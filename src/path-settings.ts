@@ -8,8 +8,8 @@ import {
   ALWAYS_MATCH_REG_EXP,
   escapeRegExp,
   NEVER_MATCH_REG_EXP
-} from '../../RegExp.ts';
-import { trimEnd } from '../../String.ts';
+} from '../../reg-exp.ts';
+import { trimEnd } from '../../string.ts';
 
 enum PathSettingType {
   Exclude = 'Exclude',

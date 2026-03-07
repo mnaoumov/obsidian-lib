@@ -4,7 +4,7 @@
  * Contains a component that displays and edits a text-based value with a range.
  */
 
-import { TypedTextComponent } from './TypedTextComponent.ts';
+import { TypedTextComponent } from './typed-text-component.ts';
 
 /**
  * A component that displays and edits a text-based value with a range.

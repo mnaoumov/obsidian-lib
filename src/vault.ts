@@ -21,29 +21,29 @@ import {
   ViewType
 } from 'obsidian-typings/implementations';
 
-import type { RetryOptions } from '../Async.ts';
-import type { ValueProvider } from '../ValueProvider.ts';
+import type { RetryOptions } from '../async.ts';
+import type { ValueProvider } from '../value-provider.ts';
 import type {
   PathOrAbstractFile,
   PathOrFile,
   PathOrFolder
-} from './FileSystem.ts';
+} from './file-system.ts';
 
-import { abortSignalAny } from '../AbortController.ts';
-import { getLibDebugger } from '../Debug.ts';
-import { noopAsync } from '../Function.ts';
+import { abortSignalAny } from '../abort-controller.ts';
+import { getLibDebugger } from '../debug.ts';
+import { noopAsync } from '../function.ts';
 import {
   basename,
   dirname,
   extname,
   join
-} from '../Path.ts';
-import { resolveValue } from '../ValueProvider.ts';
-import { retryWithTimeoutNotice } from './AsyncWithNotice.ts';
+} from '../path.ts';
+import { resolveValue } from '../value-provider.ts';
+import { retryWithTimeoutNotice } from './async-with-notice.ts';
 import {
   lockEditor,
   unlockEditor
-} from './Editor.ts';
+} from './editor.ts';
 import {
   asFile,
   asFolder,
@@ -59,7 +59,7 @@ import {
   isFile,
   isMarkdownFile,
   isNote
-} from './FileSystem.ts';
+} from './file-system.ts';
 import { t } from './i18n/i18n.ts';
 
 /**

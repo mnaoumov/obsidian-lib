@@ -11,13 +11,13 @@ import { Notice } from 'obsidian';
 import type {
   RetryOptions,
   TimeoutContext
-} from '../Async.ts';
+} from '../async.ts';
 
 import {
   retryWithTimeout,
   runWithTimeout
-} from '../Async.ts';
-import { getDebugger } from '../Debug.ts';
+} from '../async.ts';
+import { getDebugger } from '../debug.ts';
 import { t } from './i18n/i18n.ts';
 
 /**

@@ -5,13 +5,13 @@
  */
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- We need to import `initPluginContext` to use it in the tsdocs.
-import type { initPluginContext } from '../../Plugin/PluginContext.ts';
+import type { initPluginContext } from '../../plugin/plugin-context.ts';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- We need to import `SettingEx` to use it in the tsdocs.
-import type { SettingEx } from '../../SettingEx.ts';
-import type { TextBasedComponent } from './TextBasedComponent.ts';
+import type { SettingEx } from '../../setting-ex.ts';
+import type { TextBasedComponent } from './text-based-component.ts';
 
-import { CssClass } from '../../../CssClass.ts';
-import { TypedTextComponent } from './TypedTextComponent.ts';
+import { CssClass } from '../../../css-class.ts';
+import { TypedTextComponent } from './typed-text-component.ts';
 
 /**
  * A component that displays and edits an email address.

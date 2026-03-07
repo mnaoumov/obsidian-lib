@@ -8,9 +8,9 @@ import type { App } from 'obsidian';
 
 import { Modal } from 'obsidian';
 
-import type { PromiseResolve } from '../../Async.ts';
+import type { PromiseResolve } from '../../async.ts';
 
-import { addPluginCssClasses } from '../Plugin/PluginContext.ts';
+import { addPluginCssClasses } from '../plugin/plugin-context.ts';
 
 /**
  * Base options for a modal.

@@ -21,18 +21,18 @@ import {
 } from 'obsidian';
 import { InternalPluginName } from 'obsidian-typings/implementations';
 
-import type { PathOrAbstractFile } from './FileSystem.ts';
+import type { PathOrAbstractFile } from './file-system.ts';
 
-import { requestAnimationFrameAsync } from '../Async.ts';
-import { getZIndex } from '../HTMLElement.ts';
-import { assertNonNullable } from '../TypeGuards.ts';
+import { requestAnimationFrameAsync } from '../async.ts';
+import { getZIndex } from '../html-element.ts';
+import { assertNonNullable } from '../type-guards.ts';
 import {
   getAbstractFileOrNull,
   getPath,
   isFolder
-} from './FileSystem.ts';
-import { invokeWithPatchAsync } from './MonkeyAround.ts';
-import { trashSafe } from './Vault.ts';
+} from './file-system.ts';
+import { invokeWithPatchAsync } from './monkey-around.ts';
+import { trashSafe } from './vault.ts';
 
 let domEventsHandlersConstructor: DomEventsHandlersConstructor | null = null;
 

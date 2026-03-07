@@ -10,50 +10,50 @@ import type {
   Reference,
   ReferenceCache
 } from 'obsidian';
-import type { CanvasData } from 'obsidian/Canvas.d.ts';
+import type { CanvasData } from 'obsidian/canvas.d.ts';
 
 import {
   isFrontmatterLinkCache,
   isReferenceCache
 } from 'obsidian-typings/implementations';
 
-import type { GenericObject } from '../TypeGuards.ts';
-import type { ValueProvider } from '../ValueProvider.ts';
-import type { PathOrFile } from './FileSystem.ts';
-import type { CombinedFrontmatter } from './Frontmatter.ts';
-import type { FrontmatterLinkCacheWithOffsets } from './FrontmatterLinkCacheWithOffsets.ts';
+import type { GenericObject } from '../type-guards.ts';
+import type { ValueProvider } from '../value-provider.ts';
+import type { PathOrFile } from './file-system.ts';
+import type { CombinedFrontmatter } from './frontmatter.ts';
+import type { FrontmatterLinkCacheWithOffsets } from './frontmatter-link-cache-with-offsets.ts';
 import type {
   CanvasFileNodeReference,
   CanvasReference,
   CanvasTextNodeReference
-} from './Reference.ts';
-import type { ProcessOptions } from './Vault.ts';
+} from './reference.ts';
+import type { ProcessOptions } from './vault.ts';
 
-import { getLibDebugger } from '../Debug.ts';
-import { printError } from '../Error.ts';
+import { getLibDebugger } from '../debug.ts';
+import { printError } from '../error.ts';
 import {
   deepEqual,
   getNestedPropertyValue,
   setNestedPropertyValue
-} from '../ObjectUtils.ts';
-import { resolveValue } from '../ValueProvider.ts';
+} from '../object-utils.ts';
+import { resolveValue } from '../value-provider.ts';
 import {
   getPath,
   isCanvasFile
-} from './FileSystem.ts';
+} from './file-system.ts';
 import {
   parseFrontmatter,
   setFrontmatter
-} from './Frontmatter.ts';
+} from './frontmatter.ts';
 import {
   isFrontmatterLinkCacheWithOffsets,
   toFrontmatterLinkCacheWithOffsets
-} from './FrontmatterLinkCacheWithOffsets.ts';
+} from './frontmatter-link-cache-with-offsets.ts';
 import {
   isCanvasReference,
   referenceToFileChange
-} from './Reference.ts';
-import { process } from './Vault.ts';
+} from './reference.ts';
+import { process } from './vault.ts';
 
 /**
  * A file change in the vault.

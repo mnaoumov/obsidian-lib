@@ -6,24 +6,24 @@
 
 import type { Promisable } from 'type-fest';
 
-import type { DataviewInlineApi as DataviewInlineApiOriginal } from './@types/Dataview/api/inline-api.d.ts';
+import type { DataviewInlineApi as DataviewInlineApiOriginal } from './@types/dataview/api/inline-api.d.ts';
 import type {
   DataArray,
   DataviewApi,
   SMarkdownPage
-} from './@types/Dataview/index.d.ts';
-import type { PathOrFile } from './FileSystem.ts';
-import type { CombinedFrontmatter } from './Frontmatter.ts';
+} from './@types/dataview/index.d.ts';
+import type { PathOrFile } from './file-system.ts';
+import type { CombinedFrontmatter } from './frontmatter.ts';
 
-import { convertAsyncToSync } from '../Async.ts';
-import { errorToString } from '../Error.ts';
-import { ensureNonNullable } from '../TypeGuards.ts';
+import { convertAsyncToSync } from '../async.ts';
+import { errorToString } from '../error.ts';
+import { ensureNonNullable } from '../type-guards.ts';
 import {
   getFile,
   getPath
-} from './FileSystem.ts';
+} from './file-system.ts';
 import { t } from './i18n/i18n.ts';
-import { relativePathToResourceUrl } from './ResourceUrl.ts';
+import { relativePathToResourceUrl } from './resource-url.ts';
 
 /**
  * Export DateTime and Link types from the Dataview API.
@@ -31,7 +31,7 @@ import { relativePathToResourceUrl } from './ResourceUrl.ts';
 export type {
   DateTime,
   Link
-} from './@types/Dataview/index.d.ts';
+} from './@types/dataview/index.d.ts';
 
 declare global {
   /**

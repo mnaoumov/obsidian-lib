@@ -6,9 +6,9 @@
 
 import type { App } from 'obsidian';
 
-import type { GenericObject } from '../TypeGuards.ts';
+import type { GenericObject } from '../type-guards.ts';
 
-import { noop } from '../Function.ts';
+import { noop } from '../function.ts';
 
 /**
  * Wrapper type for accessing the `App` instance globally.

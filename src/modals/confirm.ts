@@ -10,14 +10,14 @@ import type { App } from 'obsidian';
 
 import { ButtonComponent } from 'obsidian';
 
-import type { PromiseResolve } from '../../Async.ts';
+import type { PromiseResolve } from '../../async.ts';
 
-import { CssClass } from '../../CssClass.ts';
+import { CssClass } from '../../css-class.ts';
 import { t } from '../i18n/i18n.ts';
 import {
   ModalBase,
   showModal
-} from './ModalBase.ts';
+} from './modal-base.ts';
 
 /**
  * Options for {@link confirm}.

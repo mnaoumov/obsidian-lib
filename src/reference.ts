@@ -14,9 +14,9 @@ import {
   isReferenceCache
 } from 'obsidian-typings/implementations';
 
-import type { FileChange } from './FileChange.ts';
+import type { FileChange } from './file-change.ts';
 
-import { isFrontmatterLinkCacheWithOffsets } from './FrontmatterLinkCacheWithOffsets.ts';
+import { isFrontmatterLinkCacheWithOffsets } from './frontmatter-link-cache-with-offsets.ts';
 
 /**
  * A reference within a file node in a canvas.

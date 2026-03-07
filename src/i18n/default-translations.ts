@@ -6,7 +6,7 @@
 
 /* v8 ignore start -- Interface-only module; no runtime code to test. */
 
-import type { PluginTypesBase } from '../Plugin/PluginTypesBase.ts';
+import type { PluginTypesBase } from '../plugin/plugin-types-base.ts';
 import type { Translations } from './i18n.ts';
 
 import { en } from './locales/en.ts';

@@ -6,7 +6,7 @@
 
 import { SettingGroup } from 'obsidian';
 
-import { SettingEx } from './SettingEx.ts';
+import { SettingEx } from './setting-ex.ts';
 
 /**
  * An extended setting group that allows you to add extended settings to the setting group.

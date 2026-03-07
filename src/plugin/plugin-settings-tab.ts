@@ -20,37 +20,37 @@ import {
   setTooltip
 } from 'obsidian';
 
-import type { AsyncEventRef } from '../../AsyncEvents.ts';
-import type { StringKeys } from '../../Type.ts';
-import type { ValueComponentWithChangeTracking } from '../Components/SettingComponents/ValueComponentWithChangeTracking.ts';
-import type { ValidationMessageHolder } from '../Validation.ts';
+import type { AsyncEventRef } from '../../async-events.ts';
+import type { StringKeys } from '../../type.ts';
+import type { ValueComponentWithChangeTracking } from '../components/setting-components/value-component-with-change-tracking.ts';
+import type { ValidationMessageHolder } from '../validation.ts';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- We need to import `PluginSettingsManagerBase` to use it in the tsdocs.
-import type { PluginSettingsManagerBase } from './PluginSettingsManagerBase.ts';
+import type { PluginSettingsManagerBase } from './plugin-settings-manager-base.ts';
 import type {
   ExtractPlugin,
   ExtractPluginSettings,
   ExtractPluginSettingsPropertyNames,
   ExtractReadonlyPluginSettingsWrapper,
   PluginTypesBase
-} from './PluginTypesBase.ts';
+} from './plugin-types-base.ts';
 
 import {
   convertAsyncToSync,
   invokeAsyncSafely
-} from '../../Async.ts';
-import { AsyncEvents } from '../../AsyncEvents.ts';
-import { CssClass } from '../../CssClass.ts';
+} from '../../async.ts';
+import { AsyncEvents } from '../../async-events.ts';
+import { CssClass } from '../../css-class.ts';
 import {
   noop,
   noopAsync
-} from '../../Function.ts';
-import { deepEqual } from '../../ObjectUtils.ts';
-import { AsyncEventsComponent } from '../Components/AsyncEventsComponent.ts';
-import { ensureWrapped } from '../Components/SettingComponents/SettingComponentWrapper.ts';
-import { getTextBasedComponentValue } from '../Components/SettingComponents/TextBasedComponent.ts';
-import { getValidatorComponent } from '../Components/SettingComponents/ValidatorComponent.ts';
-import { isValidationMessageHolder } from '../Validation.ts';
-import { addPluginCssClasses } from './PluginContext.ts';
+} from '../../function.ts';
+import { deepEqual } from '../../object-utils.ts';
+import { AsyncEventsComponent } from '../components/async-events-component.ts';
+import { ensureWrapped } from '../components/setting-components/setting-component-wrapper.ts';
+import { getTextBasedComponentValue } from '../components/setting-components/text-based-component.ts';
+import { getValidatorComponent } from '../components/setting-components/validator-component.ts';
+import { isValidationMessageHolder } from '../validation.ts';
+import { addPluginCssClasses } from './plugin-context.ts';
 
 /**
  * A context passed to the {@link PluginSettingsManagerBase.saveToFile} method.

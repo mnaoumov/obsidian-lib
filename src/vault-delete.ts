@@ -8,21 +8,21 @@ import type { App } from 'obsidian';
 
 import { Notice } from 'obsidian';
 
-import type { PathOrAbstractFile } from './FileSystem.ts';
+import type { PathOrAbstractFile } from './file-system.ts';
 
-import { printError } from '../Error.ts';
+import { printError } from '../error.ts';
 import {
   getAbstractFileOrNull,
   isFile,
   isFolder
-} from './FileSystem.ts';
+} from './file-system.ts';
 import { t } from './i18n/i18n.ts';
-import { getBacklinksForFileSafe } from './MetadataCache.ts';
+import { getBacklinksForFileSafe } from './metadata-cache.ts';
 import {
   isEmptyFolder,
   listSafe,
   trashSafe
-} from './Vault.ts';
+} from './vault.ts';
 
 /**
  * Deletes an abstract file safely from the vault, but only if it is not referenced by other notes.

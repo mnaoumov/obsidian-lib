@@ -9,7 +9,7 @@ import type { Plugin } from 'obsidian';
 
 import { Notice } from 'obsidian';
 
-import { printError } from '../../Error.ts';
+import { printError } from '../../error.ts';
 
 /**
  * Reloads the specified plugin by disabling and then re-enabling it.

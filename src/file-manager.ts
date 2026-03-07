@@ -7,22 +7,22 @@
 import type { App } from 'obsidian';
 import type { Promisable } from 'type-fest';
 
-import type { MaybeReturn } from '../Type.ts';
-import type { PathOrFile } from './FileSystem.ts';
-import type { CombinedFrontmatter } from './Frontmatter.ts';
-import type { ProcessOptions } from './Vault.ts';
+import type { MaybeReturn } from '../type.ts';
+import type { PathOrFile } from './file-system.ts';
+import type { CombinedFrontmatter } from './frontmatter.ts';
+import type { ProcessOptions } from './vault.ts';
 
-import { deepEqual } from '../ObjectUtils.ts';
+import { deepEqual } from '../object-utils.ts';
 import {
   getFile,
   getPath,
   isMarkdownFile
-} from './FileSystem.ts';
+} from './file-system.ts';
 import {
   parseFrontmatter,
   setFrontmatter
-} from './Frontmatter.ts';
-import { process } from './Vault.ts';
+} from './frontmatter.ts';
+import { process } from './vault.ts';
 
 /**
  * Adds an alias to the front matter of a given file if it does not already exist.

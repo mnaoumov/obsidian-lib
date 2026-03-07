@@ -14,20 +14,20 @@ import {
   TextComponent
 } from 'obsidian';
 
-import type { PromiseResolve } from '../../Async.ts';
-import type { MaybeReturn } from '../../Type.ts';
+import type { PromiseResolve } from '../../async.ts';
+import type { MaybeReturn } from '../../type.ts';
 
 import {
   convertAsyncToSync,
   invokeAsyncSafely
-} from '../../Async.ts';
-import { CssClass } from '../../CssClass.ts';
-import { noop } from '../../Function.ts';
+} from '../../async.ts';
+import { CssClass } from '../../css-class.ts';
+import { noop } from '../../function.ts';
 import { t } from '../i18n/i18n.ts';
 import {
   ModalBase,
   showModal
-} from './ModalBase.ts';
+} from './modal-base.ts';
 
 /**
  * Options for {@link prompt}.

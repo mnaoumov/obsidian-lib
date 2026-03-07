@@ -8,23 +8,23 @@ import type { App } from 'obsidian';
 
 import { compareVersions } from 'compare-versions';
 
-import type { DebugController } from '../../DebugController.ts';
+import type { DebugController } from '../../debug-controller.ts';
 
-import { CssClass } from '../../CssClass.ts';
+import { CssClass } from '../../css-class.ts';
 import {
   getDebugController,
   showInitialDebugMessage
-} from '../../Debug.ts';
+} from '../../debug.ts';
 import {
   LIBRARY_NAME,
   LIBRARY_STYLES,
   LIBRARY_VERSION
-} from '../../Library.ts';
-import { getObsidianDevUtilsState } from '../App.ts';
+} from '../../library.ts';
+import { getObsidianDevUtilsState } from '../app.ts';
 import {
   getPluginId,
   setPluginId
-} from './PluginId.ts';
+} from './plugin-id.ts';
 
 interface PluginContextWindow {
   DEBUG: DebugController;

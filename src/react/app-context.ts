@@ -10,7 +10,7 @@ import {
   useContext
 } from 'react';
 
-import { ensureNonNullable } from '../../TypeGuards.ts';
+import { ensureNonNullable } from '../../type-guards.ts';
 
 /**
  * A context for the app.

@@ -11,12 +11,12 @@ import {
   ValueComponent
 } from 'obsidian';
 
-import type { ValidatorElement } from '../../../HTMLElement.ts';
-import type { ValidatorComponent } from './ValidatorComponent.ts';
-import type { ValueComponentWithChangeTracking } from './ValueComponentWithChangeTracking.ts';
+import type { ValidatorElement } from '../../../html-element.ts';
+import type { ValidatorComponent } from './validator-component.ts';
+import type { ValueComponentWithChangeTracking } from './value-component-with-change-tracking.ts';
 
-import { CssClass } from '../../../CssClass.ts';
-import { addPluginCssClasses } from '../../Plugin/PluginContext.ts';
+import { CssClass } from '../../../css-class.ts';
+import { addPluginCssClasses } from '../../plugin/plugin-context.ts';
 
 /**
  * A component that displays and edits a text-based value.

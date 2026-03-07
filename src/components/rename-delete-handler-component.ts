@@ -30,29 +30,29 @@ import { InternalPluginName } from 'obsidian-typings/implementations';
 import type {
   UpdateLinkParams,
   UpdateLinksInFileParams
-} from './Link.ts';
+} from './link.ts';
 
-import { abortSignalNever } from '../AbortController.ts';
-import { filterInPlace } from '../Array.ts';
-import { getLibDebugger } from '../Debug.ts';
+import { abortSignalNever } from '../abort-controller.ts';
+import { filterInPlace } from '../array.ts';
+import { getLibDebugger } from '../debug.ts';
 import {
   normalizeOptionalProperties,
   toJson
-} from '../ObjectUtils.ts';
+} from '../object-utils.ts';
 import {
   basename,
   dirname,
   extname,
   join,
   relative
-} from '../Path.ts';
-import { getObsidianDevUtilsState } from './App.ts';
+} from '../path.ts';
+import { getObsidianDevUtilsState } from './app.ts';
 import {
   AttachmentPathContext,
   getAttachmentFilePath,
   getAttachmentFolderPath,
   hasOwnAttachmentFolder
-} from './AttachmentPath.ts';
+} from './attachment-path.ts';
 import {
   CANVAS_FILE_EXTENSION,
   getFile,
@@ -61,13 +61,13 @@ import {
   isFile,
   isMarkdownFile,
   isNote
-} from './FileSystem.ts';
+} from './file-system.ts';
 import {
   editLinks,
   extractLinkFile,
   updateLink,
   updateLinksInFile
-} from './Link.ts';
+} from './link.ts';
 import {
   getAllLinks,
   getBacklinksForFileOrPath,
@@ -76,17 +76,17 @@ import {
   tempRegisterFilesAndRun,
   tempRegisterFilesAndRunAsync,
   unregisterFileCacheForNonExistingFile
-} from './MetadataCache.ts';
-import { registerPatch } from './MonkeyAround.ts';
-import { addToQueue } from './Queue.ts';
+} from './metadata-cache.ts';
+import { registerPatch } from './monkey-around.ts';
+import { addToQueue } from './queue.ts';
 import {
   deleteEmptyFolder,
   deleteEmptyFolderHierarchy,
   getSafeRenamePath,
   renameSafe,
   trashSafe
-} from './Vault.ts';
-import { deleteIfNotUsed } from './VaultDelete.ts';
+} from './vault.ts';
+import { deleteIfNotUsed } from './vault-delete.ts';
 
 /**
  * A behavior of the rename/delete handler when deleting empty folders.
