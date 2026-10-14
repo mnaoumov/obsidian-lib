@@ -9,7 +9,8 @@ import type { InternalPluginNameType } from '@obsidian-typings/obsidian-public-l
 import type { App } from 'obsidian';
 import type { Promisable } from 'type-fest';
 
-import { invokeAsyncSafely } from '../../async.ts';
+import { invokeAsyncSafely } from '@mnaoumov/typescript-lib/async';
+
 import { ComponentEx } from './component-ex.ts';
 
 /**

@@ -10,7 +10,7 @@ import type {
 } from 'obsidian';
 import type { Promisable } from 'type-fest';
 
-import { normalizePromisable } from '../async.ts';
+import { normalizePromisable } from '@mnaoumov/typescript-lib/async';
 
 /**
  * A registrar for Obsidian protocol handlers.

@@ -6,9 +6,9 @@
 
 import type { BaseComponent } from 'obsidian';
 
+import { castTo } from '@mnaoumov/typescript-lib/object-utils';
 import { Setting } from 'obsidian';
 
-import { castTo } from '../object-utils.ts';
 import { CheckboxComponent } from './setting-components/checkbox-component.ts';
 import { CodeHighlighterComponent } from './setting-components/code-highlighter-component.ts';
 import { DateComponent } from './setting-components/date-component.ts';

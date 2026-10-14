@@ -6,6 +6,8 @@
 
 import type { App as AppOriginal } from 'obsidian';
 
+import { noop } from '@mnaoumov/typescript-lib/function';
+import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import {
   describe,
   expect,
@@ -13,8 +15,6 @@ import {
   vi
 } from 'vitest';
 
-import { noop } from '../../function.ts';
-import { strictProxy } from '../../strict-proxy.ts';
 import { AllWindowsEventComponent } from './all-windows-event-component.ts';
 import { ComponentEx } from './component-ex.ts';
 import {

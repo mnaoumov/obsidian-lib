@@ -6,7 +6,9 @@
 
 import type { App } from 'obsidian';
 
-import { Library } from '../../library.ts';
+import { Library } from '@mnaoumov/typescript-lib/library';
+
+import { ObsidianLibrary } from '../library.ts';
 import {
   initDebugController,
   initPluginContext
@@ -49,9 +51,10 @@ export class PluginContextComponent extends ComponentEx {
    */
   public override onload(): void {
     initPluginContext(this.pluginId);
-    // Reset on unload so a plugin reload can re-initialize without tripping the once-only `Library.init` guard.
+    // Reset on unload so a plugin reload can re-initialize without tripping the once-only `init` guards.
     this.register(() => {
       Library.resetToDefault();
+      ObsidianLibrary.resetToDefault();
     });
     this.addChild(new AllWindowsEventComponent(this.app)).registerAllWindowsHandler((win) => {
       initDebugController(win, this);

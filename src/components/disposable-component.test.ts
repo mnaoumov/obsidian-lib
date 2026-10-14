@@ -4,6 +4,11 @@
  * Tests for {@link asDisposableComponent}.
  */
 
+import {
+  dispose,
+  isDisposable
+} from '@mnaoumov/typescript-lib/disposable';
+import { castTo } from '@mnaoumov/typescript-lib/object-utils';
 import { Component } from 'obsidian';
 import {
   describe,
@@ -12,11 +17,6 @@ import {
   vi
 } from 'vitest';
 
-import {
-  dispose,
-  isDisposable
-} from '../../disposable.ts';
-import { castTo } from '../../object-utils.ts';
 import { asDisposableComponent } from './disposable-component.ts';
 
 describe('asDisposableComponent', () => {

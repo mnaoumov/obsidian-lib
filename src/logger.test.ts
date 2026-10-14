@@ -1,3 +1,4 @@
+import { noopAsync } from '@mnaoumov/typescript-lib/function';
 import {
   describe,
   expect,
@@ -5,16 +6,15 @@ import {
   vi
 } from 'vitest';
 
-import { noopAsync } from '../function.ts';
 import { invokeAsyncAndLog } from './logger.ts';
 
-vi.mock('../debug.ts', () => ({
-  getLibDebugger: vi.fn(() => vi.fn()),
+vi.mock('./debug.ts', () => ({
+  getObsidianLibDebugger: vi.fn(() => vi.fn()),
   printWithStackTrace: vi.fn()
 }));
 
-vi.mock('../error.ts', async (importOriginal) => {
-  const $module = await importOriginal<typeof import('../error.ts')>();
+vi.mock('@mnaoumov/typescript-lib/error', async (importOriginal) => {
+  const $module = await importOriginal<typeof import('@mnaoumov/typescript-lib/error')>();
   return {
     ...$module,
     getStackTrace: vi.fn(() => 'mock stack trace')

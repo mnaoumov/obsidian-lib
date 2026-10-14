@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 
+import { assertNonNullable } from '@mnaoumov/typescript-lib/type-guards';
 import {
   describe,
   expect,
@@ -7,7 +8,6 @@ import {
   vi
 } from 'vitest';
 
-import { assertNonNullable } from '../../type-guards.ts';
 import { MultipleDropdownComponent } from './multiple-dropdown-component.ts';
 
 vi.mock('../css-class.ts', () => ({
@@ -16,7 +16,7 @@ vi.mock('../css-class.ts', () => ({
   }
 }));
 
-vi.mock('../../obsidian/plugin/plugin-context.ts', () => ({
+vi.mock('../plugin/plugin-context.ts', () => ({
   addPluginCssClasses: vi.fn()
 }));
 

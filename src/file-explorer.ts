@@ -9,9 +9,8 @@ import type {
   TAbstractFile
 } from 'obsidian';
 
+import { requestAnimationFrameAsync } from '@mnaoumov/typescript-lib/async';
 import { InternalPluginName } from '@obsidian-typings/obsidian-public-latest/implementations';
-
-import { requestAnimationFrameAsync } from '../async.ts';
 
 /**
  * How many animation frames the explorer keeps re-activating itself for after its reveal settles.

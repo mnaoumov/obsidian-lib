@@ -1,9 +1,16 @@
+import type { GenericObject } from '@mnaoumov/typescript-lib/type-guards';
 // @vitest-environment jsdom
 import type {
   App as AppOriginal,
   Reference
 } from 'obsidian';
 
+import { printError } from '@mnaoumov/typescript-lib/error';
+import { noop } from '@mnaoumov/typescript-lib/function';
+import { castTo } from '@mnaoumov/typescript-lib/object-utils';
+import { assertNonNullable } from '@mnaoumov/typescript-lib/type-guards';
+import { resolveValue } from '@mnaoumov/typescript-lib/value-provider';
+import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import { App } from 'obsidian-test-mocks/obsidian';
 import {
   beforeEach,
@@ -13,7 +20,6 @@ import {
   vi
 } from 'vitest';
 
-import type { GenericObject } from '../type-guards.ts';
 import type { FileChange } from './file-change.ts';
 import type { ResourceLockComponent } from './resource-lock.ts';
 import type {
@@ -21,13 +27,7 @@ import type {
   ProcessParams
 } from './vault.ts';
 
-import { getLibDebugger } from '../debug.ts';
-import { printError } from '../error.ts';
-import { noop } from '../function.ts';
-import { castTo } from '../object-utils.ts';
-import { strictProxy } from '../strict-proxy.ts';
-import { assertNonNullable } from '../type-guards.ts';
-import { resolveValue } from '../value-provider.ts';
+import { getObsidianLibDebugger } from './debug.ts';
 import {
   applyContentChanges,
   applyFileChanges,
@@ -47,21 +47,21 @@ interface PathHolder {
   path: string;
 }
 
-vi.mock('../debug.ts', () => ({
-  getLibDebugger: vi.fn(() => vi.fn())
+vi.mock('./debug.ts', () => ({
+  getObsidianLibDebugger: vi.fn(() => vi.fn())
 }));
 
-vi.mock('../error.ts', () => ({
+vi.mock('@mnaoumov/typescript-lib/error', () => ({
   printError: vi.fn()
 }));
 
-vi.mock('../obsidian/file-system.ts', () => ({
+vi.mock('./file-system.ts', () => ({
   getPath: vi.fn((_app: unknown, p: unknown) => typeof p === 'string' ? p : (p as PathHolder).path),
   isCanvasFile: vi.fn(() => false)
 }));
 
-vi.mock('../obsidian/frontmatter.ts', async (importOriginal) => {
-  const original = await importOriginal<typeof import('../obsidian/frontmatter.ts')>();
+vi.mock('./frontmatter.ts', async (importOriginal) => {
+  const original = await importOriginal<typeof import('./frontmatter.ts')>();
   return {
     ...original,
     // eslint-disable-next-line @typescript-eslint/no-unsafe-return -- Spy wrapper passes through to original implementation.
@@ -69,7 +69,7 @@ vi.mock('../obsidian/frontmatter.ts', async (importOriginal) => {
   };
 });
 
-vi.mock('../obsidian/vault.ts', () => ({
+vi.mock('./vault.ts', () => ({
   process: vi.fn(async (params: ProcessParams) => {
     const controller = new AbortController();
     await resolveValue(params.newContentProvider, { abortSignal: controller.signal, content: 'test content' });
@@ -976,15 +976,15 @@ describe('sortAndFilterChanges behavior', () => {
   });
 });
 
-// --- getLibDebugger usage ---
+// --- getObsidianLibDebugger usage ---
 
 describe('debug logging', () => {
-  it('should call getLibDebugger for validation', async () => {
+  it('should call getObsidianLibDebugger for validation', async () => {
     const signal = new AbortController().signal;
     const content = 'Hello world';
     const changes = [makeContentChange('MISMATCH', 'new', 0)];
     await applyContentChanges({ abortSignal: signal, changesProvider: changes, content, path: 'test.md', shouldRetryOnInvalidChanges: true });
-    expect(getLibDebugger).toHaveBeenCalledWith('FileChange:validateChanges');
+    expect(getObsidianLibDebugger).toHaveBeenCalledWith('FileChange:validateChanges');
   });
 });
 

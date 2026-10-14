@@ -4,7 +4,8 @@
  * Wraps an element in a setting component wrapper.
  */
 
-import { assertNonNullable } from '../../type-guards.ts';
+import { assertNonNullable } from '@mnaoumov/typescript-lib/type-guards';
+
 import { CssClass } from '../css-class.ts';
 import { addPluginCssClasses } from '../plugin/plugin-context.ts';
 

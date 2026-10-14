@@ -11,6 +11,7 @@ import type {
 } from 'i18next';
 import type { ReadonlyDeep } from 'type-fest';
 
+import { invokeAsyncSafely } from '@mnaoumov/typescript-lib/async';
 import i18next, {
   init,
   t as tLib
@@ -19,8 +20,7 @@ import { getLanguage } from 'obsidian';
 
 import type { DefaultTranslationsBase } from './default-translations.ts';
 
-import { invokeAsyncSafely } from '../../async.ts';
-import { getLibDebugger } from '../../debug.ts';
+import { getObsidianLibDebugger } from '../debug.ts';
 import { en } from './locales/en.ts';
 import {
   DEFAULT_LANGUAGE,
@@ -80,7 +80,7 @@ function tImpl(
   options?: TOptions
 ): string {
   if (!i18next.isInitialized) {
-    getLibDebugger('I18N:t')('I18N was not initialized, initializing default obsidian-dev-utils translations');
+    getObsidianLibDebugger('I18N:t')('I18N was not initialized, initializing default obsidian-dev-utils translations');
     invokeAsyncSafely(() => initI18N(defaultTranslationsMap, false));
   }
 

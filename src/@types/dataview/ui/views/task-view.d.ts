@@ -9,7 +9,7 @@ import type {
 } from '../../data-model/serialized/markdown.d.ts';
 import type { Grouping } from '../../data-model/value.d.ts';
 import type { Query } from '../../query/query.d.ts';
-import type { DataviewInit } from '../../ui/markdown.d.ts';
+import type { DataviewInit } from '../markdown.d.ts';
 export type TaskViewState = {
   state: 'loading';
 } | {

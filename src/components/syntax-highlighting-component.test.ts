@@ -13,6 +13,8 @@ import type {
   PrismModule
 } from '@obsidian-typings/obsidian-public-latest';
 
+import { SilentError } from '@mnaoumov/typescript-lib/error';
+import { castTo } from '@mnaoumov/typescript-lib/object-utils';
 import {
   beforeEach,
   describe,
@@ -21,8 +23,6 @@ import {
   vi
 } from 'vitest';
 
-import { SilentError } from '../../error.ts';
-import { castTo } from '../../object-utils.ts';
 import { SyntaxHighlightingComponent } from './syntax-highlighting-component.ts';
 
 interface Mocks {

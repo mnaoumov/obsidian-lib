@@ -7,17 +7,16 @@
  * {@link Events.on}); {@link subscribeDisposableEvent} returns a {@link DisposableEx} that unregisters it.
  */
 
+import type { DisposableEx } from '@mnaoumov/typescript-lib/disposable';
+import type { GenericFunction } from '@mnaoumov/typescript-lib/function';
+import type { ExtractEventMap } from '@mnaoumov/typescript-lib/type';
 import type {
   EventRef,
   Events
 } from 'obsidian';
 
-import type { DisposableEx } from '../disposable.ts';
-import type { GenericFunction } from '../function.ts';
-import type { ExtractEventMap } from '../type.ts';
-
-import { DisposableBase } from '../disposable.ts';
-import { castTo } from '../object-utils.ts';
+import { DisposableBase } from '@mnaoumov/typescript-lib/disposable';
+import { castTo } from '@mnaoumov/typescript-lib/object-utils';
 
 /**
  * Parameters for {@link subscribeDisposableEvent}. Same shape as {@link SubscribeEventParams}.

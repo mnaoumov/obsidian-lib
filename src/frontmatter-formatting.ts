@@ -17,11 +17,17 @@
  * opts in by calling {@link enableFrontmatterFormattingPreservation} once, and only it pays.
  */
 
+import type { GenericObject } from '@mnaoumov/typescript-lib/type-guards';
 import type {
   Node,
   ParsedNode
 } from 'yaml';
 
+import {
+  castTo,
+  isDeepEqual
+} from '@mnaoumov/typescript-lib/object-utils';
+import { insertAt } from '@mnaoumov/typescript-lib/string';
 import {
   getFrontMatterInfo,
   parseYaml,
@@ -37,13 +43,6 @@ import {
   visit
 } from 'yaml';
 
-import type { GenericObject } from '../type-guards.ts';
-
-import {
-  castTo,
-  isDeepEqual
-} from '../object-utils.ts';
-import { insertAt } from '../string.ts';
 import {
   checkIsPlainObject,
   registerFrontmatterFormattingPreserver

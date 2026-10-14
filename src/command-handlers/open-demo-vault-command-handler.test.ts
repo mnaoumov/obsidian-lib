@@ -2,6 +2,8 @@
 
 import type { App as AppOriginal } from 'obsidian';
 
+import { waitForAllAsyncOperations } from '@mnaoumov/typescript-test-toolkit/async-operation-tracking';
+import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import {
   beforeEach,
   describe,
@@ -12,8 +14,6 @@ import {
 
 import type { PluginNoticeComponent } from '../components/plugin-notice-component.ts';
 
-import { waitForAllAsyncOperations } from '../../async.ts';
-import { strictProxy } from '../../strict-proxy.ts';
 import { OpenDemoVaultCommandHandler } from './open-demo-vault-command-handler.ts';
 
 const { mockOpenDemoVault, platformState } = vi.hoisted(() => ({

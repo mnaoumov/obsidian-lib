@@ -12,6 +12,10 @@ import type {
 } from 'obsidian';
 import type { Promisable } from 'type-fest';
 
+import { mixinAsyncEvents } from '@mnaoumov/typescript-lib/async-events';
+import { printError } from '@mnaoumov/typescript-lib/error';
+import { noopAsync } from '@mnaoumov/typescript-lib/function';
+import { ensureNonNullable } from '@mnaoumov/typescript-lib/type-guards';
 import { Plugin } from 'obsidian';
 
 import type {
@@ -26,10 +30,6 @@ import type {
 } from './plugin-event-source.ts';
 import type { PluginLifecycleEventPayload } from './plugin-lifecycle-events.ts';
 
-import { mixinAsyncEvents } from '../../async-events.ts';
-import { printError } from '../../error.ts';
-import { noopAsync } from '../../function.ts';
-import { ensureNonNullable } from '../../type-guards.ts';
 import { AppActiveFileProvider } from '../active-file-provider.ts';
 import { CommandHandlerComponent } from '../command-handlers/command-handler-component.ts';
 import { UnlockActiveNoteCommandHandler } from '../command-handlers/unlock-active-note-command-handler.ts';
@@ -177,7 +177,7 @@ export abstract class PluginBase extends mixinAsyncEvents<PluginEventMap>()(Plug
    * Gets the gate holding the plugin's feature surface up or down.
    *
    * Reach for it from a settings tab to render the overlap banner for a
-   * {@link obsidian/components/plugin-gate-component!PluginConflictSeverity.Warn} conflict — the one
+   * {@link components/plugin-gate-component!PluginConflictSeverity.Warn} conflict — the one
    * banner the library cannot place itself, because a running plugin builds its own settings tab.
    *
    * Readable throughout {@link onloadImpl}, including its synchronous prefix, which is where a settings

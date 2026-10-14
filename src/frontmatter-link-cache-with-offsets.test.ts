@@ -3,6 +3,8 @@ import type {
   Reference
 } from 'obsidian';
 
+import { castTo } from '@mnaoumov/typescript-lib/object-utils';
+import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import {
   describe,
   expect,
@@ -11,8 +13,6 @@ import {
 
 import type { FrontmatterLinkCacheWithOffsets } from './frontmatter-link-cache-with-offsets.ts';
 
-import { castTo } from '../object-utils.ts';
-import { strictProxy } from '../strict-proxy.ts';
 import {
   isFrontmatterLinkCacheWithOffsets,
   toFrontmatterLinkCacheWithOffsets

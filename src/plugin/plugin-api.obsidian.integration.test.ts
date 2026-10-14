@@ -26,7 +26,7 @@ import {
 import {
   PLUGIN_API_CONSUMER_PLUGIN_ID,
   PLUGIN_API_PROVIDER_PLUGIN_ID
-} from '../../../scripts/integration-test-plugin-api-global-setup.ts';
+} from '../../../../scripts/integration-test-plugin-api-global-setup.ts';
 
 const WAIT_TIMEOUT_IN_MILLISECONDS = 10_000;
 

@@ -1,15 +1,15 @@
 import type { DateTime } from 'luxon';
 import type { Pos } from 'obsidian';
 import type { FullIndex } from '../data-index/index.d.ts';
+import type { DataObject } from '../index.d.ts';
 import type {
   SListItem,
   SMarkdownPage
-} from '../data-model/serialized/markdown.d.ts';
+} from './serialized/markdown.d.ts';
 import type {
   Link,
   Literal
-} from '../data-model/value.d.ts';
-import type { DataObject } from '../index.d.ts';
+} from './value.d.ts';
 /** All extracted markdown file metadata obtained from a file. */
 export declare class PageMetadata {
   /** The path this file exists at. */

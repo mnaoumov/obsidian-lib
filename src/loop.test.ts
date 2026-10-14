@@ -1,6 +1,22 @@
+import type { CustomStackTraceErrorConstructorParams } from '@mnaoumov/typescript-lib/error';
 // @vitest-environment jsdom
 import type { Mock } from 'vitest';
 
+import { abortSignalNever } from '@mnaoumov/typescript-lib/abort-controller';
+import { requestAnimationFrameAsync } from '@mnaoumov/typescript-lib/async';
+import {
+  emitAsyncErrorEvent,
+  getStackTrace
+} from '@mnaoumov/typescript-lib/error';
+import {
+  noop,
+  noopAsync
+} from '@mnaoumov/typescript-lib/function';
+import { castTo } from '@mnaoumov/typescript-lib/object-utils';
+import { assertNonNullable } from '@mnaoumov/typescript-lib/type-guards';
+import { resolveValue } from '@mnaoumov/typescript-lib/value-provider';
+import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
+import { mockImplementation } from '@mnaoumov/typescript-test-toolkit/test-helpers/mock-implementation';
 import {
   App,
   Notice
@@ -14,49 +30,33 @@ import {
   vi
 } from 'vitest';
 
-import type { CustomStackTraceErrorConstructorParams } from '../error.ts';
 import type {
   PluginNoticeComponentDelayedNotice,
   PluginNoticeComponentShowNoticeAfterDelayParams
 } from './components/plugin-notice-component.ts';
 import type { LoopBuildNoticeMessageParams } from './loop.ts';
 
-import { abortSignalNever } from '../abort-controller.ts';
-import { requestAnimationFrameAsync } from '../async.ts';
-import { getLibDebugger } from '../debug.ts';
-import {
-  emitAsyncErrorEvent,
-  getStackTrace
-} from '../error.ts';
-import {
-  noop,
-  noopAsync
-} from '../function.ts';
-import { castTo } from '../object-utils.ts';
-import { strictProxy } from '../strict-proxy.ts';
-import { mockImplementation } from '../test-helpers/mock-implementation.ts';
-import { assertNonNullable } from '../type-guards.ts';
-import { resolveValue } from '../value-provider.ts';
 import { PluginNoticeComponent } from './components/plugin-notice-component.ts';
+import { getObsidianLibDebugger } from './debug.ts';
 import { loop } from './loop.ts';
 import { addPluginCssClasses } from './plugin/plugin-context.ts';
 
-vi.mock('../abort-controller.ts', () => ({
+vi.mock('@mnaoumov/typescript-lib/abort-controller', () => ({
   abortSignalNever: vi.fn(() => new AbortController().signal)
 }));
 
-vi.mock('../async.ts', () => ({
+vi.mock('@mnaoumov/typescript-lib/async', () => ({
   invokeAsyncSafely: vi.fn(($function: () => Promise<unknown>) => {
     $function().catch(() => undefined);
   }),
   requestAnimationFrameAsync: vi.fn(() => noopAsync())
 }));
 
-vi.mock('../debug.ts', () => ({
-  getLibDebugger: vi.fn(() => vi.fn())
+vi.mock('./debug.ts', () => ({
+  getObsidianLibDebugger: vi.fn(() => vi.fn())
 }));
 
-vi.mock('../error.ts', () => ({
+vi.mock('@mnaoumov/typescript-lib/error', () => ({
   ASYNC_WRAPPER_ERROR_MESSAGE: 'async wrapper error',
   CustomStackTraceError: class CustomStackTraceError extends Error {
     public stackTraceString: string;
@@ -80,9 +80,9 @@ const functionMocks = vi.hoisted(() => {
   };
 });
 
-vi.mock('../function.ts', () => functionMocks);
+vi.mock('@mnaoumov/typescript-lib/function', () => functionMocks);
 
-vi.mock('../obsidian/plugin/plugin-context.ts', () => ({
+vi.mock('./plugin/plugin-context.ts', () => ({
   addPluginCssClasses: vi.fn()
 }));
 
@@ -309,10 +309,10 @@ describe('loop', () => {
     expect(getStackTrace).toHaveBeenCalledWith(1);
   });
 
-  it('should call getLibDebugger with Loop namespace', async () => {
+  it('should call getObsidianLibDebugger with Loop namespace', async () => {
     const mockDebugFunction = vi.fn();
 
-    vi.mocked(getLibDebugger).mockReturnValue(castTo<ReturnType<typeof getLibDebugger>>(mockDebugFunction));
+    vi.mocked(getObsidianLibDebugger).mockReturnValue(castTo<ReturnType<typeof getObsidianLibDebugger>>(mockDebugFunction));
 
     await loop({
       buildNoticeMessage: vi.fn(() => 'debug msg'),
@@ -322,7 +322,7 @@ describe('loop', () => {
       shouldShowNotice: false
     });
 
-    expect(getLibDebugger).toHaveBeenCalledWith('Loop');
+    expect(getObsidianLibDebugger).toHaveBeenCalledWith('Loop');
     expect(mockDebugFunction).toHaveBeenCalledWith('debug msg');
   });
 

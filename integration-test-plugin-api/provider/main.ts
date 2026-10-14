@@ -18,7 +18,7 @@ import { Plugin } from 'obsidian';
 
 import type { GreeterApi } from '../shared.ts';
 
-import { publishPluginApi } from '../../src/obsidian/plugin/plugin-api.ts';
+import { publishPluginApi } from '@mnaoumov/obsidian-lib/plugin/plugin-api';
 import { GREETER_CONTRACT } from '../shared.ts';
 
 /**

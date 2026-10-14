@@ -10,11 +10,12 @@ import type {
   TFile
 } from 'obsidian';
 
+import { printError } from '@mnaoumov/typescript-lib/error';
+import { normalizeOptionalProperties } from '@mnaoumov/typescript-lib/object-utils';
+
 import type { PluginNoticeComponent } from './components/plugin-notice-component.ts';
 import type { PathOrAbstractFile } from './file-system.ts';
 
-import { printError } from '../error.ts';
-import { normalizeOptionalProperties } from '../object-utils.ts';
 import {
   getAbstractFileOrNull,
   isFile,

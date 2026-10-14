@@ -3,6 +3,7 @@ import type {
   TFile as TFileOriginal
 } from 'obsidian';
 
+import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import {
   describe,
   expect,
@@ -12,7 +13,6 @@ import {
 
 import type { ResourceLockComponent } from '../resource-lock.ts';
 
-import { strictProxy } from '../../strict-proxy.ts';
 import { UnlockActiveNoteCommandHandler } from './unlock-active-note-command-handler.ts';
 
 interface CreateHandlerOptions {

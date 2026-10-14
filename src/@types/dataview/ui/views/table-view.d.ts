@@ -2,7 +2,7 @@ import type { MarkdownRenderChild } from 'obsidian';
 import type { h } from 'preact';
 import type { Literal } from '../../data-model/value.d.ts';
 import type { Query } from '../../query/query.d.ts';
-import type { DataviewInit } from '../../ui/markdown.d.ts';
+import type { DataviewInit } from '../markdown.d.ts';
 /** Simple table over headings and corresponding values. */
 export declare function TableGrouping({ headings, values, sourcePath }: {
   headings: string[];

@@ -9,6 +9,8 @@ import type {
   Events as EventsOriginal
 } from 'obsidian';
 
+import { dispose } from '@mnaoumov/typescript-lib/disposable';
+import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import {
   describe,
   expect,
@@ -16,8 +18,6 @@ import {
   vi
 } from 'vitest';
 
-import { dispose } from '../disposable.ts';
-import { strictProxy } from '../strict-proxy.ts';
 import {
   EventRefDisposable as EventReferenceDisposable,
   subscribeDisposableEvent,

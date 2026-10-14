@@ -4,9 +4,9 @@
  * Contains helper function to register async events.
  */
 
-import { Component } from 'obsidian';
+import type { AsyncEventRef } from '@mnaoumov/typescript-lib/async-events';
 
-import type { AsyncEventRef } from '../../async-events.ts';
+import { Component } from 'obsidian';
 
 /**
  * Registers an async event.

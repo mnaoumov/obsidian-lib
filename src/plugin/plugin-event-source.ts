@@ -4,13 +4,13 @@
  * Contains the implementation of the plugin event source.
  */
 
-import type { Promisable } from 'type-fest';
-
 import type {
   AsyncEventRef,
   AsyncEventSource
-} from '../../async-events.ts';
-import type { StringKeys } from '../../type.ts';
+} from '@mnaoumov/typescript-lib/async-events';
+import type { StringKeys } from '@mnaoumov/typescript-lib/type';
+import type { Promisable } from 'type-fest';
+
 import type { PluginBase } from './plugin.ts';
 
 /**

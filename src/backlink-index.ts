@@ -46,10 +46,10 @@ import type {
   TFile
 } from 'obsidian';
 
+import { ensureNonNullable } from '@mnaoumov/typescript-lib/type-guards';
 import { CustomArrayDictImpl } from '@obsidian-typings/obsidian-public-latest/implementations';
 
-import { getObsidianDevUtilsState } from '../obsidian-dev-utils-state.ts';
-import { ensureNonNullable } from '../type-guards.ts';
+import { getObsidianDevUtilsState } from './obsidian-dev-utils-state.ts';
 
 interface BacklinkIndexData {
   readonly indexedHashes: Map<string, string>;

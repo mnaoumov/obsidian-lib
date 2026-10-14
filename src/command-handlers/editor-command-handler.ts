@@ -14,15 +14,16 @@ import type {
 } from 'obsidian';
 import type { Promisable } from 'type-fest';
 
+import {
+  convertAsyncToSync,
+  invokeAsyncSafely
+} from '@mnaoumov/typescript-lib/async';
+
 import type {
   CommandHandlerConstructorParams,
   CommandHandlerRegistrationContext
 } from './command-handler.ts';
 
-import {
-  convertAsyncToSync,
-  invokeAsyncSafely
-} from '../../async.ts';
 import { CommandHandler } from './command-handler.ts';
 
 /**

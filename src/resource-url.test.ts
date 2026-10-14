@@ -3,6 +3,8 @@ import type {
   DataAdapter
 } from 'obsidian';
 
+import { castTo } from '@mnaoumov/typescript-lib/object-utils';
+import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import {
   describe,
   expect,
@@ -10,8 +12,6 @@ import {
   vi
 } from 'vitest';
 
-import { castTo } from '../object-utils.ts';
-import { strictProxy } from '../strict-proxy.ts';
 import { relativePathToResourceUrl } from './resource-url.ts';
 
 vi.mock('obsidian', () => ({

@@ -4,8 +4,9 @@
  * Component that handles async errors by showing a notice to the user.
  */
 
-import { dispose } from '../../disposable.ts';
-import { registerAsyncErrorEventHandler } from '../../error.ts';
+import { dispose } from '@mnaoumov/typescript-lib/disposable';
+import { registerAsyncErrorEventHandler } from '@mnaoumov/typescript-lib/error';
+
 import { t } from '../i18n/i18n.ts';
 import { ComponentEx } from './component-ex.ts';
 import { PluginNoticeComponent } from './plugin-notice-component.ts';

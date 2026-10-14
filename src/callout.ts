@@ -4,17 +4,19 @@
  * This module provides utility functions for rendering callouts in Dataview.
  */
 
-import type { MaybeReturn } from '../type.ts';
-import type { ValueProvider } from '../value-provider.ts';
-import type { DataviewInlineApi } from './dataview.ts';
-import type { AddToQueueParams } from './queue.ts';
+import type { MaybeReturn } from '@mnaoumov/typescript-lib/type';
+import type { ValueProvider } from '@mnaoumov/typescript-lib/value-provider';
 
-import { normalizeOptionalProperties } from '../object-utils.ts';
+import { normalizeOptionalProperties } from '@mnaoumov/typescript-lib/object-utils';
 import {
   assertNever,
   ensureNonNullable
-} from '../type-guards.ts';
-import { resolveValue } from '../value-provider.ts';
+} from '@mnaoumov/typescript-lib/type-guards';
+import { resolveValue } from '@mnaoumov/typescript-lib/value-provider';
+
+import type { DataviewInlineApi } from './dataview.ts';
+import type { AddToQueueParams } from './queue.ts';
+
 import { getRenderedContainer } from './dataview.ts';
 import { t } from './i18n/i18n.ts';
 import { addToQueue } from './queue.ts';

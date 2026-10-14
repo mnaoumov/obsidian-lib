@@ -1,5 +1,11 @@
 // @vitest-environment jsdom
 
+import type { GenericObject } from '@mnaoumov/typescript-lib/type-guards';
+
+import { noopAsync } from '@mnaoumov/typescript-lib/function';
+import { castTo } from '@mnaoumov/typescript-lib/object-utils';
+import { assertNonNullable } from '@mnaoumov/typescript-lib/type-guards';
+import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import {
   beforeEach,
   describe,
@@ -8,14 +14,9 @@ import {
   vi
 } from 'vitest';
 
-import type { GenericObject } from '../type-guards.ts';
 import type { DataviewInlineApi } from './dataview.ts';
 import type { AddToQueueParams } from './queue.ts';
 
-import { noopAsync } from '../function.ts';
-import { castTo } from '../object-utils.ts';
-import { strictProxy } from '../strict-proxy.ts';
-import { assertNonNullable } from '../type-guards.ts';
 import {
   CalloutMode,
   renderCallout,
@@ -76,26 +77,26 @@ const mocks = vi.hoisted(() => ({
   addToQueue: vi.fn()
 }));
 
-vi.mock('../object-utils.ts', async (importOriginal) => ({
-  ...await importOriginal<typeof import('../object-utils.ts')>(),
+vi.mock('@mnaoumov/typescript-lib/object-utils', async (importOriginal) => ({
+  ...await importOriginal<typeof import('@mnaoumov/typescript-lib/object-utils')>(),
   normalizeOptionalProperties: vi.fn(($unknown: unknown) => $unknown)
 }));
 
-vi.mock('../value-provider.ts', () => ({
+vi.mock('@mnaoumov/typescript-lib/value-provider', () => ({
   resolveValue: vi.fn(async (provider: unknown) => {
     await noopAsync();
     return typeof provider === 'function' ? (provider as () => unknown)() : provider;
   })
 }));
 
-vi.mock('../obsidian/dataview.ts', () => ({
+vi.mock('./dataview.ts', () => ({
   getRenderedContainer: vi.fn(async (_dv: unknown, renderer: () => Promise<void>) => {
     await renderer();
     return createEl('p');
   })
 }));
 
-vi.mock('../obsidian/i18n/i18n.ts', () => ({
+vi.mock('./i18n/i18n.ts', () => ({
   t: vi.fn((selector: unknown) => {
     if (typeof selector === 'function') {
       const proxy: unknown = new Proxy({}, { get: (): unknown => proxy });
@@ -105,7 +106,7 @@ vi.mock('../obsidian/i18n/i18n.ts', () => ({
   })
 }));
 
-vi.mock('../obsidian/queue.ts', () => ({
+vi.mock('./queue.ts', () => ({
   addToQueue: mocks.addToQueue
 }));
 

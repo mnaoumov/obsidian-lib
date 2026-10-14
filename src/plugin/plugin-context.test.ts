@@ -1,5 +1,11 @@
+import type { ValueWrapper } from '@mnaoumov/typescript-lib/value-wrapper';
 import type { Component } from 'obsidian';
 
+import { ResettableAbortController } from '@mnaoumov/typescript-lib/abort-controller';
+import { Library } from '@mnaoumov/typescript-lib/library';
+import { castTo } from '@mnaoumov/typescript-lib/object-utils';
+import { ensureGenericObject } from '@mnaoumov/typescript-lib/type-guards';
+import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import {
   afterEach,
   beforeEach,
@@ -9,13 +15,7 @@ import {
   vi
 } from 'vitest';
 
-import type { ValueWrapper } from '../../value-wrapper.ts';
-
-import { ResettableAbortController } from '../../abort-controller.ts';
-import { Library } from '../../library.ts';
-import { castTo } from '../../object-utils.ts';
-import { strictProxy } from '../../strict-proxy.ts';
-import { ensureGenericObject } from '../../type-guards.ts';
+import { ObsidianLibrary } from '../library.ts';
 import {
   addPluginCssClasses,
   initDebugController,
@@ -41,31 +41,31 @@ vi.mock('compare-versions', () => ({
   compareVersions: mocks.compareVersions
 }));
 
-vi.mock('../../debug-controller.ts', () => ({}));
+vi.mock('@mnaoumov/typescript-lib/debug-controller', () => ({}));
 
 vi.mock('../css-class.ts', () => ({
   CssClass: { LibraryName: 'obsidian-dev-utils' }
 }));
 
-vi.mock('../../debug.ts', () => ({
+vi.mock('@mnaoumov/typescript-lib/debug', () => ({
   getDebugController: mocks.getDebugController,
   showInitialDebugMessage: mocks.showInitialDebugMessage
 }));
 
-vi.mock('../../generated-during-build.ts', () => ({
+vi.mock('../generated-during-build.ts', () => ({
   LIBRARY_STYLES: '.test { color: red; }',
   LIBRARY_VERSION: '1.0.0'
 }));
 
-vi.mock('../../obsidian-dev-utils-state.ts', async (importOriginal) => ({
-  ...await importOriginal<typeof import('../../obsidian-dev-utils-state.ts')>(),
+vi.mock('../obsidian-dev-utils-state.ts', async (importOriginal) => ({
+  ...await importOriginal<typeof import('../obsidian-dev-utils-state.ts')>(),
   getObsidianDevUtilsState: mocks.getObsidianDevUtilsState
 }));
 
 describe('addPluginCssClasses', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    Library.init({ cssClassScope: 'test-plugin', debugPrefixNamespace: '', shouldPrintStackTrace: false });
+    ObsidianLibrary.init({ cssClassScope: 'test-plugin' });
   });
 
   it('should add library name, plugin id, and custom css class string', () => {
@@ -90,7 +90,7 @@ describe('addPluginCssClasses', () => {
   });
 
   it('should omit the scope class when the css class scope is empty', () => {
-    Library.resetToDefault();
+    ObsidianLibrary.resetToDefault();
     const addClass = vi.fn();
     const element = strictProxy<HTMLElement>({ addClass });
     addPluginCssClasses(element, 'custom-class');
@@ -168,7 +168,8 @@ describe('initPluginContext', () => {
     vi.spyOn(document.head, 'querySelector').mockReturnValue(null);
     vi.spyOn(document.head, 'createEl').mockReturnValue(createEl('style'));
     initPluginContext('my-plugin');
-    expect(Library.cssClassScope).toBe('my-plugin');
+    expect(ObsidianLibrary.cssClassScope).toBe('my-plugin');
+    expect(Library.debugNamespace).toBe('obsidian-dev-utils');
     expect(Library.debugPrefixNamespace).toBe('my-plugin:');
     expect(Library.shouldPrintStackTrace).toBe(true);
     expect(Library.debugGuideUrl).toBe('https://mnaoumov.dev/obsidian-dev-utils/guides/debugging/');
@@ -178,7 +179,7 @@ describe('initPluginContext', () => {
   it('should skip style injection when version is not newer', () => {
     mocks.compareVersions.mockReturnValue(0);
     initPluginContext('my-plugin');
-    expect(Library.cssClassScope).toBe('my-plugin');
+    expect(ObsidianLibrary.cssClassScope).toBe('my-plugin');
   });
 
   it('should remove old styles and inject new ones when version is newer', () => {

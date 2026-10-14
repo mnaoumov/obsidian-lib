@@ -7,6 +7,8 @@ import type {
   WorkspaceWindow
 } from 'obsidian';
 
+import { SilentError } from '@mnaoumov/typescript-lib/error';
+import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import {
   afterEach,
   beforeEach,
@@ -16,8 +18,6 @@ import {
   vi
 } from 'vitest';
 
-import { SilentError } from '../../error.ts';
-import { strictProxy } from '../../strict-proxy.ts';
 import { AllWindowsEventComponent } from './all-windows-event-component.ts';
 
 interface CreateMockAppParams {

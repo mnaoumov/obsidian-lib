@@ -5,6 +5,9 @@ import type {
   TextComponent
 } from 'obsidian-test-mocks/obsidian';
 
+import { castTo } from '@mnaoumov/typescript-lib/object-utils';
+import { ensureNonNullable } from '@mnaoumov/typescript-lib/type-guards';
+import { mockImplementation } from '@mnaoumov/typescript-test-toolkit/test-helpers/mock-implementation';
 import {
   ButtonComponent as ButtonComponentOriginal,
   TextComponent as TextComponentOriginal
@@ -18,9 +21,6 @@ import {
 
 import type { PopoverAnchor } from './popover-anchor.ts';
 
-import { castTo } from '../../object-utils.ts';
-import { mockImplementation } from '../../test-helpers/mock-implementation.ts';
-import { ensureNonNullable } from '../../type-guards.ts';
 import { editFieldsInPopover } from './field-popover.ts';
 
 const buttonInstances: ButtonComponentOriginal[] = [];

@@ -4,12 +4,23 @@
  * Tests for {@link SettingsMigrationComponent}.
  */
 
+import type { AsyncEventRef } from '@mnaoumov/typescript-lib/async-events';
 import type {
   App,
   Plugin,
   PluginManifest
 } from 'obsidian';
 
+import {
+  noop,
+  noopAsync
+} from '@mnaoumov/typescript-lib/function';
+import {
+  castTo,
+  normalizeOptionalProperties
+} from '@mnaoumov/typescript-lib/object-utils';
+import { waitForAllAsyncOperations } from '@mnaoumov/typescript-test-toolkit/async-operation-tracking';
+import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import {
   beforeEach,
   describe,
@@ -18,7 +29,6 @@ import {
   vi
 } from 'vitest';
 
-import type { AsyncEventRef } from '../../async-events.ts';
 import type { DataHandler } from '../data-handler.ts';
 import type {
   PluginApiContract,
@@ -32,16 +42,6 @@ import type {
 } from '../plugin/settings-migration-api.ts';
 import type { SettingsMigrationComponentConstructorParams } from './settings-migration-component.ts';
 
-import { waitForAllAsyncOperations } from '../../async.ts';
-import {
-  noop,
-  noopAsync
-} from '../../function.ts';
-import {
-  castTo,
-  normalizeOptionalProperties
-} from '../../object-utils.ts';
-import { strictProxy } from '../../strict-proxy.ts';
 import { publishPluginApi } from '../plugin/plugin-api.ts';
 import { PluginSettingsComponentBase } from './plugin-settings-component.ts';
 import { SettingsMigrationComponent } from './settings-migration-component.ts';

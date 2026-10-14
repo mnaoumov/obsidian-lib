@@ -6,14 +6,20 @@
  * This module exports a function to display a modal that prompts the user for input. The modal includes "OK" and "Cancel" buttons.
  */
 
+import type { MaybeReturn } from '@mnaoumov/typescript-lib/type';
 import type { Promisable } from 'type-fest';
 
+import {
+  convertAsyncToSync,
+  invokeAsyncSafely
+} from '@mnaoumov/typescript-lib/async';
+import { noop } from '@mnaoumov/typescript-lib/function';
+import { normalizeOptionalProperties } from '@mnaoumov/typescript-lib/object-utils';
 import {
   ButtonComponent,
   TextComponent
 } from 'obsidian';
 
-import type { MaybeReturn } from '../../type.ts';
 import type {
   ModalCommandBuilder,
   ModalCommandBuilderBuildOptions,
@@ -24,12 +30,6 @@ import type {
   ModalParamsBase
 } from './modal.ts';
 
-import {
-  convertAsyncToSync,
-  invokeAsyncSafely
-} from '../../async.ts';
-import { noop } from '../../function.ts';
-import { normalizeOptionalProperties } from '../../object-utils.ts';
 import { CssClass } from '../css-class.ts';
 import { applySpellcheckMode } from '../html-element.ts';
 import { t } from '../i18n/i18n.ts';

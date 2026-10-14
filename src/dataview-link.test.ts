@@ -1,5 +1,7 @@
 import type { App as AppOriginal } from 'obsidian';
 
+import { castTo } from '@mnaoumov/typescript-lib/object-utils';
+import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import { App } from 'obsidian-test-mocks/obsidian';
 import {
   describe,
@@ -12,8 +14,6 @@ import type {
   Link
 } from './dataview.ts';
 
-import { castTo } from '../object-utils.ts';
-import { strictProxy } from '../strict-proxy.ts';
 import {
   fixTitle,
   makeLinkWithPath

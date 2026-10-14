@@ -12,7 +12,7 @@
  * `PointerPositionComponent` — depends only on the position, not on the panel that consumes it.
  */
 
-import { getDocumentWindow } from '../../html-element.ts';
+import { getDocumentWindow } from '@mnaoumov/typescript-lib/html-element';
 
 /**
  * The fraction of the window used to place a centered anchor.

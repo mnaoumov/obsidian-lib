@@ -1,5 +1,8 @@
+import type { MaybeReturn } from '@mnaoumov/typescript-lib/type';
 import type { Debouncer } from 'obsidian';
 
+import { noop } from '@mnaoumov/typescript-lib/function';
+import { castTo } from '@mnaoumov/typescript-lib/object-utils';
 import {
   Component,
   debounce
@@ -12,7 +15,6 @@ import {
   vi
 } from 'vitest';
 
-import type { MaybeReturn } from '../../type.ts';
 import type {
   FunctionKeys,
   MethodKeys,
@@ -22,8 +24,6 @@ import type {
   PostPatchHandlerParams
 } from './monkey-around-component.ts';
 
-import { noop } from '../../function.ts';
-import { castTo } from '../../object-utils.ts';
 import {
   around,
   hasPatchToken,

@@ -5,6 +5,12 @@ import type {
   FuzzyMatch
 } from 'obsidian';
 
+import {
+  castTo,
+  normalizeOptionalProperties
+} from '@mnaoumov/typescript-lib/object-utils';
+import { assertNonNullable } from '@mnaoumov/typescript-lib/type-guards';
+import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import { FuzzySuggestModal } from 'obsidian';
 import { App } from 'obsidian-test-mocks/obsidian';
 import {
@@ -18,12 +24,6 @@ import {
 
 import type { SelectItemParams } from './select-item.ts';
 
-import {
-  castTo,
-  normalizeOptionalProperties
-} from '../../object-utils.ts';
-import { strictProxy } from '../../strict-proxy.ts';
-import { assertNonNullable } from '../../type-guards.ts';
 import { SpellcheckMode } from '../obsidian-settings.ts';
 import { selectItem } from './select-item.ts';
 
@@ -39,7 +39,7 @@ vi.mock('../css-class.ts', () => ({
   }
 }));
 
-vi.mock('../../obsidian/plugin/plugin-context.ts', () => ({
+vi.mock('../plugin/plugin-context.ts', () => ({
   addPluginCssClasses: vi.fn()
 }));
 

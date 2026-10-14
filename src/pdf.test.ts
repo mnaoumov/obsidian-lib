@@ -1,5 +1,7 @@
 // @vitest-environment jsdom
 
+import { noopAsync } from '@mnaoumov/typescript-lib/function';
+import { ensureLoaded } from '@mnaoumov/typescript-lib/html-element';
 import { Platform } from 'obsidian';
 import {
   afterEach,
@@ -10,11 +12,9 @@ import {
   vi
 } from 'vitest';
 
-import { noopAsync } from '../function.ts';
-import { ensureLoaded } from '../html-element.ts';
 import { printToPdf } from './pdf.ts';
 
-vi.mock('../html-element.ts', () => ({
+vi.mock('@mnaoumov/typescript-lib/html-element', () => ({
   ensureLoaded: vi.fn(async () => noopAsync())
 }));
 

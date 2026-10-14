@@ -4,6 +4,9 @@ import type {
   TAbstractFile
 } from 'obsidian';
 
+import { noopAsync } from '@mnaoumov/typescript-lib/function';
+import { castTo } from '@mnaoumov/typescript-lib/object-utils';
+import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import {
   beforeEach,
   describe,
@@ -12,9 +15,6 @@ import {
   vi
 } from 'vitest';
 
-import { noopAsync } from '../function.ts';
-import { castTo } from '../object-utils.ts';
-import { strictProxy } from '../strict-proxy.ts';
 import { revealInFileExplorer } from './file-explorer.ts';
 
 interface FileExplorerStub {
@@ -33,7 +33,7 @@ const mocks = vi.hoisted(() => {
   };
 });
 
-vi.mock('../async.ts', () => ({
+vi.mock('@mnaoumov/typescript-lib/async', () => ({
   requestAnimationFrameAsync: mocks.requestAnimationFrameAsync
 }));
 

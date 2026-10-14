@@ -11,6 +11,7 @@ import type {
 } from '@obsidian-typings/obsidian-public-latest';
 import type { TokenStream } from 'prismjs';
 
+import { castTo } from '@mnaoumov/typescript-lib/object-utils';
 import prismjs from 'prismjs';
 import {
   beforeEach,
@@ -22,7 +23,6 @@ import {
 
 import type { TemplatesLanguageComponentConstructorParams } from './templates-language-component.ts';
 
-import { castTo } from '../../object-utils.ts';
 import { TemplatesLanguageComponent } from './templates-language-component.ts';
 
 /**

@@ -4,25 +4,24 @@
  * Component that manages displaying notices to the user.
  */
 
+import type { ValueProvider } from '@mnaoumov/typescript-lib/value-provider';
 import type { App } from 'obsidian';
 import type { Promisable } from 'type-fest';
 
+import { snapshot } from '@mnaoumov/typescript-lib/array';
+import { invokeAsyncSafely } from '@mnaoumov/typescript-lib/async';
+import { normalizeOptionalProperties } from '@mnaoumov/typescript-lib/object-utils';
+import { ensureNonNullable } from '@mnaoumov/typescript-lib/type-guards';
+import { resolveValue } from '@mnaoumov/typescript-lib/value-provider';
 import {
   ButtonComponent,
   Notice,
   setIcon
 } from 'obsidian';
 
-import type { ValueProvider } from '../../value-provider.ts';
-
-import { snapshot } from '../../array.ts';
-import { invokeAsyncSafely } from '../../async.ts';
-import { normalizeOptionalProperties } from '../../object-utils.ts';
-import { getObsidianDevUtilsState } from '../../obsidian-dev-utils-state.ts';
-import { ensureNonNullable } from '../../type-guards.ts';
-import { resolveValue } from '../../value-provider.ts';
 import { CssClass } from '../css-class.ts';
 import { t } from '../i18n/i18n.ts';
+import { getObsidianDevUtilsState } from '../obsidian-dev-utils-state.ts';
 import { addPluginCssClasses } from '../plugin/plugin-context.ts';
 import { ComponentEx } from './component-ex.ts';
 import { MonkeyAroundComponent } from './monkey-around-component.ts';

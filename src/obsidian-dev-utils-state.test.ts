@@ -1,4 +1,10 @@
 import {
+  getTypescriptLibState,
+  getTypescriptLibStateSlot,
+  resetTypescriptLibState
+} from '@mnaoumov/typescript-lib/typescript-lib-state';
+import { ValueWrapper } from '@mnaoumov/typescript-lib/value-wrapper';
+import {
   afterEach,
   describe,
   expect,
@@ -10,12 +16,6 @@ import {
   resetObsidianDevUtilsState,
   shareTypescriptLibStateWithObsidianDevUtilsState
 } from './obsidian-dev-utils-state.ts';
-import {
-  getTypescriptLibState,
-  getTypescriptLibStateSlot,
-  resetTypescriptLibState
-} from './typescript-lib-state.ts';
-import { ValueWrapper } from './value-wrapper.ts';
 
 interface GlobalThisWithState {
   __obsidianDevUtils: unknown;

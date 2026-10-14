@@ -1,3 +1,4 @@
+import type { GenericObject } from '@mnaoumov/typescript-lib/type-guards';
 import type { LinkUpdatesHandler } from '@obsidian-typings/obsidian-public-latest';
 import type {
   App as AppOriginal,
@@ -5,6 +6,11 @@ import type {
   TFile
 } from 'obsidian';
 
+import { noop } from '@mnaoumov/typescript-lib/function';
+import { isDeepEqual } from '@mnaoumov/typescript-lib/object-utils';
+import { ensureNonNullable } from '@mnaoumov/typescript-lib/type-guards';
+import { resolveValue } from '@mnaoumov/typescript-lib/value-provider';
+import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import { App } from 'obsidian-test-mocks/obsidian';
 import {
   beforeEach,
@@ -14,15 +20,9 @@ import {
   vi
 } from 'vitest';
 
-import type { GenericObject } from '../type-guards.ts';
 import type { GetFileParams } from './file-system.ts';
 import type { ResourceLockComponent } from './resource-lock.ts';
 
-import { noop } from '../function.ts';
-import { isDeepEqual } from '../object-utils.ts';
-import { strictProxy } from '../strict-proxy.ts';
-import { ensureNonNullable } from '../type-guards.ts';
-import { resolveValue } from '../value-provider.ts';
 import {
   addAlias,
   deleteAlias,
@@ -43,15 +43,15 @@ interface PathHolder {
   path: string;
 }
 
-vi.mock('../object-utils.ts', async (importOriginal) => {
-  const original = await importOriginal<typeof import('../object-utils.ts')>();
+vi.mock('@mnaoumov/typescript-lib/object-utils', async (importOriginal) => {
+  const original = await importOriginal<typeof import('@mnaoumov/typescript-lib/object-utils')>();
   return {
     ...original,
     isDeepEqual: vi.fn(() => false)
   };
 });
 
-vi.mock('../obsidian/file-system.ts', () => ({
+vi.mock('./file-system.ts', () => ({
   getFile: vi.fn((params: GetFileParams) => {
     const { pathOrFile } = params;
     return typeof pathOrFile === 'string' ? { basename: pathOrFile.replace(/\.[^.]+$/, ''), extension: 'md', name: pathOrFile, path: pathOrFile } : pathOrFile;
@@ -60,12 +60,12 @@ vi.mock('../obsidian/file-system.ts', () => ({
   isMarkdownFile: vi.fn(() => true)
 }));
 
-vi.mock('../obsidian/frontmatter.ts', () => ({
+vi.mock('./frontmatter.ts', () => ({
   parseFrontmatter: vi.fn(() => ({})),
   setFrontmatter: vi.fn((_content: string, fm: unknown) => `---\n${ensureNonNullable(JSON.stringify(fm))}\n---\ncontent`)
 }));
 
-vi.mock('../obsidian/vault.ts', () => ({
+vi.mock('./vault.ts', () => ({
   process: vi.fn()
 }));
 

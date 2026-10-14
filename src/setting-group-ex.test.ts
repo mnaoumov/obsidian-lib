@@ -11,7 +11,7 @@ import {
 import { SettingEx } from './setting-ex.ts';
 import { SettingGroupEx } from './setting-group-ex.ts';
 
-vi.mock('../obsidian/setting-ex.ts', () => ({
+vi.mock('./setting-ex.ts', () => ({
   SettingEx: vi.fn()
 }));
 

@@ -4,8 +4,15 @@
  * Tests for {@link CommandHandlerComponent}.
  */
 
+import type { DisposableEx } from '@mnaoumov/typescript-lib/disposable';
 import type { Command } from 'obsidian';
 
+import {
+  CallbackDisposable,
+  dispose
+} from '@mnaoumov/typescript-lib/disposable';
+import { assertNonNullable } from '@mnaoumov/typescript-lib/type-guards';
+import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import {
   describe,
   expect,
@@ -13,7 +20,6 @@ import {
   vi
 } from 'vitest';
 
-import type { DisposableEx } from '../../disposable.ts';
 import type { ActiveFileProvider } from '../active-file-provider.ts';
 import type { CommandRegistrar } from '../command-registrar.ts';
 import type {
@@ -25,12 +31,6 @@ import type {
   CommandHandlerRegistrationContext
 } from './command-handler.ts';
 
-import {
-  CallbackDisposable,
-  dispose
-} from '../../disposable.ts';
-import { strictProxy } from '../../strict-proxy.ts';
-import { assertNonNullable } from '../../type-guards.ts';
 import { ComponentEx } from '../components/component-ex.ts';
 import { CommandHandlerComponent } from './command-handler-component.ts';
 import { CommandHandler } from './command-handler.ts';

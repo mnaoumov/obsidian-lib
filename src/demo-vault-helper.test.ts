@@ -6,6 +6,10 @@ import type {
   Vault
 } from 'obsidian';
 
+import { noopAsync } from '@mnaoumov/typescript-lib/function';
+import { castTo } from '@mnaoumov/typescript-lib/object-utils';
+import { EMPTY } from '@mnaoumov/typescript-lib/string';
+import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import {
   beforeEach,
   describe,
@@ -14,10 +18,6 @@ import {
   vi
 } from 'vitest';
 
-import { noopAsync } from '../function.ts';
-import { castTo } from '../object-utils.ts';
-import { strictProxy } from '../strict-proxy.ts';
-import { EMPTY } from '../string.ts';
 import { bootstrapDemoVault } from './demo-vault-helper.ts';
 
 const CODE_SCRIPT_TOOLKIT_PLUGIN_ID = 'fix-require-modules';

@@ -37,12 +37,12 @@ import type {
   PrismModule
 } from '@obsidian-typings/obsidian-public-latest';
 
+import { throwExpression } from '@mnaoumov/typescript-lib/error';
 import { loadPrism } from '@obsidian-typings/obsidian-public-latest/implementations';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- We need to import `CodeHighlighterComponent` to use it in the tsdocs.
 import type { CodeHighlighterComponent } from '../setting-components/code-highlighter-component.ts';
 
-import { throwExpression } from '../../error.ts';
 import { ComponentEx } from './component-ex.ts';
 
 /**

@@ -88,6 +88,7 @@ import type {
   Plugin
 } from 'obsidian';
 
+import { convertAsyncToSync } from '@mnaoumov/typescript-lib/async';
 import { satisfies as satisfiesVersion } from 'compare-versions';
 import {
   ButtonComponent,
@@ -101,7 +102,6 @@ import type {
 } from '../plugin/plugin-lifecycle-events.ts';
 import type { PluginNoticeComponent } from './plugin-notice-component.ts';
 
-import { convertAsyncToSync } from '../../async.ts';
 import { disableCommunityPlugin } from '../community-plugins.ts';
 import { CssClass } from '../css-class.ts';
 import {

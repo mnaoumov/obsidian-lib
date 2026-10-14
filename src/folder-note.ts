@@ -23,10 +23,10 @@ import type {
   TFolder
 } from 'obsidian';
 
+import { join } from '@mnaoumov/typescript-lib/path';
+import { replaceAll } from '@mnaoumov/typescript-lib/string';
 import { normalizePath } from 'obsidian';
 
-import { join } from '../path.ts';
-import { replaceAll } from '../string.ts';
 import { MARKDOWN_FILE_EXTENSION } from './file-system.ts';
 
 /**

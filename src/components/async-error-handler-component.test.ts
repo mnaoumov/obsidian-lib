@@ -1,5 +1,9 @@
 import type { App as AppOriginal } from 'obsidian';
 
+import { CallbackDisposable } from '@mnaoumov/typescript-lib/disposable';
+import { noop } from '@mnaoumov/typescript-lib/function';
+import { castTo } from '@mnaoumov/typescript-lib/object-utils';
+import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import {
   describe,
   expect,
@@ -7,10 +11,6 @@ import {
   vi
 } from 'vitest';
 
-import { CallbackDisposable } from '../../disposable.ts';
-import { noop } from '../../function.ts';
-import { castTo } from '../../object-utils.ts';
-import { strictProxy } from '../../strict-proxy.ts';
 import { AsyncErrorHandlerComponent } from './async-error-handler-component.ts';
 import { PluginNoticeComponent } from './plugin-notice-component.ts';
 
@@ -31,7 +31,7 @@ const mocks = vi.hoisted(() => ({
   )
 }));
 
-vi.mock('../../error.ts', () => ({
+vi.mock('@mnaoumov/typescript-lib/error', () => ({
   registerAsyncErrorEventHandler: mocks.registerAsyncErrorEventHandler
 }));
 

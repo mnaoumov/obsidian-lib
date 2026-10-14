@@ -9,6 +9,11 @@
 import type { App as AppOriginal } from 'obsidian';
 
 import {
+  noop,
+  noopAsync
+} from '@mnaoumov/typescript-lib/function';
+import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
+import {
   afterEach,
   beforeEach,
   describe,
@@ -21,11 +26,6 @@ import type { AlertParams } from '../modals/alert.ts';
 import type { PluginSettingsComponentBase } from './plugin-settings-component.ts';
 import type { ReleaseNotes } from './release-notes-component.ts';
 
-import {
-  noop,
-  noopAsync
-} from '../../function.ts';
-import { strictProxy } from '../../strict-proxy.ts';
 import { ReleaseNotesComponent } from './release-notes-component.ts';
 
 interface ComponentContext {

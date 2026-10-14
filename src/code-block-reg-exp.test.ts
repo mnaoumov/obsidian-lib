@@ -1,15 +1,15 @@
 // @vitest-environment jsdom
 
 import {
+  getMandatoryNamedGroup,
+  getOptionalNamedGroup
+} from '@mnaoumov/typescript-lib/reg-exp';
+import {
   describe,
   expect,
   it
 } from 'vitest';
 
-import {
-  getMandatoryNamedGroup,
-  getOptionalNamedGroup
-} from '../reg-exp.ts';
 import { createCodeBlockRegExp } from './code-block-reg-exp.ts';
 
 interface ParsedCodeBlock {

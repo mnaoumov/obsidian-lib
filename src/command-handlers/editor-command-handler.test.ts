@@ -4,6 +4,7 @@
  * Tests for {@link EditorCommandHandler}.
  */
 
+import type { DisposableEx } from '@mnaoumov/typescript-lib/disposable';
 import type {
   Editor as EditorOriginal,
   MarkdownFileInfo as MarkdownFileInfoOriginal,
@@ -11,6 +12,8 @@ import type {
   Menu as MenuOriginal
 } from 'obsidian';
 
+import { noopAsync } from '@mnaoumov/typescript-lib/function';
+import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import {
   describe,
   expect,
@@ -18,7 +21,6 @@ import {
   vi
 } from 'vitest';
 
-import type { DisposableEx } from '../../disposable.ts';
 import type {
   EditorMenuEventHandler,
   MarkdownViewportMenuEventHandler
@@ -26,8 +28,6 @@ import type {
 import type { CommandHandlerRegistrationContext } from './command-handler.ts';
 import type { EditorCommandHandlerConstructorParams } from './editor-command-handler.ts';
 
-import { noopAsync } from '../../function.ts';
-import { strictProxy } from '../../strict-proxy.ts';
 import { EditorCommandHandler } from './editor-command-handler.ts';
 
 interface MockContext {

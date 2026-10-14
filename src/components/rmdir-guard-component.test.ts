@@ -1,5 +1,6 @@
 import type { App as AppOriginal } from 'obsidian';
 
+import { assertNonNullable } from '@mnaoumov/typescript-lib/type-guards';
 import { App } from 'obsidian-test-mocks/obsidian';
 import {
   afterEach,
@@ -10,7 +11,6 @@ import {
   vi
 } from 'vitest';
 
-import { assertNonNullable } from '../../type-guards.ts';
 import {
   NOT_EMPTY_DIRECTORY_ERROR_CODE,
   RmdirGuardComponent

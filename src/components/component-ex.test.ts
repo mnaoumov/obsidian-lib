@@ -4,6 +4,13 @@
  * Tests for {@link ComponentEx}.
  */
 
+import { dispose } from '@mnaoumov/typescript-lib/disposable';
+import {
+  ErrorWrapper,
+  SilentError
+} from '@mnaoumov/typescript-lib/error';
+import { noopAsync } from '@mnaoumov/typescript-lib/function';
+import { assertNonNullable } from '@mnaoumov/typescript-lib/type-guards';
 import { Component } from 'obsidian';
 import {
   describe,
@@ -12,13 +19,6 @@ import {
   vi
 } from 'vitest';
 
-import { dispose } from '../../disposable.ts';
-import {
-  ErrorWrapper,
-  SilentError
-} from '../../error.ts';
-import { noopAsync } from '../../function.ts';
-import { assertNonNullable } from '../../type-guards.ts';
 import { ComponentEx } from './component-ex.ts';
 
 // eslint-disable-next-line obsidian-dev-utils/require-component-suffix -- Testing ComponentEx.

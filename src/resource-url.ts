@@ -6,10 +6,9 @@
 
 import type { App } from 'obsidian';
 
+import { toPosixPath } from '@mnaoumov/typescript-lib/path';
 import { getDataAdapterEx } from '@obsidian-typings/obsidian-public-latest/implementations';
 import { Platform } from 'obsidian';
-
-import { toPosixPath } from '../path.ts';
 
 /**
  * Parameters for {@link relativePathToResourceUrl}.

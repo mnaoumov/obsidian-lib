@@ -4,6 +4,8 @@
  * Contains utility types and functions for handling file changes in Obsidian.
  */
 
+import type { GenericObject } from '@mnaoumov/typescript-lib/type-guards';
+import type { ValueProvider } from '@mnaoumov/typescript-lib/value-provider';
 import type {
   App,
   FrontmatterLinkCache,
@@ -12,13 +14,19 @@ import type {
 } from 'obsidian';
 import type { CanvasData } from 'obsidian/canvas.d.ts';
 
+import { printError } from '@mnaoumov/typescript-lib/error';
+import {
+  getNestedPropertyValue,
+  isDeepEqual,
+  normalizeOptionalProperties,
+  setNestedPropertyValue
+} from '@mnaoumov/typescript-lib/object-utils';
+import { resolveValue } from '@mnaoumov/typescript-lib/value-provider';
 import {
   isFrontmatterLinkCache,
   isReferenceCache
 } from '@obsidian-typings/obsidian-public-latest/implementations';
 
-import type { GenericObject } from '../type-guards.ts';
-import type { ValueProvider } from '../value-provider.ts';
 import type { PathOrFile } from './file-system.ts';
 import type { FrontmatterLinkCacheWithOffsets } from './frontmatter-link-cache-with-offsets.ts';
 import type { CombinedFrontmatter } from './frontmatter.ts';
@@ -33,15 +41,7 @@ import type {
   ProcessParams
 } from './vault.ts';
 
-import { getLibDebugger } from '../debug.ts';
-import { printError } from '../error.ts';
-import {
-  getNestedPropertyValue,
-  isDeepEqual,
-  normalizeOptionalProperties,
-  setNestedPropertyValue
-} from '../object-utils.ts';
-import { resolveValue } from '../value-provider.ts';
+import { getObsidianLibDebugger } from './debug.ts';
 import {
   getPath,
   isCanvasFile
@@ -465,7 +465,7 @@ async function applyCanvasChanges(params: ApplyCanvasChangesParams): Promise<nul
   // Returning the content unchanged rather than `null` completes the operation without a write: the
   // refusal is permanent for this content, and `null` would ask `process()` to retry it forever.
   if (!Array.isArray(canvasData.nodes) || !Array.isArray(canvasData.edges)) {
-    getLibDebugger('FileChange:applyCanvasChanges')('Not a valid canvas; skipping rewrite', { path });
+    getObsidianLibDebugger('FileChange:applyCanvasChanges')('Not a valid canvas; skipping rewrite', { path });
     return content;
   }
 
@@ -493,7 +493,7 @@ async function applyCanvasChanges(params: ApplyCanvasChangesParams): Promise<nul
 
     if (isCanvasFileNodeChange(change)) {
       if (node.file !== change.oldContent) {
-        getLibDebugger('FileChange:applyCanvasChanges')('Content mismatch', {
+        getObsidianLibDebugger('FileChange:applyCanvasChanges')('Content mismatch', {
           actualContent: node.file as string | undefined,
           expectedContent: change.oldContent,
           nodeIndex: change.reference.nodeIndex,
@@ -705,7 +705,7 @@ function areChangesValid(params: ValidateChangesParams): boolean {
     frontmatter,
     path
   } = params;
-  const validateChangesDebugger = getLibDebugger('FileChange:validateChanges');
+  const validateChangesDebugger = getObsidianLibDebugger('FileChange:validateChanges');
   for (const change of changes) {
     /* v8 ignore start -- All change types are handled; the false branch leads to other else-if checks. */
     if (isContentChange(change)) {

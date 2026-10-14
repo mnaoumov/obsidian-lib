@@ -9,14 +9,14 @@ import type {
   Plugin as PluginOriginal
 } from 'obsidian';
 
+import { castTo } from '@mnaoumov/typescript-lib/object-utils';
+import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import {
   describe,
   expect,
   it
 } from 'vitest';
 
-import { castTo } from '../object-utils.ts';
-import { strictProxy } from '../strict-proxy.ts';
 import {
   NOTEBOOK_NAVIGATOR_PLUGIN_ID,
   resolveNotebookNavigatorApi

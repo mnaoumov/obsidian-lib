@@ -7,6 +7,10 @@ import type {
   EventRef
 } from 'obsidian';
 
+import { startAsyncErrorIgnoreContext } from '@mnaoumov/typescript-lib/error';
+import { noopAsync } from '@mnaoumov/typescript-lib/function';
+import { castTo } from '@mnaoumov/typescript-lib/object-utils';
+import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import {
   describe,
   expect,
@@ -14,10 +18,6 @@ import {
   vi
 } from 'vitest';
 
-import { startAsyncErrorIgnoreContext } from '../../error.ts';
-import { noopAsync } from '../../function.ts';
-import { castTo } from '../../object-utils.ts';
-import { strictProxy } from '../../strict-proxy.ts';
 import { CorePluginToggleComponent } from './core-plugin-toggle-component.ts';
 
 interface CorePluginStub {

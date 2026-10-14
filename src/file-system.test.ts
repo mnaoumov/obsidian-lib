@@ -4,6 +4,9 @@ import type {
   TAbstractFile
 } from 'obsidian';
 
+import { noopAsync } from '@mnaoumov/typescript-lib/function';
+import { castTo } from '@mnaoumov/typescript-lib/object-utils';
+import { assertNonNullable } from '@mnaoumov/typescript-lib/type-guards';
 import {
   App,
   TFile,
@@ -18,9 +21,6 @@ import {
   vi
 } from 'vitest';
 
-import { noopAsync } from '../function.ts';
-import { castTo } from '../object-utils.ts';
-import { assertNonNullable } from '../type-guards.ts';
 import { CaseInsensitiveFileIndexComponent } from './components/case-insensitive-file-index-component.ts';
 import {
   asArrayOfFiles,

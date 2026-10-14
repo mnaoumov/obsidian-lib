@@ -1,13 +1,13 @@
 // @vitest-environment jsdom
 import type { FrontmatterLinkCache as FrontmatterLinkCacheOriginal } from 'obsidian';
 
+import { assertNonNullable } from '@mnaoumov/typescript-lib/type-guards';
 import {
   describe,
   expect,
   it
 } from 'vitest';
 
-import { assertNonNullable } from '../type-guards.ts';
 import {
   escapeAlias,
   isParseLinkFrontmatterReference,

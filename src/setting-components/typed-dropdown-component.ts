@@ -4,12 +4,13 @@
  * Typed dropdown component.
  */
 
+import type { ValidatorElement } from '@mnaoumov/typescript-lib/html-element';
+
 import {
   DropdownComponent,
   ValueComponent
 } from 'obsidian';
 
-import type { ValidatorElement } from '../../html-element.ts';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- We need to import `initPluginContext` to use it in the tsdocs.
 import type { initPluginContext } from '../plugin/plugin-context.ts';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- We need to import `SettingEx` to use it in the tsdocs.

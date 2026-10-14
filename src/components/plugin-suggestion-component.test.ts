@@ -12,6 +12,13 @@ import type {
 } from 'obsidian';
 import type { ButtonComponent } from 'obsidian-test-mocks/obsidian';
 
+import {
+  noop,
+  noopAsync
+} from '@mnaoumov/typescript-lib/function';
+import { castTo } from '@mnaoumov/typescript-lib/object-utils';
+import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
+import { mockImplementation } from '@mnaoumov/typescript-test-toolkit/test-helpers/mock-implementation';
 import { ButtonComponent as ButtonComponentOriginal } from 'obsidian';
 import {
   beforeEach,
@@ -24,13 +31,6 @@ import {
 import type { PluginNoticeComponent } from './plugin-notice-component.ts';
 import type { PluginSettingsComponentBase } from './plugin-settings-component.ts';
 
-import {
-  noop,
-  noopAsync
-} from '../../function.ts';
-import { castTo } from '../../object-utils.ts';
-import { strictProxy } from '../../strict-proxy.ts';
-import { mockImplementation } from '../../test-helpers/mock-implementation.ts';
 import {
   PluginSuggestionComponent,
   SuggestedPluginState

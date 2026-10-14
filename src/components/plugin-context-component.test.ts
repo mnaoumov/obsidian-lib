@@ -1,5 +1,7 @@
 import type { App as AppOriginal } from 'obsidian';
 
+import { Library } from '@mnaoumov/typescript-lib/library';
+import { assertNonNullable } from '@mnaoumov/typescript-lib/type-guards';
 import { App } from 'obsidian-test-mocks/obsidian';
 import {
   beforeEach,
@@ -9,8 +11,7 @@ import {
   vi
 } from 'vitest';
 
-import { Library } from '../../library.ts';
-import { assertNonNullable } from '../../type-guards.ts';
+import { ObsidianLibrary } from '../library.ts';
 import { PluginContextComponent } from './plugin-context-component.ts';
 
 const mocks = vi.hoisted(() => ({
@@ -57,16 +58,18 @@ describe('PluginContextComponent', () => {
   });
 
   it('should reset the Library on unload so a reload can re-initialize', () => {
-    Library.init({ cssClassScope: 'test-plugin', debugPrefixNamespace: 'test-plugin:', shouldPrintStackTrace: true });
+    Library.init({ debugPrefixNamespace: 'test-plugin:', shouldPrintStackTrace: true });
+    ObsidianLibrary.init({ cssClassScope: 'test-plugin' });
     const component = new PluginContextComponent({ app, pluginId: 'test-plugin' });
     const registerSpy = vi.spyOn(component, 'register');
     component.onload();
 
-    // `initDebugController` is mocked, so the only registered cleanup is the Library reset.
+    // `initDebugController` is mocked, so the only registered cleanup is the library reset.
     const cleanup = registerSpy.mock.calls[0]?.[0];
     assertNonNullable(cleanup);
     cleanup();
 
-    expect(Library.cssClassScope).toBe('');
+    expect(Library.debugPrefixNamespace).toBe('');
+    expect(ObsidianLibrary.cssClassScope).toBe('');
   });
 });

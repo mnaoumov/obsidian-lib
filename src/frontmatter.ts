@@ -4,19 +4,19 @@
  * This module provides utility functions for processing and managing YAML front matter in Obsidian notes.
  */
 
+import type { GenericObject } from '@mnaoumov/typescript-lib/type-guards';
+import type { ValueWrapper } from '@mnaoumov/typescript-lib/value-wrapper';
+
+import { filterInPlace } from '@mnaoumov/typescript-lib/array';
+import { printError } from '@mnaoumov/typescript-lib/error';
+import { insertAt } from '@mnaoumov/typescript-lib/string';
 import {
   getFrontMatterInfo,
   parseYaml,
   stringifyYaml
 } from 'obsidian';
 
-import type { GenericObject } from '../type-guards.ts';
-import type { ValueWrapper } from '../value-wrapper.ts';
-
-import { filterInPlace } from '../array.ts';
-import { printError } from '../error.ts';
-import { getObsidianDevUtilsState } from '../obsidian-dev-utils-state.ts';
-import { insertAt } from '../string.ts';
+import { getObsidianDevUtilsState } from './obsidian-dev-utils-state.ts';
 
 /**
  * A combined front matter of a document.

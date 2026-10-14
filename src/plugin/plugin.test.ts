@@ -4,6 +4,9 @@ import type {
   PluginManifest
 } from 'obsidian';
 
+import { noopAsync } from '@mnaoumov/typescript-lib/function';
+import { castTo } from '@mnaoumov/typescript-lib/object-utils';
+import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import { Component } from 'obsidian';
 import { App } from 'obsidian-test-mocks/obsidian';
 import {
@@ -23,9 +26,6 @@ import type { TranslationsMap } from '../i18n/i18n.ts';
 import type { PluginApiDeclaration } from './plugin-api.ts';
 import type { PluginLifecycleEventPayload } from './plugin-lifecycle-events.ts';
 
-import { noopAsync } from '../../function.ts';
-import { castTo } from '../../object-utils.ts';
-import { strictProxy } from '../../strict-proxy.ts';
 import { FileCommandHandler } from '../command-handlers/file-command-handler.ts';
 import { ComponentEx } from '../components/component-ex.ts';
 import { PluginConflictSeverity } from '../components/plugin-gate-component.ts';
@@ -44,8 +44,8 @@ import {
   showErrorAndDisablePlugin
 } from './plugin.ts';
 
-vi.mock('../../error.ts', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../error.ts')>();
+vi.mock('@mnaoumov/typescript-lib/error', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@mnaoumov/typescript-lib/error')>();
   return {
     ...actual,
     printError: vi.fn(),
@@ -82,19 +82,19 @@ vi.mock('../i18n/locales/translations-map.ts', () => ({
   defaultTranslationsMap: {}
 }));
 
-vi.mock('../../debug.ts', () => ({
+vi.mock('../debug.ts', () => ({
   getDebugController: vi.fn(() => ({})),
   getDebugger: vi.fn(() => vi.fn()),
-  getLibDebugger: vi.fn(() => vi.fn()),
+  getObsidianLibDebugger: vi.fn(() => vi.fn()),
   showInitialDebugMessage: vi.fn()
 }));
 
-vi.mock('../../generated-during-build.ts', () => ({
+vi.mock('../generated-during-build.ts', () => ({
   LIBRARY_STYLES: '',
   LIBRARY_VERSION: '1.0.0'
 }));
 
-vi.mock('../../obsidian-dev-utils-state.ts', () => ({
+vi.mock('../obsidian-dev-utils-state.ts', () => ({
   getObsidianDevUtilsState: vi.fn((_key: string, defaultValue: unknown) => ({ value: defaultValue })),
   shareTypescriptLibStateWithObsidianDevUtilsState: vi.fn()
 }));
@@ -137,8 +137,8 @@ vi.mock('./plugin-api.ts', () => ({
   watchPluginApi: mockWatchPluginApi
 }));
 
-vi.mock('../../async.ts', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../async.ts')>();
+vi.mock('@mnaoumov/typescript-lib/async', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@mnaoumov/typescript-lib/async')>();
   return {
     ...actual,
     invokeAsyncSafelyAfterDelay: vi.fn((

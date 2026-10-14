@@ -1,3 +1,11 @@
+import type { AsyncEventRef } from '@mnaoumov/typescript-lib/async-events';
+
+import {
+  noop,
+  noopAsync
+} from '@mnaoumov/typescript-lib/function';
+import { castTo } from '@mnaoumov/typescript-lib/object-utils';
+import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import {
   beforeEach,
   describe,
@@ -6,20 +14,13 @@ import {
   vi
 } from 'vitest';
 
-import type { AsyncEventRef } from '../../async-events.ts';
 import type { DataHandler } from '../data-handler.ts';
 import type { PluginEventSource } from '../plugin/plugin-event-source.ts';
 
-import {
-  noop,
-  noopAsync
-} from '../../function.ts';
-import { castTo } from '../../object-utils.ts';
-import { strictProxy } from '../../strict-proxy.ts';
 import { PluginSettingsComponentBase } from './plugin-settings-component.ts';
 
 vi.mock('../../../debug.ts', () => ({
-  getLibDebugger: vi.fn(() => vi.fn())
+  getObsidianLibDebugger: vi.fn(() => vi.fn())
 }));
 
 class JsonRoundTripDataHandler implements DataHandler {

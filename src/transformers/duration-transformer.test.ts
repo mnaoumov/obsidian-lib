@@ -1,11 +1,11 @@
+import type { GenericObject } from '@mnaoumov/typescript-lib/type-guards';
+
 import { moment } from 'obsidian';
 import {
   describe,
   expect,
   it
 } from 'vitest';
-
-import type { GenericObject } from '../type-guards.ts';
 
 import { DurationTransformer } from './duration-transformer.ts';
 

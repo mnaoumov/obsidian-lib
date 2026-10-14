@@ -4,9 +4,9 @@
  * Disposable component base class and utilities for `using` declarations.
  */
 
-import { Component } from 'obsidian';
+import type { DisposableEx } from '@mnaoumov/typescript-lib/disposable';
 
-import type { DisposableEx } from '../../disposable.ts';
+import { Component } from 'obsidian';
 
 type DisposableComponentWrapper<TComponent extends Component> = DisposableEx & TComponent;
 

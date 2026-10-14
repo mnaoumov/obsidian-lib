@@ -7,6 +7,8 @@
 import type { App } from 'obsidian';
 import type { CanvasData } from 'obsidian/canvas.d.ts';
 
+import { ensureNonNullable } from '@mnaoumov/typescript-lib/type-guards';
+
 import type { PathOrFile } from './file-system.ts';
 import type { CachedMetadataEx } from './metadata-cache.ts';
 import type {
@@ -15,7 +17,6 @@ import type {
   CanvasTextNodeReference
 } from './reference.ts';
 
-import { ensureNonNullable } from '../type-guards.ts';
 import {
   getLinks,
   parseMetadata

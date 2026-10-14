@@ -1,3 +1,4 @@
+import type { GenericObject } from '@mnaoumov/typescript-lib/type-guards';
 import type { CustomArrayDict } from '@obsidian-typings/obsidian-public-latest';
 import type {
   App,
@@ -10,6 +11,14 @@ import type {
   TFolder
 } from 'obsidian';
 
+import { dispose } from '@mnaoumov/typescript-lib/disposable';
+import { castTo } from '@mnaoumov/typescript-lib/object-utils';
+import {
+  assertNonNullable,
+  ensureGenericObject
+} from '@mnaoumov/typescript-lib/type-guards';
+import { ValueWrapper } from '@mnaoumov/typescript-lib/value-wrapper';
+import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import { CustomArrayDictImpl } from '@obsidian-typings/obsidian-public-latest/implementations';
 import {
   beforeEach,
@@ -19,7 +28,6 @@ import {
   vi
 } from 'vitest';
 
-import type { GenericObject } from '../type-guards.ts';
 import type { RetryWithTimeoutNoticeParams } from './async-with-notice.ts';
 import type {
   GetFileOrNullParams,
@@ -35,15 +43,6 @@ import type {
   ParseLinkReference
 } from './parse-link.ts';
 
-import { dispose } from '../disposable.ts';
-import { castTo } from '../object-utils.ts';
-import { getObsidianDevUtilsState } from '../obsidian-dev-utils-state.ts';
-import { strictProxy } from '../strict-proxy.ts';
-import {
-  assertNonNullable,
-  ensureGenericObject
-} from '../type-guards.ts';
-import { ValueWrapper } from '../value-wrapper.ts';
 import { retryWithTimeoutNotice } from './async-with-notice.ts';
 import { getIndexedBacklinksForFile } from './backlink-index.ts';
 import {
@@ -69,6 +68,7 @@ import {
   unregisterFileCacheForNonExistingFile,
   unregisterFiles
 } from './metadata-cache.ts';
+import { getObsidianDevUtilsState } from './obsidian-dev-utils-state.ts';
 import {
   parseLink,
   toParseLinkReference
@@ -82,11 +82,11 @@ interface PathHolder {
   path: string;
 }
 
-vi.mock('../obsidian-dev-utils-state.ts', () => ({
+vi.mock('./obsidian-dev-utils-state.ts', () => ({
   getObsidianDevUtilsState: vi.fn((_key: string, defaultValue: unknown) => ({ value: defaultValue }))
 }));
 
-vi.mock('../obsidian/async-with-notice.ts', () => ({
+vi.mock('./async-with-notice.ts', () => ({
   retryWithTimeoutNotice: vi.fn()
 }));
 
@@ -94,16 +94,16 @@ vi.mock('./backlink-index.ts', () => ({
   getIndexedBacklinksForFile: vi.fn()
 }));
 
-vi.mock('../obsidian/vault.ts', () => ({
+vi.mock('./vault.ts', () => ({
   readSafe: vi.fn(),
   saveNote: vi.fn()
 }));
 
-vi.mock('../obsidian/frontmatter.ts', () => ({
+vi.mock('./frontmatter.ts', () => ({
   parseFrontmatter: vi.fn()
 }));
 
-vi.mock('../obsidian/i18n/i18n.ts', () => ({
+vi.mock('./i18n/i18n.ts', () => ({
   t: vi.fn(($function: (messages: GenericObject) => unknown) => {
     try {
       return $function({ obsidianDevUtils: { metadataCache: { getBacklinksForFilePath: 'mock' } } });
@@ -113,7 +113,7 @@ vi.mock('../obsidian/i18n/i18n.ts', () => ({
   })
 }));
 
-vi.mock('../obsidian/file-system.ts', () => ({
+vi.mock('./file-system.ts', () => ({
   getFile: vi.fn((params: GetFileParams) => {
     const { pathOrFile } = params;
     return typeof pathOrFile === 'string' ? { deleted: true, name: pathOrFile.split('/').pop(), path: pathOrFile } : pathOrFile;
@@ -128,7 +128,7 @@ vi.mock('../obsidian/file-system.ts', () => ({
   isFile: vi.fn((file: unknown) => file !== null && typeof file === 'object' && 'name' in (file as GenericObject) && !('children' in (file as GenericObject)))
 }));
 
-vi.mock('../obsidian/frontmatter-link-cache-with-offsets.ts', () => ({
+vi.mock('./frontmatter-link-cache-with-offsets.ts', () => ({
   isFrontmatterLinkCacheWithOffsets: vi.fn((reference: unknown) => {
     const r = reference as GenericObject;
     return r['startOffset'] !== undefined && r['endOffset'] !== undefined && r['key'] !== undefined;

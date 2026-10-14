@@ -1,5 +1,15 @@
 // @vitest-environment jsdom
 
+import type { GenericAsyncFunction } from '@mnaoumov/typescript-lib/function';
+
+import {
+  noop,
+  noopAsync
+} from '@mnaoumov/typescript-lib/function';
+import { castTo } from '@mnaoumov/typescript-lib/object-utils';
+import { assertNonNullable } from '@mnaoumov/typescript-lib/type-guards';
+import { waitForAllAsyncOperations } from '@mnaoumov/typescript-test-toolkit/async-operation-tracking';
+import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import {
   afterAll,
   beforeEach,
@@ -9,19 +19,10 @@ import {
   vi
 } from 'vitest';
 
-import type { GenericAsyncFunction } from '../function.ts';
 import type { DataviewInlineApi } from './dataview.ts';
 import type { GetFileParams } from './file-system.ts';
 import type { RelativePathToResourceUrlParams } from './resource-url.ts';
 
-import { waitForAllAsyncOperations } from '../async.ts';
-import {
-  noop,
-  noopAsync
-} from '../function.ts';
-import { castTo } from '../object-utils.ts';
-import { strictProxy } from '../strict-proxy.ts';
-import { assertNonNullable } from '../type-guards.ts';
 import {
   getRenderedContainer,
   insertCodeBlock,
@@ -36,25 +37,25 @@ interface PathHolder {
   path: string;
 }
 
-vi.mock('../error.ts', () => ({
+vi.mock('@mnaoumov/typescript-lib/error', () => ({
   errorToString: vi.fn(String),
   throwExpression: vi.fn((message: unknown) => {
     throw message;
   })
 }));
 
-vi.mock('../obsidian/file-system.ts', () => ({
+vi.mock('./file-system.ts', () => ({
   getFile: vi.fn((params: GetFileParams) => ({ path: params.pathOrFile })),
   getPath: vi.fn((_app: unknown, path: unknown) => typeof path === 'string' ? path : (path as PathHolder).path)
 }));
 
-vi.mock('../obsidian/resource-url.ts', () => ({
+vi.mock('./resource-url.ts', () => ({
   relativePathToResourceUrl: vi.fn(
     (params: RelativePathToResourceUrlParams) => `app://resource/${params.relativePath}`
   )
 }));
 
-vi.mock('../obsidian/i18n/i18n.ts', () => ({
+vi.mock('./i18n/i18n.ts', () => ({
   t: vi.fn(($function: GenericAsyncFunction<unknown[]>, options?: unknown) => {
     try {
       const translations = {

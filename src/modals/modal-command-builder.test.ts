@@ -7,6 +7,9 @@ import type {
   SuggestModal
 } from 'obsidian';
 
+import { castTo } from '@mnaoumov/typescript-lib/object-utils';
+import { ensureNonNullable } from '@mnaoumov/typescript-lib/type-guards';
+import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import {
   DropdownComponent,
   Platform,
@@ -22,9 +25,6 @@ import {
 
 import type { ModalCommandsHost } from './modal-command-builder.ts';
 
-import { castTo } from '../../object-utils.ts';
-import { strictProxy } from '../../strict-proxy.ts';
-import { ensureNonNullable } from '../../type-guards.ts';
 import { CssClass } from '../css-class.ts';
 import {
   ModalCommandBuilder,

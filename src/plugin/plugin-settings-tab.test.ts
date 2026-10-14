@@ -1,4 +1,8 @@
 import type {
+  GenericFunction,
+  GenericVoidFunction
+} from '@mnaoumov/typescript-lib/function';
+import type {
   App as AppOriginal,
   Plugin,
   Setting as SettingApi,
@@ -8,6 +12,12 @@ import type {
   SettingGroup as SettingGroupApi
 } from 'obsidian';
 
+import {
+  noop,
+  noopAsync
+} from '@mnaoumov/typescript-lib/function';
+import { castTo } from '@mnaoumov/typescript-lib/object-utils';
+import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import {
   App,
   Setting,
@@ -21,10 +31,6 @@ import {
   vi
 } from 'vitest';
 
-import type {
-  GenericFunction,
-  GenericVoidFunction
-} from '../../function.ts';
 import type { PluginSettingsComponentBase } from '../components/plugin-settings-component.ts';
 import type { ValueComponentWithChangeTracking } from '../setting-components/value-component-with-change-tracking.ts';
 import type {
@@ -32,12 +38,6 @@ import type {
   PluginSettingsTabBaseSettingGroupExParams
 } from './plugin-settings-tab.ts';
 
-import {
-  noop,
-  noopAsync
-} from '../../function.ts';
-import { castTo } from '../../object-utils.ts';
-import { strictProxy } from '../../strict-proxy.ts';
 import { SettingEx } from '../setting-ex.ts';
 import {
   PluginSettingsTabBase,

@@ -7,6 +7,7 @@
 
 /// <reference types="obsidian-integration-testing/vitest/typings" />
 
+import type { GenericObject } from '@mnaoumov/typescript-lib/type-guards';
 import type { TAbstractFile } from 'obsidian';
 
 import { evalInObsidian } from 'obsidian-integration-testing';
@@ -15,8 +16,6 @@ import {
   expect,
   it
 } from 'vitest';
-
-import type { GenericObject } from '../type-guards.ts';
 
 /**
  * What the `afterReveal` case reports back: the order the reveal and the hook ran in, and whether the

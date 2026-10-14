@@ -6,6 +6,7 @@ import type {
   TFile
 } from 'obsidian';
 
+import { castTo } from '@mnaoumov/typescript-lib/object-utils';
 import {
   beforeEach,
   describe,
@@ -14,7 +15,6 @@ import {
   vi
 } from 'vitest';
 
-import { castTo } from '../object-utils.ts';
 import { getIndexedBacklinksForFile } from './backlink-index.ts';
 
 interface CallCounter {

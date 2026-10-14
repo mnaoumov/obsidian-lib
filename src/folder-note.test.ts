@@ -4,6 +4,8 @@ import type {
   TFolder
 } from 'obsidian';
 
+import { castTo } from '@mnaoumov/typescript-lib/object-utils';
+import { ensureNonNullable } from '@mnaoumov/typescript-lib/type-guards';
 import { App } from 'obsidian-test-mocks/obsidian';
 import {
   describe,
@@ -13,8 +15,6 @@ import {
 
 import type { FolderNoteConfig } from './folder-note.ts';
 
-import { castTo } from '../object-utils.ts';
-import { ensureNonNullable } from '../type-guards.ts';
 import {
   FOLDER_NOTES_PLUGIN_ID,
   FolderNoteLocation,

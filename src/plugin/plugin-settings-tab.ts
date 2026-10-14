@@ -5,6 +5,7 @@
  * It provides a utility method to bind value components to plugin settings and handle changes.
  */
 
+import type { StringKeys } from '@mnaoumov/typescript-lib/type';
 import type {
   Debouncer,
   Plugin,
@@ -22,12 +23,26 @@ import type {
 } from 'type-fest';
 
 import {
+  convertAsyncToSync,
+  invokeAsyncSafely
+} from '@mnaoumov/typescript-lib/async';
+import { mixinAsyncEvents } from '@mnaoumov/typescript-lib/async-events';
+import {
+  noop,
+  noopAsync
+} from '@mnaoumov/typescript-lib/function';
+import {
+  castTo,
+  isDeepEqual,
+  normalizeOptionalProperties
+} from '@mnaoumov/typescript-lib/object-utils';
+import { assertNonNullable } from '@mnaoumov/typescript-lib/type-guards';
+import {
   debounce,
   PluginSettingTab,
   setTooltip
 } from 'obsidian';
 
-import type { StringKeys } from '../../type.ts';
 import type {
   PluginSettingsComponentBase,
   ReadonlyPluginSettings,
@@ -37,21 +52,6 @@ import type { ValueComponentWithChangeTracking } from '../setting-components/val
 import type { SettingEx } from '../setting-ex.ts';
 import type { ValidationMessageHolder } from '../validation.ts';
 
-import { mixinAsyncEvents } from '../../async-events.ts';
-import {
-  convertAsyncToSync,
-  invokeAsyncSafely
-} from '../../async.ts';
-import {
-  noop,
-  noopAsync
-} from '../../function.ts';
-import {
-  castTo,
-  isDeepEqual,
-  normalizeOptionalProperties
-} from '../../object-utils.ts';
-import { assertNonNullable } from '../../type-guards.ts';
 import { registerAsyncEvent } from '../components/async-events-component.ts';
 import { ComponentEx } from '../components/component-ex.ts';
 import { CssClass } from '../css-class.ts';

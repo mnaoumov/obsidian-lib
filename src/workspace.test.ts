@@ -5,13 +5,13 @@ import type {
   WorkspaceRoot
 } from 'obsidian';
 
+import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import {
   describe,
   expect,
   it
 } from 'vitest';
 
-import { strictProxy } from '../strict-proxy.ts';
 import {
   ensureLayoutReady,
   getAllContainers,

@@ -1,8 +1,23 @@
 // @vitest-environment jsdom
 
+import type { TimeoutContext } from '@mnaoumov/typescript-lib/async';
+import type { GenericObject } from '@mnaoumov/typescript-lib/type-guards';
+import type { ValueProvider } from '@mnaoumov/typescript-lib/value-provider';
 import type { Debugger } from 'debug';
 import type { Notice as NoticeOriginal } from 'obsidian';
 
+import {
+  retryWithTimeout,
+  runWithTimeout
+} from '@mnaoumov/typescript-lib/async';
+import { getDebugger } from '@mnaoumov/typescript-lib/debug';
+import { noopAsync } from '@mnaoumov/typescript-lib/function';
+import { castTo } from '@mnaoumov/typescript-lib/object-utils';
+import {
+  assertNonNullable,
+  ensureNonNullable
+} from '@mnaoumov/typescript-lib/type-guards';
+import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import {
   beforeEach,
   describe,
@@ -11,23 +26,8 @@ import {
   vi
 } from 'vitest';
 
-import type { TimeoutContext } from '../async.ts';
-import type { GenericObject } from '../type-guards.ts';
-import type { ValueProvider } from '../value-provider.ts';
 import type { PluginNoticeComponent } from './components/plugin-notice-component.ts';
 
-import {
-  retryWithTimeout,
-  runWithTimeout
-} from '../async.ts';
-import { getDebugger } from '../debug.ts';
-import { noopAsync } from '../function.ts';
-import { castTo } from '../object-utils.ts';
-import { strictProxy } from '../strict-proxy.ts';
-import {
-  assertNonNullable,
-  ensureNonNullable
-} from '../type-guards.ts';
 import {
   retryWithTimeoutNotice,
   runWithTimeoutNotice
@@ -46,7 +46,7 @@ const asyncMock = vi.hoisted(() => {
   };
 });
 
-vi.mock('../async.ts', () => ({
+vi.mock('@mnaoumov/typescript-lib/async', () => ({
   invokeAsyncSafely: asyncMock.invokeAsyncSafely,
   retryWithTimeout: vi.fn(async (options: GenericObject) => {
     if (typeof options['_captureOnTimeout'] === 'function') {
@@ -65,11 +65,11 @@ vi.mock('../async.ts', () => ({
   })
 }));
 
-vi.mock('../debug.ts', () => ({
+vi.mock('@mnaoumov/typescript-lib/debug', () => ({
   getDebugger: vi.fn(() => vi.fn())
 }));
 
-vi.mock('../obsidian/i18n/i18n.ts', () => ({
+vi.mock('./i18n/i18n.ts', () => ({
   t: vi.fn((selectorFunction: (translations: GenericObject) => string, _options?: GenericObject) => {
     const translations = {
       obsidianDevUtils: {

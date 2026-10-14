@@ -1,3 +1,7 @@
+import type { GenericObject } from '@mnaoumov/typescript-lib/type-guards';
+
+import { castTo } from '@mnaoumov/typescript-lib/object-utils';
+import { ensureNonNullable } from '@mnaoumov/typescript-lib/type-guards';
 import { stringifyYaml } from 'obsidian';
 import {
   afterEach,
@@ -6,10 +10,6 @@ import {
   it
 } from 'vitest';
 
-import type { GenericObject } from '../type-guards.ts';
-
-import { castTo } from '../object-utils.ts';
-import { ensureNonNullable } from '../type-guards.ts';
 import {
   enableFrontmatterFormattingPreservation,
   preserveFrontmatterFormatting

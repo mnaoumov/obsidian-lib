@@ -14,16 +14,16 @@ import type { Notice } from 'obsidian';
 
 import { Plugin } from 'obsidian';
 
-import type { PluginNoticeComponentShowNoticeOptions } from '../../src/obsidian/components/plugin-notice-component.ts';
-import type { PluginApiRef } from '../../src/obsidian/plugin/plugin-api.ts';
+import type { PluginNoticeComponentShowNoticeOptions } from '@mnaoumov/obsidian-lib/components/plugin-notice-component';
+import type { PluginApiRef } from '@mnaoumov/obsidian-lib/plugin/plugin-api';
 import type { GreeterApi } from '../shared.ts';
 
-import { getDebugController } from '../../src/debug.ts';
-import { noopAsync } from '../../src/function.ts';
-import { castTo } from '../../src/object-utils.ts';
-import { PluginGateComponent } from '../../src/obsidian/components/plugin-gate-component.ts';
-import { PluginNoticeComponent } from '../../src/obsidian/components/plugin-notice-component.ts';
-import { watchPluginApi } from '../../src/obsidian/plugin/plugin-api.ts';
+import { PluginGateComponent } from '@mnaoumov/obsidian-lib/components/plugin-gate-component';
+import { PluginNoticeComponent } from '@mnaoumov/obsidian-lib/components/plugin-notice-component';
+import { watchPluginApi } from '@mnaoumov/obsidian-lib/plugin/plugin-api';
+import { getDebugController } from '@mnaoumov/typescript-lib/debug';
+import { noopAsync } from '@mnaoumov/typescript-lib/function';
+import { castTo } from '@mnaoumov/typescript-lib/object-utils';
 import {
   GREETER_CONTRACT,
   PROVIDER_PLUGIN_ID

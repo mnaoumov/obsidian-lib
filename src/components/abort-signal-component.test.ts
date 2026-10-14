@@ -1,10 +1,10 @@
+import { SilentError } from '@mnaoumov/typescript-lib/error';
 import {
   describe,
   expect,
   it
 } from 'vitest';
 
-import { SilentError } from '../../error.ts';
 import { AbortSignalComponent } from './abort-signal-component.ts';
 
 describe('AbortSignalComponent', () => {

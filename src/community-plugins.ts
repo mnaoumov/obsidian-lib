@@ -19,7 +19,7 @@ import type {
 
 import { requestUrl } from 'obsidian';
 
-import { getObsidianDevUtilsState } from '../obsidian-dev-utils-state.ts';
+import { getObsidianDevUtilsState } from './obsidian-dev-utils-state.ts';
 
 /**
  * Selects a community plugin either by its id ({@link CommunityPluginByIdRef}) or by its display name

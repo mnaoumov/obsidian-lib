@@ -10,9 +10,8 @@ import type {
 } from 'obsidian';
 import type { Promisable } from 'type-fest';
 
+import { normalizePromisable } from '@mnaoumov/typescript-lib/async';
 import { Plugin } from 'obsidian';
-
-import { normalizePromisable } from '../async.ts';
 
 /**
  * Registers CLI handlers.

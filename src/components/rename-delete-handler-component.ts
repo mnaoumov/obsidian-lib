@@ -17,6 +17,19 @@ import type {
   TFolder
 } from 'obsidian';
 
+import { filterInPlace } from '@mnaoumov/typescript-lib/array';
+import { printError } from '@mnaoumov/typescript-lib/error';
+import {
+  normalizeOptionalProperties,
+  toJson
+} from '@mnaoumov/typescript-lib/object-utils';
+import {
+  basename,
+  dirname,
+  extname,
+  join,
+  relative
+} from '@mnaoumov/typescript-lib/path';
 /* v8 ignore start -- Deeply coupled to Obsidian runtime; requires running vault for meaningful testing. */
 import {
   getDataAdapterEx,
@@ -39,21 +52,6 @@ import type { RescueStillUsedFileParams } from '../vault-delete.ts';
 import type { AbortSignalComponent } from './abort-signal-component.ts';
 import type { PluginNoticeComponent } from './plugin-notice-component.ts';
 
-import { filterInPlace } from '../../array.ts';
-import { getLibDebugger } from '../../debug.ts';
-import { printError } from '../../error.ts';
-import {
-  normalizeOptionalProperties,
-  toJson
-} from '../../object-utils.ts';
-import { getObsidianDevUtilsState } from '../../obsidian-dev-utils-state.ts';
-import {
-  basename,
-  dirname,
-  extname,
-  join,
-  relative
-} from '../../path.ts';
 import {
   AttachmentPathContext,
   getAttachmentFilePath,
@@ -61,6 +59,7 @@ import {
   hasOwnAttachmentFolder
 } from '../attachment-path.ts';
 import { getCanvasReferences } from '../canvas.ts';
+import { getObsidianLibDebugger } from '../debug.ts';
 import { waitForPendingLinkUpdates } from '../file-manager.ts';
 import {
   CANVAS_FILE_EXTENSION,
@@ -88,6 +87,7 @@ import {
   registerFileCacheForNonExistingFile,
   registerFiles
 } from '../metadata-cache.ts';
+import { getObsidianDevUtilsState } from '../obsidian-dev-utils-state.ts';
 import { addToQueue } from '../queue.ts';
 import { isResourceLockedForPathByAncestor } from '../resource-lock.ts';
 import { deleteIfNotUsed } from '../vault-delete.ts';
@@ -297,13 +297,13 @@ class DeleteHandler {
 
   public async handle(): Promise<void> {
     this.abortSignal.throwIfAborted();
-    getLibDebugger('RenameDeleteHandler:handleDelete')(`Handle Delete ${this.file.path}`);
+    getObsidianLibDebugger('RenameDeleteHandler:handleDelete')(`Handle Delete ${this.file.path}`);
     if (!isNote(this.file)) {
       return;
     }
 
     if (await this.app.vault.adapter.exists(this.file.path)) {
-      getLibDebugger('RenameDeleteHandler:handleDelete')(
+      getObsidianLibDebugger('RenameDeleteHandler:handleDelete')(
         `Skipping delete handler of ${this.file.path} as the file still exists on disk (index-only removal, not a real deletion).`
       );
       return;
@@ -312,7 +312,7 @@ class DeleteHandler {
     const settings = this.settingsManager.getSettings();
 
     if (settings.isPathIgnored?.(this.file.path)) {
-      getLibDebugger('RenameDeleteHandler:handleDelete')(`Skipping delete handler of ${this.file.path} as the path is ignored.`);
+      getObsidianLibDebugger('RenameDeleteHandler:handleDelete')(`Skipping delete handler of ${this.file.path} as the path is ignored.`);
       return;
     }
 
@@ -549,12 +549,12 @@ class DeleteProtectionPatchComponent extends MonkeyAroundComponent {
     const stillUsedAttachmentPaths = await this.findStillUsedAttachmentPaths(folder, deletedNotePaths, settings);
 
     if (stillUsedAttachmentPaths.length === 0) {
-      getLibDebugger('RenameDeleteHandler:deleteProtection')(`Nothing to protect in ${folder.path}; deleting it as usual.`);
+      getObsidianLibDebugger('RenameDeleteHandler:deleteProtection')(`Nothing to protect in ${folder.path}; deleting it as usual.`);
       await fallback();
       return;
     }
 
-    getLibDebugger('RenameDeleteHandler:deleteProtection')(
+    getObsidianLibDebugger('RenameDeleteHandler:deleteProtection')(
       `Protecting ${stillUsedAttachmentPaths.length.toString()} still-referenced attachment(s) from the deletion of ${folder.path}: ${toJson(stillUsedAttachmentPaths)}`
     );
 
@@ -706,14 +706,14 @@ class FileManagerRunAsyncLinkUpdatePatchComponent extends MonkeyAroundComponent 
       linkUpdates,
       (linkUpdate) => {
         if (settings.isPathIgnored?.(linkUpdate.sourceFile.path)) {
-          getLibDebugger('RenameDeleteHandler:runAsyncLinkUpdate')(
+          getObsidianLibDebugger('RenameDeleteHandler:runAsyncLinkUpdate')(
             `Roll back to default link update of source file ${linkUpdate.sourceFile.path} as the path is ignored.`
           );
           return true;
         }
 
         if (settings.isPathIgnored?.(linkUpdate.resolvedFile.path)) {
-          getLibDebugger('RenameDeleteHandler:runAsyncLinkUpdate')(
+          getObsidianLibDebugger('RenameDeleteHandler:runAsyncLinkUpdate')(
             `Roll back to default link update of resolved file ${linkUpdate.resolvedFile.path} as the path is ignored.`
           );
           return true;
@@ -771,7 +771,7 @@ class MetadataDeletedHandler {
     }
 
     if (settings.isPathIgnored?.(this.file.path)) {
-      getLibDebugger('RenameDeleteHandler:handleMetadataDeleted')(`Skipping metadata delete handler of ${this.file.path} as the path is ignored.`);
+      getObsidianLibDebugger('RenameDeleteHandler:handleMetadataDeleted')(`Skipping metadata delete handler of ${this.file.path} as the path is ignored.`);
       return;
     }
 
@@ -956,7 +956,7 @@ class RenameHandler {
              * https://github.com/mnaoumov/obsidian-custom-attachment-location/issues/60 stayed
              * invisible: every skipped link left a broken embed and reported nothing.
              */
-            getLibDebugger('RenameDeleteHandler:updateBacklinks')(
+            getObsidianLibDebugger('RenameDeleteHandler:updateBacklinks')(
               `No snapshot entry for link ${toJson(link)} in ${newBacklinkPath}; leaving it unchanged.`
             );
             return;
@@ -1245,7 +1245,7 @@ class RenameMap {
       if (settings.shouldDeleteConflictingAttachments) {
         const newAttachmentFile = getFileOrNull({ app: this.app, pathOrFile: newAttachmentFilePath });
         if (newAttachmentFile) {
-          getLibDebugger('RenameDeleteHandler:fillRenameMap')(`Removing conflicting attachment ${newAttachmentFile.path}.`);
+          getObsidianLibDebugger('RenameDeleteHandler:fillRenameMap')(`Removing conflicting attachment ${newAttachmentFile.path}.`);
           await trashSafe(this.app, newAttachmentFile);
           this.abortSignal.throwIfAborted();
         }
@@ -1465,7 +1465,7 @@ export class RenameDeleteHandlerComponent extends ComponentEx {
 
     const newPath = file.path;
 
-    getLibDebugger('RenameDeleteHandler:handleRename')(`Handle Rename ${oldPath} -> ${newPath}`);
+    getObsidianLibDebugger('RenameDeleteHandler:handleRename')(`Handle Rename ${oldPath} -> ${newPath}`);
     if (this.handledRenames.has(oldPath, newPath)) {
       this.handledRenames.delete(oldPath, newPath);
       return;
@@ -1483,7 +1483,7 @@ export class RenameDeleteHandlerComponent extends ComponentEx {
      * https://github.com/mnaoumov/obsidian-advanced-note-composer/issues/146.
      */
     if (isResourceLockedForPathByAncestor(this.app, oldPath) || isResourceLockedForPathByAncestor(this.app, newPath)) {
-      getLibDebugger('RenameDeleteHandler:handleRename')(
+      getObsidianLibDebugger('RenameDeleteHandler:handleRename')(
         `Skipping rename handler of ${oldPath} -> ${newPath} as it occurs inside a foreign locked transaction.`
       );
       return;
@@ -1495,19 +1495,19 @@ export class RenameDeleteHandlerComponent extends ComponentEx {
     }
 
     if (this.isNoOpRename(settings, oldPath, newPath)) {
-      getLibDebugger('RenameDeleteHandler:handleRename')(
+      getObsidianLibDebugger('RenameDeleteHandler:handleRename')(
         `Skipping rename handler of ${oldPath} -> ${newPath} as it is not a note and there is nothing to do with link updates disabled.`
       );
       return;
     }
 
     if (settings.isPathIgnored?.(oldPath)) {
-      getLibDebugger('RenameDeleteHandler:handleRename')(`Skipping rename handler of old path ${oldPath} as the path is ignored.`);
+      getObsidianLibDebugger('RenameDeleteHandler:handleRename')(`Skipping rename handler of old path ${oldPath} as the path is ignored.`);
       return;
     }
 
     if (settings.isPathIgnored?.(newPath)) {
-      getLibDebugger('RenameDeleteHandler:handleRename')(`Skipping rename handler of new path ${newPath} as the path is ignored.`);
+      getObsidianLibDebugger('RenameDeleteHandler:handleRename')(`Skipping rename handler of new path ${newPath} as the path is ignored.`);
       return;
     }
 
@@ -1578,7 +1578,7 @@ async function didRescueStillUsedAttachment(params: DidRescueStillUsedAttachment
   });
 
   if (rescuePath === null) {
-    getLibDebugger('RenameDeleteHandler:didRescueStillUsedAttachment')(`No rescue path for ${attachmentPath}; keeping it where it is.`);
+    getObsidianLibDebugger('RenameDeleteHandler:didRescueStillUsedAttachment')(`No rescue path for ${attachmentPath}; keeping it where it is.`);
     return false;
   }
 
@@ -1599,7 +1599,7 @@ async function didRescueStillUsedAttachment(params: DidRescueStillUsedAttachment
        * delete just rescued: the owning note's own deletion is reported afterwards and walks its links
        * again. Nothing moved, so nothing is claimed — the caller keeps it in place, which is the truth.
        */
-      getLibDebugger('RenameDeleteHandler:didRescueStillUsedAttachment')(`${attachmentPath} already sits at its rescue path; nothing to move.`);
+      getObsidianLibDebugger('RenameDeleteHandler:didRescueStillUsedAttachment')(`${attachmentPath} already sits at its rescue path; nothing to move.`);
       return false;
     }
 
@@ -1612,7 +1612,7 @@ async function didRescueStillUsedAttachment(params: DidRescueStillUsedAttachment
      */
     await waitForPendingLinkUpdates(params.app);
 
-    getLibDebugger('RenameDeleteHandler:didRescueStillUsedAttachment')(`Rescued ${attachmentPath} to ${newAttachmentPath}.`);
+    getObsidianLibDebugger('RenameDeleteHandler:didRescueStillUsedAttachment')(`Rescued ${attachmentPath} to ${newAttachmentPath}.`);
     params.pluginNoticeComponent.showNotice(t(($) => $.obsidianDevUtils.notices.attachmentRescued, { attachmentPath, newAttachmentPath }));
     return true;
   } catch (error) {

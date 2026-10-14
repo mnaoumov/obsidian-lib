@@ -9,6 +9,7 @@
  * the workspace, so the very same handlers reach both surfaces.
  */
 
+import type { DisposableEx } from '@mnaoumov/typescript-lib/disposable';
 import type {
   App,
   IconName,
@@ -17,9 +18,10 @@ import type {
   TFile
 } from 'obsidian';
 
+import { CallbackDisposable } from '@mnaoumov/typescript-lib/disposable';
+import { noop } from '@mnaoumov/typescript-lib/function';
 import { Menu as MenuImpl } from 'obsidian';
 
-import type { DisposableEx } from '../../disposable.ts';
 import type {
   EditorMenuEventHandler,
   FileMenuEventHandler,
@@ -33,8 +35,6 @@ import type {
   NotebookNavigatorMenuContext
 } from '../notebook-navigator.ts';
 
-import { CallbackDisposable } from '../../disposable.ts';
-import { noop } from '../../function.ts';
 import {
   NOTEBOOK_NAVIGATOR_MENU_SOURCE,
   resolveNotebookNavigatorApi

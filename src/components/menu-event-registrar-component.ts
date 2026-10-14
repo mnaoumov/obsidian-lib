@@ -4,9 +4,9 @@
  * Registers menu event handlers with Obsidian's workspace, supporting editor, file, and multi-file context menus.
  */
 
+import type { DisposableEx } from '@mnaoumov/typescript-lib/disposable';
 import type { App } from 'obsidian';
 
-import type { DisposableEx } from '../../disposable.ts';
 import type {
   EditorMenuEventHandler,
   FileMenuEventHandler,

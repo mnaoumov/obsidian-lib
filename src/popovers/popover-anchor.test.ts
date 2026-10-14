@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 
+import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import {
   afterEach,
   describe,
@@ -8,7 +9,6 @@ import {
   vi
 } from 'vitest';
 
-import { strictProxy } from '../../strict-proxy.ts';
 import {
   createAnchorFromDocumentCenter,
   createAnchorFromElement,

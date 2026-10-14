@@ -4,6 +4,7 @@
  * This module provides utility functions for working with the metadata cache in Obsidian.
  */
 
+import type { RetryOptions } from '@mnaoumov/typescript-lib/async';
 import type { CustomArrayDict } from '@obsidian-typings/obsidian-public-latest';
 import type {
   App,
@@ -12,6 +13,9 @@ import type {
   TAbstractFile
 } from 'obsidian';
 
+import { CallbackDisposable } from '@mnaoumov/typescript-lib/disposable';
+import { getNestedPropertyValue } from '@mnaoumov/typescript-lib/object-utils';
+import { ensureNonNullable } from '@mnaoumov/typescript-lib/type-guards';
 import {
   CustomArrayDictImpl,
   isFrontmatterLinkCache,
@@ -19,7 +23,6 @@ import {
   parentFolderPath
 } from '@obsidian-typings/obsidian-public-latest/implementations';
 
-import type { RetryOptions } from '../async.ts';
 import type { PathOrFile } from './file-system.ts';
 import type { CombinedFrontmatter } from './frontmatter.ts';
 import type {
@@ -28,10 +31,6 @@ import type {
   ParseLinkReference
 } from './parse-link.ts';
 
-import { CallbackDisposable } from '../disposable.ts';
-import { getNestedPropertyValue } from '../object-utils.ts';
-import { getObsidianDevUtilsState } from '../obsidian-dev-utils-state.ts';
-import { ensureNonNullable } from '../type-guards.ts';
 import { retryWithTimeoutNotice } from './async-with-notice.ts';
 import { getIndexedBacklinksForFile } from './backlink-index.ts';
 import {
@@ -48,6 +47,7 @@ import {
 } from './frontmatter-link-cache-with-offsets.ts';
 import { parseFrontmatter } from './frontmatter.ts';
 import { t } from './i18n/i18n.ts';
+import { getObsidianDevUtilsState } from './obsidian-dev-utils-state.ts';
 import {
   parseFrontmatterLinks,
   parseLinks,

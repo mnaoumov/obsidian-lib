@@ -4,6 +4,8 @@
  * Contains a component that has a validator element.
  */
 
+import type { ValidatorElement } from '@mnaoumov/typescript-lib/html-element';
+
 import {
   ColorComponent,
   DropdownComponent,
@@ -14,8 +16,6 @@ import {
   TextComponent,
   ToggleComponent
 } from 'obsidian';
-
-import type { ValidatorElement } from '../../html-element.ts';
 
 import { CssClass } from '../css-class.ts';
 import { addPluginCssClasses } from '../plugin/plugin-context.ts';
