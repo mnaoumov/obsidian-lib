@@ -1,5 +1,6 @@
 import type { Plugin } from 'obsidian';
 
+import { castTo } from '@mnaoumov/typescript-lib/object-utils';
 import {
   describe,
   expect,
@@ -7,7 +8,6 @@ import {
   vi
 } from 'vitest';
 
-import { castTo } from '../object-utils.ts';
 import { PluginDataHandler } from './data-handler.ts';
 
 describe('PluginDataHandler', () => {

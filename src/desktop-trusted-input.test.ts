@@ -5,6 +5,8 @@ import type {
   Modifier
 } from 'obsidian';
 
+import { castTo } from '@mnaoumov/typescript-lib/object-utils';
+import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import { Platform } from 'obsidian';
 import {
   afterEach,
@@ -15,8 +17,6 @@ import {
   vi
 } from 'vitest';
 
-import { castTo } from '../object-utils.ts';
-import { strictProxy } from '../strict-proxy.ts';
 import {
   clickElement,
   clickMouse,

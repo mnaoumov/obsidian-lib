@@ -1,4 +1,8 @@
 import {
+  noop,
+  noopAsync
+} from '@mnaoumov/typescript-lib/function';
+import {
   beforeEach,
   describe,
   expect,
@@ -9,10 +13,6 @@ import {
 import type { RunWithTimeoutNoticeParams } from './async-with-notice.ts';
 import type { InvokeAsyncAndLogParams } from './logger.ts';
 
-import {
-  noop,
-  noopAsync
-} from '../function.ts';
 import {
   addToQueue,
   addToQueueAndWait,
@@ -36,17 +36,17 @@ const mocks = vi.hoisted(() => ({
   })
 }));
 
-vi.mock('../abort-controller.ts', () => ({
+vi.mock('@mnaoumov/typescript-lib/abort-controller', () => ({
   abortSignalAny: vi.fn((...signals: AbortSignal[]) => signals[0]),
   abortSignalNever: vi.fn(() => new AbortController().signal)
 }));
 
-vi.mock('../async.ts', () => ({
+vi.mock('@mnaoumov/typescript-lib/async', () => ({
   addErrorHandler: mocks.addErrorHandler,
   invokeAsyncSafely: mocks.invokeAsyncSafely
 }));
 
-vi.mock('../error.ts', () => ({
+vi.mock('@mnaoumov/typescript-lib/error', () => ({
   getStackTrace: vi.fn(() => 'mock-stack-trace')
 }));
 
@@ -59,17 +59,17 @@ const functionMocks = vi.hoisted(() => {
   };
 });
 
-vi.mock('../function.ts', () => functionMocks);
+vi.mock('@mnaoumov/typescript-lib/function', () => functionMocks);
 
-vi.mock('../obsidian-dev-utils-state.ts', () => ({
+vi.mock('./obsidian-dev-utils-state.ts', () => ({
   getObsidianDevUtilsState: mocks.getObsidianDevUtilsState
 }));
 
-vi.mock('../obsidian/async-with-notice.ts', () => ({
+vi.mock('./async-with-notice.ts', () => ({
   runWithTimeoutNotice: mocks.runWithTimeoutNotice
 }));
 
-vi.mock('../obsidian/i18n/i18n.ts', () => ({
+vi.mock('./i18n/i18n.ts', () => ({
   t: vi.fn((selector: unknown) => {
     if (typeof selector === 'function') {
       const proxy: unknown = new Proxy({}, { get: (): unknown => proxy });
@@ -79,7 +79,7 @@ vi.mock('../obsidian/i18n/i18n.ts', () => ({
   })
 }));
 
-vi.mock('../obsidian/logger.ts', () => ({
+vi.mock('./logger.ts', () => ({
   invokeAsyncAndLog: mocks.invokeAsyncAndLog
 }));
 

@@ -1,3 +1,5 @@
+import type { GenericObject } from '@mnaoumov/typescript-lib/type-guards';
+
 // @vitest-environment jsdom
 import {
   afterEach,
@@ -6,8 +8,6 @@ import {
   it,
   vi
 } from 'vitest';
-
-import type { GenericObject } from '../type-guards.ts';
 
 import {
   checkIsPlainObject,

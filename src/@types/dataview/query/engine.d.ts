@@ -17,11 +17,11 @@ import type {
   LinkHandler
 } from '../expression/context.d.ts';
 import type { Field } from '../expression/field.d.ts';
+import type { QuerySettings } from '../settings.d.ts';
 import type {
   Query,
   QueryOperation
-} from '../query/query.d.ts';
-import type { QuerySettings } from '../settings.d.ts';
+} from './query.d.ts';
 /** Operation diagnostics collected during the execution of each query step. */
 export interface OperationDiagnostics {
   timeMs: number;

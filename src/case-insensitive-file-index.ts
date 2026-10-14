@@ -20,8 +20,9 @@ import type {
   TAbstractFile
 } from 'obsidian';
 
-import { snapshot } from '../array.ts';
-import { getObsidianDevUtilsState } from '../obsidian-dev-utils-state.ts';
+import { snapshot } from '@mnaoumov/typescript-lib/array';
+
+import { getObsidianDevUtilsState } from './obsidian-dev-utils-state.ts';
 
 const STATE_KEY = 'caseInsensitiveFileIndex';
 

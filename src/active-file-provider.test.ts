@@ -9,6 +9,7 @@ import type {
   TFile as TFileOriginal
 } from 'obsidian';
 
+import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import {
   describe,
   expect,
@@ -16,7 +17,6 @@ import {
   vi
 } from 'vitest';
 
-import { strictProxy } from '../strict-proxy.ts';
 import { AppActiveFileProvider } from './active-file-provider.ts';
 
 describe('AppActiveFileProvider', () => {

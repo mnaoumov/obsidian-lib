@@ -8,6 +8,8 @@
 
 import type { TFile } from 'obsidian';
 
+import { ensureNonNullable } from '@mnaoumov/typescript-lib/type-guards';
+
 import type {
   DataviewInlineApi,
   Link
@@ -17,7 +19,6 @@ import type {
   PathOrFile
 } from './file-system.ts';
 
-import { ensureNonNullable } from '../type-guards.ts';
 import { renderCallout } from './callout.ts';
 import { fixTitle } from './dataview-link.ts';
 import { renderPaginatedTable } from './dataview.ts';

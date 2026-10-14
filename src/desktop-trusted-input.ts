@@ -20,9 +20,8 @@ import type {
   Modifier
 } from 'obsidian';
 
+import { assertNever } from '@mnaoumov/typescript-lib/type-guards';
 import { Platform } from 'obsidian';
-
-import { assertNever } from '../type-guards.ts';
 
 /**
  * Parameters for {@link clickElement}.

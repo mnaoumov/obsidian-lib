@@ -4,12 +4,16 @@
  * Tests for {@link FileCommandHandler}.
  */
 
+import type { DisposableEx } from '@mnaoumov/typescript-lib/disposable';
 import type {
   App as AppOriginal,
   Menu as MenuOriginal,
   TFile as TFileOriginal
 } from 'obsidian';
 
+import { noopAsync } from '@mnaoumov/typescript-lib/function';
+import { castTo } from '@mnaoumov/typescript-lib/object-utils';
+import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import {
   App,
   TFile,
@@ -22,7 +26,6 @@ import {
   vi
 } from 'vitest';
 
-import type { DisposableEx } from '../../disposable.ts';
 import type { ActiveFileProvider } from '../active-file-provider.ts';
 import type {
   FileMenuEventHandler,
@@ -35,9 +38,6 @@ import type {
   FileCommandHandlerShouldAddToFilesMenuParams
 } from './file-command-handler.ts';
 
-import { noopAsync } from '../../function.ts';
-import { castTo } from '../../object-utils.ts';
-import { strictProxy } from '../../strict-proxy.ts';
 import { FileCommandHandler } from './file-command-handler.ts';
 
 let app: AppOriginal;

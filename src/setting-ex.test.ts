@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 
+import { noop } from '@mnaoumov/typescript-lib/function';
 import { Setting } from 'obsidian';
 import {
   beforeEach,
@@ -9,7 +10,6 @@ import {
   vi
 } from 'vitest';
 
-import { noop } from '../function.ts';
 import {
   adoptSettingEx,
   SettingEx

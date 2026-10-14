@@ -4,6 +4,7 @@
  * This module provides additional utilities for working with the Obsidian {@link Workspace}.
  */
 
+import type { DisposableEx } from '@mnaoumov/typescript-lib/disposable';
 import type {
   App,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars -- We need to import `Workspace` to use it in the tsdocs.
@@ -13,9 +14,7 @@ import type {
   WorkspaceWindow
 } from 'obsidian';
 
-import type { DisposableEx } from '../disposable.ts';
-
-import { CallbackDisposable } from '../disposable.ts';
+import { CallbackDisposable } from '@mnaoumov/typescript-lib/disposable';
 
 /**
  * Waits until the workspace layout is ready.

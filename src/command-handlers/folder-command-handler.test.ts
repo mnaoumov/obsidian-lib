@@ -4,6 +4,7 @@
  * Tests for {@link FolderCommandHandler}.
  */
 
+import type { DisposableEx } from '@mnaoumov/typescript-lib/disposable';
 import type {
   App as AppOriginal,
   Menu as MenuOriginal,
@@ -11,6 +12,9 @@ import type {
   TFolder as TFolderOriginal
 } from 'obsidian';
 
+import { noopAsync } from '@mnaoumov/typescript-lib/function';
+import { castTo } from '@mnaoumov/typescript-lib/object-utils';
+import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import {
   App,
   TFile,
@@ -23,7 +27,6 @@ import {
   vi
 } from 'vitest';
 
-import type { DisposableEx } from '../../disposable.ts';
 import type { ActiveFileProvider } from '../active-file-provider.ts';
 import type {
   FileMenuEventHandler,
@@ -36,9 +39,6 @@ import type {
   FolderCommandHandlerShouldAddToFoldersMenuParams
 } from './folder-command-handler.ts';
 
-import { noopAsync } from '../../function.ts';
-import { castTo } from '../../object-utils.ts';
-import { strictProxy } from '../../strict-proxy.ts';
 import { FolderCommandHandler } from './folder-command-handler.ts';
 
 let app: AppOriginal;

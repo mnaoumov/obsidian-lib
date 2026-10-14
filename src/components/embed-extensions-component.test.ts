@@ -7,6 +7,7 @@
 import type { EmbedCreator } from '@obsidian-typings/obsidian-public-latest';
 import type { App as AppOriginal } from 'obsidian';
 
+import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import {
   describe,
   expect,
@@ -14,7 +15,6 @@ import {
   vi
 } from 'vitest';
 
-import { strictProxy } from '../../strict-proxy.ts';
 import { EmbedExtensionsComponent } from './embed-extensions-component.ts';
 
 interface Mocks {

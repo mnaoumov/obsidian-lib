@@ -4,37 +4,37 @@
  * Initializes the plugin context and sets up the plugin ID.
  */
 
+import type { DebugController } from '@mnaoumov/typescript-lib/debug-controller';
 import type { Component } from 'obsidian';
 
-import { compareVersions } from 'compare-versions';
-
-import type { DebugController } from '../../debug-controller.ts';
-
-import { getSharedAbortController } from '../../abort-controller.ts';
+import { getSharedAbortController } from '@mnaoumov/typescript-lib/abort-controller';
 import {
   getDebugController,
   showInitialDebugMessage
-} from '../../debug.ts';
+} from '@mnaoumov/typescript-lib/debug';
+import { Library } from '@mnaoumov/typescript-lib/library';
+import { compareVersions } from 'compare-versions';
+
+import { CssClass } from '../css-class.ts';
 import {
   LIBRARY_STYLES,
   LIBRARY_VERSION
-} from '../../generated-during-build.ts';
+} from '../generated-during-build.ts';
 import {
-  Library,
-  LIBRARY_NAME
-} from '../../library.ts';
+  OBSIDIAN_LIBRARY_NAME,
+  ObsidianLibrary
+} from '../library.ts';
 import {
   getObsidianDevUtilsState,
   shareTypescriptLibStateWithObsidianDevUtilsState
-} from '../../obsidian-dev-utils-state.ts';
-import { CssClass } from '../css-class.ts';
+} from '../obsidian-dev-utils-state.ts';
 
 interface PluginContextWindow {
   DEBUG: DebugController | undefined;
 }
 
 const DEBUG_GUIDE_URL = 'https://mnaoumov.dev/obsidian-dev-utils/guides/debugging/';
-const STYLES_ID = `${LIBRARY_NAME}-styles`;
+const STYLES_ID = `${OBSIDIAN_LIBRARY_NAME}-styles`;
 
 /**
  * Sets the CSS class of an element.
@@ -47,7 +47,7 @@ export function addPluginCssClasses(element: HTMLElement, cssClasses?: string | 
   element.addClass(
     CssClass.LibraryName,
     // The scope is empty until the plugin context is initialized; skip it so we never add an empty class.
-    ...(Library.cssClassScope ? [Library.cssClassScope] : []),
+    ...(ObsidianLibrary.cssClassScope ? [ObsidianLibrary.cssClassScope] : []),
     ...extraCssClasses
   );
 }
@@ -77,9 +77,10 @@ export function initDebugController(win: Window, component: Component): void {
  * @param pluginId - The plugin ID.
  */
 export function initPluginContext(pluginId: string): void {
+  ObsidianLibrary.init({ cssClassScope: pluginId });
   Library.init({
-    cssClassScope: pluginId,
     debugGuideUrl: DEBUG_GUIDE_URL,
+    debugNamespace: OBSIDIAN_LIBRARY_NAME,
     debugPrefixNamespace: `${pluginId}:`,
     shouldPrintStackTrace: true
   });

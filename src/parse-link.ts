@@ -5,6 +5,7 @@
  * escaping, unescaping, and encoding link components.
  */
 
+import type { GenericObject } from '@mnaoumov/typescript-lib/type-guards';
 import type { Link } from 'mdast';
 import type {
   FrontmatterLinkCache,
@@ -14,22 +15,19 @@ import type {
 } from 'obsidian';
 import type { Node } from 'unist';
 
+import { normalizeOptionalProperties } from '@mnaoumov/typescript-lib/object-utils';
+import { replaceAll } from '@mnaoumov/typescript-lib/string';
+import { ensureNonNullable } from '@mnaoumov/typescript-lib/type-guards';
+import {
+  encodeUrl,
+  isFileUrl,
+  isUrl
+} from '@mnaoumov/typescript-lib/url';
 import { isFrontmatterLinkCache } from '@obsidian-typings/obsidian-public-latest/implementations';
 import { remark } from 'remark';
 import remarkParse from 'remark-parse';
 import { wikiLinkPlugin } from 'remark-wiki-link';
 import { visit } from 'unist-util-visit';
-
-import type { GenericObject } from '../type-guards.ts';
-
-import { normalizeOptionalProperties } from '../object-utils.ts';
-import { replaceAll } from '../string.ts';
-import { ensureNonNullable } from '../type-guards.ts';
-import {
-  encodeUrl,
-  isFileUrl,
-  isUrl
-} from '../url.ts';
 
 /**
  * Regular expression for special markdown link symbols.

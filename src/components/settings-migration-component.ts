@@ -4,7 +4,7 @@
  * Component that offers settings this plugin used to own to the plugin that owns them now, once, through
  * that plugin's public API.
  *
- * This is the other half of {@link obsidian/components/plugin-suggestion-component!PluginSuggestionComponent}.
+ * This is the other half of {@link components/plugin-suggestion-component!PluginSuggestionComponent}.
  * The suggestion asks the user to install the plugin that took a feature over; this carries the settings they
  * had configured for it across, so taking the suggestion does not mean re-entering everything by hand.
  *
@@ -21,6 +21,9 @@
 import type { App } from 'obsidian';
 import type { Promisable } from 'type-fest';
 
+import { invokeAsyncSafely } from '@mnaoumov/typescript-lib/async';
+import { normalizeOptionalProperties } from '@mnaoumov/typescript-lib/object-utils';
+
 import type {
   PluginApiContract,
   PluginApiRef,
@@ -29,8 +32,6 @@ import type {
 import type { SettingsMigrationApi } from '../plugin/settings-migration-api.ts';
 import type { PluginSettingsComponentBase } from './plugin-settings-component.ts';
 
-import { invokeAsyncSafely } from '../../async.ts';
-import { normalizeOptionalProperties } from '../../object-utils.ts';
 import { watchPluginApi } from '../plugin/plugin-api.ts';
 import { registerAsyncEvent } from './async-events-component.ts';
 import { ComponentEx } from './component-ex.ts';

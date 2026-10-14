@@ -12,24 +12,24 @@ import type {
 } from 'obsidian';
 
 import {
+  basename,
+  dirname,
+  extname,
+  join,
+  makeFileName
+} from '@mnaoumov/typescript-lib/path';
+import {
+  normalizeString,
+  replaceAll,
+  trimStart
+} from '@mnaoumov/typescript-lib/string';
+import {
   getDataAdapterEx,
   parentFolderPath
 } from '@obsidian-typings/obsidian-public-latest/implementations';
 
 import type { PathOrFile } from './file-system.ts';
 
-import {
-  basename,
-  dirname,
-  extname,
-  join,
-  makeFileName
-} from '../path.ts';
-import {
-  normalizeString,
-  replaceAll,
-  trimStart
-} from '../string.ts';
 import {
   getFile,
   getFileOrNull,

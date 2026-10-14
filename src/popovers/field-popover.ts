@@ -9,6 +9,7 @@
  * directly.
  */
 
+import { normalizeOptionalProperties } from '@mnaoumov/typescript-lib/object-utils';
 import {
   Setting,
   TextComponent
@@ -17,7 +18,6 @@ import {
 import type { PopoverAnchor } from './popover-anchor.ts';
 import type { ShowPopoverParams } from './popover.ts';
 
-import { normalizeOptionalProperties } from '../../object-utils.ts';
 import { CssClass } from '../css-class.ts';
 import { showPopover } from './popover.ts';
 

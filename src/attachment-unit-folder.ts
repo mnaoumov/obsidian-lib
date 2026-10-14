@@ -21,7 +21,8 @@
 
 import type { App } from 'obsidian';
 
-import { dirname } from '../path.ts';
+import { dirname } from '@mnaoumov/typescript-lib/path';
+
 import { getCheckIsAttachmentUnitFolderFunction } from './attachment-path.ts';
 
 /**

@@ -6,19 +6,18 @@
 
 import type { Promisable } from 'type-fest';
 
-import { Component } from 'obsidian';
-
-import { createAggregateError } from '../../aggregate-error.ts';
-import { snapshot } from '../../array.ts';
-import { dispose } from '../../disposable.ts';
+import { createAggregateError } from '@mnaoumov/typescript-lib/aggregate-error';
+import { snapshot } from '@mnaoumov/typescript-lib/array';
+import { dispose } from '@mnaoumov/typescript-lib/disposable';
 import {
   ErrorWrapper,
   SilentError
-} from '../../error.ts';
+} from '@mnaoumov/typescript-lib/error';
 import {
   noop,
   noopAsyncSingletonPromise
-} from '../../function.ts';
+} from '@mnaoumov/typescript-lib/function';
+import { Component } from 'obsidian';
 
 /**
  * Extended Component

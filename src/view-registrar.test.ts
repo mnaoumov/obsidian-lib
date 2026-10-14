@@ -9,6 +9,7 @@ import type {
   ViewCreator as ViewCreatorOriginal
 } from 'obsidian';
 
+import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import {
   describe,
   expect,
@@ -16,7 +17,6 @@ import {
   vi
 } from 'vitest';
 
-import { strictProxy } from '../strict-proxy.ts';
 import { PluginViewRegistrar } from './view-registrar.ts';
 
 describe('PluginViewRegistrar', () => {

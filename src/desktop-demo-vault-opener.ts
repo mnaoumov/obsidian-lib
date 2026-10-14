@@ -33,6 +33,8 @@
 
 import type { App } from 'obsidian';
 
+import { extractZipArchive } from '@mnaoumov/typescript-lib/desktop-zip-extractor';
+import { join } from '@mnaoumov/typescript-lib/path';
 import { compareVersions } from 'compare-versions';
 import { Buffer } from 'node:buffer';
 import {
@@ -53,8 +55,6 @@ import type {
   PluginNoticeComponentDelayedNotice
 } from './components/plugin-notice-component.ts';
 
-import { extractZipArchive } from '../desktop-zip-extractor.ts';
-import { join } from '../path.ts';
 import {
   getCommunityPluginRepo,
   getLatestReleaseVersion

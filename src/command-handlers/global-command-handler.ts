@@ -7,9 +7,10 @@
 import type { Command } from 'obsidian';
 import type { Promisable } from 'type-fest';
 
+import { invokeAsyncSafely } from '@mnaoumov/typescript-lib/async';
+
 import type { CommandHandlerConstructorParams } from './command-handler.ts';
 
-import { invokeAsyncSafely } from '../../async.ts';
 import { CommandHandler } from './command-handler.ts';
 
 /**

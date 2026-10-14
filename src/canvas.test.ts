@@ -5,6 +5,10 @@ import type {
   Plugin as PluginOriginal
 } from 'obsidian';
 
+import { noop } from '@mnaoumov/typescript-lib/function';
+import { castTo } from '@mnaoumov/typescript-lib/object-utils';
+import { assertNonNullable } from '@mnaoumov/typescript-lib/type-guards';
+import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import { App } from 'obsidian-test-mocks/obsidian';
 import {
   describe,
@@ -14,10 +18,6 @@ import {
 
 import type { ResourceLockComponent } from './resource-lock.ts';
 
-import { noop } from '../function.ts';
-import { castTo } from '../object-utils.ts';
-import { strictProxy } from '../strict-proxy.ts';
-import { assertNonNullable } from '../type-guards.ts';
 import { getCanvasReferences } from './canvas.ts';
 import { applyFileChanges } from './file-change.ts';
 import { referenceToFileChange } from './reference.ts';

@@ -65,8 +65,7 @@ describe('PluginSettingsTabBase declarative rendering', () => {
         const {
           castTo,
           noopAsync,
-          PluginSettingsTabBase,
-          strictProxy
+          PluginSettingsTabBase
         } = lib;
 
         interface AsyncEventSourceStub {
@@ -86,7 +85,7 @@ describe('PluginSettingsTabBase declarative rendering', () => {
           throw new Error('no plugin available to host the settings tab');
         }
 
-        const pluginSettingsComponent = strictProxy<PluginSettingsComponentBase<ProbeSettings>>({
+        const pluginSettingsComponent = castTo<PluginSettingsComponentBase<ProbeSettings>>({
           defaultSettings: { enabled: false },
           on: castTo<PluginSettingsComponentBase<ProbeSettings>['on']>((): EventReferenceStub => ({ asyncEventSource: { offref: () => undefined } })),
           saveToFile: () => noopAsync(),
@@ -189,8 +188,7 @@ describe('PluginSettingsTabBase declarative rendering', () => {
         const {
           castTo,
           noopAsync,
-          PluginSettingsTabBase,
-          strictProxy
+          PluginSettingsTabBase
         } = lib;
 
         interface AsyncEventSourceStub {
@@ -210,7 +208,7 @@ describe('PluginSettingsTabBase declarative rendering', () => {
           throw new Error('no plugin available to host the settings tab');
         }
 
-        const pluginSettingsComponent = strictProxy<PluginSettingsComponentBase<ProbeSettings>>({
+        const pluginSettingsComponent = castTo<PluginSettingsComponentBase<ProbeSettings>>({
           defaultSettings: { enabled: false },
           on: castTo<PluginSettingsComponentBase<ProbeSettings>['on']>((): EventReferenceStub => ({ asyncEventSource: { offref: () => undefined } })),
           saveToFile: () => noopAsync(),
@@ -298,8 +296,7 @@ describe('PluginSettingsTabBase declarative rendering', () => {
           castTo,
           noopAsync,
           PluginSettingsTabBase,
-          SettingEx,
-          strictProxy
+          SettingEx
         } = lib;
 
         interface AsyncEventSourceStub {
@@ -321,7 +318,7 @@ describe('PluginSettingsTabBase declarative rendering', () => {
           throw new Error('no plugin available to host the settings tab');
         }
 
-        const pluginSettingsComponent = strictProxy<PluginSettingsComponentBase<ProbeSettings>>({
+        const pluginSettingsComponent = castTo<PluginSettingsComponentBase<ProbeSettings>>({
           defaultSettings: { count: 0 },
           on: castTo<PluginSettingsComponentBase<ProbeSettings>['on']>((): EventReferenceStub => ({ asyncEventSource: { offref: () => undefined } })),
           saveToFile: () => noopAsync(),
@@ -394,8 +391,7 @@ describe('PluginSettingsTabBase declarative rendering', () => {
         const {
           castTo,
           noopAsync,
-          PluginSettingsTabBase,
-          strictProxy
+          PluginSettingsTabBase
         } = lib;
 
         const LEGACY_CLASS = 'probe-legacy-content';
@@ -417,7 +413,7 @@ describe('PluginSettingsTabBase declarative rendering', () => {
           throw new Error('no plugin available to host the settings tab');
         }
 
-        const pluginSettingsComponent = strictProxy<PluginSettingsComponentBase<ProbeSettings>>({
+        const pluginSettingsComponent = castTo<PluginSettingsComponentBase<ProbeSettings>>({
           defaultSettings: { enabled: false },
           on: castTo<PluginSettingsComponentBase<ProbeSettings>['on']>((): EventReferenceStub => ({ asyncEventSource: { offref: () => undefined } })),
           saveToFile: () => noopAsync(),

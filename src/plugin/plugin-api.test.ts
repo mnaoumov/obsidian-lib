@@ -12,7 +12,14 @@ import type {
   PluginManifest
 } from 'obsidian';
 
-import debug from 'debug';
+import { nextTickAsync } from '@mnaoumov/typescript-lib/async';
+import { getDebugController } from '@mnaoumov/typescript-lib/debug';
+import {
+  castTo,
+  normalizeOptionalProperties
+} from '@mnaoumov/typescript-lib/object-utils';
+import { waitForAllAsyncOperations } from '@mnaoumov/typescript-test-toolkit/async-operation-tracking';
+import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import {
   afterEach,
   beforeEach,
@@ -29,17 +36,8 @@ import type {
   WatchPluginApiParams
 } from './plugin-api.ts';
 
-import {
-  nextTickAsync,
-  waitForAllAsyncOperations
-} from '../../async.ts';
-import { getLibDebugger } from '../../debug.ts';
-import {
-  castTo,
-  normalizeOptionalProperties
-} from '../../object-utils.ts';
-import { getObsidianDevUtilsState } from '../../obsidian-dev-utils-state.ts';
-import { strictProxy } from '../../strict-proxy.ts';
+import { getObsidianLibDebugger } from '../debug.ts';
+import { getObsidianDevUtilsState } from '../obsidian-dev-utils-state.ts';
 import {
   PluginApiPayloadKind,
   PluginApiRevokedError,
@@ -106,15 +104,15 @@ interface WatchResult<TApi extends object> {
 }
 
 describe('plugin-api', () => {
-  let savedDebugNamespaces: string;
+  let savedDebugNamespaces: string[];
 
   beforeEach(() => {
-    savedDebugNamespaces = debug.load() ?? '';
-    debug.enable('');
+    savedDebugNamespaces = getDebugController().get();
+    getDebugController().set([]);
   });
 
   afterEach(() => {
-    debug.enable(savedDebugNamespaces);
+    getDebugController().set(savedDebugNamespaces);
     vi.restoreAllMocks();
   });
 
@@ -406,11 +404,11 @@ describe('plugin-api', () => {
 
   describe('payload validation', () => {
     beforeEach(() => {
-      debug.enable(PLUGIN_API_DEBUG_NAMESPACE);
+      getDebugController().set(PLUGIN_API_DEBUG_NAMESPACE);
     });
 
     it('should not validate while the debugger is disabled', () => {
-      debug.enable('');
+      getDebugController().set([]);
       const harness = createHarness();
       harness.publish({ contract: { greet: { input: createAlwaysFailingSchema() } } });
       expect(harness.watch<GreeterApi>().ref.value?.greet('unchecked')).toBe('Hello, unchecked!');
@@ -594,7 +592,7 @@ interface CreateSchemaOptions {
  */
 function captureDebuggerCalls(): unknown[][] {
   const loggedCalls: unknown[][] = [];
-  vi.spyOn(getLibDebugger(PLUGIN_API_DEBUGGER_NAME), 'log').mockImplementation((...$arguments: unknown[]): void => {
+  vi.spyOn(getObsidianLibDebugger(PLUGIN_API_DEBUGGER_NAME), 'log').mockImplementation((...$arguments: unknown[]): void => {
     loggedCalls.push($arguments);
   });
   return loggedCalls;

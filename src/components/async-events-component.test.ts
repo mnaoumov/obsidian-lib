@@ -4,6 +4,8 @@
  * Tests for {@link registerAsyncEvent}.
  */
 
+import type { AsyncEventRef } from '@mnaoumov/typescript-lib/async-events';
+
 import { Component } from 'obsidian';
 import {
   describe,
@@ -11,8 +13,6 @@ import {
   it,
   vi
 } from 'vitest';
-
-import type { AsyncEventRef } from '../../async-events.ts';
 
 import { registerAsyncEvent } from './async-events-component.ts';
 

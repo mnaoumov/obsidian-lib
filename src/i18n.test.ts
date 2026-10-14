@@ -1,3 +1,14 @@
+import type { GenericObject } from '@mnaoumov/typescript-lib/type-guards';
+
+import {
+  noop,
+  noopAsync
+} from '@mnaoumov/typescript-lib/function';
+import { castTo } from '@mnaoumov/typescript-lib/object-utils';
+import {
+  assertNonNullable,
+  ensureGenericObject
+} from '@mnaoumov/typescript-lib/type-guards';
 // @vitest-environment jsdom
 import {
   beforeEach,
@@ -7,17 +18,6 @@ import {
   vi
 } from 'vitest';
 
-import type { GenericObject } from '../type-guards.ts';
-
-import {
-  noop,
-  noopAsync
-} from '../function.ts';
-import { castTo } from '../object-utils.ts';
-import {
-  assertNonNullable,
-  ensureGenericObject
-} from '../type-guards.ts';
 import { DEFAULT_NS } from './i18n/i18n.ts';
 
 const HEAVY_IMPORT_TIMEOUT = 30_000;
@@ -64,11 +64,11 @@ vi.mock('obsidian', async () => {
   };
 });
 
-vi.mock('../obsidian/i18n/locales/en.ts', () => ({
+vi.mock('./i18n/locales/en.ts', () => ({
   en: { obsidianDevUtils: { test: 'english-value' } }
 }));
 
-vi.mock('../obsidian/i18n/locales/translations-map.ts', () => ({
+vi.mock('./i18n/locales/translations-map.ts', () => ({
   DEFAULT_LANGUAGE: 'en',
   defaultTranslationsMap: { en: { obsidianDevUtils: { test: 'english-value' } } }
 }));
@@ -102,8 +102,8 @@ describe('i18n module', { timeout: HEAVY_IMPORT_TIMEOUT }, () => {
 
       // The debug module must come from the SAME freshly-reset module registry as the reloaded i18n
       // module, so both share one debug instance and one shared-state bag.
-      const { enableLibraryDebuggers } = await import('../debug.ts');
-      enableLibraryDebuggers();
+      const { getDebugController } = await import('@mnaoumov/typescript-lib/debug');
+      getDebugController().enable('obsidian-dev-utils:*');
       const { t: freshT } = await reloadI18N();
 
       freshT(castTo<Parameters<typeof freshT>[0]>((translations: GenericObject) => translations['test']));
@@ -129,7 +129,7 @@ describe('i18n module', { timeout: HEAVY_IMPORT_TIMEOUT }, () => {
         noop();
       });
 
-      const { getDebugController } = await import('../debug.ts');
+      const { getDebugController } = await import('@mnaoumov/typescript-lib/debug');
       getDebugController().set('');
       const { t: freshT } = await reloadI18N();
 

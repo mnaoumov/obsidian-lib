@@ -1,5 +1,6 @@
 import type { MarkdownView } from 'obsidian';
 
+import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import {
   describe,
   expect,
@@ -7,7 +8,6 @@ import {
   vi
 } from 'vitest';
 
-import { strictProxy } from '../strict-proxy.ts';
 import { getFullContentHtml } from './markdown-view.ts';
 
 function createMockView(html: string): MarkdownView {

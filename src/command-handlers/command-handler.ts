@@ -9,11 +9,11 @@ import type {
   IconName
 } from 'obsidian';
 
+import { noopAsync } from '@mnaoumov/typescript-lib/function';
+import { ensureNonNullable } from '@mnaoumov/typescript-lib/type-guards';
+
 import type { ActiveFileProvider } from '../active-file-provider.ts';
 import type { MenuEventRegistrar } from '../menu-event-registrar.ts';
-
-import { noopAsync } from '../../function.ts';
-import { ensureNonNullable } from '../../type-guards.ts';
 
 /**
  * Parameters for creating a command handler.

@@ -10,6 +10,7 @@ import type {
   Events as EventsOriginal
 } from 'obsidian';
 
+import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import {
   describe,
   expect,
@@ -17,7 +18,6 @@ import {
   vi
 } from 'vitest';
 
-import { strictProxy } from '../../strict-proxy.ts';
 import { MenuEventRegistrarComponent } from './menu-event-registrar-component.ts';
 
 interface Mocks {

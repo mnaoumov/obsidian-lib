@@ -2,6 +2,10 @@
 
 import type { App as AppOriginal } from 'obsidian';
 
+import {
+  noop,
+  noopAsync
+} from '@mnaoumov/typescript-lib/function';
 import { App } from 'obsidian-test-mocks/obsidian';
 import {
   beforeEach,
@@ -11,10 +15,6 @@ import {
   vi
 } from 'vitest';
 
-import {
-  noop,
-  noopAsync
-} from '../../function.ts';
 import { addPluginCssClasses } from '../plugin/plugin-context.ts';
 import {
   ModalBase,
@@ -27,7 +27,7 @@ beforeEach(() => {
   app = App.createConfigured__().asOriginalType__();
 });
 
-vi.mock('../../obsidian/plugin/plugin-context.ts', () => ({
+vi.mock('../plugin/plugin-context.ts', () => ({
   addPluginCssClasses: vi.fn()
 }));
 

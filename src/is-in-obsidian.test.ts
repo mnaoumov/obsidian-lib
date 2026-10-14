@@ -1,3 +1,4 @@
+import { castTo } from '@mnaoumov/typescript-lib/object-utils';
 import {
   describe,
   expect,
@@ -5,7 +6,6 @@ import {
   vi
 } from 'vitest';
 
-import { castTo } from '../object-utils.ts';
 import { isInObsidian } from './is-in-obsidian.ts';
 
 describe('isInObsidian', () => {

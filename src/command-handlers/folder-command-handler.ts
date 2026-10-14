@@ -11,13 +11,14 @@ import type {
 } from 'obsidian';
 import type { Promisable } from 'type-fest';
 
+import { chain } from '@mnaoumov/typescript-lib/async';
+
 import type {
   AbstractFileCommandHandlerConstructorParams,
   AbstractFileCommandHandlerShouldAddToAbstractFileMenuParams,
   AbstractFileCommandHandlerShouldAddToAbstractFilesMenuParams
 } from './abstract-file-command-handler.ts';
 
-import { chain } from '../../async.ts';
 import {
   asArrayOfFolders,
   asFolder,

@@ -9,43 +9,44 @@
  */
 
 import type {
+  AsyncEventRef,
+  AsyncEventSource
+} from '@mnaoumov/typescript-lib/async-events';
+import type { Transformer } from '@mnaoumov/typescript-lib/transformers/transformer';
+import type {
+  MaybeReturn,
+  StringKeys
+} from '@mnaoumov/typescript-lib/type';
+import type { GenericObject } from '@mnaoumov/typescript-lib/type-guards';
+import type {
   Constructor,
   Promisable,
   ReadonlyDeep
 } from 'type-fest';
 
-import type {
-  AsyncEventRef,
-  AsyncEventSource
-} from '../../async-events.ts';
-import type { Transformer } from '../../transformers/transformer.ts';
-import type { GenericObject } from '../../type-guards.ts';
-import type {
-  MaybeReturn,
-  StringKeys
-} from '../../type.ts';
-import type { DataHandler } from '../data-handler.ts';
-import type { PluginEventSource } from '../plugin/plugin-event-source.ts';
-
-import { AsyncEvents } from '../../async-events.ts';
-import { getLibDebugger } from '../../debug.ts';
+import { AsyncEvents } from '@mnaoumov/typescript-lib/async-events';
 import {
   noop,
   noopAsync
-} from '../../function.ts';
+} from '@mnaoumov/typescript-lib/function';
 import {
   castTo,
   getAllKeys,
   isDeepEqual
-} from '../../object-utils.ts';
-import { DateTransformer } from '../../transformers/date-transformer.ts';
-import { DurationTransformer } from '../../transformers/duration-transformer.ts';
-import { GroupTransformer } from '../../transformers/group-transformer.ts';
-import { MapTransformer } from '../../transformers/map-transformer.ts';
-import { SetTransformer } from '../../transformers/set-transformer.ts';
-import { SkipPrivatePropertyTransformer } from '../../transformers/skip-private-property-transformer.ts';
-import { TwoWayMapTransformer } from '../../transformers/two-way-map-transformer.ts';
-import { ValueWrapper } from '../../value-wrapper.ts';
+} from '@mnaoumov/typescript-lib/object-utils';
+import { DateTransformer } from '@mnaoumov/typescript-lib/transformers/date-transformer';
+import { GroupTransformer } from '@mnaoumov/typescript-lib/transformers/group-transformer';
+import { MapTransformer } from '@mnaoumov/typescript-lib/transformers/map-transformer';
+import { SetTransformer } from '@mnaoumov/typescript-lib/transformers/set-transformer';
+import { SkipPrivatePropertyTransformer } from '@mnaoumov/typescript-lib/transformers/skip-private-property-transformer';
+import { TwoWayMapTransformer } from '@mnaoumov/typescript-lib/transformers/two-way-map-transformer';
+import { ValueWrapper } from '@mnaoumov/typescript-lib/value-wrapper';
+
+import type { DataHandler } from '../data-handler.ts';
+import type { PluginEventSource } from '../plugin/plugin-event-source.ts';
+
+import { getObsidianLibDebugger } from '../debug.ts';
+import { DurationTransformer } from '../transformers/duration-transformer.ts';
 import { registerAsyncEvent } from './async-events-component.ts';
 import { ComponentEx } from './component-ex.ts';
 
@@ -735,7 +736,7 @@ export class PluginSettingsComponentBase<PluginSettings extends object> extends 
 
     for (const [propertyName, value] of Object.entries(rawRecord)) {
       if (!this.isValidPropertyName(propertyName)) {
-        getLibDebugger('PluginSettingsComponentBase:rawRecordToSettings')(`Unknown property: ${propertyName}`);
+        getObsidianLibDebugger('PluginSettingsComponentBase:rawRecordToSettings')(`Unknown property: ${propertyName}`);
         continue;
       }
 
@@ -746,7 +747,7 @@ export class PluginSettingsComponentBase<PluginSettings extends object> extends 
       }
 
       if (typeof value !== typeof defaults[propertyName]) {
-        getLibDebugger('PluginSettingsComponentBase:rawRecordToSettings')(
+        getObsidianLibDebugger('PluginSettingsComponentBase:rawRecordToSettings')(
           'Possible invalid value type. It might lead to an unexpected behavior of the plugin. There is also a chance it is a false-negative warning, as we are unable to determine the exact type of the value in runtime.',
           {
             defaultValue: defaults[propertyName],

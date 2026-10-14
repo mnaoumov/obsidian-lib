@@ -4,6 +4,7 @@
  * Menu event registrar.
  */
 
+import type { DisposableEx } from '@mnaoumov/typescript-lib/disposable';
 import type {
   Editor,
   MarkdownFileInfo,
@@ -12,8 +13,6 @@ import type {
   TAbstractFile,
   WorkspaceLeaf
 } from 'obsidian';
-
-import type { DisposableEx } from '../disposable.ts';
 
 /**
  * Handler for the editor context menu event.

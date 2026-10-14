@@ -1,10 +1,18 @@
 // @vitest-environment jsdom
 
+import type { GenericObject } from '@mnaoumov/typescript-lib/type-guards';
 import type {
   App as AppOriginal,
   WorkspaceLeaf as WorkspaceLeafOriginal
 } from 'obsidian';
 
+import {
+  noop,
+  noopAsync
+} from '@mnaoumov/typescript-lib/function';
+import { castTo } from '@mnaoumov/typescript-lib/object-utils';
+import { assertNonNullable } from '@mnaoumov/typescript-lib/type-guards';
+import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import { getDataAdapterEx } from '@obsidian-typings/obsidian-public-latest/implementations';
 import {
   App,
@@ -21,18 +29,10 @@ import {
   vi
 } from 'vitest';
 
-import type { GenericObject } from '../type-guards.ts';
 import type { RetryWithTimeoutNoticeParams } from './async-with-notice.ts';
 import type { PluginNoticeComponent } from './components/plugin-notice-component.ts';
 import type { ResourceLockComponent } from './resource-lock.ts';
 
-import {
-  noop,
-  noopAsync
-} from '../function.ts';
-import { castTo } from '../object-utils.ts';
-import { strictProxy } from '../strict-proxy.ts';
-import { assertNonNullable } from '../type-guards.ts';
 import { retryWithTimeoutNotice } from './async-with-notice.ts';
 import { FileSystemType } from './file-system.ts';
 import {
@@ -67,11 +67,11 @@ import {
   trashSafe
 } from './vault.ts';
 
-vi.mock('../obsidian/async-with-notice.ts', () => ({
+vi.mock('./async-with-notice.ts', () => ({
   retryWithTimeoutNotice: vi.fn()
 }));
 
-vi.mock('../obsidian/i18n/i18n.ts', () => ({
+vi.mock('./i18n/i18n.ts', () => ({
   t: vi.fn(($function: (messages: GenericObject) => unknown) => {
     try {
       $function({ obsidianDevUtils: { vault: { processFile: 'mock' } } });
@@ -80,8 +80,8 @@ vi.mock('../obsidian/i18n/i18n.ts', () => ({
   })
 }));
 
-vi.mock('../debug.ts', () => ({
-  getLibDebugger: vi.fn(() => vi.fn())
+vi.mock('./debug.ts', () => ({
+  getObsidianLibDebugger: vi.fn(() => vi.fn())
 }));
 
 const mockedRetryWithTimeoutNotice = vi.mocked(retryWithTimeoutNotice);

@@ -29,12 +29,12 @@
 import type { App } from 'obsidian';
 import type { Promisable } from 'type-fest';
 
+import { convertAsyncToSync } from '@mnaoumov/typescript-lib/async';
 import { ButtonComponent } from 'obsidian';
 
 import type { PluginNoticeComponent } from './plugin-notice-component.ts';
 import type { PluginSettingsComponentBase } from './plugin-settings-component.ts';
 
-import { convertAsyncToSync } from '../../async.ts';
 import { CssClass } from '../css-class.ts';
 import { t } from '../i18n/i18n.ts';
 import {

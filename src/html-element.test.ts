@@ -2,6 +2,7 @@
 
 import type { App as AppOriginal } from 'obsidian';
 
+import { assertNonNullable } from '@mnaoumov/typescript-lib/type-guards';
 import { App } from 'obsidian-test-mocks/obsidian';
 import {
   beforeEach,
@@ -10,7 +11,6 @@ import {
   it
 } from 'vitest';
 
-import { assertNonNullable } from '../type-guards.ts';
 import {
   appendCodeBlock,
   applySpellcheckMode,

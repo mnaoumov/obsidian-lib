@@ -18,7 +18,8 @@
  * {@link filterHighestPriorityNotePaths} exists alongside the two functions that decide.
  */
 
-import { isValidRegExp } from '../reg-exp.ts';
+import { isValidRegExp } from '@mnaoumov/typescript-lib/reg-exp';
+
 import {
   checkPropertyEntryMatches,
   isPropertyEntry

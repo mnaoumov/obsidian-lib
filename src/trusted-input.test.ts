@@ -2,6 +2,7 @@
 
 import type { MockInstance } from 'vitest';
 
+import { castTo } from '@mnaoumov/typescript-lib/object-utils';
 import {
   beforeEach,
   describe,
@@ -10,7 +11,6 @@ import {
   vi
 } from 'vitest';
 
-import { castTo } from '../object-utils.ts';
 import {
   clickElement,
   clickMouse,

@@ -7,6 +7,9 @@ import type {
 } from 'obsidian-test-mocks/obsidian';
 import type { MockInstance } from 'vitest';
 
+import { castTo } from '@mnaoumov/typescript-lib/object-utils';
+import { ensureNonNullable } from '@mnaoumov/typescript-lib/type-guards';
+import { mockImplementation } from '@mnaoumov/typescript-test-toolkit/test-helpers/mock-implementation';
 import {
   ButtonComponent as ButtonComponentOriginal,
   TextComponent as TextComponentOriginal
@@ -21,9 +24,6 @@ import {
   vi
 } from 'vitest';
 
-import { castTo } from '../../object-utils.ts';
-import { mockImplementation } from '../../test-helpers/mock-implementation.ts';
-import { ensureNonNullable } from '../../type-guards.ts';
 import { SpellcheckMode } from '../obsidian-settings.ts';
 import {
   ModalCommandBuilder,
@@ -37,7 +37,7 @@ beforeEach(() => {
   app = App.createConfigured__().asOriginalType__();
 });
 
-vi.mock('../../async.ts', () => ({
+vi.mock('@mnaoumov/typescript-lib/async', () => ({
   convertAsyncToSync: vi.fn(($function: () => unknown) => $function),
   invokeAsyncSafely: vi.fn(($function: () => unknown) => {
     $function();
@@ -62,11 +62,11 @@ vi.mock('../css-class.ts', () => ({
   }
 }));
 
-vi.mock('../../function.ts', () => ({
+vi.mock('@mnaoumov/typescript-lib/function', () => ({
   noop: vi.fn()
 }));
 
-vi.mock('../../obsidian/i18n/i18n.ts', () => ({
+vi.mock('../i18n/i18n.ts', () => ({
   t: vi.fn((selector: unknown) => {
     if (typeof selector === 'function') {
       const proxy: unknown = new Proxy({}, { get: (): unknown => proxy });
@@ -76,7 +76,7 @@ vi.mock('../../obsidian/i18n/i18n.ts', () => ({
   })
 }));
 
-vi.mock('../../obsidian/plugin/plugin-context.ts', () => ({
+vi.mock('../plugin/plugin-context.ts', () => ({
   addPluginCssClasses: vi.fn()
 }));
 

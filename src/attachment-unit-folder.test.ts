@@ -2,6 +2,7 @@
 
 import type { App as AppOriginal } from 'obsidian';
 
+import { castTo } from '@mnaoumov/typescript-lib/object-utils';
 import { App } from 'obsidian-test-mocks/obsidian';
 import {
   describe,
@@ -10,7 +11,6 @@ import {
   vi
 } from 'vitest';
 
-import { castTo } from '../object-utils.ts';
 import {
   findAttachmentUnitFolderPath,
   rebasePathOntoFolder

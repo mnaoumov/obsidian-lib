@@ -4,7 +4,8 @@
  * Component that provides namespaced console debug logging.
  */
 
-import { getDebugger } from '../../debug.ts';
+import { getDebugger } from '@mnaoumov/typescript-lib/debug';
+
 import { ComponentEx } from './component-ex.ts';
 
 /**

@@ -3,6 +3,7 @@ import type {
   Reference
 } from 'obsidian';
 
+import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import {
   describe,
   expect,
@@ -12,7 +13,6 @@ import {
 import type { FrontmatterLinkCacheWithOffsets } from './frontmatter-link-cache-with-offsets.ts';
 import type { CanvasReference } from './reference.ts';
 
-import { strictProxy } from '../strict-proxy.ts';
 import {
   isCanvasFileNodeReference,
   isCanvasReference,

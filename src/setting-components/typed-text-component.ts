@@ -4,12 +4,13 @@
  * Contains a component that displays and edits a text-based value.
  */
 
+import type { ValidatorElement } from '@mnaoumov/typescript-lib/html-element';
+
 import {
   TextComponent,
   ValueComponent
 } from 'obsidian';
 
-import type { ValidatorElement } from '../../html-element.ts';
 import type { ValidatorComponent } from './validator-component.ts';
 import type { ValueComponentWithChangeTracking } from './value-component-with-change-tracking.ts';
 

@@ -7,6 +7,8 @@
 
 /// <reference types="obsidian-integration-testing/vitest/typings" />
 
+import type { GenericObject } from '@mnaoumov/typescript-lib/type-guards';
+
 import dedent from 'dedent';
 import { evalInObsidian } from 'obsidian-integration-testing';
 import {
@@ -14,8 +16,6 @@ import {
   expect,
   it
 } from 'vitest';
-
-import type { GenericObject } from '../type-guards.ts';
 
 interface DirtyEditorResult {
   readonly diskContent: string;

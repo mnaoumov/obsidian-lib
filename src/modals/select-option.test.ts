@@ -3,6 +3,8 @@
 import type { App as AppOriginal } from 'obsidian';
 import type { ButtonComponent } from 'obsidian-test-mocks/obsidian';
 
+import { castTo } from '@mnaoumov/typescript-lib/object-utils';
+import { mockImplementation } from '@mnaoumov/typescript-test-toolkit/test-helpers/mock-implementation';
 import { ButtonComponent as ButtonComponentOriginal } from 'obsidian';
 import { App } from 'obsidian-test-mocks/obsidian';
 import {
@@ -13,8 +15,6 @@ import {
   vi
 } from 'vitest';
 
-import { castTo } from '../../object-utils.ts';
-import { mockImplementation } from '../../test-helpers/mock-implementation.ts';
 import { selectOption } from './select-option.ts';
 
 let app: AppOriginal;
@@ -29,7 +29,7 @@ vi.mock('../css-class.ts', () => ({
   }
 }));
 
-vi.mock('../../obsidian/plugin/plugin-context.ts', () => ({
+vi.mock('../plugin/plugin-context.ts', () => ({
   addPluginCssClasses: vi.fn()
 }));
 

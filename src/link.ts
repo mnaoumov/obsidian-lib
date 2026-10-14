@@ -5,6 +5,7 @@
  * functions to split paths, update links in files, and generate markdown links with various options.
  */
 
+import type { MaybeReturn } from '@mnaoumov/typescript-lib/type';
 import type {
   App,
   CachedMetadata,
@@ -13,6 +14,32 @@ import type {
 } from 'obsidian';
 import type { Promisable } from 'type-fest';
 
+import { abortSignalNever } from '@mnaoumov/typescript-lib/abort-controller';
+import {
+  normalizeOptionalProperties,
+  removeUndefinedProperties
+} from '@mnaoumov/typescript-lib/object-utils';
+import {
+  basename,
+  dirname,
+  extname,
+  join,
+  relative
+} from '@mnaoumov/typescript-lib/path';
+import {
+  normalizeString,
+  replaceAll,
+  trimEnd
+} from '@mnaoumov/typescript-lib/string';
+import {
+  assertNever,
+  assertNonNullable,
+  ensureNonNullable
+} from '@mnaoumov/typescript-lib/type-guards';
+import {
+  encodeUrl,
+  normalizeFileUrl
+} from '@mnaoumov/typescript-lib/url';
 import {
   InternalPluginName,
   isReferenceCache
@@ -22,7 +49,6 @@ import {
   parseLinktext
 } from 'obsidian';
 
-import type { MaybeReturn } from '../type.ts';
 import type { FileChange } from './file-change.ts';
 import type {
   GetFileParams,
@@ -32,34 +58,7 @@ import type { LinkUpdateProgressReporter } from './link-update-progress.ts';
 import type { OffsetRange } from './reference.ts';
 import type { ProcessOptions } from './vault.ts';
 
-import { abortSignalNever } from '../abort-controller.ts';
-import { getLibDebugger } from '../debug.ts';
-import {
-  normalizeOptionalProperties,
-  removeUndefinedProperties
-} from '../object-utils.ts';
-import { getObsidianDevUtilsState } from '../obsidian-dev-utils-state.ts';
-import {
-  basename,
-  dirname,
-  extname,
-  join,
-  relative
-} from '../path.ts';
-import {
-  normalizeString,
-  replaceAll,
-  trimEnd
-} from '../string.ts';
-import {
-  assertNever,
-  assertNonNullable,
-  ensureNonNullable
-} from '../type-guards.ts';
-import {
-  encodeUrl,
-  normalizeFileUrl
-} from '../url.ts';
+import { getObsidianLibDebugger } from './debug.ts';
 import {
   applyContentChanges,
   applyFileChanges,
@@ -80,6 +79,7 @@ import {
   parseMetadata,
   registerFiles
 } from './metadata-cache.ts';
+import { getObsidianDevUtilsState } from './obsidian-dev-utils-state.ts';
 import {
   getNewLinkFormat,
   shouldUseWikilinks
@@ -2532,7 +2532,7 @@ async function getFileChanges(params: GetFileChangesParams): Promise<FileChange[
     start: section.position.start.offset
   }));
 
-  const getFileChangesDebugger = getLibDebugger('Link:getFileChanges');
+  const getFileChangesDebugger = getObsidianLibDebugger('Link:getFileChanges');
 
   for (const link of getLinks({ cache, shouldIncludeExternalLinks, shouldIncludeFrontmatterExternalLinks, shouldIncludeMultiValueFrontmatterExternalLinks })) {
     abortSignal.throwIfAborted();

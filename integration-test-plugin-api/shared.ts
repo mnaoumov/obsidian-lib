@@ -15,7 +15,7 @@
 
 import type { StandardSchemaV1 } from '@standard-schema/spec';
 
-import type { PluginApiContract } from '../src/obsidian/plugin/plugin-api.ts';
+import type { PluginApiContract } from '@mnaoumov/obsidian-lib/plugin/plugin-api';
 
 /**
  * The `manifest.id` of the consuming plugin.

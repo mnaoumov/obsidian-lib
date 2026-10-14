@@ -4,7 +4,7 @@ import type { Pos } from 'obsidian';
 import type {
   Link,
   Literal
-} from '../../data-model/value.d.ts';
+} from '../value.d.ts';
 export interface SMarkdownPage {
   file: {
     path: string;

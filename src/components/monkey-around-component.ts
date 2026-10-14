@@ -4,15 +4,14 @@
  * Improved type-safe wrapper of {@link https://www.npmjs.com/package/monkey-around} library.
  */
 
+import type { GenericFunction } from '@mnaoumov/typescript-lib/function';
+import type { MaybeReturn } from '@mnaoumov/typescript-lib/type';
+import type { GenericObject } from '@mnaoumov/typescript-lib/type-guards';
 import type { ConditionalKeys } from 'type-fest';
 
 import { around as originalAround } from 'monkey-around';
 
-import type { GenericFunction } from '../../function.ts';
-import type { GenericObject } from '../../type-guards.ts';
-import type { MaybeReturn } from '../../type.ts';
-
-import { getObsidianDevUtilsState } from '../../obsidian-dev-utils-state.ts';
+import { getObsidianDevUtilsState } from '../obsidian-dev-utils-state.ts';
 import { ComponentEx } from './component-ex.ts';
 
 /**

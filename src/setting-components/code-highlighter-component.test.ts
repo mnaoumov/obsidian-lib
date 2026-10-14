@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 
+import { assertNonNullable } from '@mnaoumov/typescript-lib/type-guards';
 import {
   describe,
   expect,
@@ -7,10 +8,9 @@ import {
   vi
 } from 'vitest';
 
-import { assertNonNullable } from '../../type-guards.ts';
 import { CodeHighlighterComponent } from './code-highlighter-component.ts';
 
-vi.mock('../../async.ts', () => ({
+vi.mock('@mnaoumov/typescript-lib/async', () => ({
   convertAsyncToSync: vi.fn(($function: () => unknown) => $function),
   invokeAsyncSafely: vi.fn(($function: () => unknown) => {
     $function();
@@ -25,11 +25,11 @@ vi.mock('../css-class.ts', () => ({
   }
 }));
 
-vi.mock('../../html-element.ts', () => ({
+vi.mock('@mnaoumov/typescript-lib/html-element', () => ({
   toPx: vi.fn((n: number) => `${String(n)}px`)
 }));
 
-vi.mock('../../obsidian/plugin/plugin-context.ts', () => ({
+vi.mock('../plugin/plugin-context.ts', () => ({
   addPluginCssClasses: vi.fn()
 }));
 

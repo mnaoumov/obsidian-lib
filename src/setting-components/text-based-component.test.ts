@@ -2,6 +2,8 @@
 
 import type { UndefinedOnPartialDeep } from 'type-fest';
 
+import { noop } from '@mnaoumov/typescript-lib/function';
+import { assertNonNullable } from '@mnaoumov/typescript-lib/type-guards';
 import { TextComponent } from 'obsidian';
 import {
   describe,
@@ -11,8 +13,6 @@ import {
 
 import type { TextBasedComponent } from './text-based-component.ts';
 
-import { noop } from '../../function.ts';
-import { assertNonNullable } from '../../type-guards.ts';
 import { getTextBasedComponentValue } from './text-based-component.ts';
 
 // Allow duck-type check in getTextBasedComponentValue to work with strictMock.

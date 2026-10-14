@@ -18,6 +18,16 @@ import type {
   TFolder
 } from 'obsidian';
 
+import {
+  invokeAsyncSafely,
+  sleep
+} from '@mnaoumov/typescript-lib/async';
+import {
+  getZIndex,
+  waitUntilConnected
+} from '@mnaoumov/typescript-lib/html-element';
+import { normalizeOptionalProperties } from '@mnaoumov/typescript-lib/object-utils';
+import { isUrl } from '@mnaoumov/typescript-lib/url';
 import { InternalPluginName } from '@obsidian-typings/obsidian-public-latest/implementations';
 import { t } from 'i18next';
 import {
@@ -33,16 +43,6 @@ import {
 import type { PathOrAbstractFile } from './file-system.ts';
 import type { FolderNoteLocation } from './folder-note.ts';
 
-import {
-  invokeAsyncSafely,
-  sleep
-} from '../async.ts';
-import {
-  getZIndex,
-  waitUntilConnected
-} from '../html-element.ts';
-import { normalizeOptionalProperties } from '../object-utils.ts';
-import { isUrl } from '../url.ts';
 import { MonkeyAroundComponent } from './components/monkey-around-component.ts';
 import { revealInFileExplorer } from './file-explorer.ts';
 import {

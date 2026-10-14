@@ -4,13 +4,20 @@
  * Contains a component that displays and edits multiple text values.
  */
 
+import type { ValidatorElement } from '@mnaoumov/typescript-lib/html-element';
+
+import { snapshot } from '@mnaoumov/typescript-lib/array';
+import {
+  convertAsyncToSync,
+  invokeAsyncSafely
+} from '@mnaoumov/typescript-lib/async';
+import { toPx } from '@mnaoumov/typescript-lib/html-element';
 import { loadPrism } from '@obsidian-typings/obsidian-public-latest/implementations';
 import {
   TextAreaComponent,
   ValueComponent
 } from 'obsidian';
 
-import type { ValidatorElement } from '../../html-element.ts';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- We need to import `initPluginContext` to use it in the tsdocs.
 import type { initPluginContext } from '../plugin/plugin-context.ts';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- We need to import `SettingEx` to use it in the tsdocs.
@@ -19,12 +26,6 @@ import type { TextBasedComponent } from './text-based-component.ts';
 import type { ValidatorComponent } from './validator-component.ts';
 import type { ValueComponentWithChangeTracking } from './value-component-with-change-tracking.ts';
 
-import { snapshot } from '../../array.ts';
-import {
-  convertAsyncToSync,
-  invokeAsyncSafely
-} from '../../async.ts';
-import { toPx } from '../../html-element.ts';
 import { CssClass } from '../css-class.ts';
 import { addPluginCssClasses } from '../plugin/plugin-context.ts';
 

@@ -4,6 +4,9 @@
  * Tests for the plugin event source.
  */
 
+import type { AsyncEventRef } from '@mnaoumov/typescript-lib/async-events';
+
+import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import {
   beforeEach,
   describe,
@@ -12,10 +15,8 @@ import {
   vi
 } from 'vitest';
 
-import type { AsyncEventRef } from '../../async-events.ts';
 import type { PluginBase } from './plugin.ts';
 
-import { strictProxy } from '../../strict-proxy.ts';
 import { PluginEventSourceImpl } from './plugin-event-source.ts';
 
 describe('PluginEventSourceImpl', () => {

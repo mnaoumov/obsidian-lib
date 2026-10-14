@@ -4,11 +4,23 @@
  * This module provides utility functions for working with the Obsidian Vault.
  */
 
+import type { RetryOptions } from '@mnaoumov/typescript-lib/async';
+import type { ValueProvider } from '@mnaoumov/typescript-lib/value-provider';
 import type {
   App,
   ListedFiles
 } from 'obsidian';
 
+import { abortSignalAny } from '@mnaoumov/typescript-lib/abort-controller';
+import { noopAsync } from '@mnaoumov/typescript-lib/function';
+import {
+  basename,
+  dirname,
+  extname,
+  join
+} from '@mnaoumov/typescript-lib/path';
+import { assertNever } from '@mnaoumov/typescript-lib/type-guards';
+import { resolveValue } from '@mnaoumov/typescript-lib/value-provider';
 import {
   getDataAdapterEx,
   parentFolderPath,
@@ -21,8 +33,6 @@ import {
   TFolder
 } from 'obsidian';
 
-import type { RetryOptions } from '../async.ts';
-import type { ValueProvider } from '../value-provider.ts';
 import type { PluginNoticeComponent } from './components/plugin-notice-component.ts';
 import type {
   PathOrAbstractFile,
@@ -31,18 +41,8 @@ import type {
 } from './file-system.ts';
 import type { ResourceLockComponent } from './resource-lock.ts';
 
-import { abortSignalAny } from '../abort-controller.ts';
-import { getLibDebugger } from '../debug.ts';
-import { noopAsync } from '../function.ts';
-import {
-  basename,
-  dirname,
-  extname,
-  join
-} from '../path.ts';
-import { assertNever } from '../type-guards.ts';
-import { resolveValue } from '../value-provider.ts';
 import { retryWithTimeoutNotice } from './async-with-notice.ts';
+import { getObsidianLibDebugger } from './debug.ts';
 import {
   asFile,
   asFolder,
@@ -914,7 +914,7 @@ export async function process(params: ProcessParams): Promise<void> {
           await app.vault.process(file, (content) => {
             abortSignal.throwIfAborted();
             if (content !== oldContent) {
-              getLibDebugger('Vault:process')('Content has changed since it was read. Retrying...', {
+              getObsidianLibDebugger('Vault:process')('Content has changed since it was read. Retrying...', {
                 actualContent: content,
                 expectedContent: oldContent,
                 path: file.path
@@ -1058,7 +1058,7 @@ export async function trashSafe(app: App, pathOrFile: PathOrAbstractFile): Promi
       throw error;
     }
 
-    getLibDebugger('Vault:trashSafe')(`An error occurred while trashing ${file.path}, but the file no longer exists.`, { error, path: file.path });
+    getObsidianLibDebugger('Vault:trashSafe')(`An error occurred while trashing ${file.path}, but the file no longer exists.`, { error, path: file.path });
   }
 }
 

@@ -4,9 +4,8 @@
  * Contains utility functions for printing to PDF.
  */
 
+import { ensureLoaded } from '@mnaoumov/typescript-lib/html-element';
 import { Platform } from 'obsidian';
-
-import { ensureLoaded } from '../html-element.ts';
 
 interface PrintToPdfOptions {
   readonly filepath: string;

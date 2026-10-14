@@ -4,10 +4,16 @@
  * Contains utility functions for managing files in Obsidian.
  */
 
+import type { MaybeReturn } from '@mnaoumov/typescript-lib/type';
 import type { App } from 'obsidian';
 import type { Promisable } from 'type-fest';
 
-import type { MaybeReturn } from '../type.ts';
+import { retryWithTimeout } from '@mnaoumov/typescript-lib/async';
+import {
+  isDeepEqual,
+  normalizeOptionalProperties
+} from '@mnaoumov/typescript-lib/object-utils';
+
 import type { PathOrFile } from './file-system.ts';
 import type { CombinedFrontmatter } from './frontmatter.ts';
 import type { ResourceLockComponent } from './resource-lock.ts';
@@ -16,11 +22,6 @@ import type {
   ProcessParams
 } from './vault.ts';
 
-import { retryWithTimeout } from '../async.ts';
-import {
-  isDeepEqual,
-  normalizeOptionalProperties
-} from '../object-utils.ts';
 import {
   getFile,
   getPath,

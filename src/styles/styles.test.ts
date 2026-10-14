@@ -8,8 +8,8 @@ import {
   it
 } from 'vitest';
 
-import { addPluginCssClasses } from '../obsidian/plugin/plugin-context.ts';
-import { MultipleDropdownComponent } from '../obsidian/setting-components/multiple-dropdown-component.ts';
+import { addPluginCssClasses } from '../plugin/plugin-context.ts';
+import { MultipleDropdownComponent } from '../setting-components/multiple-dropdown-component.ts';
 
 function getCompiledSelectors(): string[] {
   const { css } = compile(join(import.meta.dirname, 'main.scss'));

@@ -40,6 +40,15 @@ import type {
   TAbstractFile
 } from 'obsidian';
 
+import { snapshot } from '@mnaoumov/typescript-lib/array';
+import { convertAsyncToSync } from '@mnaoumov/typescript-lib/async';
+import { Beeper } from '@mnaoumov/typescript-lib/beeper';
+import {
+  CallbackDisposable,
+  MultipleDisposeBehavior
+} from '@mnaoumov/typescript-lib/disposable';
+import { noop } from '@mnaoumov/typescript-lib/function';
+import { assertNonNullable } from '@mnaoumov/typescript-lib/type-guards';
 import { ViewType } from '@obsidian-typings/obsidian-public-latest/implementations';
 import {
   FileManager,
@@ -52,16 +61,6 @@ import {
 
 import type { PathOrFile } from './file-system.ts';
 
-import { snapshot } from '../array.ts';
-import { convertAsyncToSync } from '../async.ts';
-import { Beeper } from '../beeper.ts';
-import {
-  CallbackDisposable,
-  MultipleDisposeBehavior
-} from '../disposable.ts';
-import { noop } from '../function.ts';
-import { getObsidianDevUtilsState } from '../obsidian-dev-utils-state.ts';
-import { assertNonNullable } from '../type-guards.ts';
 import { ComponentEx } from './components/component-ex.ts';
 import { MonkeyAroundComponent } from './components/monkey-around-component.ts';
 import { toggleEditorReadOnly } from './editor.ts';
@@ -69,6 +68,7 @@ import { getPath } from './file-system.ts';
 import { appendCodeBlock } from './html-element.ts';
 import { t } from './i18n/i18n.ts';
 import { confirm } from './modals/confirm.ts';
+import { getObsidianDevUtilsState } from './obsidian-dev-utils-state.ts';
 import {
   isChild,
   isChildOrSelf

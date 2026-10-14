@@ -63,6 +63,7 @@
  * is public within the shared-state bag; the rest of it stays internal.
  */
 
+import type { AsyncEventSource } from '@mnaoumov/typescript-lib/async-events';
 import type { StandardSchemaV1 } from '@standard-schema/spec';
 import type {
   App,
@@ -70,22 +71,20 @@ import type {
   Plugin
 } from 'obsidian';
 
+import { snapshot } from '@mnaoumov/typescript-lib/array';
+import {
+  invokeAsyncSafely,
+  runWithTimeout
+} from '@mnaoumov/typescript-lib/async';
+import { mixinAsyncEvents } from '@mnaoumov/typescript-lib/async-events';
+import { castTo } from '@mnaoumov/typescript-lib/object-utils';
 import {
   compareVersions,
   satisfies as satisfiesVersion
 } from 'compare-versions';
 
-import type { AsyncEventSource } from '../../async-events.ts';
-
-import { snapshot } from '../../array.ts';
-import { mixinAsyncEvents } from '../../async-events.ts';
-import {
-  invokeAsyncSafely,
-  runWithTimeout
-} from '../../async.ts';
-import { getLibDebugger } from '../../debug.ts';
-import { castTo } from '../../object-utils.ts';
-import { getObsidianDevUtilsState } from '../../obsidian-dev-utils-state.ts';
+import { getObsidianLibDebugger } from '../debug.ts';
+import { getObsidianDevUtilsState } from '../obsidian-dev-utils-state.ts';
 
 const PLUGIN_API_DEBUGGER_NAMESPACE = 'PluginApi';
 const PLUGIN_API_REGISTRY_STATE_KEY = 'pluginApiRegistry';
@@ -869,8 +868,8 @@ function getMember(api: object, methodName: PropertyKey): unknown {
  *
  * @returns The debugger.
  */
-function getPluginApiDebugger(): ReturnType<typeof getLibDebugger> {
-  return getLibDebugger(PLUGIN_API_DEBUGGER_NAMESPACE);
+function getPluginApiDebugger(): ReturnType<typeof getObsidianLibDebugger> {
+  return getObsidianLibDebugger(PLUGIN_API_DEBUGGER_NAMESPACE);
 }
 
 /**

@@ -4,23 +4,24 @@
  * Provides a utility to execute an asynchronous function with a notice.
  */
 
-import type { Notice } from 'obsidian';
-import type { Promisable } from 'type-fest';
-
 import type {
   RetryOptions,
   TimeoutContext
-} from '../async.ts';
-import type { ValueProvider } from '../value-provider.ts';
-import type { PluginNoticeComponent } from './components/plugin-notice-component.ts';
+} from '@mnaoumov/typescript-lib/async';
+import type { ValueProvider } from '@mnaoumov/typescript-lib/value-provider';
+import type { Notice } from 'obsidian';
+import type { Promisable } from 'type-fest';
 
 import {
   invokeAsyncSafely,
   retryWithTimeout,
   runWithTimeout
-} from '../async.ts';
-import { getDebugger } from '../debug.ts';
-import { resolveValue } from '../value-provider.ts';
+} from '@mnaoumov/typescript-lib/async';
+import { getDebugger } from '@mnaoumov/typescript-lib/debug';
+import { resolveValue } from '@mnaoumov/typescript-lib/value-provider';
+
+import type { PluginNoticeComponent } from './components/plugin-notice-component.ts';
+
 import { t } from './i18n/i18n.ts';
 
 /**

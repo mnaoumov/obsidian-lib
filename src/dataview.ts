@@ -6,6 +6,10 @@
 
 import type { Promisable } from 'type-fest';
 
+import { convertAsyncToSync } from '@mnaoumov/typescript-lib/async';
+import { errorToString } from '@mnaoumov/typescript-lib/error';
+import { ensureNonNullable } from '@mnaoumov/typescript-lib/type-guards';
+
 import type { DataviewInlineApi as DataviewInlineApiOriginal } from './@types/dataview/api/inline-api.d.ts';
 import type {
   DataArray,
@@ -15,9 +19,6 @@ import type {
 import type { PathOrFile } from './file-system.ts';
 import type { CombinedFrontmatter } from './frontmatter.ts';
 
-import { convertAsyncToSync } from '../async.ts';
-import { errorToString } from '../error.ts';
-import { ensureNonNullable } from '../type-guards.ts';
 import {
   getFile,
   getPath

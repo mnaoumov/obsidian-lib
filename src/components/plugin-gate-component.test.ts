@@ -16,6 +16,11 @@ import type {
 } from 'obsidian';
 import type { ButtonComponent } from 'obsidian-test-mocks/obsidian';
 
+import { noopAsync } from '@mnaoumov/typescript-lib/function';
+import { castTo } from '@mnaoumov/typescript-lib/object-utils';
+import { assertNonNullable } from '@mnaoumov/typescript-lib/type-guards';
+import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
+import { mockImplementation } from '@mnaoumov/typescript-test-toolkit/test-helpers/mock-implementation';
 import { ButtonComponent as ButtonComponentClass } from 'obsidian';
 import {
   afterEach,
@@ -34,11 +39,6 @@ import type {
 } from './plugin-gate-component.ts';
 import type { PluginNoticeComponent } from './plugin-notice-component.ts';
 
-import { noopAsync } from '../../function.ts';
-import { castTo } from '../../object-utils.ts';
-import { strictProxy } from '../../strict-proxy.ts';
-import { mockImplementation } from '../../test-helpers/mock-implementation.ts';
-import { assertNonNullable } from '../../type-guards.ts';
 import {
   PLUGIN_LOADED_EVENT_NAME,
   PLUGIN_UNLOADED_EVENT_NAME

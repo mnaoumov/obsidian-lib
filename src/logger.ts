@@ -6,12 +6,11 @@
 
 import type { Promisable } from 'type-fest';
 
-import { abortSignalNever } from '../abort-controller.ts';
-import {
-  getLibDebugger,
-  printWithStackTrace
-} from '../debug.ts';
-import { getStackTrace } from '../error.ts';
+import { abortSignalNever } from '@mnaoumov/typescript-lib/abort-controller';
+import { printWithStackTrace } from '@mnaoumov/typescript-lib/debug';
+import { getStackTrace } from '@mnaoumov/typescript-lib/error';
+
+import { getObsidianLibDebugger } from './debug.ts';
 
 /**
  * Parameters for {@link invokeAsyncAndLog}.
@@ -53,7 +52,7 @@ export async function invokeAsyncAndLog(params: InvokeAsyncAndLogParams): Promis
     title
   } = params;
   abortSignal.throwIfAborted();
-  const invokeAsyncAndLogDebugger = getLibDebugger('Logger:invokeAsyncAndLog');
+  const invokeAsyncAndLogDebugger = getObsidianLibDebugger('Logger:invokeAsyncAndLog');
   const timestampStart = performance.now();
   const stackTrace = params.stackTrace ?? getStackTrace(1);
   printWithStackTrace({

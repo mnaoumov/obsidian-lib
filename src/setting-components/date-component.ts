@@ -4,6 +4,7 @@
  * Contains a component that displays and edits a date.
  */
 
+import { extractDefaultExportInterop } from '@mnaoumov/typescript-lib/object-utils';
 import { moment as moment_ } from 'obsidian';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- We need to import `initPluginContext` to use it in the tsdocs.
@@ -11,7 +12,6 @@ import type { initPluginContext } from '../plugin/plugin-context.ts';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- We need to import `SettingEx` to use it in the tsdocs.
 import type { SettingEx } from '../setting-ex.ts';
 
-import { extractDefaultExportInterop } from '../../object-utils.ts';
 import { CssClass } from '../css-class.ts';
 import { TypedRangeTextComponent } from './typed-range-text-component.ts';
 

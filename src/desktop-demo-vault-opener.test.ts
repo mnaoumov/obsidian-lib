@@ -5,6 +5,11 @@ import type {
   RequestUrlParam
 } from 'obsidian';
 
+import {
+  basename,
+  dirname
+} from '@mnaoumov/typescript-lib/path';
+import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import { zipSync } from 'fflate';
 import {
   afterEach,
@@ -23,11 +28,6 @@ import type {
 import type { OpenDemoVaultParams } from './desktop-demo-vault-opener.ts';
 import type { SelectOptionParams } from './modals/select-option.ts';
 
-import {
-  basename,
-  dirname
-} from '../path.ts';
-import { strictProxy } from '../strict-proxy.ts';
 import { PluginNoticeMode } from './components/plugin-notice-component.ts';
 import { openDemoVault } from './desktop-demo-vault-opener.ts';
 

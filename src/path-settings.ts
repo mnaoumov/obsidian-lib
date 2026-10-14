@@ -4,16 +4,17 @@
  * This module provides classes and validators for managing include/exclude path settings.
  */
 
-import type { MaybeReturn } from '../type.ts';
+import type { MaybeReturn } from '@mnaoumov/typescript-lib/type';
 
 import {
   ALWAYS_MATCH_REG_EXP,
   escapeRegExp,
   isValidRegExp,
   NEVER_MATCH_REG_EXP
-} from '../reg-exp.ts';
-import { trimEnd } from '../string.ts';
-import { assertNever } from '../type-guards.ts';
+} from '@mnaoumov/typescript-lib/reg-exp';
+import { trimEnd } from '@mnaoumov/typescript-lib/string';
+import { assertNever } from '@mnaoumov/typescript-lib/type-guards';
+
 import { t } from './i18n/i18n.ts';
 
 enum PathSettingType {

@@ -1,5 +1,5 @@
 import type { DataviewApi } from '../../api/plugin-api.d.ts';
-import type { DataviewRefreshableRenderer } from '../../ui/refreshable-view.d.ts';
+import type { DataviewRefreshableRenderer } from '../refreshable-view.d.ts';
 export declare class DataviewJSRenderer extends DataviewRefreshableRenderer {
   api: DataviewApi;
   script: string;

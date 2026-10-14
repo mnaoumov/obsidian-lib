@@ -6,7 +6,8 @@
 
 import type { Constructor } from 'type-fest';
 
-import { ensureNonNullable } from '../../type-guards.ts';
+import { ensureNonNullable } from '@mnaoumov/typescript-lib/type-guards';
+
 import { ComponentEx } from './component-ex.ts';
 
 /**

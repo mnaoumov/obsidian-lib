@@ -1,5 +1,7 @@
 // @vitest-environment jsdom
 
+import { noopAsync } from '@mnaoumov/typescript-lib/function';
+import { assertNonNullable } from '@mnaoumov/typescript-lib/type-guards';
 import {
   ColorComponent,
   DropdownComponent,
@@ -17,8 +19,6 @@ import {
   vi
 } from 'vitest';
 
-import { noopAsync } from '../../function.ts';
-import { assertNonNullable } from '../../type-guards.ts';
 import { getValidatorComponent } from './validator-component.ts';
 
 vi.mock('../css-class.ts', () => ({
@@ -28,7 +28,7 @@ vi.mock('../css-class.ts', () => ({
   }
 }));
 
-vi.mock('../../obsidian/plugin/plugin-context.ts', () => ({
+vi.mock('../plugin/plugin-context.ts', () => ({
   addPluginCssClasses: vi.fn()
 }));
 

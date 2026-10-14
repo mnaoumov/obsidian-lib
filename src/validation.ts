@@ -4,13 +4,12 @@
  * Validation utilities.
  */
 
-import { Platform } from 'obsidian';
-
 import {
   basename,
   extname
-} from '../path.ts';
-import { oneOf } from '../reg-exp.ts';
+} from '@mnaoumov/typescript-lib/path';
+import { oneOf } from '@mnaoumov/typescript-lib/reg-exp';
+import { Platform } from 'obsidian';
 
 /**
  * Holds a validation message.

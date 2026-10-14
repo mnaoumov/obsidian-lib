@@ -48,13 +48,13 @@
 
 import type { App } from 'obsidian';
 
+import { Beeper } from '@mnaoumov/typescript-lib/beeper';
 import {
   Modal,
   setIcon,
   setTooltip
 } from 'obsidian';
 
-import { Beeper } from '../../beeper.ts';
 import { AllWindowsEventComponent } from '../components/all-windows-event-component.ts';
 import { MonkeyAroundComponent } from '../components/monkey-around-component.ts';
 import { CssClass } from '../css-class.ts';

@@ -6,6 +6,14 @@
 
 import type { App } from 'obsidian';
 
+import { normalizeOptionalProperties } from '@mnaoumov/typescript-lib/object-utils';
+import {
+  basename,
+  extname,
+  resolve
+} from '@mnaoumov/typescript-lib/path';
+import { trimEnd } from '@mnaoumov/typescript-lib/string';
+import { ensureNonNullable } from '@mnaoumov/typescript-lib/type-guards';
 import {
   createTFileInstance,
   createTFolderInstance,
@@ -20,14 +28,6 @@ import {
   Vault
 } from 'obsidian';
 
-import { normalizeOptionalProperties } from '../object-utils.ts';
-import {
-  basename,
-  extname,
-  resolve
-} from '../path.ts';
-import { trimEnd } from '../string.ts';
-import { ensureNonNullable } from '../type-guards.ts';
 import { getCaseInsensitiveFileIndex } from './case-insensitive-file-index.ts';
 import {
   checkPropertyEntryMatches,

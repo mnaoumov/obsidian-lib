@@ -4,12 +4,15 @@
  * Tests for {@link AbstractFileCommandHandler}.
  */
 
+import type { DisposableEx } from '@mnaoumov/typescript-lib/disposable';
 import type {
   Menu as MenuOriginal,
   TAbstractFile as TAbstractFileOriginal,
   TFile as TFileOriginal
 } from 'obsidian';
 
+import { noopAsync } from '@mnaoumov/typescript-lib/function';
+import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import {
   describe,
   expect,
@@ -17,7 +20,6 @@ import {
   vi
 } from 'vitest';
 
-import type { DisposableEx } from '../../disposable.ts';
 import type { ActiveFileProvider } from '../active-file-provider.ts';
 import type {
   FileMenuEventHandler,
@@ -30,8 +32,6 @@ import type {
 } from './abstract-file-command-handler.ts';
 import type { CommandHandlerRegistrationContext } from './command-handler.ts';
 
-import { noopAsync } from '../../function.ts';
-import { strictProxy } from '../../strict-proxy.ts';
 import { AbstractFileCommandHandler } from './abstract-file-command-handler.ts';
 
 interface MockContext {

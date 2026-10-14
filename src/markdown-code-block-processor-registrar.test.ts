@@ -10,6 +10,8 @@ import type {
   Plugin as PluginOriginal
 } from 'obsidian';
 
+import { noop } from '@mnaoumov/typescript-lib/function';
+import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import {
   describe,
   expect,
@@ -17,8 +19,6 @@ import {
   vi
 } from 'vitest';
 
-import { noop } from '../function.ts';
-import { strictProxy } from '../strict-proxy.ts';
 import { PluginMarkdownCodeBlockProcessorRegistrar } from './markdown-code-block-processor-registrar.ts';
 
 describe('PluginMarkdownCodeBlockProcessorRegistrar', () => {

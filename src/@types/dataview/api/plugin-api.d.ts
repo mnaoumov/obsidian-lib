@@ -10,7 +10,6 @@ import type {
   Component,
   MarkdownPostProcessorContext
 } from 'obsidian';
-import type { Result } from '../api/result.d.ts';
 import type { FullIndex } from '../data-index/index.d.ts';
 import type { SListItem } from '../data-model/serialized/markdown.d.ts';
 import type {
@@ -30,6 +29,7 @@ import type {
   ExportSettings
 } from '../settings.d.ts';
 import type { DataArray } from './data-array.d.ts';
+import type { Result } from './result.d.ts';
 /** Asynchronous API calls related to file / system IO. */
 export declare class DataviewIOApi {
   api: DataviewApi;

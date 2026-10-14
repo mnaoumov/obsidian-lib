@@ -4,11 +4,10 @@
  * This module exports a base class for displaying modals in Obsidian.
  */
 
+import type { PromiseResolve } from '@mnaoumov/typescript-lib/async';
 import type { App } from 'obsidian';
 
 import { Modal } from 'obsidian';
-
-import type { PromiseResolve } from '../../async.ts';
 
 import { addPluginCssClasses } from '../plugin/plugin-context.ts';
 

@@ -7,8 +7,9 @@
 import type { App } from 'obsidian';
 import type { Promisable } from 'type-fest';
 
-import { invokeAsyncSafely } from '../../async.ts';
-import { noop } from '../../function.ts';
+import { invokeAsyncSafely } from '@mnaoumov/typescript-lib/async';
+import { noop } from '@mnaoumov/typescript-lib/function';
+
 import { ComponentEx } from './component-ex.ts';
 
 /**

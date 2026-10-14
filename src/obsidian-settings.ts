@@ -6,7 +6,7 @@
 
 import type { App } from 'obsidian';
 
-import { assertNever } from '../type-guards.ts';
+import { assertNever } from '@mnaoumov/typescript-lib/type-guards';
 
 /**
  * A way an input decides whether it is spell-checked.

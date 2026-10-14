@@ -6,6 +6,7 @@
 
 /* v8 ignore start -- Deeply coupled to Obsidian runtime; requires running vault for meaningful testing. */
 
+import type { ValueProvider } from '@mnaoumov/typescript-lib/value-provider';
 import type {
   App,
   MarkdownPostProcessorContext,
@@ -13,30 +14,29 @@ import type {
   TFile
 } from 'obsidian';
 
-import { ViewType } from '@obsidian-typings/obsidian-public-latest/implementations';
-import { MarkdownView } from 'obsidian';
-
-import type { ValueProvider } from '../value-provider.ts';
-import type { CodeBlockMarkdownInformation } from './code-block-markdown-information.ts';
-import type { ResourceLockComponent } from './resource-lock.ts';
-import type { ContentArguments } from './vault.ts';
-
-import { abortSignalAny } from '../abort-controller.ts';
-import { requestAnimationFrameAsync } from '../async.ts';
-import { normalizeOptionalProperties } from '../object-utils.ts';
+import { abortSignalAny } from '@mnaoumov/typescript-lib/abort-controller';
+import { requestAnimationFrameAsync } from '@mnaoumov/typescript-lib/async';
+import { normalizeOptionalProperties } from '@mnaoumov/typescript-lib/object-utils';
 import {
   getMandatoryNamedGroup,
   getOptionalNamedGroup
-} from '../reg-exp.ts';
+} from '@mnaoumov/typescript-lib/reg-exp';
 import {
   ensureLfEndings,
   getLfNormalizedOffsetToOriginalOffsetMapper,
   hasSingleOccurrence,
   indent,
   unindent
-} from '../string.ts';
-import { assertNonNullable } from '../type-guards.ts';
-import { resolveValue } from '../value-provider.ts';
+} from '@mnaoumov/typescript-lib/string';
+import { assertNonNullable } from '@mnaoumov/typescript-lib/type-guards';
+import { resolveValue } from '@mnaoumov/typescript-lib/value-provider';
+import { ViewType } from '@obsidian-typings/obsidian-public-latest/implementations';
+import { MarkdownView } from 'obsidian';
+
+import type { CodeBlockMarkdownInformation } from './code-block-markdown-information.ts';
+import type { ResourceLockComponent } from './resource-lock.ts';
+import type { ContentArguments } from './vault.ts';
+
 import { createCodeBlockRegExp } from './code-block-reg-exp.ts';
 import { getFileOrNull } from './file-system.ts';
 import {

@@ -5,6 +5,8 @@ import type {
   WorkspaceLeaf as WorkspaceLeafOriginal
 } from 'obsidian';
 
+import { assertNonNullable } from '@mnaoumov/typescript-lib/type-guards';
+import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import {
   App,
   MarkdownView,
@@ -20,8 +22,6 @@ import {
 
 import type { RetryWithTimeoutNoticeParams } from './async-with-notice.ts';
 
-import { strictProxy } from '../strict-proxy.ts';
-import { assertNonNullable } from '../type-guards.ts';
 import { retryWithTimeoutNotice } from './async-with-notice.ts';
 import { VaultTransaction } from './vault-transaction.ts';
 

@@ -14,10 +14,10 @@
  * plugins bundling an older copy of this library, which still keep that state here, share it with newer ones.
  */
 
-import type { GenericObject } from './type-guards.ts';
+import type { GenericObject } from '@mnaoumov/typescript-lib/type-guards';
 
-import { getTypescriptLibStateSlot } from './typescript-lib-state.ts';
-import { ValueWrapper } from './value-wrapper.ts';
+import { getTypescriptLibStateSlot } from '@mnaoumov/typescript-lib/typescript-lib-state';
+import { ValueWrapper } from '@mnaoumov/typescript-lib/value-wrapper';
 
 interface ObsidianDevUtilsWrapper {
   __obsidianDevUtils: GenericObject;

@@ -5,7 +5,6 @@ import type {
   FrontMatterCache,
   HeadingCache
 } from 'obsidian';
-import type { InlineField } from '../data-import/inline-field.d.ts';
 import type {
   ListItem,
   PageMetadata
@@ -14,6 +13,7 @@ import type {
   Link,
   Literal
 } from '../data-model/value.d.ts';
+import type { InlineField } from './inline-field.d.ts';
 /** Extract markdown metadata from the given Obsidian markdown file. */
 export declare function parsePage(path: string, contents: string, stat: FileStats, metadata: CachedMetadata): PageMetadata;
 /** Extract tags intelligently from frontmatter. Handles arrays, numbers, and strings. */

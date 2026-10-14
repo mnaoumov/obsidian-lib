@@ -1,5 +1,7 @@
 import type { App as AppOriginal } from 'obsidian';
 
+import { noopAsync } from '@mnaoumov/typescript-lib/function';
+import { assertNonNullable } from '@mnaoumov/typescript-lib/type-guards';
 import { App } from 'obsidian-test-mocks/obsidian';
 import {
   beforeEach,
@@ -8,8 +10,6 @@ import {
   it
 } from 'vitest';
 
-import { noopAsync } from '../function.ts';
-import { assertNonNullable } from '../type-guards.ts';
 import {
   CaseInsensitiveFileIndex,
   getCaseInsensitiveFileIndex,

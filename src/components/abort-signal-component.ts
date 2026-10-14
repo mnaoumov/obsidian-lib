@@ -4,7 +4,8 @@
  * Component that provides an AbortSignal for cancelling long-running operations on plugin unload.
  */
 
-import { SilentError } from '../../error.ts';
+import { SilentError } from '@mnaoumov/typescript-lib/error';
+
 import { ComponentEx } from './component-ex.ts';
 
 /**

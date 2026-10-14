@@ -7,6 +7,7 @@ import type {
   WorkspaceLeaf
 } from 'obsidian';
 
+import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import {
   afterEach,
   beforeEach,
@@ -16,7 +17,6 @@ import {
   vi
 } from 'vitest';
 
-import { strictProxy } from '../../strict-proxy.ts';
 import { PointerPositionComponent } from './pointer-position-component.ts';
 
 function createLoadedComponent(app: App): PointerPositionComponent {

@@ -4,7 +4,14 @@
  * Component that registers {@link CommandHandler}s with Obsidian and ties their removal to a chosen lifetime.
  */
 
-import type { DisposableEx } from '../../disposable.ts';
+import type { DisposableEx } from '@mnaoumov/typescript-lib/disposable';
+
+import {
+  CallbackDisposable,
+  CombineDisposable,
+  DisposableBase
+} from '@mnaoumov/typescript-lib/disposable';
+
 import type { ActiveFileProvider } from '../active-file-provider.ts';
 import type { CommandRegistrar } from '../command-registrar.ts';
 import type {
@@ -19,11 +26,6 @@ import type {
   CommandHandlerRegistrationContext
 } from './command-handler.ts';
 
-import {
-  CallbackDisposable,
-  CombineDisposable,
-  DisposableBase
-} from '../../disposable.ts';
 import { ComponentEx } from '../components/component-ex.ts';
 
 /**

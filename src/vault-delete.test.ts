@@ -6,6 +6,8 @@ import type {
   TFolder as TFolderOriginal
 } from 'obsidian';
 
+import { castTo } from '@mnaoumov/typescript-lib/object-utils';
+import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import {
   App,
   TFile,
@@ -22,8 +24,6 @@ import {
 import type { PluginNoticeComponent } from './components/plugin-notice-component.ts';
 import type { GetAbstractFileOrNullParams } from './file-system.ts';
 
-import { castTo } from '../object-utils.ts';
-import { strictProxy } from '../strict-proxy.ts';
 import {
   deleteIfNotUsed,
   DeleteIfNotUsedResult
@@ -37,17 +37,17 @@ const mocks = vi.hoisted(() => ({
   trashSafe: vi.fn()
 }));
 
-vi.mock('../error.ts', () => ({
+vi.mock('@mnaoumov/typescript-lib/error', () => ({
   printError: vi.fn()
 }));
 
-vi.mock('../obsidian/file-system.ts', () => ({
+vi.mock('./file-system.ts', () => ({
   getAbstractFileOrNull: mocks.getAbstractFileOrNull,
   isFile: vi.fn((f: unknown) => f instanceof TFile),
   isFolder: vi.fn((f: unknown) => f instanceof TFolder)
 }));
 
-vi.mock('../obsidian/i18n/i18n.ts', () => ({
+vi.mock('./i18n/i18n.ts', () => ({
   t: vi.fn((selector: unknown, _options?: unknown) => {
     if (typeof selector === 'function') {
       const proxy: unknown = new Proxy({}, { get: (): unknown => proxy });
@@ -57,11 +57,11 @@ vi.mock('../obsidian/i18n/i18n.ts', () => ({
   })
 }));
 
-vi.mock('../obsidian/metadata-cache.ts', () => ({
+vi.mock('./metadata-cache.ts', () => ({
   getBacklinksForFileSafe: mocks.getBacklinksForFileSafe
 }));
 
-vi.mock('../obsidian/vault.ts', () => ({
+vi.mock('./vault.ts', () => ({
   isEmptyFolder: mocks.isEmptyFolder,
   listSafe: mocks.listSafe,
   trashSafe: mocks.trashSafe

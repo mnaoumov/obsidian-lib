@@ -6,6 +6,15 @@ import type {
   TFile as TFileOriginal
 } from 'obsidian';
 
+import { CallbackDisposable } from '@mnaoumov/typescript-lib/disposable';
+import { noop } from '@mnaoumov/typescript-lib/function';
+import { castTo } from '@mnaoumov/typescript-lib/object-utils';
+import {
+  assertNonNullable,
+  ensureNonNullable
+} from '@mnaoumov/typescript-lib/type-guards';
+import { resolveValue } from '@mnaoumov/typescript-lib/value-provider';
+import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import {
   App,
   TFile
@@ -33,15 +42,6 @@ import type {
 } from './reference.ts';
 import type { ResourceLockComponent } from './resource-lock.ts';
 
-import { CallbackDisposable } from '../disposable.ts';
-import { noop } from '../function.ts';
-import { castTo } from '../object-utils.ts';
-import { strictProxy } from '../strict-proxy.ts';
-import {
-  assertNonNullable,
-  ensureNonNullable
-} from '../type-guards.ts';
-import { resolveValue } from '../value-provider.ts';
 import { GenerateMarkdownLinkDefaultParamsComponent } from './components/generate-markdown-link-default-params-component.ts';
 import {
   applyContentChanges,
@@ -85,7 +85,7 @@ import {
   toParseLinkReference
 } from './parse-link.ts';
 
-vi.mock('../obsidian/metadata-cache.ts', async (importOriginal) => {
+vi.mock('./metadata-cache.ts', async (importOriginal) => {
   const original = await importOriginal();
   return {
     ...(original as object),
@@ -96,7 +96,7 @@ vi.mock('../obsidian/metadata-cache.ts', async (importOriginal) => {
   };
 });
 
-vi.mock('../obsidian/file-change.ts', async (importOriginal) => {
+vi.mock('./file-change.ts', async (importOriginal) => {
   const original = await importOriginal();
   return {
     ...(original as object),

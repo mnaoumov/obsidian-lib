@@ -5,8 +5,8 @@ import type {
   LiteralRepr,
   LiteralType
 } from '../data-model/value.d.ts';
-import type { Context } from '../expression/context.d.ts';
-import type { BinaryOp } from '../expression/field.d.ts';
+import type { Context } from './context.d.ts';
+import type { BinaryOp } from './field.d.ts';
 /** A literal type or a catch-all '*'. */
 export type LiteralTypeOrAll = LiteralType | '*';
 /** Maps a literal type or the catch-all '*'. */

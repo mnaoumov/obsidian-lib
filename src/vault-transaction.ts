@@ -22,10 +22,11 @@ import type {
   TFile
 } from 'obsidian';
 
+import { dispose } from '@mnaoumov/typescript-lib/disposable';
+import { assertNonNullable } from '@mnaoumov/typescript-lib/type-guards';
+
 import type { PathOrAbstractFile } from './file-system.ts';
 
-import { dispose } from '../disposable.ts';
-import { assertNonNullable } from '../type-guards.ts';
 import { syncOpenEditorBuffersForPath } from './editor.ts';
 import {
   getAbstractFileOrNull,

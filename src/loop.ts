@@ -6,18 +6,19 @@
 
 import type { Promisable } from 'type-fest';
 
-import type { PluginNoticeComponent } from './components/plugin-notice-component.ts';
-
-import { abortSignalNever } from '../abort-controller.ts';
-import { requestAnimationFrameAsync } from '../async.ts';
-import { getLibDebugger } from '../debug.ts';
+import { abortSignalNever } from '@mnaoumov/typescript-lib/abort-controller';
+import { requestAnimationFrameAsync } from '@mnaoumov/typescript-lib/async';
 import {
   ASYNC_WRAPPER_ERROR_MESSAGE,
   CustomStackTraceError,
   emitAsyncErrorEvent,
   getStackTrace
-} from '../error.ts';
-import { noop } from '../function.ts';
+} from '@mnaoumov/typescript-lib/error';
+import { noop } from '@mnaoumov/typescript-lib/function';
+
+import type { PluginNoticeComponent } from './components/plugin-notice-component.ts';
+
+import { getObsidianLibDebugger } from './debug.ts';
 import { addPluginCssClasses } from './plugin/plugin-context.ts';
 
 /**
@@ -197,7 +198,7 @@ export async function loop<T>(params: LoopParams<T>): Promise<void> {
           delayedNotice?.setContent(message);
         }
       }
-      getLibDebugger('Loop')(message);
+      getObsidianLibDebugger('Loop')(message);
 
       try {
         if (performance.now() - lastUIUpdateTimestamp > fullOptions.uiUpdateThresholdInMilliseconds) {

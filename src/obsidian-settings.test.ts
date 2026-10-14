@@ -1,15 +1,14 @@
+import type { GenericObject } from '@mnaoumov/typescript-lib/type-guards';
 import type { App } from 'obsidian';
 
+import { castTo } from '@mnaoumov/typescript-lib/object-utils';
+import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import {
   describe,
   expect,
   it
 } from 'vitest';
 
-import type { GenericObject } from '../type-guards.ts';
-
-import { castTo } from '../object-utils.ts';
-import { strictProxy } from '../strict-proxy.ts';
 import {
   getNewLinkFormat,
   isSpellcheckEnabled,

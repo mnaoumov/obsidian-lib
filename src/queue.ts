@@ -4,27 +4,27 @@
  * Contains utility functions for enqueuing and processing functions in Obsidian.
  */
 
+import type { ValueWrapper } from '@mnaoumov/typescript-lib/value-wrapper';
 import type { Promisable } from 'type-fest';
-
-import type { ValueWrapper } from '../value-wrapper.ts';
 
 import {
   abortSignalAny,
   abortSignalNever
-} from '../abort-controller.ts';
+} from '@mnaoumov/typescript-lib/abort-controller';
 import {
   addErrorHandler,
   invokeAsyncSafely
-} from '../async.ts';
-import { getStackTrace } from '../error.ts';
+} from '@mnaoumov/typescript-lib/async';
+import { getStackTrace } from '@mnaoumov/typescript-lib/error';
 import {
   noop,
   noopAsync
-} from '../function.ts';
-import { getObsidianDevUtilsState } from '../obsidian-dev-utils-state.ts';
+} from '@mnaoumov/typescript-lib/function';
+
 import { runWithTimeoutNotice } from './async-with-notice.ts';
 import { t } from './i18n/i18n.ts';
 import { invokeAsyncAndLog } from './logger.ts';
+import { getObsidianDevUtilsState } from './obsidian-dev-utils-state.ts';
 
 /**
  * Options for the {@link addToQueueAndWait} function.

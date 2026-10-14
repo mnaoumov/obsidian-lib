@@ -4,9 +4,8 @@
  * A transformer that can transform Duration to an ISO string and back.
  */
 
+import { TypedTransformer } from '@mnaoumov/typescript-lib/transformers/typed-transformer';
 import { moment } from 'obsidian';
-
-import { TypedTransformer } from './typed-transformer.ts';
 
 /**
  * A transformer that converts a Duration to an ISO string and back.

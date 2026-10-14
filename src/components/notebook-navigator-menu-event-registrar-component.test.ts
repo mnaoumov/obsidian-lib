@@ -13,6 +13,11 @@ import type {
 } from 'obsidian';
 import type { MenuItem } from 'obsidian-test-mocks/obsidian';
 
+import { sleep } from '@mnaoumov/typescript-lib/async';
+import { castTo } from '@mnaoumov/typescript-lib/object-utils';
+import { ensureNonNullable } from '@mnaoumov/typescript-lib/type-guards';
+import { waitForAllAsyncOperations } from '@mnaoumov/typescript-test-toolkit/async-operation-tracking';
+import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import { Menu } from 'obsidian-test-mocks/obsidian';
 import {
   beforeEach,
@@ -27,13 +32,6 @@ import type {
   NotebookNavigatorFolderMenuContext
 } from '../notebook-navigator.ts';
 
-import {
-  sleep,
-  waitForAllAsyncOperations
-} from '../../async.ts';
-import { castTo } from '../../object-utils.ts';
-import { strictProxy } from '../../strict-proxy.ts';
-import { ensureNonNullable } from '../../type-guards.ts';
 import { NOTEBOOK_NAVIGATOR_MENU_SOURCE } from '../notebook-navigator.ts';
 import { NotebookNavigatorMenuEventRegistrarComponent } from './notebook-navigator-menu-event-registrar-component.ts';
 

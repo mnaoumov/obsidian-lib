@@ -2,6 +2,8 @@
 
 import type { App as AppOriginal } from 'obsidian';
 
+import { castTo } from '@mnaoumov/typescript-lib/object-utils';
+import { assertNonNullable } from '@mnaoumov/typescript-lib/type-guards';
 import { Modal } from 'obsidian';
 import { App } from 'obsidian-test-mocks/obsidian';
 import {
@@ -13,8 +15,6 @@ import {
   vi
 } from 'vitest';
 
-import { castTo } from '../../object-utils.ts';
-import { assertNonNullable } from '../../type-guards.ts';
 import { CssClass } from '../css-class.ts';
 import { MinimizableModal } from './minimizable-modal.ts';
 

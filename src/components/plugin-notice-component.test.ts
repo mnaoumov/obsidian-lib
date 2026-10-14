@@ -3,6 +3,12 @@ import type {
   Notice as NoticeOriginal
 } from 'obsidian';
 
+import { dispose } from '@mnaoumov/typescript-lib/disposable';
+import { noop } from '@mnaoumov/typescript-lib/function';
+import { castTo } from '@mnaoumov/typescript-lib/object-utils';
+import { ensureNonNullable } from '@mnaoumov/typescript-lib/type-guards';
+import { waitForAllAsyncOperations } from '@mnaoumov/typescript-test-toolkit/async-operation-tracking';
+import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import {
   afterEach,
   beforeEach,
@@ -12,12 +18,6 @@ import {
   vi
 } from 'vitest';
 
-import { waitForAllAsyncOperations } from '../../async.ts';
-import { dispose } from '../../disposable.ts';
-import { noop } from '../../function.ts';
-import { castTo } from '../../object-utils.ts';
-import { strictProxy } from '../../strict-proxy.ts';
-import { ensureNonNullable } from '../../type-guards.ts';
 import { CssClass } from '../css-class.ts';
 import {
   PluginNoticeComponent,
@@ -73,7 +73,7 @@ vi.mock('obsidian', async (importOriginal) => {
   };
 });
 
-vi.mock('../../obsidian-dev-utils-state.ts', () => ({
+vi.mock('../obsidian-dev-utils-state.ts', () => ({
   getObsidianDevUtilsState: vi.fn((key: string, defaultValue: unknown) => {
     let wrapper = stateMocks.store.get(key);
     if (!wrapper) {

@@ -34,12 +34,12 @@
 
 import type { App } from 'obsidian';
 
+import { join } from '@mnaoumov/typescript-lib/path';
+import { EMPTY } from '@mnaoumov/typescript-lib/string';
 import { Notice } from 'obsidian';
 
 import type { DemoVaultHelperSettings } from './demo-vault-helper-settings.ts';
 
-import { join } from '../path.ts';
-import { EMPTY } from '../string.ts';
 import {
   configureCommunityPlugin,
   ConfigureCommunityPluginResult,

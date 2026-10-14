@@ -12,11 +12,11 @@
  * styled by this library.
  */
 
+import { getDocumentWindow } from '@mnaoumov/typescript-lib/html-element';
 import { Setting } from 'obsidian';
 
 import type { PopoverAnchor } from './popover-anchor.ts';
 
-import { getDocumentWindow } from '../../html-element.ts';
 import { CssClass } from '../css-class.ts';
 import { t } from '../i18n/i18n.ts';
 import { addPluginCssClasses } from '../plugin/plugin-context.ts';

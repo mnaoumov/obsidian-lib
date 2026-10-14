@@ -12,17 +12,18 @@ import type {
 } from 'obsidian';
 import type { Promisable } from 'type-fest';
 
+import {
+  chain,
+  convertAsyncToSync
+} from '@mnaoumov/typescript-lib/async';
+import { ensureNonNullable } from '@mnaoumov/typescript-lib/type-guards';
+
 import type { ActiveFileProvider } from '../active-file-provider.ts';
 import type {
   CommandHandlerConstructorParams,
   CommandHandlerRegistrationContext
 } from './command-handler.ts';
 
-import {
-  chain,
-  convertAsyncToSync
-} from '../../async.ts';
-import { ensureNonNullable } from '../../type-guards.ts';
 import { GlobalCommandHandler } from './global-command-handler.ts';
 
 /**

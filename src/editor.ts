@@ -17,12 +17,12 @@ import {
   StateEffect
 } from '@codemirror/state';
 import { EditorView } from '@codemirror/view';
+import { castTo } from '@mnaoumov/typescript-lib/object-utils';
 import { ViewType } from '@obsidian-typings/obsidian-public-latest/implementations';
 import { MarkdownView } from 'obsidian';
 
 import type { PathOrFile } from './file-system.ts';
 
-import { castTo } from '../object-utils.ts';
 import { getPath } from './file-system.ts';
 
 const compartmentByCodeMirror = new WeakMap<Editor['cm'], Compartment>();

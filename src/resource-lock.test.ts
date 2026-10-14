@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 
+import type { GenericObject } from '@mnaoumov/typescript-lib/type-guards';
 import type {
   App as AppOriginal,
   MarkdownView as MarkdownViewOriginal,
@@ -9,6 +10,10 @@ import type {
   WorkspaceLeaf as WorkspaceLeafOriginal
 } from 'obsidian';
 
+import { dispose } from '@mnaoumov/typescript-lib/disposable';
+import { castTo } from '@mnaoumov/typescript-lib/object-utils';
+import { assertNonNullable } from '@mnaoumov/typescript-lib/type-guards';
+import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import {
   App,
   MarkdownView,
@@ -24,12 +29,6 @@ import {
   vi
 } from 'vitest';
 
-import type { GenericObject } from '../type-guards.ts';
-
-import { dispose } from '../disposable.ts';
-import { castTo } from '../object-utils.ts';
-import { strictProxy } from '../strict-proxy.ts';
-import { assertNonNullable } from '../type-guards.ts';
 import { toggleEditorReadOnly } from './editor.ts';
 import { confirm } from './modals/confirm.ts';
 import {

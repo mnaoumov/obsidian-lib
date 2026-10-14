@@ -11,6 +11,8 @@ import type {
   PluginManifest
 } from 'obsidian';
 
+import { castTo } from '@mnaoumov/typescript-lib/object-utils';
+import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import {
   beforeEach,
   describe,
@@ -21,8 +23,6 @@ import {
 
 import type { PluginNoticeComponent } from '../components/plugin-notice-component.ts';
 
-import { castTo } from '../../object-utils.ts';
-import { strictProxy } from '../../strict-proxy.ts';
 import {
   getInstalledPluginState,
   getInstalledPluginVersion,

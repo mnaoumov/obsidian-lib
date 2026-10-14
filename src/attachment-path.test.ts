@@ -3,6 +3,12 @@
 import type { App as AppOriginal } from 'obsidian';
 import type { Mock } from 'vitest';
 
+import { castTo } from '@mnaoumov/typescript-lib/object-utils';
+import {
+  basename,
+  dirname,
+  extname
+} from '@mnaoumov/typescript-lib/path';
 import { getDataAdapterEx } from '@obsidian-typings/obsidian-public-latest/implementations';
 import { App } from 'obsidian-test-mocks/obsidian';
 import {
@@ -15,12 +21,6 @@ import {
 
 import type { GetAvailablePathForAttachmentsExtendedFunctionParams } from './attachment-path.ts';
 
-import { castTo } from '../object-utils.ts';
-import {
-  basename,
-  dirname,
-  extname
-} from '../path.ts';
 import {
   AttachmentPathContext,
   getAttachmentFilePath,

@@ -14,10 +14,10 @@ import type {
 } from '@obsidian-typings/obsidian-public-latest';
 import type { App } from 'obsidian';
 
+import { retryWithTimeout } from '@mnaoumov/typescript-lib/async';
+import { assertNonNullable } from '@mnaoumov/typescript-lib/type-guards';
 import { MarkdownPreviewRenderer } from 'obsidian';
 
-import { retryWithTimeout } from '../../async.ts';
-import { assertNonNullable } from '../../type-guards.ts';
 import { MonkeyAroundComponent } from '../components/monkey-around-component.ts';
 import { trashSafe } from '../vault.ts';
 

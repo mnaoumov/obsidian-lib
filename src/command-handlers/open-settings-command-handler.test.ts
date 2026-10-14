@@ -3,6 +3,7 @@ import type {
   SettingTab as SettingTabOriginal
 } from 'obsidian';
 
+import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import {
   describe,
   expect,
@@ -10,7 +11,6 @@ import {
   vi
 } from 'vitest';
 
-import { strictProxy } from '../../strict-proxy.ts';
 import { OpenSettingsCommandHandler } from './open-settings-command-handler.ts';
 
 interface CreateHandlerResult {
