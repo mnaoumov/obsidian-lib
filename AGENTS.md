@@ -33,7 +33,7 @@ This package moved out of the `obsidian-dev-utils` workspace, with its history, 
 - **A package cannot install itself, so its own scripts never import it by name.** In the tooling packages the scripts import `../src/*.ts`, so the toolkit builds and lints itself from its sources.
 - **A test-support package that depends on this one would otherwise bring a SECOND copy of it into a test run.** Where that happens (`typescript-lib`, `obsidian-lib`), `scripts/vitest-self-source.ts` resolves this package's own name onto `src/`, the test-support packages are listed in the vitest projects' `server.deps.inline` so their imports go through it, and `tsconfig.json`'s `paths` does the same for the types. Drop any of the three and a test-setup reset reaches a different module instance than the code under test.
 - **A package a test mocks through must be processed by Vite.** A dependency Node loads directly ignores `vi.mock` and survives `vi.resetModules()`, so a test that mocks `node:fs` underneath a toolkit helper, or that loads a second copy of a module on purpose, needs that dependency in `server.deps.inline`.
-- **The first `package-lock.json` was seeded from the workspace lock**, so every dependency starts at the version the workspace tested rather than at whatever each range resolves to today. `obsidian` resolves to `1.13.1` that way; `1.14.x` peer-pins CodeMirror versions this tree does not pin yet, and a fresh resolution fails on that peer range until those pins move.
+- **The first `package-lock.json` was seeded from the workspace lock**, so every dependency starts at the version the workspace tested rather than at whatever each range resolves to today.
 
 ## Releasing
 
