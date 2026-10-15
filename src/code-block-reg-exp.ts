@@ -31,5 +31,6 @@
  * @returns A fresh global {@link RegExp} matching one fenced code block.
  */
 export function createCodeBlockRegExp(): RegExp {
+  // eslint-disable-next-line obsidianmd/regex-lookbehind -- Shipped this way already; a lookbehind-free rewrite must keep every match index, so it is a change of its own.
   return /(?<=^|\n)(?<LinePrefix> {0,3}(?:> {1,3})*)(?<CodeBlockStartDelimiter>(?<CodeBlockStartDelimiterChar>[`~])(?:\k<CodeBlockStartDelimiterChar>{2,}))(?<CodeBlockLanguage>\S*)(?:[ \t](?<CodeBlockArgs>.*?))?(?:\n(?<CodeBlockContent>\k<LinePrefix>.*(?:\n\k<LinePrefix>.*)*?))?\n\k<LinePrefix>(?<CodeBlockEndDelimiter>\k<CodeBlockStartDelimiter>\k<CodeBlockStartDelimiterChar>*)[ \t]*(?=\n|$)/g;
 }

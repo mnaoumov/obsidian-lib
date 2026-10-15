@@ -1,0 +1,37 @@
+name: CI
+
+# Runs the branch gate on every push and pull request: the lockfile check, format, spellcheck, markdown lint,
+# build, ESLint, the over-exposure check and the unit tests under their 100% coverage gate. It is the same code
+# `npm run version` runs as its release preflight, so a green run here is a release that will not abort halfway.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    env:
+      # `npm ci` runs the `prepare` script, which installs husky -- pointless in CI.
+      HUSKY: 0
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Gate
+        run: npm run gate

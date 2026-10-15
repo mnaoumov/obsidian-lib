@@ -42,6 +42,7 @@ const WIKILINK_DIVIDER = '|';
  * keeps a closing `>` in the literal (Obsidian renders `<www.example.com>` with an href ending in
  * `%3E`); stopping before it is deliberate, so the brackets can be reported around the literal instead.
  */
+// eslint-disable-next-line obsidianmd/regex-lookbehind -- Shipped this way already; a lookbehind-free rewrite must keep every match index, so it is a change of its own.
 const WWW_AUTOLINK_LITERAL_CANDIDATE_REG_EXP = /(?<=^|[\s(*<_~])www\.[^\s<>]*/g;
 
 /**
