@@ -27,6 +27,16 @@ export enum LocalRepoPaths {
   GeneratedDuringBuildCjs = 'generated-during-build.cjs',
 
   /**
+   * Generated-during-build CommonJS declaration file.
+   */
+  GeneratedDuringBuildDCts = 'generated-during-build.d.cts',
+
+  /**
+   * Generated-during-build ESM declaration file.
+   */
+  GeneratedDuringBuildDMts = 'generated-during-build.d.mts',
+
+  /**
    * Generated-during-build ESM JavaScript file.
    */
   GeneratedDuringBuildMjs = 'generated-during-build.mjs',
