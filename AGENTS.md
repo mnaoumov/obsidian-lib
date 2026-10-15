@@ -35,6 +35,31 @@ This package moved out of the `obsidian-dev-utils` workspace, with its history, 
 - **A package a test mocks through must be processed by Vite.** A dependency Node loads directly ignores `vi.mock` and survives `vi.resetModules()`, so a test that mocks `node:fs` underneath a toolkit helper, or that loads a second copy of a module on purpose, needs that dependency in `server.deps.inline`.
 - **The first `package-lock.json` was seeded from the workspace lock**, so every dependency starts at the version the workspace tested rather than at whatever each range resolves to today.
 
+## Pinned runtime versions
+
+An **exact** version (no `^`) is how a dependency is held back here, and each one has a reason and a trigger:
+
+| Package | Pin | Why | Upgrade when |
+| --- | --- | --- | --- |
+| `@codemirror/state` | `6.7.6` | `obsidian`'s `peerDependencies` names this exact version. A second copy in the tree means two CodeMirror state instances at runtime. | `obsidian` names a different version. |
+| `@codemirror/view` | `6.43.13` | Same: `obsidian` peer-pins it exactly. | Same as above. |
+| `@lezer/common` | `1.5.2` | Must match the copy Obsidian bundles at runtime: `app.js` registers `'@lezer/common'` in the module map it hands to plugins, so our copy is types-only and a newer pin declares API the runtime lacks. Nothing else in the tree depends on it, so npm cannot detect or correct a mismatch. Verified against Obsidian `1.13.4`, and again against `1.14.4` when `1.5.3` published. | `npm view @lezer/common version` moves past `1.5.3`, the newest publish already re-examined. That is the cue to re-derive what Obsidian bundles, not proof the pin is stale. |
+
+**The CodeMirror pins move with `obsidian`, in the same commit.** `obsidian` `1.14.4` peer-pins `@codemirror/state` `6.7.6` and `@codemirror/view` `6.43.13`, and that is what is installed here, beside `obsidian: ^1.14.4`. The pins were once left behind while the spec was `^1.13.1` and the lockfile held `1.13.1`: once `1.14.4` was on npm, any install that re-resolved `obsidian` failed on `peer @codemirror/state@"6.7.6" from obsidian@1.14.4`, and only the lockfile kept the tree installable. Compare `node -e "console.log(require('obsidian/package.json').peerDependencies)"` against the pins after every `obsidian` bump. `npm ls @codemirror/state` then shows one copy, except the one nested under `eslint-plugin-obsidianmd`, whose exact `obsidian@1.12.3` dependency is lint-time only and not ours to fix.
+
+**`@lezer/common` is settled by reading the bundle**, since `obsidian` declares no `@lezer/*` version. The bundle carries no version string, so diff the `dist` of candidate versions (`npm pack @lezer/common@<v>`) and grep `app.js` for what distinguishes them. Against Obsidian `1.14.4` the markers still land on `1.5.2`:
+
+| Marker in `app.js` | Introduced in |
+| --- | --- |
+| `NodeProp`'s `combine` field; overlay `depth++` after `materialize` | `1.3.0` |
+| `-4 == size` (`SpecialRecord.LookAhead`) accepted in the skipped-node scan | `1.4.0` |
+| `IterMode.EnterBracketed = 16`; `MountedTree.bracketed` | `1.5.0` |
+| `nextChild`'s bracketed test in the `!mounted.overlay && mounted.bracketed && pos >= start` form | `1.5.1` |
+| `StructureCursor.moveTo` guarding the advance with `cursor.to <= pos` | `1.5.2` |
+| ABSENT from `1.14.4`: `StructureCursor`'s constructor adding `IterMode.ExcludeBuffers` to `IncludeAnonymous \| IgnoreMounts`, and `moveTo` comparing `cursor.to` against the offset-adjusted `p` instead of `pos` | `1.5.3` |
+
+A single value can serve as the pin because this package targets the latest Obsidian only. After moving it, run `npm run build` and `src/editor.obsidian.integration.test.ts`.
+
 ## Releasing
 
 `npm run version '--' <patch|minor|major>` runs the gate, bumps the version, writes `CHANGELOG.md`, commits, tags, pushes and creates the GitHub release. The release carries no assets. Publishing the release triggers `.github/workflows/publish-npm.yml`, which rebuilds and runs `npm publish` through npm trusted publishing (OIDC): no npm token exists anywhere, and a publish from a developer machine is not possible. The package's trusted publisher on npmjs.com names this repository and `publish-npm.yml`; renaming the workflow breaks publishing until that setting matches.
