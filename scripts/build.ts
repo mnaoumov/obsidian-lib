@@ -20,6 +20,9 @@ const BUILD_STEPS = [
   'build:validate-declarations',
   'build:lib',
   'build:generate-exports',
+  // Reads the `dist/lib` the steps above wrote, so it must sit after them.
+  // An import of a package `package.json` does not declare then fails the build instead of a consumer's install.
+  'build:validate-dependencies',
   'build:templates',
   // Type-checks `templates/` against the `dist/lib/esm` declarations, so it must sit after they are built.
   // A rename a template still spells the old way then fails the build instead of shipping.
