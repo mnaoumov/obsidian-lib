@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 3.3.0
+
+- feat(plugin-api): merge building the contract on @mnaoumov/typescript-lib/api-contract
+
 ## 3.2.0
 
 - feat: merge letting loop's progressBarTitle be a DocumentFragment
