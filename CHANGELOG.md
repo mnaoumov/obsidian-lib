@@ -3,6 +3,7 @@
 ## 3.0.0
 
 - feat!: type Dataview through @mnaoumov/obsidian-dataview and drop the vendored declarations
+  - BREAKING: `@mnaoumov/obsidian-lib/@types/dataview/<x>` is removed; import `@mnaoumov/obsidian-dataview/<x>` instead.
 
 ## 2.0.0
 
