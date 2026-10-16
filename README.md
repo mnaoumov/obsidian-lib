@@ -8,6 +8,8 @@ The runtime library for Obsidian plugins: plugin base classes, components, setti
 npm install @mnaoumov/obsidian-lib
 ```
 
+`obsidian`, `@codemirror/state`, `@codemirror/view` and `@obsidian-typings/obsidian-public-latest` are peer dependencies, so your plugin's own copies are the ones this package uses. Your `obsidian` must satisfy `^1.14.4`.
+
 ## Documentation
 
 The guides and the API reference are at [mnaoumov.dev/obsidian-lib](https://mnaoumov.dev/obsidian-lib/).
