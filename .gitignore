@@ -32,3 +32,10 @@ package.json
 .claude/settings.local.json
 
 *.orig
+
+# Astro documentation site
+.astro
+docs/dist
+docs/src/content/docs/api
+docs/src/generated-sidebar.json
+docs/public/og

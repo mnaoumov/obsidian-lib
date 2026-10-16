@@ -1,0 +1,38 @@
+---
+title: Obsidian Lib
+description: The runtime library for Obsidian plugins.
+template: splash
+editUrl: false
+lastUpdated: false
+hero:
+    title: Obsidian Lib
+    tagline: Plugin base classes, components, settings tabs and setting components, modals, popovers, and vault, metadata-cache and link helpers for Obsidian plugins, desktop and mobile.
+    actions:
+        - text: Plugin helpers
+          link: /obsidian-lib/guides/plugin-helpers/
+          icon: rocket
+        - text: API reference
+          link: /obsidian-lib/api/
+          icon: open-book
+          variant: secondary
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components'
+
+<CardGrid stagger>
+    <Card title="Plugin base classes" icon="puzzle">
+        [`PluginBase`, its settings component and its settings tab](./guides/plugin-helpers/) take care of the boilerplate every plugin repeats.
+    </Card>
+
+    <Card title="Modals, popovers and settings" icon="list-format">
+        Ready-made [modals](./guides/modals/), [popovers](./guides/popovers/) and [setting components](./guides/setting-components/) that look like Obsidian's own.
+    </Card>
+
+    <Card title="Cross-plugin APIs" icon="random">
+        [Publish and consume an API between plugins](./guides/cross-plugin-apis/), versioned and revocable, over a [documented wire protocol](./guides/plugin-api-protocol/).
+    </Card>
+
+    <Card title="Runs on mobile" icon="laptop">
+        Every module loads on desktop and mobile. Platform-only modules say so in their name.
+    </Card>
+</CardGrid>

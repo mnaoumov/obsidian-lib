@@ -37,6 +37,7 @@
     }
   },
   "include": [
+    "./astro.config.ts",
     "./commitlint.config.ts",
     "./eslint.config.mts",
     "./integration-test-plugin-api/**/*.ts",
