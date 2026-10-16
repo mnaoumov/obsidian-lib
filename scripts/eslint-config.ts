@@ -27,8 +27,7 @@ function getIgnoreConfigs(): Linter.Config[] {
     globalIgnores([
       join(RepoPaths.AnyPath, RepoPaths.IndexTs),
       join(RepoPaths.AnyPath, RepoPaths.AnyDts),
-      join(RepoPaths.Src, '__merged.ts'),
-      'src/@types/dataview/**'
+      join(RepoPaths.Src, '__merged.ts')
     ])
   ]);
 }

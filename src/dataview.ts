@@ -4,18 +4,18 @@
  * This module provides utility functions for working with Dataview in Obsidian.
  */
 
+import type {
+  DataArray,
+  DataviewApi,
+  SMarkdownPage
+} from '@mnaoumov/obsidian-dataview';
+import type { DataviewInlineApi as DataviewInlineApiOriginal } from '@mnaoumov/obsidian-dataview/api/inline-api';
 import type { Promisable } from 'type-fest';
 
 import { convertAsyncToSync } from '@mnaoumov/typescript-lib/async';
 import { errorToString } from '@mnaoumov/typescript-lib/error';
 import { ensureNonNullable } from '@mnaoumov/typescript-lib/type-guards';
 
-import type { DataviewInlineApi as DataviewInlineApiOriginal } from './@types/dataview/api/inline-api.d.ts';
-import type {
-  DataArray,
-  DataviewApi,
-  SMarkdownPage
-} from './@types/dataview/index.d.ts';
 import type { PathOrFile } from './file-system.ts';
 import type { CombinedFrontmatter } from './frontmatter.ts';
 
@@ -32,7 +32,7 @@ import { relativePathToResourceUrl } from './resource-url.ts';
 export type {
   DateTime,
   Link
-} from './@types/dataview/index.d.ts';
+} from '@mnaoumov/obsidian-dataview';
 
 declare global {
   /**
@@ -40,6 +40,13 @@ declare global {
    */
   // eslint-disable-next-line vars-on-top -- It is a `var` in module declaration. ESLint mistakenly confuses it with `var` as a variable declaration.
   var DataviewAPI: DataviewApi | undefined;
+
+  interface Window {
+    /**
+     * The global {@link DataviewApi} object Dataview installs on every window.
+     */
+    DataviewAPI?: DataviewApi;
+  }
 }
 
 /**
