@@ -251,7 +251,7 @@ export async function getCodeBlockMarkdownInfo(params: GetCodeBlockMarkdownInfoP
  *
  * @param params - The parameters for the function.
  */
-// eslint-disable-next-line obsidian-dev-utils/params-options-name-match -- Intentionally shares InsertCodeBlockParams with insertBeforeCodeBlock.
+// eslint-disable-next-line typescript-dev-toolkit/params-options-name-match -- Intentionally shares InsertCodeBlockParams with insertBeforeCodeBlock.
 export async function insertAfterCodeBlock(params: InsertCodeBlockParams): Promise<void> {
   const { app, context, lineOffset = 0, text } = params;
 
@@ -284,7 +284,7 @@ export async function insertAfterCodeBlock(params: InsertCodeBlockParams): Promi
  *
  * @param params - The parameters for the function.
  */
-// eslint-disable-next-line obsidian-dev-utils/params-options-name-match -- Intentionally shares InsertCodeBlockParams with insertAfterCodeBlock.
+// eslint-disable-next-line typescript-dev-toolkit/params-options-name-match -- Intentionally shares InsertCodeBlockParams with insertAfterCodeBlock.
 export async function insertBeforeCodeBlock(params: InsertCodeBlockParams): Promise<void> {
   const { app, context, lineOffset = 0, text } = params;
 

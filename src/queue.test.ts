@@ -51,7 +51,7 @@ vi.mock('@mnaoumov/typescript-lib/error', () => ({
 }));
 
 const functionMocks = vi.hoisted(() => {
-  // eslint-disable-next-line obsidian-dev-utils/prefer-noop-async -- Cannot use noopAsync() in vi.hoisted() since imports are not yet available.
+  // eslint-disable-next-line typescript-dev-toolkit/prefer-noop-async -- Cannot use noopAsync() in vi.hoisted() since imports are not yet available.
   const resolvedPromise = Promise.resolve();
   return {
     noop: vi.fn(),

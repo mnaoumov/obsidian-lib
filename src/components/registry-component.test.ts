@@ -13,10 +13,10 @@ import {
 import { ComponentEx } from './component-ex.ts';
 import { RegistryComponent } from './registry-component.ts';
 
-// eslint-disable-next-line obsidian-dev-utils/require-component-suffix -- Testing RegistryComponent.
+// eslint-disable-next-line obsidian-dev-toolkit/require-component-suffix -- Testing RegistryComponent.
 class ChildA extends ComponentEx {}
 
-// eslint-disable-next-line obsidian-dev-utils/require-component-suffix -- Testing RegistryComponent.
+// eslint-disable-next-line obsidian-dev-toolkit/require-component-suffix -- Testing RegistryComponent.
 class ChildB extends ComponentEx {}
 
 describe('RegistryComponent', () => {
