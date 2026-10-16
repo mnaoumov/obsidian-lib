@@ -475,9 +475,10 @@ describe('the blocked settings tab', () => {
 
     const containerEl = displayBlockedSettingTab();
 
-    expect(buttonTexts(containerEl)).toEqual(['Install and enable', `Open ${DEPENDENCY.pluginName} settings`]);
+    // No install button: the dependency is already installed and enabled, so it would do nothing.
+    expect(buttonTexts(containerEl)).toEqual([`Open ${DEPENDENCY.pluginName} settings`]);
 
-    clickButton(1);
+    clickButton(0);
 
     expect(openSetting).toHaveBeenCalledTimes(1);
     expect(openTabById).toHaveBeenCalledWith(DEPENDENCY.pluginId);
@@ -504,6 +505,91 @@ describe('the blocked settings tab', () => {
       expectReasonFragmentRendered(containerEl, DEPENDENCY.pluginName);
     }
     expect(reason.textContent).toBe(`Uses ${DEPENDENCY.pluginName} for this.`);
+  });
+});
+
+describe('with a minimum plugin version', () => {
+  const MIN_VERSION_DEPENDENCY: PluginDependency = { ...DEPENDENCY, minPluginVersion: '2.2.0' };
+
+  it('should not load the feature surface while the dependency is below it, although its API is published', async () => {
+    installPlugin(DEPENDENCY.pluginId, '2.1.9');
+    const { loadFeatureSurface } = await createLoadedComponent({ dependencies: [MIN_VERSION_DEPENDENCY] });
+
+    expect(loadFeatureSurface).not.toHaveBeenCalled();
+  });
+
+  it('should ask for an update, with no install button, once the layout is ready', async () => {
+    installPlugin(DEPENDENCY.pluginId, '2.1.9');
+    const { showNotice } = await createLoadedComponent({ dependencies: [MIN_VERSION_DEPENDENCY] });
+
+    await triggerLayoutReady();
+
+    expectNoticeText(showNotice, `${HOST_PLUGIN_NAME} needs a newer version of ${DEPENDENCY.pluginName}. Update it to resume.`);
+    const containerEl = displayBlockedSettingTab();
+    expect(containerEl.textContent).toContain(`${HOST_PLUGIN_NAME} needs a newer version of ${DEPENDENCY.pluginName}.`);
+    expect(buttonTexts(containerEl)).toEqual([`Open ${DEPENDENCY.pluginName} settings`]);
+  });
+
+  it('should load the feature surface at the minimum', async () => {
+    installPlugin(DEPENDENCY.pluginId, '2.2.0');
+    const { loadFeatureSurface } = await createLoadedComponent({ dependencies: [MIN_VERSION_DEPENDENCY] });
+
+    expect(loadFeatureSurface).toHaveBeenCalledTimes(1);
+  });
+
+  it('should load the feature surface above the minimum', async () => {
+    installPlugin(DEPENDENCY.pluginId, '10.0.0');
+    const { loadFeatureSurface } = await createLoadedComponent({ dependencies: [MIN_VERSION_DEPENDENCY] });
+
+    expect(loadFeatureSurface).toHaveBeenCalledTimes(1);
+  });
+
+  it('should fail closed on a version it cannot parse', async () => {
+    installPlugin(DEPENDENCY.pluginId, 'not-a-version');
+    const { loadFeatureSurface } = await createLoadedComponent({ dependencies: [MIN_VERSION_DEPENDENCY] });
+
+    expect(loadFeatureSurface).not.toHaveBeenCalled();
+  });
+
+  it('should fail closed on an enabled plugin whose manifest carries no version', async () => {
+    installPlugin(DEPENDENCY.pluginId, '');
+    const { loadFeatureSurface } = await createLoadedComponent({ dependencies: [MIN_VERSION_DEPENDENCY] });
+
+    expect(loadFeatureSurface).not.toHaveBeenCalled();
+  });
+
+  it('should keep the ordinary install message for a dependency that is not installed', async () => {
+    const { showNotice } = await createLoadedComponent({ dependencies: [MIN_VERSION_DEPENDENCY], isSatisfied: false });
+
+    await triggerLayoutReady();
+
+    expectNoticeText(showNotice, `${HOST_PLUGIN_NAME} does nothing until ${DEPENDENCY.pluginName} is installed and enabled.`);
+  });
+
+  it('should open the gate when an update reloads the provider, without a restart', async () => {
+    installPlugin(DEPENDENCY.pluginId, '2.1.9');
+    const { loadFeatureSurface } = await createLoadedComponent({ dependencies: [MIN_VERSION_DEPENDENCY] });
+    await triggerLayoutReady();
+
+    // Obsidian applies an update by reloading the plugin: the manifest carries the new version, and the
+    // provider re-publishes its API, which is what the watch reports.
+    installPlugin(DEPENDENCY.pluginId, '2.2.1');
+    await fireApiRefChange();
+
+    expect(loadFeatureSurface).toHaveBeenCalledTimes(1);
+    expect(settingTabs).toHaveLength(0);
+  });
+
+  it('should ask for an update when the provider is downgraded while the plugin runs', async () => {
+    installPlugin(DEPENDENCY.pluginId, '2.2.0');
+    const { showNotice, unloadFeatureSurface } = await createLoadedComponent({ dependencies: [MIN_VERSION_DEPENDENCY] });
+
+    installPlugin(DEPENDENCY.pluginId, '2.1.0');
+    await fireApiRefChange();
+    await waitOutLossGracePeriod();
+
+    expect(unloadFeatureSurface).toHaveBeenCalledTimes(1);
+    expectNoticeText(showNotice, `${HOST_PLUGIN_NAME} needs a newer version of ${DEPENDENCY.pluginName}. Update it to resume.`);
   });
 });
 

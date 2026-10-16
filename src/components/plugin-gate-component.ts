@@ -89,7 +89,10 @@ import type {
 } from 'obsidian';
 
 import { convertAsyncToSync } from '@mnaoumov/typescript-lib/async';
-import { satisfies as satisfiesVersion } from 'compare-versions';
+import {
+  compare as compareVersions,
+  satisfies as satisfiesVersion
+} from 'compare-versions';
 import {
   ButtonComponent,
   PluginSettingTab
@@ -208,6 +211,17 @@ export interface PluginDependency {
    * one" message. Spell "any version" as `'>=0.0.0'` — `compare-versions` rejects a bare `*`.
    */
   readonly apiVersionRange: string;
+
+  /**
+   * The oldest release of the required plugin the dependent works with, e.g. `'2.2.0'`.
+   *
+   * For a provider whose BEHAVIOR changed while its API contract stayed the same, which
+   * {@link apiVersionRange} cannot see. A dependency enabled below it counts as UNSATISFIED and asks the
+   * user to update it. Evaluated against `manifest.version`; a version that cannot be parsed counts as too
+   * old. A minimum rather than a range, because the only advice the gate can give is "update it", and an
+   * upper bound is a version no update reaches.
+   */
+  readonly minPluginVersion?: string;
 
   /**
    * The `manifest.id` of the required plugin, as listed in Obsidian's community plugin registry.
@@ -496,6 +510,10 @@ export class PluginGateComponent extends ComponentEx {
   }
 
   private createBlockedMessage(dependency: PluginDependency): DocumentFragment {
+    if (this.isBelowMinPluginVersion(dependency)) {
+      return this.createVersionMismatchMessage(dependency);
+    }
+
     return createFragmentWithCodeBlocks(t(($) => $.obsidianDevUtils.pluginDependency.blockedNotice, {
       dependencyPluginName: asCodeBlock(dependency.pluginName),
       pluginName: asCodeBlock(this.plugin.manifest.name)
@@ -524,7 +542,18 @@ export class PluginGateComponent extends ComponentEx {
   }
 
   private createDependencyLostMessage(dependency: PluginDependency): DocumentFragment {
+    if (this.isBelowMinPluginVersion(dependency)) {
+      return this.createVersionMismatchMessage(dependency);
+    }
+
     return createFragmentWithCodeBlocks(t(($) => $.obsidianDevUtils.pluginDependency.dependencyLostNotice, {
+      dependencyPluginName: asCodeBlock(dependency.pluginName),
+      pluginName: asCodeBlock(this.plugin.manifest.name)
+    }));
+  }
+
+  private createVersionMismatchMessage(dependency: PluginDependency): DocumentFragment {
+    return createFragmentWithCodeBlocks(t(($) => $.obsidianDevUtils.pluginDependency.versionMismatchNotice, {
       dependencyPluginName: asCodeBlock(dependency.pluginName),
       pluginName: asCodeBlock(this.plugin.manifest.name)
     }));
@@ -541,7 +570,7 @@ export class PluginGateComponent extends ComponentEx {
   }
 
   private getUnsatisfiedDependencies(): PluginDependency[] {
-    return this.dependencies.filter((dependency) => !this.apiRefs.get(dependency.pluginId)?.value);
+    return this.dependencies.filter((dependency) => !this.apiRefs.get(dependency.pluginId)?.value || this.isBelowMinPluginVersion(dependency));
   }
 
   private hideBlockedSettingTab(): void {
@@ -551,6 +580,37 @@ export class PluginGateComponent extends ComponentEx {
 
     this.app.setting.removeSettingTab(this.blockedSettingTab);
     this.blockedSettingTab = null;
+  }
+
+  /**
+   * Decides whether a dependency is running at a release older than it declared it needs.
+   *
+   * Read from the manifest, like a conflict, and re-read on every evaluation: Obsidian applies an update by
+   * reloading the provider, which fires the API watch's `change`, so the gate opens without a restart.
+   *
+   * @param dependency - The declared dependency.
+   * @returns Whether the dependency is enabled below its {@link PluginDependency.minPluginVersion}; `false`
+   * when it declares none or is not enabled, since its API is then absent anyway.
+   */
+  private isBelowMinPluginVersion(dependency: PluginDependency): boolean {
+    if (dependency.minPluginVersion === undefined) {
+      return false;
+    }
+
+    const installedVersion = getInstalledPluginVersion({
+      app: this.app,
+      pluginId: dependency.pluginId
+    });
+
+    if (installedVersion === null) {
+      return false;
+    }
+
+    try {
+      return !compareVersions(installedVersion, dependency.minPluginVersion, '>=');
+    } catch {
+      return true;
+    }
   }
 
   /**
@@ -684,29 +744,30 @@ export class PluginGateComponent extends ComponentEx {
         pluginId: dependency.pluginId
       });
 
-      new ButtonComponent(bannerEl)
-        .setButtonText(t(($) =>
-          state === InstalledPluginState.InstalledButDisabled
-            ? $.obsidianDevUtils.pluginSuggestion.enable
-            : $.obsidianDevUtils.pluginSuggestion.install
-        ))
-        .setCta()
-        .onClick(convertAsyncToSync(async () => {
-          await installAndEnablePlugin({
-            app: this.app,
-            pluginId: dependency.pluginId,
-            pluginName: dependency.pluginName,
-            pluginNoticeComponent: this.pluginNoticeComponent
-          });
-        }));
+      // An enabled dependency that is still unsatisfied is too old, and installing or enabling it again does
+      // nothing, so it gets no button that pretends otherwise.
+      if (state !== InstalledPluginState.Enabled) {
+        new ButtonComponent(bannerEl)
+          .setButtonText(t(($) =>
+            state === InstalledPluginState.InstalledButDisabled
+              ? $.obsidianDevUtils.pluginSuggestion.enable
+              : $.obsidianDevUtils.pluginSuggestion.install
+          ))
+          .setCta()
+          .onClick(convertAsyncToSync(async () => {
+            await installAndEnablePlugin({
+              app: this.app,
+              pluginId: dependency.pluginId,
+              pluginName: dependency.pluginName,
+              pluginNoticeComponent: this.pluginNoticeComponent
+            });
+          }));
+        continue;
+      }
 
       // The link OUT to the dependency's own settings, shown only once it is installed and enabled — the
       // other half of the relationship being visible from both ends. It is what stops "configure one
       // operation across two plugins" from meaning "go and find the other plugin yourself".
-      if (state !== InstalledPluginState.Enabled) {
-        continue;
-      }
-
       this.renderOpenSettingsButton(bannerEl, dependency.pluginId, dependency.pluginName);
     }
 
