@@ -279,6 +279,17 @@ export type PluginApiMethods<TApi extends object> = ApiMethods<TApi>;
  */
 export interface PluginApiRef<TApi extends object> extends AsyncEventSource<PluginApiRefEventMap> {
   /**
+   * Why the API is not available right now, or `null` while it is.
+   *
+   * Classified at the moment of reading, by the same probe {@link PluginApiRef.whenAvailable} uses for its
+   * error, so a caller that must decide synchronously — which message to show, which button to offer — can
+   * tell "not installed" from "too old" without waiting for a timeout. Like {@link PluginApiRef.value}, it
+   * describes now: during a consumer's `onload` a provider that has not loaded yet reads as
+   * {@link PluginApiUnavailabilityReason.NotPublished}.
+   */
+  readonly unavailabilityReason: null | PluginApiUnavailabilityReason;
+
+  /**
    * The API, or `null` when it is not currently available.
    *
    * Always current, synchronous, and free — the ref maintains it, so there is no registry lookup per read.
@@ -524,6 +535,10 @@ abstract class PluginApiWatchBase {
 }
 
 class PluginApiRefImpl<TApi extends object> extends mixinAsyncEvents<PluginApiRefEventMap>()(PluginApiWatchBase) implements PluginApiRef<TApi> {
+  public get unavailabilityReason(): null | PluginApiUnavailabilityReason {
+    return this.handle === null ? resolveUnavailabilityReason(this.params) : null;
+  }
+
   public get value(): null | TApi {
     return castTo<null | TApi>(this.handle);
   }

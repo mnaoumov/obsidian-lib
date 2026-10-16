@@ -176,6 +176,8 @@ Note that a re-enabled provider publishes a **new** record, so an old handle sta
 | `VersionMismatch` | It published an API, but nothing satisfies your range. |
 | `ShapeMismatch` | A satisfying record exists, but the object is missing a method the contract declares. |
 
+`ref.unavailabilityReason` gives the same classification synchronously, for a caller that must decide now which message or button to show. It is `null` while the API is available, and like `ref.value` it describes this moment: a provider that has not loaded yet reads as `NotPublished`.
+
 There is a sixth reason, `Revoked`, which `whenAvailable()` never reports: it describes a handle that *was* valid, and it arrives on a `PluginApiRevokedError` thrown by the handle itself. See [Revoked handles](#revoked-handles).
 
 ```typescript
@@ -291,7 +293,9 @@ export class Plugin extends PluginBase {
 
 While that dependency is missing, disabled, or outside `apiVersionRange`, your `onloadImpl` **does not run**. No command is registered, no handler installed, nothing patched. What the user gets instead is a notice naming the plugin, and a settings tab standing in for the one you never got to register — carrying your `reason`, a button that installs and enables the dependency, and, once it is there, a link straight into its settings.
 
-The contract version cannot see a provider whose behavior changed while its API stayed the same. When you rely on such a change, add `minPluginVersion: '2.2.0'`: a dependency enabled below that release counts as unsatisfied too, and the notice asks the user to update it. The version is read from the provider's manifest, and one that cannot be parsed counts as too old. Obsidian applies an update by reloading the plugin, so your load completes as soon as the update lands.
+The contract version cannot see a provider whose behavior changed while its API stayed the same. When you rely on such a change, add `minPluginVersion: '2.2.0'`: a dependency enabled below that release counts as unsatisfied too, and the notice asks the user to update it. The version is read from the provider's manifest, and one that cannot be parsed counts as too old. A provider whose published contract falls outside `apiVersionRange` gets the same "update it" notice.
+
+An enabled dependency that is still unsatisfied gets an `Update` button in place of the install button. It installs the provider's latest release over the old one through Obsidian's own install path, which reloads the plugin, so your load completes as soon as the update lands. If the provider is already at its latest release, the notice says that no update can help yet. `updateCommunityPlugin` in `@mnaoumov/obsidian-lib/community-plugins` is the same update as a function.
 
 The moment the dependency arrives, your load completes. No restart, no toggle. And if it later goes away, the feature surface is torn down again and the user is told at that instant — which is the point. The failure this prevents is not "a plugin is missing"; it is a user removing an unfamiliar plugin months later and meeting the damage weeks after that, with nothing connecting the two.
 

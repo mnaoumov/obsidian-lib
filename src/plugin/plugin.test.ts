@@ -132,10 +132,14 @@ const {
   mockWatchPluginApi: vi.fn()
 }));
 
-vi.mock('./plugin-api.ts', () => ({
-  publishPluginApi: mockPublishPluginApi,
-  watchPluginApi: mockWatchPluginApi
-}));
+vi.mock('./plugin-api.ts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./plugin-api.ts')>();
+  return {
+    PluginApiUnavailabilityReason: actual.PluginApiUnavailabilityReason,
+    publishPluginApi: mockPublishPluginApi,
+    watchPluginApi: mockWatchPluginApi
+  };
+});
 
 vi.mock('@mnaoumov/typescript-lib/async', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@mnaoumov/typescript-lib/async')>();

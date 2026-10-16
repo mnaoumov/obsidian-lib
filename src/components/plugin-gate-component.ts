@@ -113,12 +113,16 @@ import {
   createFragmentWithCodeBlocks
 } from '../html-element.ts';
 import { t } from '../i18n/i18n.ts';
-import { watchPluginApi } from '../plugin/plugin-api.ts';
+import {
+  PluginApiUnavailabilityReason,
+  watchPluginApi
+} from '../plugin/plugin-api.ts';
 import {
   getInstalledPluginState,
   getInstalledPluginVersion,
   installAndEnablePlugin,
-  InstalledPluginState
+  InstalledPluginState,
+  updatePlugin
 } from '../plugin/plugin-install-state.ts';
 import {
   PLUGIN_LOADED_EVENT_NAME,
@@ -510,7 +514,7 @@ export class PluginGateComponent extends ComponentEx {
   }
 
   private createBlockedMessage(dependency: PluginDependency): DocumentFragment {
-    if (this.isBelowMinPluginVersion(dependency)) {
+    if (this.isTooOld(dependency)) {
       return this.createVersionMismatchMessage(dependency);
     }
 
@@ -542,7 +546,7 @@ export class PluginGateComponent extends ComponentEx {
   }
 
   private createDependencyLostMessage(dependency: PluginDependency): DocumentFragment {
-    if (this.isBelowMinPluginVersion(dependency)) {
+    if (this.isTooOld(dependency)) {
       return this.createVersionMismatchMessage(dependency);
     }
 
@@ -638,6 +642,20 @@ export class PluginGateComponent extends ComponentEx {
     } catch {
       return true;
     }
+  }
+
+  /**
+   * Decides whether a dependency is running but too old for this plugin, so the advice is "update it".
+   *
+   * Two independent signals say so: a release below {@link PluginDependency.minPluginVersion}, and a published
+   * API whose contract version is outside {@link PluginDependency.apiVersionRange}.
+   *
+   * @param dependency - The declared dependency.
+   * @returns Whether updating the dependency is what it needs.
+   */
+  private isTooOld(dependency: PluginDependency): boolean {
+    return this.isBelowMinPluginVersion(dependency)
+      || this.apiRefs.get(dependency.pluginId)?.unavailabilityReason === PluginApiUnavailabilityReason.VersionMismatch;
   }
 
   /**
@@ -745,7 +763,7 @@ export class PluginGateComponent extends ComponentEx {
       });
 
       // An enabled dependency that is still unsatisfied is too old, and installing or enabling it again does
-      // nothing, so it gets no button that pretends otherwise.
+      // nothing, so it is offered an update instead.
       if (state !== InstalledPluginState.Enabled) {
         new ButtonComponent(bannerEl)
           .setButtonText(t(($) =>
@@ -764,6 +782,21 @@ export class PluginGateComponent extends ComponentEx {
           }));
         continue;
       }
+
+      // Obsidian applies the update by reloading the dependency, which republishes its API, so the watch's
+      // `change` reopens the gate with no further step here.
+      new ButtonComponent(bannerEl)
+        .setButtonText(t(($) => $.obsidianDevUtils.pluginDependency.update, { dependencyPluginName: dependency.pluginName }))
+        .setCta()
+        .onClick(convertAsyncToSync(async () => {
+          await updatePlugin({
+            app: this.app,
+            pluginId: dependency.pluginId,
+            pluginName: dependency.pluginName,
+            pluginNoticeComponent: this.pluginNoticeComponent,
+            requestingPluginName: this.plugin.manifest.name
+          });
+        }));
 
       // The link OUT to the dependency's own settings, shown only once it is installed and enabled — the
       // other half of the relationship being visible from both ends. It is what stops "configure one

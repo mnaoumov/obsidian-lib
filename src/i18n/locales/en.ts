@@ -52,10 +52,14 @@ export const en = {
       warningNotice: '{{pluginName}} and {{conflictingPluginName}} overlap, and both are running.'
     },
     pluginDependency: {
+      alreadyUpToDate: '{{dependencyPluginName}} is already at its latest release. {{pluginName}} needs a version that has not been released yet.',
       blockedNotice: '{{pluginName}} does nothing until {{dependencyPluginName}} is installed and enabled.',
       dependencyLostNotice: '{{dependencyPluginName}} is no longer available, so {{pluginName}} has stopped working. Bring it back to resume.',
       openDependencySettings: 'Open {{dependencyPluginName}} settings',
       settingsHeading: 'Required plugin missing',
+      update: 'Update {{dependencyPluginName}}',
+      updated: '{{dependencyPluginName}} is updated.',
+      updateFailed: 'Failed to update {{dependencyPluginName}}. Check the console for more information.',
       versionMismatchNotice: '{{pluginName}} needs a newer version of {{dependencyPluginName}}. Update it to resume.'
     },
     pluginSuggestion: {

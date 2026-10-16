@@ -23,28 +23,39 @@ import {
 
 import type { PluginNoticeComponent } from '../components/plugin-notice-component.ts';
 
+import { UpdateCommunityPluginResult } from '../community-plugins.ts';
 import {
   getInstalledPluginState,
   getInstalledPluginVersion,
   installAndEnablePlugin,
-  InstalledPluginState
+  InstalledPluginState,
+  updatePlugin
 } from './plugin-install-state.ts';
 
 const PLUGIN_ID = 'required-plugin';
 const PLUGIN_NAME = 'Required Plugin';
 
+const REQUESTING_PLUGIN_NAME = 'Requesting Plugin';
+
 const {
   mockEnableCommunityPlugin,
-  mockInstallConfigureEnableCommunityPlugin
+  mockInstallConfigureEnableCommunityPlugin,
+  mockUpdateCommunityPlugin
 } = vi.hoisted(() => ({
   mockEnableCommunityPlugin: vi.fn(),
-  mockInstallConfigureEnableCommunityPlugin: vi.fn()
+  mockInstallConfigureEnableCommunityPlugin: vi.fn(),
+  mockUpdateCommunityPlugin: vi.fn()
 }));
 
-vi.mock('../community-plugins.ts', () => ({
-  enableCommunityPlugin: mockEnableCommunityPlugin,
-  installConfigureEnableCommunityPlugin: mockInstallConfigureEnableCommunityPlugin
-}));
+vi.mock('../community-plugins.ts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../community-plugins.ts')>();
+  return {
+    enableCommunityPlugin: mockEnableCommunityPlugin,
+    installConfigureEnableCommunityPlugin: mockInstallConfigureEnableCommunityPlugin,
+    updateCommunityPlugin: mockUpdateCommunityPlugin,
+    UpdateCommunityPluginResult: actual.UpdateCommunityPluginResult
+  };
+});
 
 let app: AppOriginal;
 let enabledPlugins: Set<string>;
@@ -161,12 +172,47 @@ describe('installAndEnablePlugin', () => {
   });
 });
 
+describe('updatePlugin', () => {
+  it('should update the plugin and report success with the plugin name as a code block', async () => {
+    mockUpdateCommunityPlugin.mockResolvedValue(UpdateCommunityPluginResult.Updated);
+
+    await updatePlugin(createUpdateParams());
+
+    expect(mockUpdateCommunityPlugin).toHaveBeenCalledWith({ app, pluginId: PLUGIN_ID });
+    expectNoticeText(`${PLUGIN_NAME} is updated.`);
+  });
+
+  it('should say an update cannot help when the plugin is already at its latest release', async () => {
+    mockUpdateCommunityPlugin.mockResolvedValue(UpdateCommunityPluginResult.AlreadyUpToDate);
+
+    await updatePlugin(createUpdateParams());
+
+    expectNoticeText(`${PLUGIN_NAME} is already at its latest release. ${REQUESTING_PLUGIN_NAME} needs a version that has not been released yet.`);
+  });
+
+  it('should report a failure with the plugin name as a code block, and rethrow', async () => {
+    const error = new Error('update failed');
+    mockUpdateCommunityPlugin.mockRejectedValue(error);
+
+    await expect(updatePlugin(createUpdateParams())).rejects.toThrow(error);
+
+    expectNoticeText(`Failed to update ${PLUGIN_NAME}. Check the console for more information.`);
+  });
+});
+
 function createParams(): Parameters<typeof installAndEnablePlugin>[0] {
   return {
     app,
     pluginId: PLUGIN_ID,
     pluginName: PLUGIN_NAME,
     pluginNoticeComponent: castTo<PluginNoticeComponent>({ showNotice })
+  };
+}
+
+function createUpdateParams(): Parameters<typeof updatePlugin>[0] {
+  return {
+    ...createParams(),
+    requestingPluginName: REQUESTING_PLUGIN_NAME
   };
 }
 
