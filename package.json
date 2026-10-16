@@ -307,6 +307,7 @@
     "build:styles": "jiti scripts/build-styles.ts",
     "build:types": "jiti scripts/build-types.ts",
     "build:validate-declarations": "jiti scripts/build-validate-declarations.ts",
+    "build:validate-dependencies": "jiti scripts/build-validate-dependencies.ts",
     "commit": "jiti scripts/commit.ts",
     "docs:build": "jiti scripts/docs-build.ts",
     "docs:dev": "jiti scripts/docs-dev.ts",
@@ -354,7 +355,7 @@
     "@commitlint/cli": "^21.2.2",
     "@commitlint/config-conventional": "^21.2.2",
     "@mnaoumov/obsidian-dev-toolkit": "^2.1.0",
-    "@mnaoumov/typescript-dev-toolkit": "^3.1.0",
+    "@mnaoumov/typescript-dev-toolkit": "^3.4.0",
     "@mnaoumov/typescript-test-toolkit": "^1.0.0",
     "@obsidian-typings/obsidian-public-latest": "^6.37.0",
     "@resvg/resvg-js": "^2.6.2",
@@ -397,7 +398,13 @@
     "@codemirror/state": "^6.7.6",
     "@codemirror/view": "^6.43.13",
     "@obsidian-typings/obsidian-public-latest": "^6.37.0",
-    "obsidian": "^1.14.4"
+    "obsidian": "^1.14.4",
+    "obsidian-integration-testing": "^17.3.0"
+  },
+  "peerDependenciesMeta": {
+    "obsidian-integration-testing": {
+      "optional": true
+    }
   },
   "engines": {
     "node": ">=22.0.0"
