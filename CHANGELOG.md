@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## 3.1.0
+
+- feat: merge letting plugin suggestion and gate reasons be a DocumentFragment
+- fix(plugin-api): merge making the copied provider contracts agree with the providers' own
+- docs: mark plugin names as code in comments and AGENTS.md
+- docs: name the Dataview import replacement in the 3.0.0 changelog
+
 ## 3.0.0
 
 - feat!: type Dataview through @mnaoumov/obsidian-dataview and drop the vendored declarations
