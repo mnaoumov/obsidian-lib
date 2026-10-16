@@ -46,134 +46,6 @@
         "types": "./dist/lib/cjs/@types/*.d.cts"
       }
     },
-    "./@types/dataview": {
-      "import": {
-        "types": "./dist/lib/esm/@types/dataview/index.d.mts"
-      },
-      "require": {
-        "types": "./dist/lib/cjs/@types/dataview/index.d.cts"
-      }
-    },
-    "./@types/dataview/*": {
-      "import": {
-        "types": "./dist/lib/esm/@types/dataview/*.d.mts"
-      },
-      "require": {
-        "types": "./dist/lib/cjs/@types/dataview/*.d.cts"
-      }
-    },
-    "./@types/dataview/api/*": {
-      "import": {
-        "types": "./dist/lib/esm/@types/dataview/api/*.d.mts"
-      },
-      "require": {
-        "types": "./dist/lib/cjs/@types/dataview/api/*.d.cts"
-      }
-    },
-    "./@types/dataview/data-import/*": {
-      "import": {
-        "types": "./dist/lib/esm/@types/dataview/data-import/*.d.mts"
-      },
-      "require": {
-        "types": "./dist/lib/cjs/@types/dataview/data-import/*.d.cts"
-      }
-    },
-    "./@types/dataview/data-import/web-worker/*": {
-      "import": {
-        "types": "./dist/lib/esm/@types/dataview/data-import/web-worker/*.d.mts"
-      },
-      "require": {
-        "types": "./dist/lib/cjs/@types/dataview/data-import/web-worker/*.d.cts"
-      }
-    },
-    "./@types/dataview/data-index": {
-      "import": {
-        "types": "./dist/lib/esm/@types/dataview/data-index/index.d.mts"
-      },
-      "require": {
-        "types": "./dist/lib/cjs/@types/dataview/data-index/index.d.cts"
-      }
-    },
-    "./@types/dataview/data-index/*": {
-      "import": {
-        "types": "./dist/lib/esm/@types/dataview/data-index/*.d.mts"
-      },
-      "require": {
-        "types": "./dist/lib/cjs/@types/dataview/data-index/*.d.cts"
-      }
-    },
-    "./@types/dataview/data-model/*": {
-      "import": {
-        "types": "./dist/lib/esm/@types/dataview/data-model/*.d.mts"
-      },
-      "require": {
-        "types": "./dist/lib/cjs/@types/dataview/data-model/*.d.cts"
-      }
-    },
-    "./@types/dataview/data-model/serialized/*": {
-      "import": {
-        "types": "./dist/lib/esm/@types/dataview/data-model/serialized/*.d.mts"
-      },
-      "require": {
-        "types": "./dist/lib/cjs/@types/dataview/data-model/serialized/*.d.cts"
-      }
-    },
-    "./@types/dataview/expression/*": {
-      "import": {
-        "types": "./dist/lib/esm/@types/dataview/expression/*.d.mts"
-      },
-      "require": {
-        "types": "./dist/lib/cjs/@types/dataview/expression/*.d.cts"
-      }
-    },
-    "./@types/dataview/query/*": {
-      "import": {
-        "types": "./dist/lib/esm/@types/dataview/query/*.d.mts"
-      },
-      "require": {
-        "types": "./dist/lib/cjs/@types/dataview/query/*.d.cts"
-      }
-    },
-    "./@types/dataview/typings/*": {
-      "import": {
-        "types": "./dist/lib/esm/@types/dataview/typings/*.d.mts"
-      },
-      "require": {
-        "types": "./dist/lib/cjs/@types/dataview/typings/*.d.cts"
-      }
-    },
-    "./@types/dataview/ui/*": {
-      "import": {
-        "types": "./dist/lib/esm/@types/dataview/ui/*.d.mts"
-      },
-      "require": {
-        "types": "./dist/lib/cjs/@types/dataview/ui/*.d.cts"
-      }
-    },
-    "./@types/dataview/ui/export/*": {
-      "import": {
-        "types": "./dist/lib/esm/@types/dataview/ui/export/*.d.mts"
-      },
-      "require": {
-        "types": "./dist/lib/cjs/@types/dataview/ui/export/*.d.cts"
-      }
-    },
-    "./@types/dataview/ui/views/*": {
-      "import": {
-        "types": "./dist/lib/esm/@types/dataview/ui/views/*.d.mts"
-      },
-      "require": {
-        "types": "./dist/lib/cjs/@types/dataview/ui/views/*.d.cts"
-      }
-    },
-    "./@types/dataview/util/*": {
-      "import": {
-        "types": "./dist/lib/esm/@types/dataview/util/*.d.mts"
-      },
-      "require": {
-        "types": "./dist/lib/cjs/@types/dataview/util/*.d.cts"
-      }
-    },
     "./codemirror": {
       "import": {
         "types": "./dist/lib/esm/codemirror/index.d.mts",
@@ -458,18 +330,15 @@
     "@codemirror/state": "6.7.6",
     "@codemirror/view": "6.43.13",
     "@lezer/common": "1.5.2",
+    "@mnaoumov/obsidian-dataview": "^1.0.0",
     "@mnaoumov/typescript-lib": "^1.0.0",
     "@obsidian-typings/obsidian-public-latest": "^6.37.0",
     "@standard-schema/spec": "^1.1.0",
-    "@types/luxon": "^3.7.5",
-    "@types/parsimmon": "^1.10.9",
     "@types/react": "^19.3.0",
     "compare-versions": "^6.1.1",
     "i18next": "^26.4.2",
-    "localforage": "^1.10.0",
     "monkey-around": "^3.0.0",
     "obsidian": "^1.14.4",
-    "preact": "^10.29.8",
     "react": "^19.3.0",
     "remark": "^15.0.1",
     "remark-parse": "^11.0.0",
@@ -498,6 +367,7 @@
     "esbuild": "^0.28.2",
     "eslint": "^10.11.0",
     "eslint-plugin-jsdoc": "^64.5.4",
+    "eslint-plugin-obsidianmd": "^0.4.2",
     "eslint-plugin-tsdoc": "^0.5.3",
     "fflate": "^0.8.3",
     "husky": "^9.1.7",
@@ -511,8 +381,7 @@
     "sass": "^1.104.1",
     "tslib": "^2.8.1",
     "typescript": "6.0.3",
-    "vitest": "^5.0.1",
-    "eslint-plugin-obsidianmd": "^0.4.2"
+    "vitest": "^5.0.1"
   },
   "engines": {
     "node": ">=22.0.0"
