@@ -44,28 +44,29 @@ export interface GreeterApi {
  * The contract both sides declare: the method name that drives the shape check, plus the payload schemas
  * that drive validation once the library debugger is on.
  */
-export const GREETER_CONTRACT: PluginApiContract = {
+export const GREETER_CONTRACT: PluginApiContract<GreeterApi> = {
   greet: {
     // `input` validates the ARGUMENT LIST, so the value handed to it is `['world']`, not `'world'`.
     input: createSchema(
-      (value: unknown): boolean => Array.isArray(value) && value.length === 1 && typeof value[0] === 'string',
+      (value: unknown): value is [name: string] => Array.isArray(value) && value.length === 1 && typeof value[0] === 'string',
       'greet expects exactly one string argument'
     ),
-    output: createSchema((value: unknown): boolean => typeof value === 'string', 'greet must return a string')
+    output: createSchema((value: unknown): value is string => typeof value === 'string', 'greet must return a string')
   }
 };
 
 /**
  * Builds a minimal Standard Schema from a predicate.
  *
+ * @typeParam T - The type the schema produces.
  * @param checkIsValid - Decides whether the value is acceptable.
  * @param message - The issue message reported when it is not.
  * @returns The schema.
  */
-function createSchema(checkIsValid: (value: unknown) => boolean, message: string): StandardSchemaV1 {
+function createSchema<T>(checkIsValid: (value: unknown) => value is T, message: string): StandardSchemaV1<unknown, T> {
   return {
     '~standard': {
-      validate: (value: unknown): StandardSchemaV1.Result<unknown> => checkIsValid(value) ? { value } : { issues: [{ message }] },
+      validate: (value: unknown): StandardSchemaV1.Result<T> => checkIsValid(value) ? { value } : { issues: [{ message }] },
       vendor: 'obsidian-dev-utils-integration-test',
       version: 1
     }

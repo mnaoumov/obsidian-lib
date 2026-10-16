@@ -961,6 +961,16 @@ export function isNote(pathOrFile: null | PathOrAbstractFile): boolean {
 }
 
 /**
+ * Checks if the given value is a path or a file.
+ *
+ * @param value - The value to check.
+ * @returns A boolean indicating whether the value is a string or an instance of file.
+ */
+export function isPathOrFile(value: unknown): value is PathOrFile {
+  return typeof value === 'string' || isFile(value);
+}
+
+/**
  * Checks if the given file should be treated as an attachment because of its extension.
  *
  * Some plugins store their data in files that are markdown on disk but are not prose — Excalidraw, for example, saves each drawing as `sketch.excalidraw.md`.

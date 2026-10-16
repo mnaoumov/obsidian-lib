@@ -36,8 +36,13 @@ import {
   getFolder,
   getFolderOrNull,
   getPath,
+  isPathOrFile,
   MARKDOWN_FILE_EXTENSION
 } from './file-system.ts';
+import {
+  createArgumentsSchema,
+  createTypeGuardSchema
+} from './plugin/plugin-api-schema.ts';
 import { findPluginApi } from './plugin/plugin-api.ts';
 
 /**
@@ -172,11 +177,24 @@ export const CUSTOM_ATTACHMENT_LOCATION_PLUGIN_ID = 'obsidian-custom-attachment-
 const CUSTOM_ATTACHMENT_LOCATION_ATTACHMENT_PATH_API_VERSION_RANGE = '^1.3.0';
 
 /**
- * The members of Custom Attachment Location's API this module calls, so a record that lacks either is passed over.
+ * The contract of the members of Custom Attachment Location's API this module calls, so a record that lacks
+ * either is passed over, and a payload that breaks its signature is reported while the `PluginApi` debugger is on.
  */
-const CUSTOM_ATTACHMENT_LOCATION_ATTACHMENT_PATH_API_CONTRACT: PluginApiContract = {
-  getAvailablePathForAttachments: {},
-  isAttachmentUnitFolder: {}
+const CUSTOM_ATTACHMENT_LOCATION_ATTACHMENT_PATH_API_CONTRACT: PluginApiContract<CustomAttachmentLocationAttachmentPathApi> = {
+  getAvailablePathForAttachments: {
+    input: createArgumentsSchema<[params: GetAvailablePathForAttachmentsExtendedFunctionParams]>([{
+      expected: 'the attachment-path parameters',
+      typeGuard: isGetAvailablePathForAttachmentsExtendedFunctionParams
+    }]),
+    output: createTypeGuardSchema({ expected: 'a string', typeGuard: isString })
+  },
+  isAttachmentUnitFolder: {
+    input: createArgumentsSchema<[params: CustomAttachmentLocationIsAttachmentUnitFolderParams]>([{
+      expected: 'an object with a string folderPath',
+      typeGuard: isCustomAttachmentLocationIsAttachmentUnitFolderParams
+    }]),
+    output: createTypeGuardSchema({ expected: 'a boolean', typeGuard: isBoolean })
+  }
 };
 
 /**
@@ -749,6 +767,48 @@ function getAvailablePathForAttachmentsSync(params: GetAvailablePathForAttachmen
       fileExtension: attachmentFileExtension
     })
     : app.vault.getAvailablePath(prefix + attachmentFileBaseName, attachmentFileExtension);
+}
+
+function isBoolean(value: unknown): value is boolean {
+  return typeof value === 'boolean';
+}
+
+function isCustomAttachmentLocationIsAttachmentUnitFolderParams(value: unknown): value is CustomAttachmentLocationIsAttachmentUnitFolderParams {
+  return typeof value === 'object' && value !== null && typeof Reflect.get(value, 'folderPath') === 'string';
+}
+
+function isGetAvailablePathForAttachmentsExtendedFunctionParams(value: unknown): value is GetAvailablePathForAttachmentsExtendedFunctionParams {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+
+  function read(key: keyof GetAvailablePathForAttachmentsExtendedFunctionParams): unknown {
+    return Reflect.get(value as object, key);
+  }
+
+  const attachmentFileStats = read('attachmentFileStats');
+  const context = read('context');
+  const notePathOrFile = read('notePathOrFile');
+  const oldNotePathOrFile = read('oldNotePathOrFile');
+  const readAttachmentFileContent = read('readAttachmentFileContent');
+  return typeof read('attachmentFileBaseName') === 'string'
+    && typeof read('attachmentFileExtension') === 'string'
+    && (attachmentFileStats === undefined || (typeof attachmentFileStats === 'object' && attachmentFileStats !== null))
+    && Object.values(AttachmentPathContext).includes(context)
+    && (notePathOrFile === null || isPathOrFile(notePathOrFile))
+    && isPathOrFile(read('oldAttachmentPathOrFile'))
+    && (oldNotePathOrFile === undefined || isPathOrFile(oldNotePathOrFile))
+    && (readAttachmentFileContent === null || typeof readAttachmentFileContent === 'function')
+    && isOptionalBoolean(read('shouldSkipDuplicateCheck'))
+    && isOptionalBoolean(read('shouldSkipGeneratedAttachmentFileName'))
+    && isOptionalBoolean(read('shouldSkipMissingAttachmentFolderCreation'));
+}
+function isOptionalBoolean(value: unknown): value is boolean | undefined {
+  return value === undefined || isBoolean(value);
+}
+
+function isString(value: unknown): value is string {
+  return typeof value === 'string';
 }
 
 /**

@@ -39,6 +39,10 @@ import type {
 import { getObsidianLibDebugger } from '../debug.ts';
 import { getObsidianDevUtilsState } from '../obsidian-dev-utils-state.ts';
 import {
+  createArgumentsSchema,
+  createTypeGuardSchema
+} from './plugin-api-schema.ts';
+import {
   findPluginApi,
   PluginApiPayloadKind,
   PluginApiRevokedError,
@@ -60,10 +64,29 @@ const ANY_VERSION_RANGE = '>=0.0.0';
 
 const SYMBOL_KEY: unique symbol = Symbol('tag');
 
+const STRING_SCHEMA = createTypeGuardSchema({ expected: 'a string', typeGuard: (value: unknown): value is string => typeof value === 'string' });
+
+const FAREWELL_CONTRACT: PluginApiContract<FarewellApi> = {
+  farewell: { input: createArgumentsSchema<[]>([]), output: STRING_SCHEMA }
+};
+
+const GREET_CONTRACT: PluginApiContract<GreetOnlyApi> = {
+  greet: {
+    input: createArgumentsSchema<[name: string]>([{ expected: 'a string', typeGuard: (value: unknown): value is string => typeof value === 'string' }]),
+    output: STRING_SCHEMA
+  }
+};
+
+interface FarewellApi {
+  farewell: () => string;
+}
+
 interface GreeterApi {
   greet: (name: string) => string;
   greeting: string;
 }
+
+type GreetOnlyApi = Pick<GreeterApi, 'greet'>;
 
 interface PublishOptions {
   readonly api?: object;
@@ -297,8 +320,8 @@ describe('plugin-api', () => {
     it('should honor the consumer contract', () => {
       const harness = createHarness();
       harness.publish();
-      expect(findPluginApi<GreeterApi>({ apiVersionRange: ANY_VERSION_RANGE, contract: { farewell: {} }, pluginId: PROVIDER_ID })).toBeNull();
-      expect(findPluginApi<GreeterApi>({ apiVersionRange: ANY_VERSION_RANGE, contract: { greet: {} }, pluginId: PROVIDER_ID })?.greet('y')).toBe('Hello, y!');
+      expect(findPluginApi<FarewellApi>({ apiVersionRange: ANY_VERSION_RANGE, contract: FAREWELL_CONTRACT, pluginId: PROVIDER_ID })).toBeNull();
+      expect(findPluginApi<GreetOnlyApi>({ apiVersionRange: ANY_VERSION_RANGE, contract: GREET_CONTRACT, pluginId: PROVIDER_ID })?.greet('y')).toBe('Hello, y!');
     });
 
     it('should hand out a handle that is revoked when the provider unloads', () => {
@@ -719,7 +742,8 @@ function createHarness(options: CreateHarnessOptions = {}): TestHarness {
     },
     watch<TApi extends object>(watchOptions: WatchOptions = {}): WatchResult<TApi> {
       const unloadCallbacks: (() => void)[] = [];
-      const ref = watchPluginApi<TApi>(normalizeOptionalProperties<WatchPluginApiParams>({
+      // The harness passes LOOSE contracts on purpose, so it watches untyped and names the API afterwards.
+      const ref = castTo<PluginApiRef<TApi>>(watchPluginApi(normalizeOptionalProperties<WatchPluginApiParams>({
         apiVersionRange: watchOptions.apiVersionRange ?? ANY_VERSION_RANGE,
         app,
         component: strictProxy<Component>({
@@ -729,7 +753,7 @@ function createHarness(options: CreateHarnessOptions = {}): TestHarness {
         }),
         contract: watchOptions.contract,
         pluginId: watchOptions.pluginId ?? PROVIDER_ID
-      }));
+      })));
 
       return {
         ref,

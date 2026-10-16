@@ -27,14 +27,21 @@
  * publishPluginApi<SettingsMigrationApi<MyMigratableSettings>>({
  *   api: this.settingsMigrationApi,
  *   apiVersion: '1.0.0',
- *   contract: { migrateSettings: {} },
+ *   contract: getSettingsMigrationApiContract<MyMigratableSettings>(),
  *   plugin: this
  * });
  * ```
  *
- * The consumer reaches it through {@link obsidian/components/settings-migration-component!SettingsMigrationComponent},
- * which owns the whole offer-and-retire dance.
+ * The consumer reaches it through `SettingsMigrationComponent`,
+ * which owns the whole offer-and-retire dance, and checks the provider against the same contract by default.
  */
+
+import type { PluginApiContract } from './plugin-api.ts';
+
+import {
+  createArgumentsSchema,
+  createTypeGuardSchema
+} from './plugin-api-schema.ts';
 
 /**
  * Parameters for {@link SettingsMigrationApi.migrateSettings}.
@@ -91,4 +98,34 @@ export interface SettingsMigrationApi<TMigratableSettings extends object> {
    * @returns What the user approved.
    */
   migrateSettings: (params: MigrateSettingsParams<TMigratableSettings>) => Promise<MigrateSettingsResult>;
+}
+
+/**
+ * The contract of {@link SettingsMigrationApi}, which both ends of a handover compile against: the provider
+ * publishes it, and `SettingsMigrationComponent` checks the
+ * provider against it unless given another.
+ *
+ * The proposed settings are checked to be an object and no further, because their shape is the pair's own
+ * business (see the file header).
+ *
+ * @typeParam TMigratableSettings - The settings being handed over.
+ * @returns The contract.
+ */
+export function getSettingsMigrationApiContract<TMigratableSettings extends object>(): PluginApiContract<SettingsMigrationApi<TMigratableSettings>> {
+  return {
+    migrateSettings: {
+      input: createArgumentsSchema<[params: MigrateSettingsParams<TMigratableSettings>]>([{
+        expected: 'an object with an object proposedSettings and a string sourcePluginId',
+        typeGuard: (value: unknown): value is MigrateSettingsParams<TMigratableSettings> => isObject(value) && isObject(Reflect.get(value, 'proposedSettings')) && typeof Reflect.get(value, 'sourcePluginId') === 'string'
+      }]),
+      output: createTypeGuardSchema({
+        expected: 'an object with a boolean isApplied',
+        typeGuard: (value: unknown): value is MigrateSettingsResult => isObject(value) && typeof Reflect.get(value, 'isApplied') === 'boolean'
+      })
+    }
+  };
+}
+
+function isObject(value: unknown): value is object {
+  return typeof value === 'object' && value !== null;
 }
