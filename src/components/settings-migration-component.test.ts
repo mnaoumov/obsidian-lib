@@ -4,6 +4,7 @@
  * Tests for {@link SettingsMigrationComponent}.
  */
 
+import type { ApiContract } from '@mnaoumov/typescript-lib/api-contract';
 import type { AsyncEventRef } from '@mnaoumov/typescript-lib/async-events';
 import type {
   App,
@@ -30,10 +31,7 @@ import {
 } from 'vitest';
 
 import type { DataHandler } from '../data-handler.ts';
-import type {
-  PluginApiContract,
-  PublishPluginApiParams
-} from '../plugin/plugin-api.ts';
+import type { PublishPluginApiParams } from '../plugin/plugin-api.ts';
 import type { PluginEventSource } from '../plugin/plugin-event-source.ts';
 import type {
   MigrateSettingsParams,
@@ -57,7 +55,7 @@ interface CreateHarnessOptions {
   /**
    * The contract the CONSUMER declares, which wins over the provider's when supplied.
    */
-  readonly contract?: PluginApiContract<SettingsMigrationApi<TestMigratableSettings>>;
+  readonly contract?: ApiContract<SettingsMigrationApi<TestMigratableSettings>>;
 
   /**
    * What the consumer's `data.json` holds, i.e. whether a migration is pending on this vault.

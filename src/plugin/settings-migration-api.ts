@@ -36,12 +36,12 @@
  * which owns the whole offer-and-retire dance, and checks the provider against the same contract by default.
  */
 
-import type { PluginApiContract } from './plugin-api.ts';
+import type { ApiContract } from '@mnaoumov/typescript-lib/api-contract';
 
 import {
   createArgumentsSchema,
   createTypeGuardSchema
-} from './plugin-api-schema.ts';
+} from '@mnaoumov/typescript-lib/api-contract';
 
 /**
  * Parameters for {@link SettingsMigrationApi.migrateSettings}.
@@ -111,7 +111,7 @@ export interface SettingsMigrationApi<TMigratableSettings extends object> {
  * @typeParam TMigratableSettings - The settings being handed over.
  * @returns The contract.
  */
-export function getSettingsMigrationApiContract<TMigratableSettings extends object>(): PluginApiContract<SettingsMigrationApi<TMigratableSettings>> {
+export function getSettingsMigrationApiContract<TMigratableSettings extends object>(): ApiContract<SettingsMigrationApi<TMigratableSettings>> {
   return {
     migrateSettings: {
       input: createArgumentsSchema<[params: MigrateSettingsParams<TMigratableSettings>]>([{

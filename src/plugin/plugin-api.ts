@@ -49,6 +49,22 @@
  * zod / valibot / arktype / a hand-written validator all plug in and none of them is a dependency here. It
  * runs only while the `obsidian-dev-utils:PluginApi` debugger is enabled, so production pays nothing.
  *
+ * The contract itself — its types and the schema builders — is not Obsidian-specific and lives in
+ * `@mnaoumov/typescript-lib/api-contract` (`ApiContract`, `createArgumentsSchema`, `createTypeGuardSchema`,
+ * `defineApiContract`). This module owns what is: the registry keyed by plugin id, the revocable handles, the
+ * debug gate and the validation errors. A contract's KEYS drive the shape check that decides whether a published
+ * record is usable at all; its schemas are only ever consulted while debugging.
+ *
+ * Why the shape check is a `typeof` rather than a schema over the whole API object. In zod 4 `z.function()`
+ * returns a function FACTORY, not a schema, so it cannot be a `z.object()` member directly. There is a known
+ * workaround (zod#4143) — `z.custom((fn) => functionSchema.implement(fn))` — and it does buy correct
+ * `z.infer` types for a function member. It does not buy runtime validation here, though: `z.custom` is a
+ * boolean predicate that returns its input unchanged, so the validating wrapper `implement` builds is
+ * discarded and the check collapses back to "is it callable". Keeping that wrapper would need a further
+ * `.transform()`, and would then move validation onto every call instead of behind the debug gate, and bind
+ * the contract to zod specifically — which is exactly what reaching through Standard Schema avoids. So the
+ * declared method names are checked with `typeof`, and the payloads are validated per method instead.
+ *
  * @remarks
  * Every plugin bundles its OWN copy of `obsidian-dev-utils`, so a registry record is a wire format between
  * different library versions and must stay backward-compatible forever. Nothing crossing it may be
@@ -63,6 +79,13 @@
  * is public within the shared-state bag; the rest of it stays internal.
  */
 
+import type {
+  ApiContract,
+  ApiMethodContract,
+  ApiMethodName,
+  ApiMethods,
+  TypedApiContract
+} from '@mnaoumov/typescript-lib/api-contract';
 import type { AsyncEventSource } from '@mnaoumov/typescript-lib/async-events';
 import type { StandardSchemaV1 } from '@standard-schema/spec';
 import type {
@@ -172,7 +195,7 @@ export interface FindPluginApiParams<TApi extends object = object> {
    * The contract the CONSUMER expects. When supplied, it wins over the provider's published contract, as in
    * {@link WatchPluginApiParams.contract}.
    */
-  readonly contract?: PluginApiContract<TApi>;
+  readonly contract?: ApiContract<TApi>;
 
   /**
    * The `manifest.id` of the providing plugin.
@@ -181,32 +204,12 @@ export interface FindPluginApiParams<TApi extends object = object> {
 }
 
 /**
- * The contract a provider declares for its API: every key is a method the API is promising to expose, and
- * its value optionally carries the payload schemas for that method.
- *
- * The KEYS are the part that always matters — they drive the shape check that decides whether a published
- * record is usable at all. The schemas are optional and only ever consulted while debugging.
- *
- * @remarks
- * Why the shape check is a `typeof` rather than a schema over the whole API object. In zod 4 `z.function()`
- * returns a function FACTORY, not a schema, so it cannot be a `z.object()` member directly. There is a known
- * workaround (zod#4143) — `z.custom((fn) => functionSchema.implement(fn))` — and it does buy correct
- * `z.infer` types for a function member. It does not buy runtime validation here, though: `z.custom` is a
- * boolean predicate that returns its input unchanged, so the validating wrapper `implement` builds is
- * discarded and the check collapses back to "is it callable". Keeping that wrapper would need a further
- * `.transform()`, and would then move validation onto every call instead of behind the debug gate, and bind
- * the contract to zod specifically — which is exactly what reaching through Standard Schema avoids. So the
- * declared method names are checked with `typeof`, and the payloads are validated per method instead.
- *
- * Typed over the API when one is named: `PluginApiContract<MyApi>` has exactly one entry per function member of
- * `MyApi` — a missing method, an extra one or a misspelled one does not compile — and each entry's schemas must
- * produce that method's parameters and (awaited) return value. Without a type argument, or for `object`, it stays
- * the loose record it always was, which is what crosses the registry between library copies.
+ * The contract a provider declares for its API.
  *
  * @typeParam TApi - The API the contract describes. `object`, the default, means "not typed".
+ * @deprecated Use `ApiContract` from `@mnaoumov/typescript-lib/api-contract`.
  */
-export type PluginApiContract<TApi extends object = object> = object extends TApi ? Readonly<Record<string, PluginApiMethodContract>>
-  : TypedPluginApiContract<TApi>;
+export type PluginApiContract<TApi extends object = object> = ApiContract<TApi>;
 
 /**
  * One API a plugin exposes: the object, the contract version it satisfies, and optionally the contract
@@ -234,43 +237,33 @@ export interface PluginApiDeclaration<TApi extends object = object> {
    * The contract this version of the API satisfies. Optional: when omitted, no shape check is performed on
    * the provider's behalf and the consumer's own contract (if any) is used instead.
    */
-  readonly contract?: PluginApiContract<TApi>;
+  readonly contract?: ApiContract<TApi>;
 }
 
 /**
- * The payload schemas for a single API method. Both halves are optional: a method may declare only its input,
- * only its output, neither (the entry then just declares that the method must exist), or both.
+ * The payload schemas for a single API method.
  *
  * @typeParam TParameters - The method's parameters, as a tuple, which the input schema must produce.
  * @typeParam TReturnValue - The method's return value, awaited, which the output schema must produce.
+ * @deprecated Use `ApiMethodContract` from `@mnaoumov/typescript-lib/api-contract`.
  */
-export interface PluginApiMethodContract<TParameters = unknown, TReturnValue = unknown> {
-  /**
-   * Validates the method's arguments, as an array.
-   */
-  readonly input?: StandardSchemaV1<unknown, TParameters>;
-
-  /**
-   * Validates the method's return value — or, when the method returns a thenable, the value it resolves to.
-   */
-  readonly output?: StandardSchemaV1<unknown, TReturnValue>;
-}
+export type PluginApiMethodContract<TParameters = unknown, TReturnValue = unknown> = ApiMethodContract<TParameters, TReturnValue>;
 
 /**
- * The names of the function members of an API, which are exactly the keys a typed {@link PluginApiContract} has.
+ * The names of the function members of an API.
  *
  * @typeParam TApi - The API.
+ * @deprecated Use `ApiMethodName` from `@mnaoumov/typescript-lib/api-contract`.
  */
-export type PluginApiMethodName<TApi extends object> = keyof PluginApiMethods<TApi> & string;
+export type PluginApiMethodName<TApi extends object> = ApiMethodName<TApi>;
 
 /**
  * The function members of an API.
  *
  * @typeParam TApi - The API.
+ * @deprecated Use `ApiMethods` from `@mnaoumov/typescript-lib/api-contract`.
  */
-export type PluginApiMethods<TApi extends object> = {
-  [TKey in keyof TApi as TApi[TKey] extends (...arguments_: never) => unknown ? TKey : never]: TApi[TKey];
-};
+export type PluginApiMethods<TApi extends object> = ApiMethods<TApi>;
 
 /**
  * A live reference to another plugin's API.
@@ -385,17 +378,12 @@ export interface PublishPluginApiParams<TApi extends object> extends PluginApiDe
 }
 
 /**
- * The {@link PluginApiContract} of a named API: one entry per function member, each typed against that member.
- * Both schemas are REQUIRED here, so a typed contract is a full description of every signature and a `{}`
- * entry does not compile. Only the loose form, which is what an older library copy may have published, leaves
- * them optional.
+ * The contract of a named API, with both schemas required on every entry.
  *
  * @typeParam TApi - The API the contract describes.
+ * @deprecated Use `TypedApiContract` from `@mnaoumov/typescript-lib/api-contract`.
  */
-export type TypedPluginApiContract<TApi extends object> = {
-  readonly [TKey in PluginApiMethodName<TApi>]-?: TApi[TKey] extends (...arguments_: infer TParameters) => infer TReturnValue ? Required<PluginApiMethodContract<TParameters, Awaited<TReturnValue>>>
-    : never;
-};
+export type TypedPluginApiContract<TApi extends object> = TypedApiContract<TApi>;
 
 /**
  * Parameters for {@link watchPluginApi}.
@@ -428,7 +416,7 @@ export interface WatchPluginApiParams<TApi extends object = object> {
    * supplied — it is the consumer's own compiled-against expectation, so it is the one whose violation is
    * the consumer's problem.
    */
-  readonly contract?: PluginApiContract<TApi>;
+  readonly contract?: ApiContract<TApi>;
 
   /**
    * The `manifest.id` of the providing plugin.
@@ -452,7 +440,7 @@ export interface WhenAvailablePluginApiOptions {
  * Parameters for {@link createMethodWrapper}.
  */
 interface CreateMethodWrapperParams {
-  readonly methodContract: PluginApiMethodContract | undefined;
+  readonly methodContract: ApiMethodContract | undefined;
 
   /**
    * The human-readable name used in error messages and debug output. NOT a key — see {@link propertyKey}.
@@ -493,7 +481,7 @@ interface PluginApiRegistry {
 interface PublishedPluginApiRecord {
   api: object;
   apiVersion: string;
-  contract: PluginApiContract;
+  contract: ApiContract;
   isRevoked: boolean;
   pluginId: string;
 }
@@ -800,7 +788,7 @@ function checkIsPromiseLike<T>(value: unknown): value is PromiseLike<T> {
  * @param consumerContract - The consumer's own contract, which wins when supplied.
  * @returns `true` when the shape matches.
  */
-function checkMatchesContractShape(record: PublishedPluginApiRecord, consumerContract?: PluginApiContract): boolean {
+function checkMatchesContractShape(record: PublishedPluginApiRecord, consumerContract?: ApiContract): boolean {
   const contract = consumerContract ?? record.contract;
   return Object.keys(contract).every((methodName) => typeof getMember(record.api, methodName) === 'function');
 }
@@ -880,7 +868,7 @@ function createMethodWrapper(params: CreateMethodWrapperParams): (...$arguments:
  * @param consumerContract - The consumer's own contract, which wins over the published one when supplied.
  * @returns The handle.
  */
-function createRevocableHandle(record: PublishedPluginApiRecord, consumerContract?: PluginApiContract): object {
+function createRevocableHandle(record: PublishedPluginApiRecord, consumerContract?: ApiContract): object {
   const contract = consumerContract ?? record.contract;
   const methodCache = new Map<PropertyKey>();
 

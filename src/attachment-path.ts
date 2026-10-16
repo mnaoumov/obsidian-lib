@@ -4,12 +4,17 @@
  * Provides utility functions for working with attachment paths.
  */
 
+import type { ApiContract } from '@mnaoumov/typescript-lib/api-contract';
 import type {
   App,
   FileStats,
   TFolder
 } from 'obsidian';
 
+import {
+  createArgumentsSchema,
+  createTypeGuardSchema
+} from '@mnaoumov/typescript-lib/api-contract';
 import {
   basename,
   dirname,
@@ -28,7 +33,6 @@ import {
 } from '@obsidian-typings/obsidian-public-latest/implementations';
 
 import type { PathOrFile } from './file-system.ts';
-import type { PluginApiContract } from './plugin/plugin-api.ts';
 
 import {
   getFile,
@@ -39,10 +43,6 @@ import {
   isPathOrFile,
   MARKDOWN_FILE_EXTENSION
 } from './file-system.ts';
-import {
-  createArgumentsSchema,
-  createTypeGuardSchema
-} from './plugin/plugin-api-schema.ts';
 import { findPluginApi } from './plugin/plugin-api.ts';
 
 /**
@@ -183,7 +183,7 @@ const CUSTOM_ATTACHMENT_LOCATION_ATTACHMENT_PATH_API_VERSION_RANGE = '^1.3.0';
  * A copy of those two entries of `CUSTOM_ATTACHMENT_LOCATION_API_CONTRACT`, which `Custom Attachment Location` ships as its root `api-contract.ts`
  * and publishes. Keep the guards in agreement with that file, so the provider and this consumer check one definition.
  */
-const CUSTOM_ATTACHMENT_LOCATION_ATTACHMENT_PATH_API_CONTRACT: PluginApiContract<CustomAttachmentLocationAttachmentPathApi> = {
+const CUSTOM_ATTACHMENT_LOCATION_ATTACHMENT_PATH_API_CONTRACT: ApiContract<CustomAttachmentLocationAttachmentPathApi> = {
   getAvailablePathForAttachments: {
     input: createArgumentsSchema<[params: GetAvailablePathForAttachmentsExtendedFunctionParams]>([{
       expected: 'available-path-for-attachments params',
