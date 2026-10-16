@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 3.2.0
+
+- feat: merge letting loop's progressBarTitle be a DocumentFragment
+
 ## 3.1.0
 
 - feat: merge letting plugin suggestion and gate reasons be a DocumentFragment
