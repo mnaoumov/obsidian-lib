@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 4.0.0
+
+- feat!: narrow postPatchHandler so a patch cannot graft members
+- docs: merge showing the package logo as the home page hero image
+- build(docs): merge taking the external type links from obsidian-dev-toolkit
+
 ## 3.4.0
 
 - build(deps): merge taking obsidian and its type packages as peer dependencies
