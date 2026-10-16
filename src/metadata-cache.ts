@@ -4,6 +4,7 @@
  * This module provides utility functions for working with the metadata cache in Obsidian.
  */
 
+import type { ApiContract } from '@mnaoumov/typescript-lib/api-contract';
 import type { RetryOptions } from '@mnaoumov/typescript-lib/async';
 import type { CustomArrayDict } from '@obsidian-typings/obsidian-public-latest';
 import type {
@@ -13,6 +14,10 @@ import type {
   TAbstractFile
 } from 'obsidian';
 
+import {
+  createArgumentsSchema,
+  createTypeGuardSchema
+} from '@mnaoumov/typescript-lib/api-contract';
 import { CallbackDisposable } from '@mnaoumov/typescript-lib/disposable';
 import { getNestedPropertyValue } from '@mnaoumov/typescript-lib/object-utils';
 import { ensureNonNullable } from '@mnaoumov/typescript-lib/type-guards';
@@ -30,7 +35,6 @@ import type {
   ParseLinkFrontmatterReferenceWithOffsets,
   ParseLinkReference
 } from './parse-link.ts';
-import type { PluginApiContract } from './plugin/plugin-api.ts';
 
 import { retryWithTimeoutNotice } from './async-with-notice.ts';
 import { getIndexedBacklinksForFile } from './backlink-index.ts';
@@ -55,10 +59,6 @@ import {
   parseLinks,
   toParseLinkReference
 } from './parse-link.ts';
-import {
-  createArgumentsSchema,
-  createTypeGuardSchema
-} from './plugin/plugin-api-schema.ts';
 import { findPluginApi } from './plugin/plugin-api.ts';
 import { sortReferences } from './reference.ts';
 import {
@@ -382,7 +382,7 @@ const ADVANCED_METADATA_CACHE_BACKLINKS_METHOD_CONTRACT = {
 /**
  * The contract of the members of `Advanced Metadata Cache`'s API this module calls, so a record that lacks either is passed over, and a payload that breaks its signature is reported while the `PluginApi` debugger is on.
  */
-const ADVANCED_METADATA_CACHE_BACKLINKS_API_CONTRACT: PluginApiContract<AdvancedMetadataCacheBacklinksApi> = {
+const ADVANCED_METADATA_CACHE_BACKLINKS_API_CONTRACT: ApiContract<AdvancedMetadataCacheBacklinksApi> = {
   getBacklinksForFile: ADVANCED_METADATA_CACHE_BACKLINKS_METHOD_CONTRACT,
   getBacklinksForFileSafe: ADVANCED_METADATA_CACHE_BACKLINKS_METHOD_CONTRACT
 };

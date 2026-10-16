@@ -15,7 +15,7 @@
 
 import type { StandardSchemaV1 } from '@standard-schema/spec';
 
-import type { PluginApiContract } from '@mnaoumov/obsidian-lib/plugin/plugin-api';
+import type { ApiContract } from '@mnaoumov/typescript-lib/api-contract';
 
 /**
  * The `manifest.id` of the consuming plugin.
@@ -44,7 +44,7 @@ export interface GreeterApi {
  * The contract both sides declare: the method name that drives the shape check, plus the payload schemas
  * that drive validation once the library debugger is on.
  */
-export const GREETER_CONTRACT: PluginApiContract<GreeterApi> = {
+export const GREETER_CONTRACT: ApiContract<GreeterApi> = {
   greet: {
     // `input` validates the ARGUMENT LIST, so the value handed to it is `['world']`, not `'world'`.
     input: createSchema(

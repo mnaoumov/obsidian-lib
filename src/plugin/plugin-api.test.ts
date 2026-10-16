@@ -4,6 +4,7 @@
  * Tests for the cross-plugin API registry.
  */
 
+import type { ApiContract } from '@mnaoumov/typescript-lib/api-contract';
 import type { StandardSchemaV1 } from '@standard-schema/spec';
 import type {
   App,
@@ -12,6 +13,10 @@ import type {
   PluginManifest
 } from 'obsidian';
 
+import {
+  createArgumentsSchema,
+  createTypeGuardSchema
+} from '@mnaoumov/typescript-lib/api-contract';
 import { nextTickAsync } from '@mnaoumov/typescript-lib/async';
 import { getDebugController } from '@mnaoumov/typescript-lib/debug';
 import {
@@ -30,7 +35,6 @@ import {
 } from 'vitest';
 
 import type {
-  PluginApiContract,
   PluginApiRef,
   PublishPluginApiParams,
   WatchPluginApiParams
@@ -38,10 +42,6 @@ import type {
 
 import { getObsidianLibDebugger } from '../debug.ts';
 import { getObsidianDevUtilsState } from '../obsidian-dev-utils-state.ts';
-import {
-  createArgumentsSchema,
-  createTypeGuardSchema
-} from './plugin-api-schema.ts';
 import {
   findPluginApi,
   PluginApiPayloadKind,
@@ -66,11 +66,11 @@ const SYMBOL_KEY: unique symbol = Symbol('tag');
 
 const STRING_SCHEMA = createTypeGuardSchema({ expected: 'a string', typeGuard: (value: unknown): value is string => typeof value === 'string' });
 
-const FAREWELL_CONTRACT: PluginApiContract<FarewellApi> = {
+const FAREWELL_CONTRACT: ApiContract<FarewellApi> = {
   farewell: { input: createArgumentsSchema<[]>([]), output: STRING_SCHEMA }
 };
 
-const GREET_CONTRACT: PluginApiContract<GreetOnlyApi> = {
+const GREET_CONTRACT: ApiContract<GreetOnlyApi> = {
   greet: {
     input: createArgumentsSchema<[name: string]>([{ expected: 'a string', typeGuard: (value: unknown): value is string => typeof value === 'string' }]),
     output: STRING_SCHEMA
@@ -91,7 +91,7 @@ type GreetOnlyApi = Pick<GreeterApi, 'greet'>;
 interface PublishOptions {
   readonly api?: object;
   readonly apiVersion?: string;
-  readonly contract?: PluginApiContract;
+  readonly contract?: ApiContract;
   readonly pluginId?: string;
 }
 
@@ -118,7 +118,7 @@ interface TestHarness {
 
 interface WatchOptions {
   readonly apiVersionRange?: string;
-  readonly contract?: PluginApiContract;
+  readonly contract?: ApiContract;
   readonly pluginId?: string;
 }
 

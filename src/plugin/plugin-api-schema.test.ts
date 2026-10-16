@@ -1,9 +1,34 @@
-import type { StandardSchemaV1 } from '@standard-schema/spec';
+/**
+ * @file
+ *
+ * Tests for the deprecated plugin-API contract names, and for a contract built with
+ * `@mnaoumov/typescript-lib/api-contract` driving the registry's validation. The builders' own behavior is
+ * tested in `@mnaoumov/typescript-lib`.
+ */
+
+/* eslint-disable @typescript-eslint/no-deprecated, import-x/no-deprecated -- This file pins the deprecated contract names to their typescript-lib replacements. */
+
+import type {
+  ApiContract,
+  ApiMethodContract,
+  ApiMethodName,
+  ApiMethods,
+  TypedApiContract
+} from '@mnaoumov/typescript-lib/api-contract';
 import type {
   Plugin,
   PluginManifest
 } from 'obsidian';
 
+import {
+  BOOLEAN_GUARD,
+  createArgumentsSchema,
+  createTypeGuardSchema,
+  defineApiContract,
+  NUMBER_GUARD,
+  optionalGuard,
+  STRING_GUARD
+} from '@mnaoumov/typescript-lib/api-contract';
 import { getDebugController } from '@mnaoumov/typescript-lib/debug';
 import { castTo } from '@mnaoumov/typescript-lib/object-utils';
 import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
@@ -18,12 +43,15 @@ import {
 
 import type {
   PluginApiContract,
-  PluginApiMethodContract
+  PluginApiMethodContract,
+  PluginApiMethodName,
+  PluginApiMethods,
+  TypedPluginApiContract
 } from './plugin-api.ts';
 
 import {
-  createArgumentsSchema,
-  createTypeGuardSchema
+  createArgumentsSchema as deprecatedCreateArgumentsSchema,
+  createTypeGuardSchema as deprecatedCreateTypeGuardSchema
 } from './plugin-api-schema.ts';
 import {
   findPluginApi,
@@ -39,116 +67,26 @@ interface CounterApi {
   readonly name: string;
 }
 
-function isNumber(value: unknown): value is number {
-  return typeof value === 'number';
-}
-
-function isOptionalBoolean(value: unknown): value is boolean | undefined {
-  return value === undefined || typeof value === 'boolean';
-}
-
-function isString(value: unknown): value is string {
-  return typeof value === 'string';
-}
-
-const COUNTER_CONTRACT: PluginApiContract<CounterApi> = {
+const COUNTER_CONTRACT = defineApiContract<CounterApi>({
   count: {
-    input: createArgumentsSchema<[text: string, isCaseSensitive?: boolean]>([
-      { expected: 'a string', typeGuard: isString },
-      { expected: 'a boolean or undefined', typeGuard: isOptionalBoolean }
-    ]),
-    output: createTypeGuardSchema({ expected: 'a number', typeGuard: isNumber })
+    input: createArgumentsSchema([STRING_GUARD, optionalGuard(BOOLEAN_GUARD)]),
+    output: createTypeGuardSchema(NUMBER_GUARD)
   }
-};
-
-function validate<T>(schema: StandardSchemaV1<unknown, T>, value: unknown): StandardSchemaV1.Result<T> {
-  const result = schema['~standard'].validate(value);
-  if (result instanceof Promise) {
-    throw new TypeError('Expected a synchronous schema.');
-  }
-  return result;
-}
-
-describe('createTypeGuardSchema', () => {
-  const schema = createTypeGuardSchema({ expected: 'a number', typeGuard: isNumber });
-
-  it('should accept a value the guard accepts', () => {
-    expect(validate(schema, 1)).toEqual({ value: 1 });
-  });
-
-  it('should report a value the guard refuses', () => {
-    expect(validate(schema, '1')).toEqual({ issues: [{ message: 'Expected a number.' }] });
-  });
-
-  it('should be a Standard Schema of this library', () => {
-    expect(schema['~standard'].version).toBe(1);
-    expect(schema['~standard'].vendor).toBe('obsidian-dev-utils');
-  });
 });
 
-describe('createArgumentsSchema', () => {
-  const schema = COUNTER_CONTRACT.count.input;
-
-  it('should accept a full argument list', () => {
-    expect(validate(schema, ['a', true])).toEqual({ value: ['a', true] });
+describe('the deprecated contract names', () => {
+  it('should re-export the typescript-lib schema builders', () => {
+    expect(deprecatedCreateArgumentsSchema).toBe(createArgumentsSchema);
+    expect(deprecatedCreateTypeGuardSchema).toBe(createTypeGuardSchema);
   });
 
-  it('should accept an argument list missing an optional argument', () => {
-    expect(validate(schema, ['a'])).toEqual({ value: ['a'] });
-  });
-
-  it('should refuse a value that is not an argument list', () => {
-    expect(validate(schema, 'a')).toEqual({ issues: [{ message: 'Expected an argument list.' }] });
-  });
-
-  it('should refuse too many arguments', () => {
-    expect(validate(schema, ['a', true, 1])).toEqual({ issues: [{ message: 'Expected at most 2 argument(s), got 3.' }] });
-  });
-
-  it('should report each failing argument by its index', () => {
-    expect(validate(schema, [1, 'x'])).toEqual({
-      issues: [
-        { message: 'Expected a string.', path: [0] },
-        { message: 'Expected a boolean or undefined.', path: [1] }
-      ]
-    });
-  });
-});
-
-describe('PluginApiContract', () => {
-  it('should type each entry against its method', () => {
-    expectTypeOf(COUNTER_CONTRACT.count.input).toEqualTypeOf<StandardSchemaV1<unknown, Parameters<CounterApi['count']>>>();
-    expectTypeOf(COUNTER_CONTRACT.count.output).toEqualTypeOf<StandardSchemaV1<unknown, number>>();
-  });
-
-  it('should refuse a contract that does not match the API', () => {
-    // @ts-expect-error -- `count` is missing.
-    const missingMethod: PluginApiContract<CounterApi> = {};
-
-    const extraMethod: PluginApiContract<CounterApi> = {
-      count: COUNTER_CONTRACT.count,
-      // @ts-expect-error -- `reset` is not a method of the API.
-      reset: COUNTER_CONTRACT.count
-    };
-
-    const emptyEntry: PluginApiContract<CounterApi> = {
-      // @ts-expect-error -- A typed entry needs both schemas.
-      count: {}
-    };
-
-    const wrongOutput: PluginApiContract<CounterApi> = {
-      count: {
-        input: COUNTER_CONTRACT.count.input,
-        // @ts-expect-error -- The output schema must produce the awaited return value, a number.
-        output: createTypeGuardSchema({ expected: 'a string', typeGuard: isString })
-      }
-    };
-
-    expect([missingMethod, extraMethod, emptyEntry, wrongOutput]).toHaveLength(4);
-  });
-
-  it('should keep the untyped form loose', () => {
-    expectTypeOf<PluginApiContract>().toEqualTypeOf<Readonly<Record<string, PluginApiMethodContract>>>();
+  it('should alias the typescript-lib contract types', () => {
+    expectTypeOf<PluginApiContract>().toEqualTypeOf<ApiContract>();
+    expectTypeOf<PluginApiContract<CounterApi>>().toEqualTypeOf<ApiContract<CounterApi>>();
+    expectTypeOf<TypedPluginApiContract<CounterApi>>().toEqualTypeOf<TypedApiContract<CounterApi>>();
+    expectTypeOf<PluginApiMethodContract<[string], number>>().toEqualTypeOf<ApiMethodContract<[string], number>>();
+    expectTypeOf<PluginApiMethodName<CounterApi>>().toEqualTypeOf<ApiMethodName<CounterApi>>();
+    expectTypeOf<PluginApiMethods<CounterApi>>().toEqualTypeOf<ApiMethods<CounterApi>>();
   });
 });
 
@@ -222,3 +160,5 @@ describe('a typed contract at runtime', () => {
     }
   });
 });
+
+/* eslint-enable @typescript-eslint/no-deprecated, import-x/no-deprecated -- The end of the file. */

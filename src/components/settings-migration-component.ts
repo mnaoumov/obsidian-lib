@@ -18,15 +18,13 @@
  * already happened.
  */
 
+import type { ApiContract } from '@mnaoumov/typescript-lib/api-contract';
 import type { App } from 'obsidian';
 import type { Promisable } from 'type-fest';
 
 import { invokeAsyncSafely } from '@mnaoumov/typescript-lib/async';
 
-import type {
-  PluginApiContract,
-  PluginApiRef
-} from '../plugin/plugin-api.ts';
+import type { PluginApiRef } from '../plugin/plugin-api.ts';
 import type { SettingsMigrationApi } from '../plugin/settings-migration-api.ts';
 import type { PluginSettingsComponentBase } from './plugin-settings-component.ts';
 
@@ -63,7 +61,7 @@ export interface SettingsMigrationComponentConstructorParams<TMigratableSettings
    * newer one. Declaring the wider expectation here would refuse to offer the migration to a user on an older
    * provider — which is precisely the user who still has settings to migrate.
    */
-  readonly contract?: PluginApiContract<SettingsMigrationApi<TMigratableSettings>>;
+  readonly contract?: ApiContract<SettingsMigrationApi<TMigratableSettings>>;
 
   /**
    * Reads the values currently waiting to be handed over.
@@ -119,7 +117,7 @@ export interface SettingsMigrationComponentConstructorParams<TMigratableSettings
 export class SettingsMigrationComponent<TMigratableSettings extends object> extends ComponentEx {
   private readonly apiVersionRange: string;
   private readonly app: App;
-  private readonly contract: PluginApiContract<SettingsMigrationApi<TMigratableSettings>>;
+  private readonly contract: ApiContract<SettingsMigrationApi<TMigratableSettings>>;
   private readonly getProposedSettings: () => null | TMigratableSettings;
   private isProposing = false;
   private readonly pluginSettingsComponent: PluginSettingsComponentBase<object>;
