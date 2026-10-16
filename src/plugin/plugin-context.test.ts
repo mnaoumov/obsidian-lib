@@ -163,7 +163,7 @@ describe('initPluginContext', () => {
     expect(Library.debugNamespace).toBe('obsidian-dev-utils');
     expect(Library.debugPrefixNamespace).toBe('my-plugin:');
     expect(Library.shouldPrintStackTrace).toBe(true);
-    expect(Library.debugGuideUrl).toBe('https://mnaoumov.dev/obsidian-dev-utils/guides/debugging/');
+    expect(Library.debugGuideUrl).toBe('https://mnaoumov.dev/obsidian-lib/guides/debugging/');
     expect(mocks.showInitialDebugMessage).toHaveBeenCalledWith('my-plugin');
   });
 

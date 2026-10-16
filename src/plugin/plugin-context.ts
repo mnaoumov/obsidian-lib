@@ -30,7 +30,7 @@ interface PluginContextWindow {
   DEBUG: DebugController | undefined;
 }
 
-const DEBUG_GUIDE_URL = 'https://mnaoumov.dev/obsidian-dev-utils/guides/debugging/';
+const DEBUG_GUIDE_URL = 'https://mnaoumov.dev/obsidian-lib/guides/debugging/';
 
 /**
  * Sets the CSS class of an element.
