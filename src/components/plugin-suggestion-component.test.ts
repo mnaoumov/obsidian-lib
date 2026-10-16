@@ -58,6 +58,7 @@ interface CreateComponentOptions {
    * is already ready.
    */
   readonly isSettingsLoadPending?: boolean;
+  readonly reason?: DocumentFragment | string;
 }
 
 type SetSuggestionDeclinedMock = ReturnType<typeof vi.fn<(isDeclined: boolean) => Promise<void>>>;
@@ -150,7 +151,7 @@ function createComponent(options: CreateComponentOptions = {}): ComponentContext
     pluginSettingsComponent: strictProxy<PluginSettingsComponentBase<object>>({
       whenLoadedFromFile: (): Promise<void> => settingsLoadPromise
     }),
-    reason: REASON,
+    reason: options.reason ?? REASON,
     setSuggestionDeclined: async (isDeclinedNew: boolean): Promise<void> => {
       isDeclined = isDeclinedNew;
       await setSuggestionDeclined(isDeclinedNew);
@@ -174,6 +175,14 @@ function createComponent(options: CreateComponentOptions = {}): ComponentContext
       layoutReadyCallback?.();
     }
   };
+}
+
+function createReasonFragment(): DocumentFragment {
+  return createFragment((fragment) => {
+    fragment.appendText('Install ');
+    fragment.createEl('code', { text: SUGGESTED_PLUGIN_NAME });
+    fragment.appendText(' to keep links up to date.');
+  });
 }
 
 describe('getSuggestedPluginState', () => {
@@ -361,6 +370,30 @@ describe('renderBanner', () => {
     await vi.waitFor(() => {
       expect(mockInstallConfigureEnableCommunityPlugin).toHaveBeenCalledOnce();
     });
+  });
+});
+
+describe('a DocumentFragment reason', () => {
+  it('should render a clone of the fragment in the notice and in every banner, leaving the fragment intact', async () => {
+    vi.useFakeTimers();
+    const reason = createReasonFragment();
+    const { component, showNotice, triggerLayoutReady } = createComponent({ reason });
+
+    component.load();
+    triggerLayoutReady();
+    await vi.runAllTimersAsync();
+    const firstBannerEl = createDiv();
+    component.renderBanner(firstBannerEl);
+    const secondBannerEl = createDiv();
+    component.renderBanner(secondBannerEl);
+
+    const notice: unknown = showNotice.mock.calls[0]?.[0];
+    for (const el of [castTo<DocumentFragment>(notice), firstBannerEl, secondBannerEl]) {
+      expect(el.querySelector('code')?.textContent).toBe(SUGGESTED_PLUGIN_NAME);
+      expect(el.textContent).toContain(`Install ${SUGGESTED_PLUGIN_NAME} to keep links up to date.`);
+    }
+    expect(reason.textContent).toBe(`Install ${SUGGESTED_PLUGIN_NAME} to keep links up to date.`);
+    vi.useRealTimers();
   });
 });
 

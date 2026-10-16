@@ -36,6 +36,7 @@ import type { PluginNoticeComponent } from './plugin-notice-component.ts';
 import type { PluginSettingsComponentBase } from './plugin-settings-component.ts';
 
 import { CssClass } from '../css-class.ts';
+import { appendTextOrFragmentClone } from '../html-element.ts';
 import { t } from '../i18n/i18n.ts';
 import {
   getInstalledPluginState,
@@ -95,8 +96,12 @@ export interface PluginSuggestionComponentConstructorParams {
   /**
    * The localized sentence explaining what the host plugin cannot do without the suggested plugin. The
    * host plugin owns this string: only it knows which of its features are affected.
+   *
+   * Pass a {@link DocumentFragment} to mark up part of the sentence, such as a plugin name rendered as
+   * code. Each render appends a fresh clone of it, because the notice and the banner each need their own
+   * copy and appending a fragment empties it.
    */
-  readonly reason: string;
+  readonly reason: DocumentFragment | string;
 
   /**
    * Records the user's answer to the suggestion.
@@ -130,7 +135,7 @@ export class PluginSuggestionComponent extends ComponentEx {
   private readonly isSuggestionDeclined: () => boolean;
   private readonly pluginNoticeComponent: PluginNoticeComponent;
   private readonly pluginSettingsComponent: PluginSettingsComponentBase<object>;
-  private readonly reason: string;
+  private readonly reason: DocumentFragment | string;
   private readonly setSuggestionDeclined: (isDeclined: boolean) => Promisable<void>;
   private readonly suggestedPluginId: string;
   private readonly suggestedPluginName: string;
@@ -234,7 +239,7 @@ export class PluginSuggestionComponent extends ComponentEx {
     const bannerEl = containerEl.createDiv({
       cls: [CssClass.LibraryName, CssClass.PluginSuggestionBanner]
     });
-    bannerEl.createDiv({ text: this.reason });
+    appendTextOrFragmentClone(bannerEl.createDiv(), this.reason);
 
     new ButtonComponent(bannerEl)
       .setButtonText(this.getActionButtonText(state))
@@ -259,7 +264,7 @@ export class PluginSuggestionComponent extends ComponentEx {
     }
 
     const fragment = createFragment((fragmentEl) => {
-      fragmentEl.createDiv({ text: this.reason });
+      appendTextOrFragmentClone(fragmentEl.createDiv(), this.reason);
       const buttonsEl = fragmentEl.createDiv();
 
       new ButtonComponent(buttonsEl)

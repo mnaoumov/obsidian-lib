@@ -63,6 +63,20 @@ export function appendCodeBlock(element: DocumentFragment | HTMLElement, code: s
 }
 
 /**
+ * Appends a string as text, or a fresh deep clone of a {@link DocumentFragment}, to the given element.
+ *
+ * Appending a fragment moves its children out of it, so a fragment rendered more than once — a notice and
+ * a settings banner, or a banner rendered again on every refresh — would be empty from the second render
+ * on. Cloning leaves the caller's fragment intact for the next render.
+ *
+ * @param element - The DocumentFragment or HTMLElement to append to.
+ * @param content - The text, or the fragment to append a clone of.
+ */
+export function appendTextOrFragmentClone(element: DocumentFragment | HTMLElement, content: DocumentFragment | string): void {
+  element.append(typeof content === 'string' ? content : content.cloneNode(true));
+}
+
+/**
  * Sets the `spellcheck` attribute on an element from a {@link SpellcheckMode}.
  *
  * The attribute has to be set explicitly, because both of the surfaces that need this are born with
