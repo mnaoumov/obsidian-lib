@@ -621,6 +621,33 @@ describe('loop', () => {
     expect(fake.dispose).toHaveBeenCalledTimes(1);
   });
 
+  it('should render a DocumentFragment progress bar title as a clone, leaving the caller\'s fragment intact', async () => {
+    const fake = createFakePluginNoticeComponent();
+    const contents: (DocumentFragment | string)[] = [];
+    const progressBarTitle = createFragment((fragmentEl) => {
+      fragmentEl.createEl('code', { text: 'Dataview' });
+      fragmentEl.appendText(': Initializing...');
+    });
+
+    await loop({
+      buildNoticeMessage: vi.fn(() => 'msg'),
+      items: ['a'],
+      pluginNoticeComponent: fake.pluginNoticeComponent,
+      processItem: async () => {
+        contents.push(await resolveNoticeContent(fake), await resolveNoticeContent(fake));
+      },
+      progressBarTitle
+    });
+
+    expect(contents).toHaveLength(2);
+    for (const content of contents) {
+      const fragment = castTo<DocumentFragment>(content);
+      expect(fragment.textContent).toBe('Dataview: Initializing...');
+      expect(fragment.firstElementChild?.querySelector(':scope > code')?.textContent).toBe('Dataview');
+    }
+    expect(progressBarTitle.textContent).toBe('Dataview: Initializing...');
+  });
+
   it('should update the notice with each message once it is shown when shouldShowProgressBar is false', async () => {
     const fake = createFakePluginNoticeComponent();
     const contents: (DocumentFragment | string)[] = [];
