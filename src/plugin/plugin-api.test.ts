@@ -395,6 +395,30 @@ describe('plugin-api', () => {
     });
   });
 
+  describe('unavailabilityReason', () => {
+    it('should be null while the API is available', () => {
+      const harness = createHarness();
+      harness.publish();
+      expect(harness.watch<GreeterApi>().ref.unavailabilityReason).toBeNull();
+    });
+
+    it('should classify a version mismatch synchronously', () => {
+      const harness = createHarness();
+      harness.publish({ apiVersion: '1.0.0' });
+      expect(harness.watch<GreeterApi>({ apiVersionRange: '^2' }).ref.unavailabilityReason).toBe(PluginApiUnavailabilityReason.VersionMismatch);
+    });
+
+    it('should follow the provider as it publishes and unloads', () => {
+      const harness = createHarness();
+      const { ref } = harness.watch<GreeterApi>();
+      expect(ref.unavailabilityReason).toBe(PluginApiUnavailabilityReason.NotPublished);
+      const unloadProvider = harness.publish();
+      expect(ref.unavailabilityReason).toBeNull();
+      unloadProvider();
+      expect(ref.unavailabilityReason).toBe(PluginApiUnavailabilityReason.NotPublished);
+    });
+  });
+
   describe('whenAvailable', () => {
     it('should resolve immediately when the API is already published', async () => {
       const harness = createHarness();

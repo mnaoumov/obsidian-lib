@@ -7,7 +7,7 @@
  * Obsidian's `community-plugins.json` is the authoritative source that maps a plugin `id` to its
  * `owner/name` GitHub repository — the plugin manifest itself carries no repository. This module uses
  * it to search the registry, to locate a plugin's GitHub releases (e.g. to download its shipped
- * demo-vault archive), and to install/uninstall/enable/disable an arbitrary community plugin — selected
+ * demo-vault archive), and to install/update/uninstall/enable/disable an arbitrary community plugin — selected
  * by either its `id` or its display `name` — via Obsidian's own store path (`app.plugins.installPlugin`
  * + `enablePluginAndSave`), so any dev/deploy or tooling flow can reuse it.
  */
@@ -17,6 +17,7 @@ import type {
   PluginManifest
 } from 'obsidian';
 
+import { compare as compareVersions } from 'compare-versions';
 import { requestUrl } from 'obsidian';
 
 import { getObsidianDevUtilsState } from './obsidian-dev-utils-state.ts';
@@ -89,6 +90,11 @@ export type ToggleInstallCommunityPluginParams = CommunityPluginOperationContext
  * `pluginName`.
  */
 export type UninstallCommunityPluginParams = CommunityPluginOperationContext & CommunityPluginRef;
+
+/**
+ * Parameters for {@link updateCommunityPlugin}. Selects the plugin by either `pluginId` or `pluginName`.
+ */
+export type UpdateCommunityPluginParams = CommunityPluginOperationContext & CommunityPluginRef;
 
 /**
  * Selects a community plugin by its id.
@@ -223,6 +229,21 @@ export enum ConfigureCommunityPluginResult {
    * The settings were merged into the plugin's `data.json`, which was written.
    */
   Success = 'success'
+}
+
+/**
+ * The result of {@link updateCommunityPlugin}.
+ */
+export enum UpdateCommunityPluginResult {
+  /**
+   * The installed copy is already at (or past) the latest release, so nothing was downloaded.
+   */
+  AlreadyUpToDate = 'alreadyUpToDate',
+
+  /**
+   * The latest release was installed over the old copy, which Obsidian reloaded if it was running.
+   */
+  Updated = 'updated'
 }
 
 /**
@@ -471,6 +492,54 @@ export async function uninstallCommunityPlugin(params: UninstallCommunityPluginP
   await app.plugins.uninstallPlugin(pluginId);
 }
 
+/**
+ * Updates an installed community plugin to its latest release, the way the community plugin browser's own
+ * `Update` button does.
+ *
+ * Obsidian's `installPlugin` writes the release's files over the installed copy and, when the plugin is
+ * running, disables and re-enables it so the new code loads — read from the shipped bundle (`1.14.4`), not
+ * assumed. It reports its own failures (a failed download, a manifest whose id does not match) as a notice
+ * and RETURNS rather than throwing, so the installed manifest is re-read afterwards and a version that did
+ * not move to the release is thrown as a failure.
+ *
+ * @param params - The {@link UpdateCommunityPluginParams}.
+ * @returns A {@link Promise} resolving to {@link UpdateCommunityPluginResult.Updated} once the latest release
+ * is installed, or {@link UpdateCommunityPluginResult.AlreadyUpToDate} when the installed copy is not older
+ * than it.
+ * @throws If the plugin is not installed, is not listed in Obsidian's community plugins registry, or the
+ * install did not leave the latest release in place.
+ */
+export async function updateCommunityPlugin(params: UpdateCommunityPluginParams): Promise<UpdateCommunityPluginResult> {
+  const { app } = params;
+  const pluginId = await resolveCommunityPluginId(params);
+  const installedManifest = app.plugins.manifests[pluginId];
+  if (!installedManifest) {
+    throw new Error(`Plugin '${pluginId}' is not installed, so it cannot be updated.`);
+  }
+
+  const repo = await getCommunityPluginRepo(pluginId);
+  if (!repo) {
+    throw new Error(`Plugin '${pluginId}' was not found in the Obsidian community plugins registry.`);
+  }
+
+  const version = await getLatestReleaseVersion(repo);
+  if (isAtLeastVersion(installedManifest.version, version)) {
+    return UpdateCommunityPluginResult.AlreadyUpToDate;
+  }
+
+  const manifest = await getPluginManifest(repo, version);
+  await app.plugins.installPlugin(repo, version, manifest);
+
+  const updatedVersion = app.plugins.manifests[pluginId]?.version;
+  if (updatedVersion !== manifest.version) {
+    throw new Error(
+      `Updating plugin '${pluginId}' to ${manifest.version} left version ${updatedVersion ?? '(none)'} installed. Obsidian reports the cause as a notice.`
+    );
+  }
+
+  return UpdateCommunityPluginResult.Updated;
+}
+
 // Whether a plugin's `pluginSettingsComponent` can configure itself in place. Structural rather than an
 // `instanceof`: the plugin was loaded from its own bundle, so even a plugin built on this very library
 // carries its own copy of the class and would fail an identity check.
@@ -507,6 +576,16 @@ async function getPluginManifest(repo: string, version: string): Promise<PluginM
 // A plugin is under no obligation to expose one, so there is no type to narrow from.
 function getSettingsComponent(plugin: unknown): unknown {
   return typeof plugin !== 'object' || plugin === null || !('pluginSettingsComponent' in plugin) ? null : plugin.pluginSettingsComponent;
+}
+
+// A version that cannot be parsed reads as older, so an update is attempted rather than skipped: the install's
+// own version check afterwards still catches a release that does not move it.
+function isAtLeastVersion(installedVersion: string, latestVersion: string): boolean {
+  try {
+    return compareVersions(installedVersion, latestVersion, '>=');
+  } catch {
+    return false;
+  }
 }
 
 async function resolveCommunityPluginId(reference: CommunityPluginRef): Promise<string> {

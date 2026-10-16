@@ -15,7 +15,9 @@ import type { PluginNoticeComponent } from '../components/plugin-notice-componen
 
 import {
   enableCommunityPlugin,
-  installConfigureEnableCommunityPlugin
+  installConfigureEnableCommunityPlugin,
+  updateCommunityPlugin,
+  UpdateCommunityPluginResult
 } from '../community-plugins.ts';
 import {
   asCodeBlock,
@@ -99,6 +101,36 @@ export interface InstallAndEnablePluginParams {
 }
 
 /**
+ * Parameters for {@link updatePlugin}.
+ */
+export interface UpdatePluginParams {
+  /**
+   * The Obsidian app instance.
+   */
+  readonly app: App;
+
+  /**
+   * The `manifest.id` of the plugin to update.
+   */
+  readonly pluginId: string;
+
+  /**
+   * The display name of the plugin, shown to the user.
+   */
+  readonly pluginName: string;
+
+  /**
+   * The notice component of the plugin doing the asking, used to report the outcome.
+   */
+  readonly pluginNoticeComponent: PluginNoticeComponent;
+
+  /**
+   * The display name of the plugin doing the asking, named when the update cannot help it.
+   */
+  readonly requestingPluginName: string;
+}
+
+/**
  * Resolves how another plugin is currently present in the vault.
  *
  * @param params - The {@link GetInstalledPluginStateParams}.
@@ -177,5 +209,46 @@ export async function installAndEnablePlugin(params: InstallAndEnablePluginParam
 
   pluginNoticeComponent.showNotice(createFragmentWithCodeBlocks(
     t(($) => $.obsidianDevUtils.pluginSuggestion.installed, { pluginName: asCodeBlock(pluginName) })
+  ));
+}
+
+/**
+ * Updates another, installed plugin to its latest release, reporting the outcome as a notice.
+ *
+ * The update path for a plugin that is enabled but too old for the one asking: installing or enabling it
+ * again does nothing, so {@link installAndEnablePlugin} cannot help there. A plugin already at its latest
+ * release is reported as such, naming the requesting plugin, because then no click can satisfy it and the
+ * user deserves to know that rather than watch the button do nothing.
+ *
+ * @param params - The {@link UpdatePluginParams}.
+ * @returns A {@link Promise} that resolves once the update has run.
+ * @throws Whatever the update threw, after reporting it as a notice.
+ */
+export async function updatePlugin(params: UpdatePluginParams): Promise<void> {
+  const {
+    app,
+    pluginId,
+    pluginName,
+    pluginNoticeComponent,
+    requestingPluginName
+  } = params;
+
+  let result: UpdateCommunityPluginResult;
+  try {
+    result = await updateCommunityPlugin({ app, pluginId });
+  } catch (error) {
+    pluginNoticeComponent.showNotice(createFragmentWithCodeBlocks(
+      t(($) => $.obsidianDevUtils.pluginDependency.updateFailed, { dependencyPluginName: asCodeBlock(pluginName) })
+    ));
+    throw error;
+  }
+
+  pluginNoticeComponent.showNotice(createFragmentWithCodeBlocks(
+    result === UpdateCommunityPluginResult.Updated
+      ? t(($) => $.obsidianDevUtils.pluginDependency.updated, { dependencyPluginName: asCodeBlock(pluginName) })
+      : t(($) => $.obsidianDevUtils.pluginDependency.alreadyUpToDate, {
+        dependencyPluginName: asCodeBlock(pluginName),
+        pluginName: asCodeBlock(requestingPluginName)
+      })
   ));
 }

@@ -39,6 +39,8 @@ import type {
 } from './plugin-gate-component.ts';
 import type { PluginNoticeComponent } from './plugin-notice-component.ts';
 
+import { UpdateCommunityPluginResult } from '../community-plugins.ts';
+import { PluginApiUnavailabilityReason } from '../plugin/plugin-api.ts';
 import {
   PLUGIN_LOADED_EVENT_NAME,
   PLUGIN_UNLOADED_EVENT_NAME
@@ -47,6 +49,10 @@ import {
   PluginConflictSeverity,
   PluginGateComponent
 } from './plugin-gate-component.ts';
+
+interface CommunityPluginParams {
+  readonly pluginId: string;
+}
 
 interface ComponentContext {
   readonly component: PluginGateComponent;
@@ -64,10 +70,6 @@ interface CreateComponentOptions {
 interface DisplayableSettingTab {
   containerEl: HTMLElement;
   display: () => void;
-}
-
-interface InstallCommunityPluginParams {
-  readonly pluginId: string;
 }
 
 const DEPENDENCY: PluginDependency = {
@@ -104,23 +106,37 @@ const {
   mockDisableCommunityPlugin,
   mockEnableCommunityPlugin,
   mockInstallConfigureEnableCommunityPlugin,
+  mockUpdateCommunityPlugin,
   mockWatchPluginApi
 } = vi.hoisted(() => ({
   mockDisableCommunityPlugin: vi.fn(),
   mockEnableCommunityPlugin: vi.fn(),
   mockInstallConfigureEnableCommunityPlugin: vi.fn(),
+  mockUpdateCommunityPlugin: vi.fn(),
   mockWatchPluginApi: vi.fn()
 }));
 
-vi.mock('../plugin/plugin-api.ts', () => ({ watchPluginApi: mockWatchPluginApi }));
+vi.mock('../plugin/plugin-api.ts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../plugin/plugin-api.ts')>();
+  return {
+    PluginApiUnavailabilityReason: actual.PluginApiUnavailabilityReason,
+    watchPluginApi: mockWatchPluginApi
+  };
+});
 
-vi.mock('../community-plugins.ts', () => ({
-  disableCommunityPlugin: mockDisableCommunityPlugin,
-  enableCommunityPlugin: mockEnableCommunityPlugin,
-  installConfigureEnableCommunityPlugin: mockInstallConfigureEnableCommunityPlugin
-}));
+vi.mock('../community-plugins.ts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../community-plugins.ts')>();
+  return {
+    disableCommunityPlugin: mockDisableCommunityPlugin,
+    enableCommunityPlugin: mockEnableCommunityPlugin,
+    installConfigureEnableCommunityPlugin: mockInstallConfigureEnableCommunityPlugin,
+    updateCommunityPlugin: mockUpdateCommunityPlugin,
+    UpdateCommunityPluginResult: actual.UpdateCommunityPluginResult
+  };
+});
 
 let addSettingTab: ReturnType<typeof vi.fn>;
+let apiRefUnavailabilityReason: null | PluginApiUnavailabilityReason;
 let apiRefValue: null | object;
 let enabledPlugins: Set<string>;
 let fireApiRefChange: () => Promise<void>;
@@ -137,6 +153,7 @@ beforeEach(() => {
   // `LayoutReadyComponent` defers its callback through a `setTimeout(…, 0)`, so the layout-ready path is
   // only observable once the timers are drained.
   vi.useFakeTimers();
+  apiRefUnavailabilityReason = null;
   apiRefValue = {};
   enabledPlugins = new Set<string>();
   layoutReadyCallback = undefined;
@@ -151,6 +168,7 @@ beforeEach(() => {
   mockDisableCommunityPlugin.mockResolvedValue(undefined);
   mockEnableCommunityPlugin.mockResolvedValue(undefined);
   mockInstallConfigureEnableCommunityPlugin.mockResolvedValue(undefined);
+  mockUpdateCommunityPlugin.mockResolvedValue(UpdateCommunityPluginResult.Updated);
   buttonInstances = [];
   mockImplementation({
     $object: ButtonComponentClass.prototype,
@@ -183,6 +201,9 @@ beforeEach(() => {
       on: (_name: string, callback: () => Promise<void>) => {
         changeCallbacks.push(callback);
         return { asyncEventSource: { offref: vi.fn() } };
+      },
+      get unavailabilityReason(): null | PluginApiUnavailabilityReason {
+        return apiRefUnavailabilityReason;
       },
       get value(): null | object {
         return apiRefValue;
@@ -467,7 +488,7 @@ describe('the blocked settings tab', () => {
     expect(buttonTexts(displayBlockedSettingTab())).toEqual(['Enable']);
   });
 
-  it('should link out to the dependency settings when it is enabled but still unsatisfied, e.g. too old', async () => {
+  it('should offer an update and link out to the dependency settings when it is enabled but still unsatisfied, e.g. too old', async () => {
     manifests[DEPENDENCY.pluginId] = strictProxy<PluginManifest>({ id: DEPENDENCY.pluginId });
     enabledPlugins.add(DEPENDENCY.pluginId);
     await createLoadedComponent({ isSatisfied: false });
@@ -476,12 +497,49 @@ describe('the blocked settings tab', () => {
     const containerEl = displayBlockedSettingTab();
 
     // No install button: the dependency is already installed and enabled, so it would do nothing.
-    expect(buttonTexts(containerEl)).toEqual([`Open ${DEPENDENCY.pluginName} settings`]);
+    expect(buttonTexts(containerEl)).toEqual([`Update ${DEPENDENCY.pluginName}`, `Open ${DEPENDENCY.pluginName} settings`]);
 
-    clickButton(0);
+    clickButton(1);
 
     expect(openSetting).toHaveBeenCalledTimes(1);
     expect(openTabById).toHaveBeenCalledWith(DEPENDENCY.pluginId);
+  });
+
+  it('should update an enabled dependency when the update button is clicked, and say so', async () => {
+    manifests[DEPENDENCY.pluginId] = strictProxy<PluginManifest>({ id: DEPENDENCY.pluginId });
+    enabledPlugins.add(DEPENDENCY.pluginId);
+    const { showNotice } = await createLoadedComponent({ isSatisfied: false });
+    await triggerLayoutReady();
+
+    displayBlockedSettingTab();
+    clickButton(0);
+    await vi.runAllTimersAsync();
+
+    const params: unknown = mockUpdateCommunityPlugin.mock.calls[0]?.[0];
+    expect(castTo<CommunityPluginParams>(params).pluginId).toBe(DEPENDENCY.pluginId);
+    expectNoticeText(showNotice, `${DEPENDENCY.pluginName} is updated.`);
+  });
+
+  it('should ask for an update when the published API contract is outside the declared range', async () => {
+    manifests[DEPENDENCY.pluginId] = strictProxy<PluginManifest>({ id: DEPENDENCY.pluginId });
+    enabledPlugins.add(DEPENDENCY.pluginId);
+    apiRefUnavailabilityReason = PluginApiUnavailabilityReason.VersionMismatch;
+    const { showNotice } = await createLoadedComponent({ isSatisfied: false });
+
+    await triggerLayoutReady();
+
+    expectNoticeText(showNotice, `${HOST_PLUGIN_NAME} needs a newer version of ${DEPENDENCY.pluginName}. Update it to resume.`);
+  });
+
+  it('should keep the ordinary message when the enabled dependency simply has not published yet', async () => {
+    manifests[DEPENDENCY.pluginId] = strictProxy<PluginManifest>({ id: DEPENDENCY.pluginId });
+    enabledPlugins.add(DEPENDENCY.pluginId);
+    apiRefUnavailabilityReason = PluginApiUnavailabilityReason.NotPublished;
+    const { showNotice } = await createLoadedComponent({ isSatisfied: false });
+
+    await triggerLayoutReady();
+
+    expectNoticeText(showNotice, `${HOST_PLUGIN_NAME} does nothing until ${DEPENDENCY.pluginName} is installed and enabled.`);
   });
 
   it('should install and enable the dependency when the button is clicked', async () => {
@@ -493,7 +551,7 @@ describe('the blocked settings tab', () => {
     await vi.runAllTimersAsync();
 
     const params: unknown = mockInstallConfigureEnableCommunityPlugin.mock.calls[0]?.[0];
-    expect(castTo<InstallCommunityPluginParams>(params).pluginId).toBe(DEPENDENCY.pluginId);
+    expect(castTo<CommunityPluginParams>(params).pluginId).toBe(DEPENDENCY.pluginId);
   });
 
   it('should render a fragment reason on every display, leaving the fragment intact', async () => {
@@ -518,7 +576,7 @@ describe('with a minimum plugin version', () => {
     expect(loadFeatureSurface).not.toHaveBeenCalled();
   });
 
-  it('should ask for an update, with no install button, once the layout is ready', async () => {
+  it('should ask for an update, offering one in place of an install button, once the layout is ready', async () => {
     installPlugin(DEPENDENCY.pluginId, '2.1.9');
     const { showNotice } = await createLoadedComponent({ dependencies: [MIN_VERSION_DEPENDENCY] });
 
@@ -527,7 +585,7 @@ describe('with a minimum plugin version', () => {
     expectNoticeText(showNotice, `${HOST_PLUGIN_NAME} needs a newer version of ${DEPENDENCY.pluginName}. Update it to resume.`);
     const containerEl = displayBlockedSettingTab();
     expect(containerEl.textContent).toContain(`${HOST_PLUGIN_NAME} needs a newer version of ${DEPENDENCY.pluginName}.`);
-    expect(buttonTexts(containerEl)).toEqual([`Open ${DEPENDENCY.pluginName} settings`]);
+    expect(buttonTexts(containerEl)).toEqual([`Update ${DEPENDENCY.pluginName}`, `Open ${DEPENDENCY.pluginName} settings`]);
   });
 
   it('should load the feature surface at the minimum', async () => {

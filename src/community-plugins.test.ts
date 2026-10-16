@@ -30,7 +30,9 @@ import {
   searchCommunityPlugins,
   toggleEnableCommunityPlugin,
   toggleInstallCommunityPlugin,
-  uninstallCommunityPlugin
+  uninstallCommunityPlugin,
+  updateCommunityPlugin,
+  UpdateCommunityPluginResult
 } from './community-plugins.ts';
 
 interface AppMock {
@@ -39,6 +41,7 @@ interface AppMock {
   readonly disablePluginAndSave: App['plugins']['disablePluginAndSave'];
   readonly enablePluginAndSave: App['plugins']['enablePluginAndSave'];
   readonly installPlugin: App['plugins']['installPlugin'];
+  readonly manifests: App['plugins']['manifests'];
   readonly uninstallPlugin: App['plugins']['uninstallPlugin'];
 }
 
@@ -47,6 +50,8 @@ interface CreateAppOptions {
   readonly existingPluginData?: object;
   readonly existingRawPluginData?: string;
   readonly installedIds?: string[];
+  // Installed plugins whose manifest carries a version, keyed by id.
+  readonly installedVersions?: Record<string, string>;
   // The loaded plugin instances, keyed by id. A plugin only appears here once it is running, which is
   // what lets `configureCommunityPlugin` tell a live plugin from a merely installed one.
   readonly loadedPlugins?: Record<string, unknown>;
@@ -112,6 +117,9 @@ function createApp(options: CreateAppOptions = {}): AppMock {
   for (const id of options.installedIds ?? []) {
     manifests[id] = strictProxy<PluginManifest>({ id });
   }
+  for (const [id, version] of Object.entries(options.installedVersions ?? {})) {
+    manifests[id] = strictProxy<PluginManifest>({ id, version });
+  }
 
   // Same null-prototype treatment as `manifests`: a plugin that is not running must read as `undefined`
   // rather than throw, since that is exactly the case the `data.json` fallback exists for.
@@ -154,6 +162,7 @@ function createApp(options: CreateAppOptions = {}): AppMock {
     disablePluginAndSave,
     enablePluginAndSave,
     installPlugin,
+    manifests,
     uninstallPlugin
   };
 }
@@ -226,6 +235,58 @@ describe('installCommunityPlugin', () => {
     mockRegistryAndReleases();
     const { app } = createApp();
     await expect(installCommunityPlugin({ app, pluginId: 'missing-plugin' }))
+      .rejects.toThrow('Plugin \'missing-plugin\' was not found in the Obsidian community plugins registry.');
+  });
+});
+
+describe('updateCommunityPlugin', () => {
+  it('should install the latest release over an older installed copy', async () => {
+    mockRegistryAndReleases();
+    const { app, installPlugin, manifests } = createApp({ installedVersions: { 'plugin-a': '1.0.0' } });
+    vi.mocked(installPlugin).mockImplementation((_repo, _version, manifest) => {
+      manifests[manifest.id] = strictProxy<PluginManifest>({ id: manifest.id, version: manifest.version });
+      return noopAsync();
+    });
+    expect(await updateCommunityPlugin({ app, pluginId: 'plugin-a' })).toBe(UpdateCommunityPluginResult.Updated);
+    expect(installPlugin).toHaveBeenCalledWith('owner-a/plugin-a', LATEST_VERSION, MANIFEST);
+  });
+
+  it('should skip the download when the installed copy is already the latest release', async () => {
+    mockRegistryAndReleases();
+    const { app, installPlugin } = createApp({ installedVersions: { 'plugin-a': LATEST_VERSION } });
+    expect(await updateCommunityPlugin({ app, pluginId: 'plugin-a' })).toBe(UpdateCommunityPluginResult.AlreadyUpToDate);
+    expect(installPlugin).not.toHaveBeenCalled();
+  });
+
+  it('should attempt the update when the installed version cannot be parsed', async () => {
+    mockRegistryAndReleases();
+    const { app, installPlugin } = createApp({ installedVersions: { 'plugin-a': 'not-a-version' } });
+    await expect(updateCommunityPlugin({ app, pluginId: 'plugin-a' }))
+      .rejects.toThrow('Updating plugin \'plugin-a\' to 1.2.3 left version not-a-version installed.');
+    expect(installPlugin).toHaveBeenCalledOnce();
+  });
+
+  it('should throw when the install leaves no manifest behind', async () => {
+    mockRegistryAndReleases();
+    const { app, installPlugin, manifests } = createApp({ installedVersions: { 'plugin-a': '1.0.0' } });
+    vi.mocked(installPlugin).mockImplementation(() => {
+      delete manifests['plugin-a'];
+      return noopAsync();
+    });
+    await expect(updateCommunityPlugin({ app, pluginId: 'plugin-a' }))
+      .rejects.toThrow('Updating plugin \'plugin-a\' to 1.2.3 left version (none) installed.');
+  });
+
+  it('should throw when the plugin is not installed', async () => {
+    const { app } = createApp();
+    await expect(updateCommunityPlugin({ app, pluginId: 'plugin-a' }))
+      .rejects.toThrow('Plugin \'plugin-a\' is not installed, so it cannot be updated.');
+  });
+
+  it('should throw when the plugin is not listed in the registry', async () => {
+    mockRegistryAndReleases();
+    const { app } = createApp({ installedVersions: { 'missing-plugin': '1.0.0' } });
+    await expect(updateCommunityPlugin({ app, pluginId: 'missing-plugin' }))
       .rejects.toThrow('Plugin \'missing-plugin\' was not found in the Obsidian community plugins registry.');
   });
 });
