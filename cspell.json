@@ -62,6 +62,7 @@
     "EISDIR",
     "elink",
     "ENOTEMPTY",
+    "ERESOLVE",
     "errorbox",
     "etags",
     "EUNKNOWNCONFIG",
