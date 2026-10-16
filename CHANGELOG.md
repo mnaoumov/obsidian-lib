@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 3.0.0
+
+- feat!: type Dataview through @mnaoumov/obsidian-dataview and drop the vendored declarations
+
 ## 2.0.0
 
 - feat: render plugin names in notices and dialogs as inline code
