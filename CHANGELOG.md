@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 4.1.0
+
+- feat(plugin-gate): let a dependency require a minimum plugin version
+
 ## 4.0.0
 
 - feat!: narrow postPatchHandler so a patch cannot graft members

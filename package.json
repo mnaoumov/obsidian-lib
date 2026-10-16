@@ -1,6 +1,6 @@
 {
   "name": "@mnaoumov/obsidian-lib",
-  "version": "4.0.0",
+  "version": "4.1.0",
   "description": "Runtime library for Obsidian plugin development: plugin base classes, components, settings, modals, vault and metadata helpers.",
   "keywords": [
     "obsidian",
