@@ -19,6 +19,7 @@ import { noop } from '@mnaoumov/typescript-lib/function';
 import type { PluginNoticeComponent } from './components/plugin-notice-component.ts';
 
 import { getObsidianLibDebugger } from './debug.ts';
+import { appendTextOrFragmentClone } from './html-element.ts';
 import { addPluginCssClasses } from './plugin/plugin-context.ts';
 
 /**
@@ -91,9 +92,12 @@ export interface LoopParams<T> {
   /**
    * A title of the progress bar.
    *
+   * Pass a {@link DocumentFragment} to mark up part of the title, such as a plugin name rendered as code. Each
+   * render appends a fresh clone of it, so the caller's fragment stays intact.
+   *
    * @default `''`
    */
-  readonly progressBarTitle?: string;
+  readonly progressBarTitle?: DocumentFragment | string;
 
   /**
    * Whether to continue the loop on error.
@@ -237,7 +241,7 @@ export async function loop<T>(params: LoopParams<T>): Promise<void> {
 
   function buildProgressBarFragment(): DocumentFragment {
     const fragment = createFragment();
-    fragment.createDiv({ text: fullOptions.progressBarTitle });
+    appendTextOrFragmentClone(fragment.createDiv(), fullOptions.progressBarTitle);
     fragment.append(progressBarEl);
     return fragment;
   }
