@@ -11,5 +11,6 @@ import { OBSIDIAN_EXTERNAL_TYPE_LINKS } from '@mnaoumov/obsidian-dev-toolkit/doc
 export const DOCS_SITE_CONFIG: DocsSiteConfig = {
   externalTypeLinks: OBSIDIAN_EXTERNAL_TYPE_LINKS,
   repo: 'obsidian-lib',
+  repoHomepage: 'set',
   title: 'Obsidian Lib'
 };
