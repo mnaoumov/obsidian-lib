@@ -1,4 +1,3 @@
-import type { MaybeReturn } from '@mnaoumov/typescript-lib/type';
 import type { Debouncer } from 'obsidian';
 
 import { noop } from '@mnaoumov/typescript-lib/function';
@@ -343,23 +342,7 @@ describe('MonkeyAroundComponent', () => {
       expect($object.greet('test')).toBe('hello test');
     });
 
-    it('should install the method returned by postPatchHandler in place of the patched method', () => {
-      const component = new MonkeyAroundComponent();
-      component.load();
-      const $object = createTestObject();
-
-      component.registerMethodPatch<TestObject, 'greet'>({
-        $object,
-        methodName: 'greet',
-        patchHandler: ({ fallback }) => `inner: ${fallback()}`,
-
-        postPatchHandler: ({ patchedMethod }) => (name: string): string => `wrapped[${patchedMethod(name)}]`
-      });
-
-      expect($object.greet('world')).toBe('wrapped[inner: hello world]');
-    });
-
-    it('should fall back to the patched method when postPatchHandler returns nothing', () => {
+    it('should hand postPatchHandler only the original method and install the patched method', () => {
       const component = new MonkeyAroundComponent();
       component.load();
       const $object = createTestObject();
@@ -377,7 +360,22 @@ describe('MonkeyAroundComponent', () => {
 
       expect($object.greet('world')).toBe('inner: hello world');
       expect(observedParams?.originalMethod).toBe(originalGreet);
-      expect(observedParams?.patchedMethod('test')).toBe('inner: hello test');
+      expect(Object.keys(observedParams ?? {})).toEqual(['originalMethod']);
+    });
+
+    it('should ignore a function returned by postPatchHandler at runtime', () => {
+      const component = new MonkeyAroundComponent();
+      component.load();
+      const $object = createTestObject();
+
+      component.registerMethodPatch<TestObject, 'greet'>({
+        $object,
+        methodName: 'greet',
+        patchHandler: ({ fallback }) => `inner: ${fallback()}`,
+        postPatchHandler: () => (name: string): string => `grafted ${name}`
+      });
+
+      expect($object.greet('world')).toBe('inner: hello world');
     });
   });
 
@@ -883,7 +881,11 @@ describe('MonkeyAroundComponent', () => {
 
     it('should correctly type PostPatchHandlerFn', () => {
       expectTypeOf<PostPatchHandlerFunction<TestObject, 'greet'>>()
-        .toEqualTypeOf<(params: PostPatchHandlerParams<TestObject, 'greet'>) => MaybeReturn<(name: string) => string>>();
+        .toEqualTypeOf<(params: PostPatchHandlerParams<TestObject, 'greet'>) => void>();
+    });
+
+    it('should expose only the original method to PostPatchHandlerParams', () => {
+      expectTypeOf<keyof PostPatchHandlerParams<TestObject, 'greet'>>().toEqualTypeOf<'originalMethod'>();
     });
   });
 });
