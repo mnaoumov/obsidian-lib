@@ -1,5 +1,6 @@
 import type { GenericObject } from '@mnaoumov/typescript-lib/type-guards';
 import type { CustomArrayDict } from '@obsidian-typings/obsidian-public-latest';
+import type { StandardSchemaV1 } from '@standard-schema/spec';
 import type {
   App,
   CachedMetadata,
@@ -15,7 +16,8 @@ import { dispose } from '@mnaoumov/typescript-lib/disposable';
 import { castTo } from '@mnaoumov/typescript-lib/object-utils';
 import {
   assertNonNullable,
-  ensureGenericObject
+  ensureGenericObject,
+  ensureNonNullable
 } from '@mnaoumov/typescript-lib/type-guards';
 import { ValueWrapper } from '@mnaoumov/typescript-lib/value-wrapper';
 import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
@@ -130,7 +132,8 @@ vi.mock('./file-system.ts', () => ({
   getFolder: vi.fn((params: GetFolderParams) => ({ children: [], deleted: false, path: params.pathOrFolder })),
   getPath: vi.fn((_app: unknown, pathOrFile: unknown) => typeof pathOrFile === 'string' ? pathOrFile : (pathOrFile as PathHolder).path),
   isCanvasFile: vi.fn((pathOrFile: unknown) => (typeof pathOrFile === 'string' ? pathOrFile : (pathOrFile as PathHolder).path).endsWith('.canvas')),
-  isFile: vi.fn((file: unknown) => file !== null && typeof file === 'object' && 'name' in (file as GenericObject) && !('children' in (file as GenericObject)))
+  isFile: vi.fn((file: unknown) => file !== null && typeof file === 'object' && 'name' in (file as GenericObject) && !('children' in (file as GenericObject))),
+  isPathOrFile: vi.fn((value: unknown) => typeof value === 'string')
 }));
 
 vi.mock('./frontmatter-link-cache-with-offsets.ts', () => ({
@@ -819,6 +822,28 @@ describe('getBacklinksForFileOrPath', () => {
     expect(result).toBe(mockBacklinks);
   });
 
+  it('should check both backlink methods against their signatures', () => {
+    getBacklinksForFileOrPath(app, 'test.md');
+    const contract = ensureNonNullable(mockedFindPluginApi.mock.calls[0]?.[0].contract);
+
+    function checkIsAccepted(schema: StandardSchemaV1 | undefined, value: unknown): boolean {
+      const result = ensureNonNullable(schema)['~standard'].validate(value);
+      if (result instanceof Promise) {
+        throw new TypeError('Expected a synchronous schema.');
+      }
+      return result.issues === undefined;
+    }
+
+    for (const methodName of ['getBacklinksForFile', 'getBacklinksForFileSafe']) {
+      const methodContract = contract[methodName];
+      expect(checkIsAccepted(methodContract?.input, ['test.md'])).toBe(true);
+      expect(checkIsAccepted(methodContract?.input, [1])).toBe(false);
+      expect(checkIsAccepted(methodContract?.output, null)).toBe(true);
+      expect(checkIsAccepted(methodContract?.output, new CustomArrayDictImpl<Reference>())).toBe(true);
+      expect(checkIsAccepted(methodContract?.output, { data: new Map() })).toBe(false);
+      expect(checkIsAccepted(methodContract?.output, 'backlinks')).toBe(false);
+    }
+  });
   it('should answer from the backlink index when the Advanced Metadata Cache Backlinks module is off', () => {
     const mockBacklinks = castTo<ReturnType<typeof getIndexedBacklinksForFile>>({ data: new Map() });
     mockedGetIndexedBacklinksForFile.mockReturnValue(mockBacklinks);

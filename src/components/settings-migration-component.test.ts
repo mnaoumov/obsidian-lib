@@ -43,6 +43,7 @@ import type {
 import type { SettingsMigrationComponentConstructorParams } from './settings-migration-component.ts';
 
 import { publishPluginApi } from '../plugin/plugin-api.ts';
+import { getSettingsMigrationApiContract } from '../plugin/settings-migration-api.ts';
 import { PluginSettingsComponentBase } from './plugin-settings-component.ts';
 import { SettingsMigrationComponent } from './settings-migration-component.ts';
 
@@ -56,7 +57,7 @@ interface CreateHarnessOptions {
   /**
    * The contract the CONSUMER declares, which wins over the provider's when supplied.
    */
-  readonly contract?: PluginApiContract;
+  readonly contract?: PluginApiContract<SettingsMigrationApi<TestMigratableSettings>>;
 
   /**
    * What the consumer's `data.json` holds, i.e. whether a migration is pending on this vault.
@@ -234,18 +235,21 @@ describe('SettingsMigrationComponent', () => {
     expect(harness.migrateSettings).not.toHaveBeenCalled();
   });
 
-  it('should honor the consumer contract over the provider published one', async () => {
+  it('should use the contract it is given', async () => {
+    const harness = createHarness({ contract: getSettingsMigrationApiContract<TestMigratableSettings>(), storedProposedValue: true });
+    harness.publish();
+    await harness.settingsComponent.loadWithPromises();
+    harness.migrationComponent.load();
+    await waitForAllAsyncOperations();
+
+    expect(harness.migrateSettings).toHaveBeenCalledOnce();
+  });
+  it('should check the provider against the settings migration contract by default', async () => {
     // The provider publishes no contract at all, so a shape check made against ITS contract would accept
-    // anything and the migration WOULD be offered. Only the consumer's own contract can refuse a provider
-    // whose shipped shape is older than the one this plugin compiled against.
-    const harness = createHarness({
-      contract: {
-        getSettings: {},
-        migrateSettings: {}
-      },
-      storedProposedValue: true
-    });
-    harness.publish({ migrateSettings: harness.migrateSettings });
+    // anything and the migration WOULD be offered. The default consumer contract refuses a provider that does
+    // not expose `migrateSettings`.
+    const harness = createHarness({ storedProposedValue: true });
+    harness.publish({ proposeSettings: harness.migrateSettings });
     await harness.settingsComponent.loadWithPromises();
     harness.migrationComponent.load();
     await waitForAllAsyncOperations();

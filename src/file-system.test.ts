@@ -54,6 +54,7 @@ import {
   isFolder,
   isMarkdownFile,
   isNote,
+  isPathOrFile,
   isTreatedAsAttachment,
   MARKDOWN_FILE_EXTENSION,
   MissingPathTreatment,
@@ -78,6 +79,24 @@ describe('constants', () => {
 
   it('should export the correct BASE_FILE_EXTENSION', () => {
     expect(BASE_FILE_EXTENSION).toBe('base');
+  });
+});
+
+describe('isPathOrFile', () => {
+  it('should return true for a path', () => {
+    expect(isPathOrFile('note.md')).toBe(true);
+  });
+
+  it('should return true for a TFile instance', () => {
+    expect(isPathOrFile(TFile.create__(castTo(app.vault), 'note.md').asOriginalType2__())).toBe(true);
+  });
+
+  it('should return false for a TFolder instance', () => {
+    expect(isPathOrFile(TFolder.create__(castTo(app.vault), 'my-folder').asOriginalType2__())).toBe(false);
+  });
+
+  it('should return false for null', () => {
+    expect(isPathOrFile(null)).toBe(false);
   });
 });
 

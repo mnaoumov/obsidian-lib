@@ -158,8 +158,10 @@ export enum PluginApiUnavailabilityReason {
 
 /**
  * Parameters for {@link findPluginApi}.
+ *
+ * @typeParam TApi - The API type the consumer compiled against, which a typed contract is checked against.
  */
-export interface FindPluginApiParams {
+export interface FindPluginApiParams<TApi extends object = object> {
   /**
    * The semver range of contract versions the consumer compiled against. The same rules as
    * {@link WatchPluginApiParams.apiVersionRange} apply.
@@ -170,7 +172,7 @@ export interface FindPluginApiParams {
    * The contract the CONSUMER expects. When supplied, it wins over the provider's published contract, as in
    * {@link WatchPluginApiParams.contract}.
    */
-  readonly contract?: PluginApiContract;
+  readonly contract?: PluginApiContract<TApi>;
 
   /**
    * The `manifest.id` of the providing plugin.
@@ -195,8 +197,16 @@ export interface FindPluginApiParams {
  * `.transform()`, and would then move validation onto every call instead of behind the debug gate, and bind
  * the contract to zod specifically — which is exactly what reaching through Standard Schema avoids. So the
  * declared method names are checked with `typeof`, and the payloads are validated per method instead.
+ *
+ * Typed over the API when one is named: `PluginApiContract<MyApi>` has exactly one entry per function member of
+ * `MyApi` — a missing method, an extra one or a misspelled one does not compile — and each entry's schemas must
+ * produce that method's parameters and (awaited) return value. Without a type argument, or for `object`, it stays
+ * the loose record it always was, which is what crosses the registry between library copies.
+ *
+ * @typeParam TApi - The API the contract describes. `object`, the default, means "not typed".
  */
-export type PluginApiContract = Record<string, PluginApiMethodContract>;
+export type PluginApiContract<TApi extends object = object> = object extends TApi ? Readonly<Record<string, PluginApiMethodContract>>
+  : TypedPluginApiContract<TApi>;
 
 /**
  * One API a plugin exposes: the object, the contract version it satisfies, and optionally the contract
@@ -224,24 +234,43 @@ export interface PluginApiDeclaration<TApi extends object = object> {
    * The contract this version of the API satisfies. Optional: when omitted, no shape check is performed on
    * the provider's behalf and the consumer's own contract (if any) is used instead.
    */
-  readonly contract?: PluginApiContract;
+  readonly contract?: PluginApiContract<TApi>;
 }
 
 /**
  * The payload schemas for a single API method. Both halves are optional: a method may declare only its input,
  * only its output, neither (the entry then just declares that the method must exist), or both.
+ *
+ * @typeParam TParameters - The method's parameters, as a tuple, which the input schema must produce.
+ * @typeParam TReturnValue - The method's return value, awaited, which the output schema must produce.
  */
-export interface PluginApiMethodContract {
+export interface PluginApiMethodContract<TParameters = unknown, TReturnValue = unknown> {
   /**
    * Validates the method's arguments, as an array.
    */
-  readonly input?: StandardSchemaV1;
+  readonly input?: StandardSchemaV1<unknown, TParameters>;
 
   /**
    * Validates the method's return value — or, when the method returns a thenable, the value it resolves to.
    */
-  readonly output?: StandardSchemaV1;
+  readonly output?: StandardSchemaV1<unknown, TReturnValue>;
 }
+
+/**
+ * The names of the function members of an API, which are exactly the keys a typed {@link PluginApiContract} has.
+ *
+ * @typeParam TApi - The API.
+ */
+export type PluginApiMethodName<TApi extends object> = keyof PluginApiMethods<TApi> & string;
+
+/**
+ * The function members of an API.
+ *
+ * @typeParam TApi - The API.
+ */
+export type PluginApiMethods<TApi extends object> = {
+  [TKey in keyof TApi as TApi[TKey] extends (...arguments_: never) => unknown ? TKey : never]: TApi[TKey];
+};
 
 /**
  * A live reference to another plugin's API.
@@ -356,9 +385,24 @@ export interface PublishPluginApiParams<TApi extends object> extends PluginApiDe
 }
 
 /**
- * Parameters for {@link watchPluginApi}.
+ * The {@link PluginApiContract} of a named API: one entry per function member, each typed against that member.
+ * Both schemas are REQUIRED here, so a typed contract is a full description of every signature and a `{}`
+ * entry does not compile. Only the loose form, which is what an older library copy may have published, leaves
+ * them optional.
+ *
+ * @typeParam TApi - The API the contract describes.
  */
-export interface WatchPluginApiParams {
+export type TypedPluginApiContract<TApi extends object> = {
+  readonly [TKey in PluginApiMethodName<TApi>]-?: TApi[TKey] extends (...arguments_: infer TParameters) => infer TReturnValue ? Required<PluginApiMethodContract<TParameters, Awaited<TReturnValue>>>
+    : never;
+};
+
+/**
+ * Parameters for {@link watchPluginApi}.
+ *
+ * @typeParam TApi - The API type the consumer compiled against, which a typed contract is checked against.
+ */
+export interface WatchPluginApiParams<TApi extends object = object> {
   /**
    * The semver range of contract versions the consumer compiled against, e.g. `'^2'`. The highest published
    * version satisfying it wins.
@@ -384,7 +428,7 @@ export interface WatchPluginApiParams {
    * supplied — it is the consumer's own compiled-against expectation, so it is the one whose violation is
    * the consumer's problem.
    */
-  readonly contract?: PluginApiContract;
+  readonly contract?: PluginApiContract<TApi>;
 
   /**
    * The `manifest.id` of the providing plugin.
@@ -668,8 +712,7 @@ export class PluginApiValidationError extends Error {
  * @param params - The parameters for the lookup.
  * @returns The API, or `null` when no live record satisfies the range and the contract.
  */
-// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters -- The consumer names the API type it compiled against, as with `watchPluginApi`; nothing in the parameters can carry it.
-export function findPluginApi<TApi extends object>(params: FindPluginApiParams): null | TApi {
+export function findPluginApi<TApi extends object>(params: FindPluginApiParams<NoInfer<TApi>>): null | TApi {
   const record = selectRecord(params);
   return record === null ? null : castTo<TApi>(createRevocableHandle(record, params.contract));
 }
@@ -725,7 +768,7 @@ export function publishPluginApi<TApi extends object>(params: PublishPluginApiPa
  * @param params - The parameters for the watch.
  * @returns The live reference.
  */
-export function watchPluginApi<TApi extends object>(params: WatchPluginApiParams): PluginApiRef<TApi> {
+export function watchPluginApi<TApi extends object>(params: WatchPluginApiParams<NoInfer<TApi>>): PluginApiRef<TApi> {
   const ref = new PluginApiRefImpl<TApi>(params);
   const unsubscribe = subscribe(() => {
     ref.refresh();

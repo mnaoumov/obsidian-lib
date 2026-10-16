@@ -40,7 +40,8 @@ import {
   getFolder,
   getPath,
   isCanvasFile,
-  isFile
+  isFile,
+  isPathOrFile
 } from './file-system.ts';
 import {
   isFrontmatterLinkCacheWithOffsets,
@@ -54,6 +55,10 @@ import {
   parseLinks,
   toParseLinkReference
 } from './parse-link.ts';
+import {
+  createArgumentsSchema,
+  createTypeGuardSchema
+} from './plugin/plugin-api-schema.ts';
 import { findPluginApi } from './plugin/plugin-api.ts';
 import { sortReferences } from './reference.ts';
 import {
@@ -364,11 +369,19 @@ export const ADVANCED_METADATA_CACHE_PLUGIN_ID = 'advanced-metadata-cache';
 const ADVANCED_METADATA_CACHE_BACKLINKS_API_VERSION_RANGE = '^1.3.0';
 
 /**
- * The members of Advanced Metadata Cache's API this module calls, so a record that lacks either is passed over.
+ * The schemas of a backlink method's payloads: the one path-or-file argument, and the backlinks or `null`.
  */
-const ADVANCED_METADATA_CACHE_BACKLINKS_API_CONTRACT: PluginApiContract = {
-  getBacklinksForFile: {},
-  getBacklinksForFileSafe: {}
+const ADVANCED_METADATA_CACHE_BACKLINKS_METHOD_CONTRACT = {
+  input: createArgumentsSchema<[pathOrFile: PathOrFile]>([{ expected: 'a path or a file', typeGuard: isPathOrFile }]),
+  output: createTypeGuardSchema({ expected: 'a backlinks dictionary or null', typeGuard: isNullableBacklinksDict })
+};
+
+/**
+ * The contract of the members of Advanced Metadata Cache's API this module calls, so a record that lacks either is passed over, and a payload that breaks its signature is reported while the `PluginApi` debugger is on.
+ */
+const ADVANCED_METADATA_CACHE_BACKLINKS_API_CONTRACT: PluginApiContract<AdvancedMetadataCacheBacklinksApi> = {
+  getBacklinksForFile: ADVANCED_METADATA_CACHE_BACKLINKS_METHOD_CONTRACT,
+  getBacklinksForFileSafe: ADVANCED_METADATA_CACHE_BACKLINKS_METHOD_CONTRACT
 };
 
 /**
@@ -830,6 +843,19 @@ function findAdvancedMetadataCacheBacklinksApi(): AdvancedMetadataCacheBacklinks
 
 function getRegisteredFilesCounts(): Map<string, number> {
   return getObsidianDevUtilsState('registeredFilesCounts', new Map<string, number>()).value;
+}
+
+/**
+ * Structurally recognizes the backlinks dictionary another plugin's copy built, or `null`. The class it was built from lives in that copy, so `instanceof` cannot be used (rule L9 in `AGENTS.md`).
+ *
+ * @param value - The value to check.
+ * @returns Whether the value is `null` or reads as a backlinks dictionary.
+ */
+function isNullableBacklinksDict(value: unknown): value is CustomArrayDict<Reference> | null {
+  return value === null
+    || (typeof value === 'object'
+      && typeof Reflect.get(value, 'get') === 'function'
+      && typeof Reflect.get(value, 'keys') === 'function');
 }
 
 function parseExternalBodyLinks(content: string, cache: CachedMetadata): ParseLinkReference[] {

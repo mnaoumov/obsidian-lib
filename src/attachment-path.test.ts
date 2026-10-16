@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 
+import type { StandardSchemaV1 } from '@standard-schema/spec';
 import type { App as AppOriginal } from 'obsidian';
 import type { Mock } from 'vitest';
 
@@ -9,6 +10,7 @@ import {
   dirname,
   extname
 } from '@mnaoumov/typescript-lib/path';
+import { ensureNonNullable } from '@mnaoumov/typescript-lib/type-guards';
 import { getDataAdapterEx } from '@obsidian-typings/obsidian-public-latest/implementations';
 import { App } from 'obsidian-test-mocks/obsidian';
 import {
@@ -485,10 +487,68 @@ describe('getCheckIsAttachmentUnitFolderFunction', () => {
 describe('Custom Attachment Location lookup', () => {
   it('should ask the registry for the plugin id, contract range and both members', () => {
     getAttachmentFolderPathSyncOrNull({ app: createApp('./'), notePathOrFile: NOTE_PATH });
-    expect(mockedFindPluginApi).toHaveBeenCalledWith({
-      apiVersionRange: '^1.3.0',
-      contract: { getAvailablePathForAttachments: {}, isAttachmentUnitFolder: {} },
-      pluginId: CUSTOM_ATTACHMENT_LOCATION_PLUGIN_ID
+    const params = mockedFindPluginApi.mock.calls[0]?.[0];
+    expect(params?.apiVersionRange).toBe('^1.3.0');
+    expect(params?.pluginId).toBe(CUSTOM_ATTACHMENT_LOCATION_PLUGIN_ID);
+    expect(Object.keys(params?.contract ?? {})).toEqual(['getAvailablePathForAttachments', 'isAttachmentUnitFolder']);
+  });
+
+  describe('contract', () => {
+    function getContract(): NonNullable<Parameters<typeof findPluginApi>[0]['contract']> {
+      getAttachmentFolderPathSyncOrNull({ app: createApp('./'), notePathOrFile: NOTE_PATH });
+      return ensureNonNullable(mockedFindPluginApi.mock.calls[0]?.[0].contract);
+    }
+
+    function checkIsAccepted(schema: StandardSchemaV1 | undefined, value: unknown): boolean {
+      const result = ensureNonNullable(schema)['~standard'].validate(value);
+      if (result instanceof Promise) {
+        throw new TypeError('Expected a synchronous schema.');
+      }
+      return result.issues === undefined;
+    }
+
+    const MINIMAL_PARAMS = {
+      attachmentFileBaseName: 'image',
+      attachmentFileExtension: 'png',
+      context: AttachmentPathContext.Unknown,
+      notePathOrFile: null,
+      oldAttachmentPathOrFile: 'image.png',
+      readAttachmentFileContent: null,
+      shouldSkipMissingAttachmentFolderCreation: undefined
+    };
+
+    it('should accept the attachment-path parameters, in their minimal and their full form', () => {
+      const input = getContract()['getAvailablePathForAttachments']?.input;
+      expect(checkIsAccepted(input, [MINIMAL_PARAMS])).toBe(true);
+      expect(checkIsAccepted(input, [{
+        ...MINIMAL_PARAMS,
+        attachmentFileStats: { ctime: 0, mtime: 0, size: 0 },
+        notePathOrFile: 'note.md',
+        oldNotePathOrFile: 'old.md',
+        readAttachmentFileContent: (): Promise<ArrayBuffer> => Promise.resolve(new ArrayBuffer(0)),
+        shouldSkipDuplicateCheck: true,
+        shouldSkipGeneratedAttachmentFileName: false,
+        shouldSkipMissingAttachmentFolderCreation: true
+      }])).toBe(true);
+    });
+
+    it('should refuse attachment-path parameters that break the signature', () => {
+      const input = getContract()['getAvailablePathForAttachments']?.input;
+      expect(checkIsAccepted(input, [null])).toBe(false);
+      expect(checkIsAccepted(input, ['image.png'])).toBe(false);
+      expect(checkIsAccepted(input, [{ ...MINIMAL_PARAMS, context: 'Elsewhere' }])).toBe(false);
+      expect(checkIsAccepted(input, [{ ...MINIMAL_PARAMS, shouldSkipDuplicateCheck: 'yes' }])).toBe(false);
+    });
+
+    it('should check the attachment path and the unit-folder answer', () => {
+      const contract = getContract();
+      expect(checkIsAccepted(contract['getAvailablePathForAttachments']?.output, 'image.png')).toBe(true);
+      expect(checkIsAccepted(contract['getAvailablePathForAttachments']?.output, null)).toBe(false);
+      expect(checkIsAccepted(contract['isAttachmentUnitFolder']?.input, [{ folderPath: 'folder' }])).toBe(true);
+      expect(checkIsAccepted(contract['isAttachmentUnitFolder']?.input, [{}])).toBe(false);
+      expect(checkIsAccepted(contract['isAttachmentUnitFolder']?.input, [null])).toBe(false);
+      expect(checkIsAccepted(contract['isAttachmentUnitFolder']?.output, false)).toBe(true);
+      expect(checkIsAccepted(contract['isAttachmentUnitFolder']?.output, 'false')).toBe(false);
     });
   });
 });

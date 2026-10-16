@@ -22,17 +22,16 @@ import type { App } from 'obsidian';
 import type { Promisable } from 'type-fest';
 
 import { invokeAsyncSafely } from '@mnaoumov/typescript-lib/async';
-import { normalizeOptionalProperties } from '@mnaoumov/typescript-lib/object-utils';
 
 import type {
   PluginApiContract,
-  PluginApiRef,
-  WatchPluginApiParams
+  PluginApiRef
 } from '../plugin/plugin-api.ts';
 import type { SettingsMigrationApi } from '../plugin/settings-migration-api.ts';
 import type { PluginSettingsComponentBase } from './plugin-settings-component.ts';
 
 import { watchPluginApi } from '../plugin/plugin-api.ts';
+import { getSettingsMigrationApiContract } from '../plugin/settings-migration-api.ts';
 import { registerAsyncEvent } from './async-events-component.ts';
 import { ComponentEx } from './component-ex.ts';
 
@@ -56,14 +55,15 @@ export interface SettingsMigrationComponentConstructorParams<TMigratableSettings
   readonly app: App;
 
   /**
-   * The contract this plugin expects of the provider, which wins over the provider's own when supplied.
+   * The contract this plugin expects of the provider, which wins over the provider's own. Defaults to
+   * {@link getSettingsMigrationApiContract}, which checks the one method a migration calls.
    *
-   * Worth supplying, and worth keeping NARROW. A migration usually needs one method that has existed since the
-   * provider's first contract version, while the same plugin may read other parts of that API through a much
+   * Kept to {@link SettingsMigrationApi} deliberately NARROW. A migration needs one method that has existed since
+   * the provider's first contract version, while the same plugin may read other parts of that API through a much
    * newer one. Declaring the wider expectation here would refuse to offer the migration to a user on an older
    * provider — which is precisely the user who still has settings to migrate.
    */
-  readonly contract?: PluginApiContract;
+  readonly contract?: PluginApiContract<SettingsMigrationApi<TMigratableSettings>>;
 
   /**
    * Reads the values currently waiting to be handed over.
@@ -119,7 +119,7 @@ export interface SettingsMigrationComponentConstructorParams<TMigratableSettings
 export class SettingsMigrationComponent<TMigratableSettings extends object> extends ComponentEx {
   private readonly apiVersionRange: string;
   private readonly app: App;
-  private readonly contract: PluginApiContract | undefined;
+  private readonly contract: PluginApiContract<SettingsMigrationApi<TMigratableSettings>>;
   private readonly getProposedSettings: () => null | TMigratableSettings;
   private isProposing = false;
   private readonly pluginSettingsComponent: PluginSettingsComponentBase<object>;
@@ -136,7 +136,7 @@ export class SettingsMigrationComponent<TMigratableSettings extends object> exte
     super();
     this.apiVersionRange = params.apiVersionRange;
     this.app = params.app;
-    this.contract = params.contract;
+    this.contract = params.contract ?? getSettingsMigrationApiContract<TMigratableSettings>();
     this.getProposedSettings = params.getProposedSettings;
     this.pluginSettingsComponent = params.pluginSettingsComponent;
     this.providerPluginId = params.providerPluginId;
@@ -152,13 +152,13 @@ export class SettingsMigrationComponent<TMigratableSettings extends object> exte
     // in flight at this point, so it still holds the DEFAULTS — reading the pending values now would see
     // nothing on exactly the vaults that have something, register no watch, and lose the migration for good.
     // Both edges are wired instead, and `propose` re-reads the values each time it runs.
-    const ref = watchPluginApi<SettingsMigrationApi<TMigratableSettings>>(normalizeOptionalProperties<WatchPluginApiParams>({
+    const ref = watchPluginApi<SettingsMigrationApi<TMigratableSettings>>({
       apiVersionRange: this.apiVersionRange,
       app: this.app,
       component: this,
       contract: this.contract,
       pluginId: this.providerPluginId
-    }));
+    });
 
     // Driven by the ref's own event rather than by `whenAvailable()`, deliberately. That wait blocks for ten
     // seconds and then throws when the provider is simply not installed, which would stall this plugin's load
