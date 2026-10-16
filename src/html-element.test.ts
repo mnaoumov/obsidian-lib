@@ -13,6 +13,7 @@ import {
 
 import {
   appendCodeBlock,
+  appendTextOrFragmentClone,
   applySpellcheckMode,
   asCodeBlock,
   createFragmentWithCodeBlocks
@@ -23,6 +24,31 @@ let app: AppOriginal;
 
 beforeEach(() => {
   app = App.createConfigured__().asOriginalType__();
+});
+
+describe('appendTextOrFragmentClone', () => {
+  it('should append a string as text', () => {
+    const element = createDiv();
+    appendTextOrFragmentClone(element, 'plain <b>text</b>');
+    expect(element.textContent).toBe('plain <b>text</b>');
+    expect(element.childElementCount).toBe(0);
+  });
+
+  it('should append a clone of a fragment, leaving the fragment intact for the next render', () => {
+    const fragment = createFragment((f) => {
+      f.appendText('Uses ');
+      f.createEl('code', { text: 'Other plugin' });
+    });
+    const first = createDiv();
+    const second = createDiv();
+    appendTextOrFragmentClone(first, fragment);
+    appendTextOrFragmentClone(second, fragment);
+    for (const element of [first, second]) {
+      expect(element.textContent).toBe('Uses Other plugin');
+      expect(element.querySelector('code')?.textContent).toBe('Other plugin');
+    }
+    expect(fragment.textContent).toBe('Uses Other plugin');
+  });
 });
 
 describe('appendCodeBlock', () => {

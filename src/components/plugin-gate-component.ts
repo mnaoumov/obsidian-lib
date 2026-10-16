@@ -105,6 +105,7 @@ import type { PluginNoticeComponent } from './plugin-notice-component.ts';
 import { disableCommunityPlugin } from '../community-plugins.ts';
 import { CssClass } from '../css-class.ts';
 import {
+  appendTextOrFragmentClone,
   asCodeBlock,
   createFragmentWithCodeBlocks
 } from '../html-element.ts';
@@ -183,8 +184,11 @@ export interface PluginConflict {
    *
    * The declaring plugin owns this string because only it knows what the two of them collide over, and a
    * user being asked to disable something deserves to be told why.
+   *
+   * Pass a {@link DocumentFragment} to mark up part of the sentence, such as a plugin name rendered as
+   * code. Each render appends a fresh clone of it, since the banner is rendered again on every refresh.
    */
-  readonly reason: string;
+  readonly reason: DocumentFragment | string;
 
   /**
    * What this plugin does about the conflict.
@@ -220,8 +224,11 @@ export interface PluginDependency {
    *
    * The dependent owns this string because only it knows what it uses the other plugin for, and a user
    * being asked to install something deserves to be told why.
+   *
+   * Pass a {@link DocumentFragment} to mark up part of the sentence, such as a plugin name rendered as
+   * code. Each render appends a fresh clone of it, since the banner is rendered again on every refresh.
    */
-  readonly reason: string;
+  readonly reason: DocumentFragment | string;
 }
 
 /**
@@ -670,7 +677,7 @@ export class PluginGateComponent extends ComponentEx {
         cls: [CssClass.LibraryName, CssClass.PluginDependencyBanner]
       });
       bannerEl.append(this.createBlockedMessage(dependency));
-      bannerEl.createDiv({ text: dependency.reason });
+      appendTextOrFragmentClone(bannerEl.createDiv(), dependency.reason);
 
       const state = getInstalledPluginState({
         app: this.app,
@@ -730,7 +737,7 @@ export class PluginGateComponent extends ComponentEx {
       cls: [CssClass.LibraryName, CssClass.PluginConflictBanner]
     });
     bannerEl.append(messageFragment);
-    bannerEl.createDiv({ text: conflict.reason });
+    appendTextOrFragmentClone(bannerEl.createDiv(), conflict.reason);
 
     new ButtonComponent(bannerEl)
       .setButtonText(t(($) => $.obsidianDevUtils.pluginConflict.disable, { conflictingPluginName: conflict.pluginName }))

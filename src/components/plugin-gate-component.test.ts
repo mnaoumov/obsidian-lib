@@ -494,6 +494,17 @@ describe('the blocked settings tab', () => {
     const params: unknown = mockInstallConfigureEnableCommunityPlugin.mock.calls[0]?.[0];
     expect(castTo<InstallCommunityPluginParams>(params).pluginId).toBe(DEPENDENCY.pluginId);
   });
+
+  it('should render a fragment reason on every display, leaving the fragment intact', async () => {
+    const reason = createReasonFragment(DEPENDENCY.pluginName);
+    await createLoadedComponent({ dependencies: [{ ...DEPENDENCY, reason }], isSatisfied: false });
+    await triggerLayoutReady();
+
+    for (const containerEl of [displayBlockedSettingTab(), displayBlockedSettingTab()]) {
+      expectReasonFragmentRendered(containerEl, DEPENDENCY.pluginName);
+    }
+    expect(reason.textContent).toBe(`Uses ${DEPENDENCY.pluginName} for this.`);
+  });
 });
 
 function buttonTexts(containerEl: HTMLElement): string[] {
@@ -508,6 +519,14 @@ function clickButton(index: number): void {
   castTo<ButtonComponent>(button).simulateClick__();
 }
 
+function createReasonFragment(pluginName: string): DocumentFragment {
+  return createFragment((fragment) => {
+    fragment.appendText('Uses ');
+    fragment.createEl('code', { text: pluginName });
+    fragment.appendText(' for this.');
+  });
+}
+
 // Renders the tab the component registered, which is the only way its banner is reachable — a blocked
 // plugin never got to register a settings tab of its own.
 function displayBlockedSettingTab(): HTMLElement {
@@ -517,6 +536,12 @@ function displayBlockedSettingTab(): HTMLElement {
   displayableSettingTab.containerEl = createDiv();
   displayableSettingTab.display();
   return displayableSettingTab.containerEl;
+}
+
+function expectReasonFragmentRendered(containerEl: HTMLElement, pluginName: string): void {
+  // The message above the reason marks plugin names as code too, so the reason is found by its own text.
+  const reasonEl = [...containerEl.querySelectorAll('div')].find((div) => div.textContent === `Uses ${pluginName} for this.`);
+  expect(reasonEl?.querySelector('code')?.textContent).toBe(pluginName);
 }
 
 describe('with a blocking conflict', () => {
@@ -745,6 +770,18 @@ describe('renderConflictWarningBanner', () => {
       `Disable ${WARNING_CONFLICT.pluginName}`,
       `Open ${WARNING_CONFLICT.pluginName} settings`
     ]);
+  });
+
+  it('should render a fragment reason on every render, leaving the fragment intact', async () => {
+    installPlugin(WARNING_CONFLICT.pluginId, '4.0.0');
+    const reason = createReasonFragment(WARNING_CONFLICT.pluginName);
+    const { component } = await createLoadedComponent({ conflicts: [{ ...WARNING_CONFLICT, reason }], dependencies: [] });
+
+    for (const containerEl of [createDiv(), createDiv()]) {
+      component.renderConflictWarningBanner(containerEl);
+      expectReasonFragmentRendered(containerEl, WARNING_CONFLICT.pluginName);
+    }
+    expect(reason.textContent).toBe(`Uses ${WARNING_CONFLICT.pluginName} for this.`);
   });
 });
 
