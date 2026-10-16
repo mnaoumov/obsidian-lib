@@ -291,6 +291,8 @@ export class Plugin extends PluginBase {
 
 While that dependency is missing, disabled, or outside `apiVersionRange`, your `onloadImpl` **does not run**. No command is registered, no handler installed, nothing patched. What the user gets instead is a notice naming the plugin, and a settings tab standing in for the one you never got to register — carrying your `reason`, a button that installs and enables the dependency, and, once it is there, a link straight into its settings.
 
+The contract version cannot see a provider whose behavior changed while its API stayed the same. When you rely on such a change, add `minPluginVersion: '2.2.0'`: a dependency enabled below that release counts as unsatisfied too, and the notice asks the user to update it. The version is read from the provider's manifest, and one that cannot be parsed counts as too old. Obsidian applies an update by reloading the plugin, so your load completes as soon as the update lands.
+
 The moment the dependency arrives, your load completes. No restart, no toggle. And if it later goes away, the feature surface is torn down again and the user is told at that instant — which is the point. The failure this prevents is not "a plugin is missing"; it is a user removing an unfamiliar plugin months later and meeting the damage weeks after that, with nothing connecting the two.
 
 Three deliberate choices, each with an obvious-looking alternative:
