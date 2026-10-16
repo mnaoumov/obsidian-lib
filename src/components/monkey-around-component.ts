@@ -5,7 +5,6 @@
  */
 
 import type { GenericFunction } from '@mnaoumov/typescript-lib/function';
-import type { MaybeReturn } from '@mnaoumov/typescript-lib/type';
 import type { GenericObject } from '@mnaoumov/typescript-lib/type-guards';
 import type { ConditionalKeys } from 'type-fest';
 
@@ -121,7 +120,7 @@ export interface MonkeyAroundComponentRegisterMethodPatchParams<$Object extends 
   readonly patchToken?: symbol;
 
   /**
-   * An optional post-patch handler function that runs after the patch is applied.
+   * An optional post-patch handler function that runs after the patch is applied, typically to keep the original method.
    */
   readonly postPatchHandler?: PostPatchHandlerFunction<$Object, MethodName>;
 }
@@ -174,12 +173,16 @@ export interface PatchHandlerParams<$Object extends object, MethodName extends M
 /**
  * A post-patch handler function that runs after a patch is applied.
  *
+ * It returns nothing and is not handed the patched method: the method installed is always the one the patch builds, so
+ * a post-patch handler cannot graft members onto it. A capability beyond the patched method's own signature belongs
+ * on the plugin's published API instead.
+ *
  * @typeParam $Object - The object being patched.
  * @typeParam MethodName - The method name being patched.
  */
 export type PostPatchHandlerFunction<$Object extends object, MethodName extends MethodKeys<$Object>> = (
   params: PostPatchHandlerParams<$Object, MethodName>
-) => MaybeReturn<ExtractFunction<$Object, MethodName>>;
+) => void;
 
 /**
  * Parameters passed to a {@link PostPatchHandlerFunction} callback.
@@ -192,11 +195,6 @@ export interface PostPatchHandlerParams<$Object extends object, MethodName exten
    * The original (unpatched) method. Call via `originalFn.call(originalThis, ...originalArgs)`.
    */
   readonly originalMethod: ExtractFunction<$Object, MethodName>;
-
-  /**
-   * The patched method.
-   */
-  readonly patchedMethod: ExtractFunction<$Object, MethodName>;
 }
 
 type ExtractFunction<$Object extends object, MethodName extends MethodKeys<$Object>> = GenericFunction<Parameters<Extract<$Object[MethodName], GenericFunction>>, ReturnType<Extract<$Object[MethodName], GenericFunction>>>;
@@ -279,11 +277,8 @@ export class MonkeyAroundComponent extends ComponentEx {
       once: params.once ?? false,
       patchHandler: (originalMethodRaw) => {
         const originalMethod = originalMethodRaw as $Function;
-        const finalPatchedMethod = params.postPatchHandler?.({
-          originalMethod,
-          patchedMethod
-        }) ?? patchedMethod;
-        return finalPatchedMethod as $Object[MethodName];
+        params.postPatchHandler?.({ originalMethod });
+        return patchedMethod as $Object[MethodName];
 
         function patchedMethod(this: $Object, ...originalArguments: Parameters<$Function>): ReturnType<$Function> {
           // eslint-disable-next-line consistent-this, @typescript-eslint/no-this-alias, unicorn/no-this-assignment -- We need to use the `this` context.
