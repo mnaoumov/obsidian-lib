@@ -64,7 +64,10 @@ jobs:
           restore-keys: |
             docs-gen-
 
+      # The token lets the build read the repository's homepage and report one that is not the site's URL.
       - name: Build documentation site
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: npm run docs:build
 
       - name: Upload Pages artifact
