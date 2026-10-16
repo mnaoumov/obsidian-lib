@@ -95,6 +95,6 @@ function tImpl(
  * initializes the default `obsidian-dev-utils` translations and still returns the correct string. That fallback is a
  * supported path, so it is reported through the `obsidian-dev-utils:I18N:t` debug namespace rather than the console:
  * it stays silent unless debug messages are enabled. See
- * {@link https://mnaoumov.dev/obsidian-dev-utils/guides/debugging/}.
+ * {@link https://mnaoumov.dev/obsidian-lib/guides/debugging/}.
  */
 export const t = tImpl as TFunction;
