@@ -841,6 +841,7 @@ describe('getBacklinksForFileOrPath', () => {
       expect(checkIsAccepted(methodContract?.output, null)).toBe(true);
       expect(checkIsAccepted(methodContract?.output, new CustomArrayDictImpl<Reference>())).toBe(true);
       expect(checkIsAccepted(methodContract?.output, { data: new Map() })).toBe(false);
+      expect(checkIsAccepted(methodContract?.output, { get: (): null => null, keys: (): string[] => [] })).toBe(false);
       expect(checkIsAccepted(methodContract?.output, 'backlinks')).toBe(false);
     }
   });

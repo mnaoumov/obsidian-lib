@@ -370,6 +370,9 @@ const ADVANCED_METADATA_CACHE_BACKLINKS_API_VERSION_RANGE = '^1.3.0';
 
 /**
  * The schemas of a backlink method's payloads: the one path-or-file argument, and the backlinks or `null`.
+ *
+ * A copy of the `getBacklinksForFile` and `getBacklinksForFileSafe` entries of `ADVANCED_METADATA_CACHE_API_CONTRACT`, which `Advanced Metadata Cache` ships as
+ * its root `api-contract.ts` and publishes. Keep the guards in agreement with that file, so the provider and this consumer check one definition.
  */
 const ADVANCED_METADATA_CACHE_BACKLINKS_METHOD_CONTRACT = {
   input: createArgumentsSchema<[pathOrFile: PathOrFile]>([{ expected: 'a path or a file', typeGuard: isPathOrFile }]),
@@ -854,6 +857,7 @@ function getRegisteredFilesCounts(): Map<string, number> {
 function isNullableBacklinksDict(value: unknown): value is CustomArrayDict<Reference> | null {
   return value === null
     || (typeof value === 'object'
+      && Reflect.get(value, 'data') instanceof Map
       && typeof Reflect.get(value, 'get') === 'function'
       && typeof Reflect.get(value, 'keys') === 'function');
 }

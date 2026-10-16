@@ -538,6 +538,8 @@ describe('Custom Attachment Location lookup', () => {
       expect(checkIsAccepted(input, ['image.png'])).toBe(false);
       expect(checkIsAccepted(input, [{ ...MINIMAL_PARAMS, context: 'Elsewhere' }])).toBe(false);
       expect(checkIsAccepted(input, [{ ...MINIMAL_PARAMS, shouldSkipDuplicateCheck: 'yes' }])).toBe(false);
+      expect(checkIsAccepted(input, [{ ...MINIMAL_PARAMS, attachmentFileStats: {} }])).toBe(false);
+      expect(checkIsAccepted(input, [{ ...MINIMAL_PARAMS, attachmentFileStats: { ctime: 0, mtime: 0, size: '0' } }])).toBe(false);
     });
 
     it('should check the attachment path and the unit-folder answer', () => {

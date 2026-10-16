@@ -179,18 +179,21 @@ const CUSTOM_ATTACHMENT_LOCATION_ATTACHMENT_PATH_API_VERSION_RANGE = '^1.3.0';
 /**
  * The contract of the members of `Custom Attachment Location`'s API this module calls, so a record that lacks
  * either is passed over, and a payload that breaks its signature is reported while the `PluginApi` debugger is on.
+ *
+ * A copy of those two entries of `CUSTOM_ATTACHMENT_LOCATION_API_CONTRACT`, which `Custom Attachment Location` ships as its root `api-contract.ts`
+ * and publishes. Keep the guards in agreement with that file, so the provider and this consumer check one definition.
  */
 const CUSTOM_ATTACHMENT_LOCATION_ATTACHMENT_PATH_API_CONTRACT: PluginApiContract<CustomAttachmentLocationAttachmentPathApi> = {
   getAvailablePathForAttachments: {
     input: createArgumentsSchema<[params: GetAvailablePathForAttachmentsExtendedFunctionParams]>([{
-      expected: 'the attachment-path parameters',
+      expected: 'available-path-for-attachments params',
       typeGuard: isGetAvailablePathForAttachmentsExtendedFunctionParams
     }]),
-    output: createTypeGuardSchema({ expected: 'a string', typeGuard: isString })
+    output: createTypeGuardSchema({ expected: 'an attachment path', typeGuard: isString })
   },
   isAttachmentUnitFolder: {
     input: createArgumentsSchema<[params: CustomAttachmentLocationIsAttachmentUnitFolderParams]>([{
-      expected: 'an object with a string folderPath',
+      expected: 'attachment-unit-folder params: { folderPath: string }',
       typeGuard: isCustomAttachmentLocationIsAttachmentUnitFolderParams
     }]),
     output: createTypeGuardSchema({ expected: 'a boolean', typeGuard: isBoolean })
@@ -777,6 +780,14 @@ function isCustomAttachmentLocationIsAttachmentUnitFolderParams(value: unknown):
   return typeof value === 'object' && value !== null && typeof Reflect.get(value, 'folderPath') === 'string';
 }
 
+function isFileStats(value: unknown): value is FileStats {
+  return typeof value === 'object'
+    && value !== null
+    && typeof Reflect.get(value, 'ctime') === 'number'
+    && typeof Reflect.get(value, 'mtime') === 'number'
+    && typeof Reflect.get(value, 'size') === 'number';
+}
+
 function isGetAvailablePathForAttachmentsExtendedFunctionParams(value: unknown): value is GetAvailablePathForAttachmentsExtendedFunctionParams {
   if (typeof value !== 'object' || value === null) {
     return false;
@@ -793,7 +804,7 @@ function isGetAvailablePathForAttachmentsExtendedFunctionParams(value: unknown):
   const readAttachmentFileContent = read('readAttachmentFileContent');
   return typeof read('attachmentFileBaseName') === 'string'
     && typeof read('attachmentFileExtension') === 'string'
-    && (attachmentFileStats === undefined || (typeof attachmentFileStats === 'object' && attachmentFileStats !== null))
+    && (attachmentFileStats === undefined || isFileStats(attachmentFileStats))
     && Object.values(AttachmentPathContext).includes(context)
     && (notePathOrFile === null || isPathOrFile(notePathOrFile))
     && isPathOrFile(read('oldAttachmentPathOrFile'))
