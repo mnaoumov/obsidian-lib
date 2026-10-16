@@ -108,7 +108,7 @@ export async function getCanvasReferences(app: App, pathOrFile: PathOrFile): Pro
 }
 
 /**
- * Makes the one change to a canvas text node's metadata that the Frontmatter Markdown Links plugin makes to a
+ * Makes the one change to a canvas text node's metadata that the `Frontmatter Markdown Links` plugin makes to a
  * note's cache, so a text node reads its links as a note with the same text would.
  *
  * Obsidian itself reads a property whose WHOLE value is one internal link, markdown links included, so the plugin

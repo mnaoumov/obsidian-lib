@@ -111,7 +111,7 @@ interface AppMock {
 
 interface CreateAppOptions {
   readonly existingData?: string;
-  // Folder Notes' own `data.json`, kept separate from `existingData` so a vault can be set up with one
+  // `Folder Notes`' own `data.json`, kept separate from `existingData` so a vault can be set up with one
   // plugin already configured and the other not.
   readonly existingFolderNotesData?: string;
   // The content of the helper's `data.json`: `null` for a vault that has none at all, a string to hand
@@ -357,7 +357,7 @@ describe('bootstrapDemoVault folder notes', () => {
     expect(enablePluginAndSave).toHaveBeenCalledWith(FOLDER_NOTES_PLUGIN_ID);
   });
 
-  // `README` rather than Folder Notes' own `{{folder_name}}` default: the same file has to be the folder's
+  // `README` rather than `Folder Notes`' own `{{folder_name}}` default: the same file has to be the folder's
   // note in Obsidian and the page GitHub renders when the vault is browsed as a repository.
   it('should point Folder Notes at README so one file serves Obsidian and GitHub', async () => {
     const { adapterWrite, app } = createApp();
@@ -375,7 +375,7 @@ describe('bootstrapDemoVault folder notes', () => {
     expect(writeInvocationOrder).toBeLessThan(enableInvocationOrder);
   });
 
-  // CodeScript Toolkit's startup script opens the start note, so it is set up first; Folder Notes only
+  // `CodeScript Toolkit`'s startup script opens the start note, so it is set up first; `Folder Notes` only
   // changes how the file explorer presents folders and has nothing to race with.
   it('should set up Folder Notes after CodeScript Toolkit', async () => {
     const { app, enablePluginAndSave } = createApp();
@@ -447,7 +447,7 @@ describe('bootstrapDemoVault sandbox notice', () => {
   });
 
   // The demonstrated plugin comes from the marker the packaging step wrote, so it survives everything
-  // the bootstrap itself installs — including CodeScript Toolkit, and anything a demo note's
+  // the bootstrap itself installs — including `CodeScript Toolkit`, and anything a demo note's
   // prerequisites add — which counting plugin folders would not.
   it('should name the plugin from the marker even once other plugins are installed', async () => {
     const { app } = createApp({ isCodeScriptToolkitEnabled: true, isCodeScriptToolkitInstalled: true });

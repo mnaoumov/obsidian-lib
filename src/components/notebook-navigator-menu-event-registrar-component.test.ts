@@ -36,7 +36,7 @@ import { NOTEBOOK_NAVIGATOR_MENU_SOURCE } from '../notebook-navigator.ts';
 import { NotebookNavigatorMenuEventRegistrarComponent } from './notebook-navigator-menu-event-registrar-component.ts';
 
 /**
- * What a fake Notebook Navigator records about the registrations it receives.
+ * What a fake `Notebook Navigator` records about the registrations it receives.
  */
 interface FakeNotebookNavigator {
   disposeCount: number;
@@ -57,7 +57,7 @@ let notebookNavigator: FakeNotebookNavigator;
 let triggerLayoutReady: () => void;
 
 /**
- * Builds an app whose plugin registry holds the given Notebook Navigator.
+ * Builds an app whose plugin registry holds the given `Notebook Navigator`.
  *
  * Not a candidate for `obsidian-test-mocks`' `registerPlugin__`, despite looking like one: this builds a
  * standalone fake rather than stubbing around `App.createConfigured__()`'s strict proxy, so there is no
@@ -65,7 +65,7 @@ let triggerLayoutReady: () => void;
  * which is the whole point of the fake — a configured `App` would bring a vault and a workspace this test
  * never exercises.
  *
- * @param shouldInstallNotebookNavigator - Whether the app has Notebook Navigator.
+ * @param shouldInstallNotebookNavigator - Whether the app has `Notebook Navigator`.
  * @returns The app.
  */
 function createApp(shouldInstallNotebookNavigator: boolean): AppOriginal {
@@ -87,7 +87,7 @@ function createApp(shouldInstallNotebookNavigator: boolean): AppOriginal {
 }
 
 /**
- * Builds a fake Notebook Navigator, recording every registration it receives.
+ * Builds a fake `Notebook Navigator`, recording every registration it receives.
  *
  * @returns The fake, plus the plugin object to install in the app.
  */
@@ -132,7 +132,7 @@ function createMockFolder(path: string): TFolderOriginal {
 /**
  * Loads the component and lets its layout-ready binding run.
  *
- * @param shouldInstallNotebookNavigator - Whether the app has Notebook Navigator.
+ * @param shouldInstallNotebookNavigator - Whether the app has `Notebook Navigator`.
  * @param shouldSupplySubmenuIcon - Whether the parent entry is given an icon.
  * @returns The loaded component.
  */
@@ -164,7 +164,7 @@ async function loadComponent(
 }
 
 /**
- * Raises a file menu on the fake Notebook Navigator.
+ * Raises a file menu on the fake `Notebook Navigator`.
  *
  * @param file - The right-clicked file.
  * @param selectedFiles - Every selected file; more than one means a multi-selection.
@@ -191,7 +191,7 @@ function raiseFileMenu(file: TFileOriginal, selectedFiles: TFileOriginal[] = [fi
 }
 
 /**
- * Raises a folder menu on the fake Notebook Navigator.
+ * Raises a folder menu on the fake `Notebook Navigator`.
  *
  * @param folder - The right-clicked folder.
  * @returns The items the component contributed, as the mocks record them.
@@ -317,7 +317,7 @@ describe('NotebookNavigatorMenuEventRegistrarComponent', () => {
 
       component.unload();
 
-      // The contributor is gone from Notebook Navigator, but invoking the captured one must also
+      // The contributor is gone from `Notebook Navigator`, but invoking the captured one must also
       // contribute nothing, so a stale reference cannot resurrect an unloaded plugin's items.
       const menu = Menu.create2__();
       const file = createMockFile('note.md');

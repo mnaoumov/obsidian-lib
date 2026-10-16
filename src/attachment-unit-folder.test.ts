@@ -33,7 +33,7 @@ beforeEach(() => {
 });
 
 /**
- * Models Custom Attachment Location publishing its designation through its plugin API.
+ * Models `Custom Attachment Location` publishing its designation through its plugin API.
  */
 function createApp(checkIsAttachmentUnitFolder?: (folderPath: string) => boolean): AppOriginal {
   if (checkIsAttachmentUnitFolder) {

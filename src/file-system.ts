@@ -973,11 +973,11 @@ export function isPathOrFile(value: unknown): value is PathOrFile {
 /**
  * Checks if the given file should be treated as an attachment because of its extension.
  *
- * Some plugins store their data in files that are markdown on disk but are not prose — Excalidraw, for example, saves each drawing as `sketch.excalidraw.md`.
+ * Some plugins store their data in files that are markdown on disk but are not prose — `Excalidraw`, for example, saves each drawing as `sketch.excalidraw.md`.
  * Obsidian reports such a file's extension as `md`, so a caller that wants to tell a drawing apart from a note has to match the full multi-part extension
  * (`.excalidraw.md`) against the file name. Which extensions count is the caller's configuration, not this library's — only the matching rule is shared.
  *
- * A drawing can also be recognized by its frontmatter, the way Excalidraw itself recognizes one (`excalidraw-plugin: parsed`), through a
+ * A drawing can also be recognized by its frontmatter, the way `Excalidraw` itself recognizes one (`excalidraw-plugin: parsed`), through a
  * `property:name[=value]` entry. That answer comes from the metadata cache, which can be cold at startup or right after the file is created, so an
  * uncached file answers "no match" and is treated as a note. That is the conservative side for every current caller: a note is not moved as an
  * attachment, and it spares its folder from a delete sweep.

@@ -70,7 +70,7 @@ function createApp(attachmentFolderPath: string, extraFiles?: Record<string, str
 }
 
 /**
- * Models Custom Attachment Location publishing its attachment-path API through the registry.
+ * Models `Custom Attachment Location` publishing its attachment-path API through the registry.
  */
 function stubCustomAttachmentLocationApi(api: Partial<Record<'getAvailablePathForAttachments' | 'isAttachmentUnitFolder', Mock>>): void {
   mockedFindPluginApi.mockReturnValue({
@@ -81,7 +81,7 @@ function stubCustomAttachmentLocationApi(api: Partial<Record<'getAvailablePathFo
 }
 
 /**
- * Models what Custom Attachment Location does: derive the attachment folder from the note's NAME.
+ * Models what `Custom Attachment Location` does: derive the attachment folder from the note's NAME.
  */
 function stubNoteNameFolder(): void {
   const getAvailablePathForAttachmentsFromApi = vi.fn((params: GetAvailablePathForAttachmentsExtendedFunctionParams): Promise<string> => {

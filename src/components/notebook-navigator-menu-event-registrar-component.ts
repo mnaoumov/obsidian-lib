@@ -1,11 +1,11 @@
 /**
  * @file
  *
- * Bridges the file and files context-menu events into Notebook Navigator's own menus.
+ * Bridges the file and files context-menu events into `Notebook Navigator`'s own menus.
  *
- * Notebook Navigator draws its own file tree and never raises Obsidian's `file-menu` / `files-menu`
+ * `Notebook Navigator` draws its own file tree and never raises Obsidian's `file-menu` / `files-menu`
  * workspace events, so a plugin's context-menu items vanish for anyone browsing through it. This
- * component is a {@link MenuEventRegistrar} backed by Notebook Navigator's extension API instead of
+ * component is a {@link MenuEventRegistrar} backed by `Notebook Navigator`'s extension API instead of
  * the workspace, so the very same handlers reach both surfaces.
  */
 
@@ -64,10 +64,10 @@ export interface NotebookNavigatorMenuEventRegistrarComponentConstructorParams {
 }
 
 /**
- * {@link MenuEventRegistrar} backed by Notebook Navigator's menu-extension API.
+ * {@link MenuEventRegistrar} backed by `Notebook Navigator`'s menu-extension API.
  *
- * Handlers registered here are collected eagerly and bound to Notebook Navigator once the workspace
- * layout is ready. When Notebook Navigator is not installed the component simply stays dormant.
+ * Handlers registered here are collected eagerly and bound to `Notebook Navigator` once the workspace
+ * layout is ready. When `Notebook Navigator` is not installed the component simply stays dormant.
  *
  * Every collected handler writes into a plugin-titled parent entry's submenu, so a handler must NOT
  * declare a section submenu of its own — `Menu.sort()` would fold that into a second, nested
@@ -89,7 +89,7 @@ export class NotebookNavigatorMenuEventRegistrarComponent extends LayoutReadyCom
   private filesMenuEventHandlers: FilesMenuEventHandler[] = [];
 
   /**
-   * Creates a new Notebook Navigator menu event registrar.
+   * Creates a new `Notebook Navigator` menu event registrar.
    *
    * @param params - The parameters for the component.
    */
@@ -102,7 +102,7 @@ export class NotebookNavigatorMenuEventRegistrarComponent extends LayoutReadyCom
   /**
    * Accepts an editor-menu registration and does nothing with it.
    *
-   * Notebook Navigator extends the file tree, not the editor — an editor menu there is Obsidian's
+   * `Notebook Navigator` extends the file tree, not the editor — an editor menu there is Obsidian's
    * own, which the handlers already reach through the workspace event. The registration is inert
    * rather than refused so a handler that declares one is not a load-time error.
    *
@@ -150,7 +150,7 @@ export class NotebookNavigatorMenuEventRegistrarComponent extends LayoutReadyCom
   /**
    * Accepts a markdown-viewport-menu registration and does nothing with it.
    *
-   * Notebook Navigator extends the file tree, not the editor — the margin beside a note's text is
+   * `Notebook Navigator` extends the file tree, not the editor — the margin beside a note's text is
    * Obsidian's own viewport, which the handlers already reach through the workspace event. The
    * registration is inert rather than refused so a handler that declares one is not a load-time error.
    *
@@ -162,7 +162,7 @@ export class NotebookNavigatorMenuEventRegistrarComponent extends LayoutReadyCom
   }
 
   /**
-   * Binds to Notebook Navigator once every plugin has loaded.
+   * Binds to `Notebook Navigator` once every plugin has loaded.
    *
    * Layout-ready rather than `onload`: plugin load order is not ours to choose, and Notebook
    * Navigator's API only exists once its own plugin is up. When it is not installed the component
@@ -186,12 +186,12 @@ export class NotebookNavigatorMenuEventRegistrarComponent extends LayoutReadyCom
   /**
    * Adds the plugin's entry, unless the handlers had nothing to contribute.
    *
-   * The menu is populated TWICE, and both runs are needed: Notebook Navigator's `addItem` cannot be
+   * The menu is populated TWICE, and both runs are needed: `Notebook Navigator`'s `addItem` cannot be
    * taken back once called, so the only way to keep an unrelated file's menu clean is to ask the
    * handlers first, against a menu nobody sees. The gates they answer with are metadata reads, so the
    * second run costs nothing and cannot disagree with the first.
    *
-   * @param context - The Notebook Navigator menu being built.
+   * @param context - The `Notebook Navigator` menu being built.
    * @param populate - Runs the collected handlers against a menu.
    */
   private contribute(context: NotebookNavigatorMenuContext, populate: (menu: Menu) => void): void {
@@ -213,7 +213,7 @@ export class NotebookNavigatorMenuEventRegistrarComponent extends LayoutReadyCom
   /**
    * Handles a file menu, single or multi-selection.
    *
-   * @param context - The Notebook Navigator menu being built.
+   * @param context - The `Notebook Navigator` menu being built.
    */
   private handleFileMenu(context: NotebookNavigatorFileMenuContext): void {
     const selectedFiles: TFile[] = [...context.selection.files];
@@ -236,7 +236,7 @@ export class NotebookNavigatorMenuEventRegistrarComponent extends LayoutReadyCom
    * carries one — the event is typed {@link TAbstractFile}, and the folder handlers are the ones that
    * narrow it.
    *
-   * @param context - The Notebook Navigator menu being built.
+   * @param context - The `Notebook Navigator` menu being built.
    */
   private handleFolderMenu(context: NotebookNavigatorFolderMenuContext): void {
     this.contribute(context, (menu: Menu): void => {

@@ -447,7 +447,7 @@ describe('PluginBase', () => {
   it('should keep the saved settings when onloadImpl replaces the placeholder settings component', async () => {
     // The placeholder `PluginSettingsComponentBase<object>` added during `onload` knows no property
     // names, so it used to load every real setting, keep none of them, and save the difference back --
-    // leaving `data.json` as `{}`. Reported as Embed HTML #15 and CodeScript Toolkit #59; whether the
+    // leaving `data.json` as `{}`. Reported as `Embed HTML` #15 and `CodeScript Toolkit` #59; whether the
     // wipe survived depended on which of the two components' saves landed last, which is why it read as
     // intermittent.
     const savedSettings = {
