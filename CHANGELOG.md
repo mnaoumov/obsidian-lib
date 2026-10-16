@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 3.4.0
+
+- build(deps): merge taking obsidian and its type packages as peer dependencies
+- fix: merge pointing the debugging guide links at this package's site
+- docs: merge linking the documentation site from the README
+
 ## 3.3.1
 
 - docs: merge publishing this package's documentation site
