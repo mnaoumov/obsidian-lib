@@ -120,6 +120,7 @@ interface MockGitHubResponse {
 }
 
 const PLUGIN_ID = 'my-plugin';
+const PLUGIN_NAME = 'My Plugin';
 const REPO = 'owner/my-plugin';
 const CURRENT_VERSION = '1.0.0';
 
@@ -127,7 +128,7 @@ function buildParams(version = CURRENT_VERSION): OpenDemoVaultParams {
   return {
     app: strictProxy<AppOriginal>({}),
     pluginId: PLUGIN_ID,
-    pluginName: 'My Plugin',
+    pluginName: PLUGIN_NAME,
     pluginNoticeComponent: strictProxy<PluginNoticeComponent>({
       showNotice: mockShowNotice,
       showNoticeAfterDelay: mockShowNoticeAfterDelay
@@ -163,6 +164,12 @@ function buildDemoVaultArchive(version: string): Buffer {
 
 function demoVaultFolderName(version: string): string {
   return `${PLUGIN_ID}-demo-vault-${version}`;
+}
+
+// The plugin name in every message this flow raises is inline code, so each is a fragment.
+function expectPluginNameAsCode(content: unknown): void {
+  expect(content).toBeInstanceOf(DocumentFragment);
+  expect((content as DocumentFragment).querySelector('code')?.textContent).toBe(PLUGIN_NAME);
 }
 
 function getOpenedVaultDirectory(): string {
@@ -245,6 +252,8 @@ describe('openDemoVault', () => {
     // Kept out of the shared slot: this flow raises ordinary notices ("not in the registry", "no demo
     // vault for this version") while the operation runs, and a slot notice would hide the progress one.
     expect(mockShowNoticeAfterDelay.mock.calls[0]?.[0]?.mode).toBe(PluginNoticeMode.Separate);
+    expectPluginNameAsCode(mockShowNoticeAfterDelay.mock.calls[0]?.[0]?.content);
+    expectPluginNameAsCode(mockSetContent.mock.calls.at(-1)?.[0]);
   });
 
   it('should open the current version directly when it is up to date', async () => {
@@ -263,7 +272,9 @@ describe('openDemoVault', () => {
   it('should show a notice and not open when the plugin is not in the registry', async () => {
     mockGetCommunityPluginRepo.mockResolvedValue(null);
     await openDemoVault(buildParams());
-    expect(mockShowNotice).toHaveBeenCalledWith(expect.stringContaining('community plugins registry'));
+    const content = mockShowNotice.mock.calls[0]?.[0] as DocumentFragment;
+    expect(content.textContent).toBe(`Could not find plugin ${PLUGIN_NAME} in the community plugins registry.`);
+    expectPluginNameAsCode(content);
     expect(mockSendSync).not.toHaveBeenCalled();
   });
 
@@ -273,6 +284,8 @@ describe('openDemoVault', () => {
     await openDemoVault(buildParams());
     expect(mockSelectOption).toHaveBeenCalledTimes(1);
     const selectOptionParams = mockSelectOption.mock.calls[0]?.[0] as SelectOptionParams<null | string>;
+    expectPluginNameAsCode(selectOptionParams.title);
+    expectPluginNameAsCode(selectOptionParams.message);
     expect(selectOptionParams.options.map((option) => option.text)).toStrictEqual([
       'Open demo vault for latest version (v2.0.0)',
       'Open demo vault for current version (v1.0.0)',
@@ -388,7 +401,9 @@ describe('openDemoVault', () => {
   it('should show a notice and not open when the archive is missing', async () => {
     setLatestReleaseVersion(CURRENT_VERSION, HTTP_STATUS_NOT_FOUND);
     await openDemoVault(buildParams());
-    expect(mockShowNotice).toHaveBeenCalledWith(expect.stringContaining('No demo vault is available'));
+    const content = mockShowNotice.mock.calls[0]?.[0] as DocumentFragment;
+    expect(content.textContent).toBe(`No demo vault is available for plugin ${PLUGIN_NAME} v${CURRENT_VERSION}.`);
+    expectPluginNameAsCode(content);
     expect(mockSendSync).not.toHaveBeenCalled();
   });
 });

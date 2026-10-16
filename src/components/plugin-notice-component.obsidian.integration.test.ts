@@ -39,6 +39,8 @@ describe('PluginNoticeComponent styling', () => {
           }
 
           const nameStyle = activeWindow.getComputedStyle(nameEl);
+          const codeEl = nameEl.querySelector('code');
+          const codeStyle = codeEl ? activeWindow.getComputedStyle(codeEl) : null;
 
           // Probe resolving the same theme variables the CSS rule uses (compare computed rgb / weight).
           const probeEl = activeDocument.body.createSpan();
@@ -52,10 +54,14 @@ describe('PluginNoticeComponent styling', () => {
           const measurement = {
             accentColor: probeStyle.color,
             boldFontWeight: probeStyle.fontWeight,
+            codeColor: codeStyle?.color ?? null,
+            codeFontFamily: codeStyle?.fontFamily ?? null,
+            codeText: codeEl?.textContent ?? null,
             defaultColor,
             hasLibClass: nameEl.classList.contains('obsidian-dev-utils'),
             hasNameClass: nameEl.classList.contains('plugin-notice-name'),
             nameColor: nameStyle.color,
+            nameFontFamily: nameStyle.fontFamily,
             nameFontWeight: nameStyle.fontWeight,
             text: nameEl.textContent
           };
@@ -81,6 +87,11 @@ describe('PluginNoticeComponent styling', () => {
     // The bold weight is actually applied (matches `--font-bold`) and is not the normal weight.
     expect(result.nameFontWeight).toBe(result.boldFontWeight);
     expect(result.nameFontWeight).not.toBe('400');
+
+    // The name itself is inline code: a monospace font distinct from the prefix's own, still in the accent color.
+    expect(result.codeText).toBe('My Test Plugin');
+    expect(result.codeFontFamily).not.toBe(result.nameFontFamily);
+    expect(result.codeColor).toBe(result.accentColor);
   });
 });
 

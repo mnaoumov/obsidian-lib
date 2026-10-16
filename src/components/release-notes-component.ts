@@ -21,6 +21,10 @@ import { compareVersions } from 'compare-versions';
 
 import type { PluginSettingsComponentBase } from './plugin-settings-component.ts';
 
+import {
+  asCodeBlock,
+  createFragmentWithCodeBlocks
+} from '../html-element.ts';
 import { t } from '../i18n/i18n.ts';
 import { alert } from '../modals/alert.ts';
 import { ComponentEx } from './component-ex.ts';
@@ -194,7 +198,7 @@ export class ReleaseNotesComponent extends ComponentEx {
     await alert({
       app: this.app,
       message,
-      title: t(($) => $.obsidianDevUtils.releaseNotes.title, { pluginName: this.pluginName })
+      title: createFragmentWithCodeBlocks(t(($) => $.obsidianDevUtils.releaseNotes.title, { pluginName: asCodeBlock(this.pluginName) }))
     });
   }
 }

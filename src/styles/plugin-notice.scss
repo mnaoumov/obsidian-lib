@@ -4,6 +4,11 @@
     display: inline-block;
     font-weight: var(--font-bold);
     margin-bottom: var(--size-4-2);
+
+    // The name is inline code; it keeps the code background and font but takes the prefix's accent color.
+    code {
+      color: inherit;
+    }
   }
 
   &.plugin-notice-content {
