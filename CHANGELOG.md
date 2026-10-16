@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 3.3.1
+
+- docs: merge publishing this package's documentation site
+- build(deps): merge taking the typescript-dev-toolkit and obsidian-dev-toolkit 2.0.0 majors
+
 ## 3.3.0
 
 - feat(plugin-api): merge building the contract on @mnaoumov/typescript-lib/api-contract
