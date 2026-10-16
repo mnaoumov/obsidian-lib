@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## 2.0.0
+
+- feat: render plugin names in notices and dialogs as inline code
+- feat!: type plugin API contracts over their APIs, with full payload schemas
+- feat!: merge finding Custom Attachment Location through its plugin API, not grafted members
+- build: drop stale workspace sibling includes from tsconfig.types.json
+- refactor: read the global app through obsidian-typings' declaration
+- feat!: merge finding Advanced Metadata Cache through its plugin API, not a grafted .safe
+
 ## 1.0.1
 
 - fix: declare LIBRARY_VERSION and LIBRARY_STYLES as string in the published types
