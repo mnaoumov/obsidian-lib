@@ -6,10 +6,6 @@
 
 import type { App } from 'obsidian';
 
-interface AppWrapper {
-  app: App;
-}
-
 /**
  * Retrieves the Obsidian `App` instance.
  *
@@ -20,8 +16,9 @@ interface AppWrapper {
  * @deprecated Usage of this function is not recommended. Pass the {@link App} instance to the function instead when possible.
  */
 export function getApp(): App {
-  // eslint-disable-next-line obsidianmd/no-global-this -- Actively use globalThis.
-  const app = (globalThis as Partial<AppWrapper>).app;
+  // `obsidian-typings` declares the global `app` as always present; it is not outside Obsidian, hence `Partial`.
+  // eslint-disable-next-line obsidianmd/no-global-this, @typescript-eslint/no-deprecated -- Actively use globalThis, and reading the deprecated global `app` is this function's whole purpose.
+  const app = (globalThis as Partial<typeof globalThis>).app;
 
   if (app) {
     return app;
