@@ -48,6 +48,7 @@ import {
   installCommunityPlugin,
   installConfigureEnableCommunityPlugin
 } from './community-plugins.ts';
+import { appendCodeBlock } from './html-element.ts';
 
 /**
  * Parameters for {@link bootstrapDemoVault}.
@@ -196,7 +197,7 @@ export async function bootstrapDemoVault(params: BootstrapDemoVaultParams): Prom
 function buildSandboxNoticeFragment(pluginName: string): DocumentFragment {
   return createFragment((fragment) => {
     fragment.appendText('This is a demo vault for ');
-    fragment.createEl('b', { text: pluginName });
+    appendCodeBlock(fragment, pluginName);
     fragment.appendText('.');
 
     fragment.createEl('br');

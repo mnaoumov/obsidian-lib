@@ -64,6 +64,10 @@ import {
   getDemoVaultArchiveFileName,
   getDemoVaultFolderName
 } from './demo-vault-naming.ts';
+import {
+  asCodeBlock,
+  createFragmentWithCodeBlocks
+} from './html-element.ts';
 import { selectOption } from './modals/select-option.ts';
 
 /**
@@ -149,14 +153,14 @@ export async function openDemoVault(params: OpenDemoVaultParams): Promise<void> 
   // the operation is still running — "not in the registry", "no demo vault for this version" — and a
   // slot notice would hide the progress notice rather than appear beside it.
   using progressNotice = pluginNoticeComponent.showNoticeAfterDelay({
-    content: `Opening demo vault for ${pluginName}…`,
+    content: createFragmentWithCodeBlocks(`Opening demo vault for ${asCodeBlock(pluginName)}…`),
     delayInMilliseconds: 0,
     mode: PluginNoticeMode.Separate
   });
 
   const repo = await getCommunityPluginRepo(pluginId);
   if (!repo) {
-    pluginNoticeComponent.showNotice(`Could not find plugin ${pluginName} in the community plugins registry.`);
+    pluginNoticeComponent.showNotice(createFragmentWithCodeBlocks(`Could not find plugin ${asCodeBlock(pluginName)} in the community plugins registry.`));
     return;
   }
 
@@ -169,7 +173,7 @@ export async function openDemoVault(params: OpenDemoVaultParams): Promise<void> 
   } else {
     const chosenVersion = await selectOption<null | string>({
       app,
-      message: `Current version of plugin ${pluginName} v${currentVersion} is not the latest (v${latestVersion})`,
+      message: createFragmentWithCodeBlocks(`Current version of plugin ${asCodeBlock(pluginName)} v${currentVersion} is not the latest (v${latestVersion})`),
       options: [
         {
           isCta: true,
@@ -185,7 +189,7 @@ export async function openDemoVault(params: OpenDemoVaultParams): Promise<void> 
           value: null
         }
       ],
-      title: pluginName
+      title: createFragmentWithCodeBlocks(asCodeBlock(pluginName))
     });
     if (chosenVersion === null) {
       return;
@@ -205,7 +209,7 @@ export async function openDemoVault(params: OpenDemoVaultParams): Promise<void> 
     return;
   }
 
-  progressNotice.setContent(`Extracting demo vault for ${pluginName} v${versionToOpen}…`);
+  progressNotice.setContent(createFragmentWithCodeBlocks(`Extracting demo vault for ${asCodeBlock(pluginName)} v${versionToOpen}…`));
   cleanupOrphanedExtractedVaults();
   const vaultDirectory = extractDemoVaultToFreshFolder({
     archive,
@@ -329,14 +333,14 @@ async function resolveDemoVaultArchive(params: ResolveDemoVaultArchiveParams): P
     return readFileSync(archivePath);
   }
 
-  progressNotice.setContent(`Downloading demo vault for ${pluginName} v${version}…`);
+  progressNotice.setContent(createFragmentWithCodeBlocks(`Downloading demo vault for ${asCodeBlock(pluginName)} v${version}…`));
   const assetUrl = `https://github.com/${repo}/releases/download/${version}/${getDemoVaultArchiveFileName(pluginId)}`;
   const response = await requestUrl({
     throw: false,
     url: assetUrl
   });
   if (response.status !== HTTP_STATUS_OK) {
-    pluginNoticeComponent.showNotice(`No demo vault is available for plugin ${pluginName} v${version}.`);
+    pluginNoticeComponent.showNotice(createFragmentWithCodeBlocks(`No demo vault is available for plugin ${asCodeBlock(pluginName)} v${version}.`));
     return null;
   }
 

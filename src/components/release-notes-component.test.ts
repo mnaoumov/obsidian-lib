@@ -154,7 +154,9 @@ describe('ReleaseNotesComponent', () => {
 
     expect(mockAlert).toHaveBeenCalledOnce();
     const params = getAlertParams();
-    expect(params.title).toBe(`${PLUGIN_NAME} release notes`);
+    const title = params.title as DocumentFragment;
+    expect(title.textContent).toBe(`${PLUGIN_NAME} release notes`);
+    expect(title.querySelector('code')?.textContent).toBe(PLUGIN_NAME);
     expect(getHeadings(params)).toEqual(['1.0.0', '2.0.0']);
     expect(context.getShownVersions()).toEqual(['1.0.0', '2.0.0']);
   });

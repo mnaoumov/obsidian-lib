@@ -123,6 +123,7 @@ describe('PluginNoticeComponent', () => {
     expect(nameEl?.textContent).toBe('My Plugin');
     expect(nameEl?.classList.contains(CssClass.LibraryName)).toBe(true);
     expect(nameEl?.classList.contains(CssClass.PluginNoticeName)).toBe(true);
+    expect(nameEl?.querySelector('code')?.textContent).toBe('My Plugin');
   });
 
   it('should wrap the notice content in a container carrying the plugin-notice-content class', () => {

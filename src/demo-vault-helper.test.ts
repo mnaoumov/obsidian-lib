@@ -416,6 +416,14 @@ describe('bootstrapDemoVault sandbox notice', () => {
     expect(noticeText).toContain(`${DEMOED_PLUGIN_NAME}: Open demo vault`);
   });
 
+  it('should render the demonstrated plugin name as code', async () => {
+    const { app } = createApp();
+    await bootstrapDemoVault({ app });
+    const message = mockNotice.mock.calls.at(-1)?.[0];
+    expect(message).toBeInstanceOf(DocumentFragment);
+    expect((message as DocumentFragment).querySelector('code')?.textContent).toBe(DEMOED_PLUGIN_NAME);
+  });
+
   it('should stay until the user clicks it', async () => {
     const { app } = createApp();
     await bootstrapDemoVault({ app });

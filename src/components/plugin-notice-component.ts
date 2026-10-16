@@ -20,6 +20,7 @@ import {
 } from 'obsidian';
 
 import { CssClass } from '../css-class.ts';
+import { appendCodeBlock } from '../html-element.ts';
 import { t } from '../i18n/i18n.ts';
 import { getObsidianDevUtilsState } from '../obsidian-dev-utils-state.ts';
 import { addPluginCssClasses } from '../plugin/plugin-context.ts';
@@ -725,12 +726,16 @@ export class PluginNoticeComponent extends ComponentEx {
    * Builds the notice content, prefixing the message with the plugin name in a styled element so it is
    * visually distinguished from the message body.
    *
+   * The name is rendered as inline code, the way every plugin name in the UI is, inside a span that keeps
+   * the prefix's own layout and accent color.
+   *
    * @param message - The message to display after the plugin name prefix.
    * @returns A {@link DocumentFragment} with the styled plugin name prefix followed by the message.
    */
   private buildPrefixedMessage(message: DocumentFragment | string): DocumentFragment {
     const fragment = createFragment();
-    const nameEl = createSpan({ text: this.pluginName });
+    const nameEl = createSpan();
+    appendCodeBlock(nameEl, this.pluginName);
     addPluginCssClasses(nameEl, CssClass.PluginNoticeName);
     fragment.append(nameEl);
     if (!this._loaded) {
