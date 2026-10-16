@@ -1,16 +1,16 @@
 /**
  * @file
  *
- * The slice of Notebook Navigator's public API this library talks to, and the runtime narrowing that
+ * The slice of `Notebook Navigator`'s public API this library talks to, and the runtime narrowing that
  * gets hold of it.
  *
- * **Notebook Navigator draws its own file tree, so it never raises Obsidian's `file-menu` /
+ * **`Notebook Navigator` draws its own file tree, so it never raises Obsidian's `file-menu` /
  * `files-menu` workspace events** — which is why a plugin's context-menu items simply disappear for
  * anyone browsing through it. What it offers instead is a documented extension API
  * (`docs/api-reference.md` + `src/api/public/notebook-navigator.d.ts` in `johansan/notebook-navigator`,
  * API 2.0.0), reachable at runtime as `app.plugins.getPlugin('notebook-navigator').api`.
  *
- * The types below are DECLARED HERE rather than imported: Notebook Navigator ships its `.d.ts` for
+ * The types below are DECLARED HERE rather than imported: `Notebook Navigator` ships its `.d.ts` for
  * download, not as an npm package, and depending on it would turn an optional integration into a
  * build-time dependency. They are deliberately the narrowest shape this library uses — the API also
  * carries `metadata`, `navigation`, `selection`, `tagCollections`, `propertyNodes` and an event bus,
@@ -25,7 +25,7 @@ import type {
 } from 'obsidian';
 
 /**
- * Notebook Navigator's public API object, narrowed to what this library uses.
+ * `Notebook Navigator`'s public API object, narrowed to what this library uses.
  */
 export interface NotebookNavigatorApi {
   /**
@@ -84,14 +84,14 @@ export interface NotebookNavigatorFolderMenuContext extends NotebookNavigatorMen
 }
 
 /**
- * What every Notebook Navigator menu context has in common: a way to add an item, and nothing else.
+ * What every `Notebook Navigator` menu context has in common: a way to add an item, and nothing else.
  *
  * The absence of a `Menu` is the whole shape of the integration problem — command handlers write into
  * a `Menu`, so something has to sit between them and this.
  */
 export interface NotebookNavigatorMenuContext {
   /**
-   * Adds an item to the menu Notebook Navigator is building.
+   * Adds an item to the menu `Notebook Navigator` is building.
    *
    * @param callback - Receives the created item, to be configured in place.
    */
@@ -99,13 +99,13 @@ export interface NotebookNavigatorMenuContext {
 }
 
 /**
- * Unregisters a menu extension. Notebook Navigator returns a bare function rather than a disposable,
+ * Unregisters a menu extension. `Notebook Navigator` returns a bare function rather than a disposable,
  * so it is registered with the bridging component's `register`.
  */
 export type NotebookNavigatorMenuDispose = () => void;
 
 /**
- * The `menus` namespace of Notebook Navigator's API.
+ * The `menus` namespace of `Notebook Navigator`'s API.
  *
  * Only the file and folder registrars are declared: the tag and property registrars extend menus
  * raised on things a file/folder command handler has no counterpart for.
@@ -129,7 +129,7 @@ export interface NotebookNavigatorMenus {
 }
 
 /**
- * The `source` handed to the menu event handlers for a Notebook Navigator menu.
+ * The `source` handed to the menu event handlers for a `Notebook Navigator` menu.
  *
  * Obsidian's own File Explorer sends `file-explorer-context-menu`; nothing in this library gates on
  * the value, but the handlers are contracted to receive one, and a distinct string is what makes a
@@ -138,15 +138,15 @@ export interface NotebookNavigatorMenus {
 export const NOTEBOOK_NAVIGATOR_MENU_SOURCE = 'notebook-navigator-context-menu';
 
 /**
- * Notebook Navigator's plugin id, as its manifest declares it.
+ * `Notebook Navigator`'s plugin id, as its manifest declares it.
  */
 export const NOTEBOOK_NAVIGATOR_PLUGIN_ID = 'notebook-navigator';
 
 /**
- * Gets Notebook Navigator's API, when it is installed, enabled and new enough.
+ * Gets `Notebook Navigator`'s API, when it is installed, enabled and new enough.
  *
  * @param app - The application instance.
- * @returns The API, or `null` when Notebook Navigator is not there to talk to.
+ * @returns The API, or `null` when `Notebook Navigator` is not there to talk to.
  */
 export function resolveNotebookNavigatorApi(app: App): NotebookNavigatorApi | null {
   const plugin = app.plugins.getPlugin(NOTEBOOK_NAVIGATOR_PLUGIN_ID);
@@ -159,10 +159,10 @@ export function resolveNotebookNavigatorApi(app: App): NotebookNavigatorApi | nu
 }
 
 /**
- * Checks that a value is Notebook Navigator's API, by the members this library actually calls.
+ * Checks that a value is `Notebook Navigator`'s API, by the members this library actually calls.
  *
  * A predicate rather than a cast on purpose: `api` is not part of Obsidian's `Plugin` type, so the
- * value arrives as `unknown` and the only honest way to type it is to VERIFY it. A Notebook Navigator
+ * value arrives as `unknown` and the only honest way to type it is to VERIFY it. A `Notebook Navigator`
  * old enough to predate the menus namespace, or a future one that renames it, therefore reads as
  * "no API" and the integration stays dormant instead of throwing at menu time.
  *

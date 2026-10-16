@@ -1,27 +1,27 @@
 /**
  * @file
  *
- * Bootstraps a demo vault by installing, configuring, and enabling CodeScript Toolkit.
+ * Bootstraps a demo vault by installing, configuring, and enabling `CodeScript Toolkit`.
  *
  * A plugin's demo vault showcases the plugin through notes whose `code-button`s run TypeScript via
- * CodeScript Toolkit. A demo vault that does not itself ship CodeScript Toolkit therefore needs it
+ * `CodeScript Toolkit`. A demo vault that does not itself ship `CodeScript Toolkit` therefore needs it
  * installed, configured, and enabled before those buttons work. {@link bootstrapDemoVault} does exactly
- * that with no committed CodeScript Toolkit config and no manual setup, so it can be driven from a tiny
+ * that with no committed `CodeScript Toolkit` config and no manual setup, so it can be driven from a tiny
  * committed bootstrap plugin (`demo-vault-helper`) that is injected into every demo vault at release
  * time.
  *
  * The plugin the vault demonstrates is read from the helper's own `data.json`, written by the packaging
  * step ({@link DemoVaultHelperSettings}); a vault without that marker is refused as not a demo vault.
  *
- * It writes CodeScript Toolkit's settings BEFORE enabling it, so the plugin loads already configured —
- * no reload. CodeScript Toolkit then runs the vault's `startup.ts` (via its `startupScriptPath`
+ * It writes `CodeScript Toolkit`'s settings BEFORE enabling it, so the plugin loads already configured —
+ * no reload. `CodeScript Toolkit` then runs the vault's `startup.ts` (via its `startupScriptPath`
  * setting), which is where each vault opens its start note and does any plugin-specific setup.
  *
- * It also creates CodeScript Toolkit's invocable-scripts folder if it is missing, so every demo vault
+ * It also creates `CodeScript Toolkit`'s invocable-scripts folder if it is missing, so every demo vault
  * has the same layout even when the vault ships no invocable scripts — the vaults themselves commit no
  * empty folder for it.
  *
- * It then installs the Folder Notes plugin, configured to treat `README.md` as a folder's own note. A
+ * It then installs the `Folder Notes` plugin, configured to treat `README.md` as a folder's own note. A
  * demo vault that has outgrown a flat note list groups its notes into folders, and a group folder only
  * says what it is for if it has a note of its own — `README.md`, because that is also the file GitHub
  * renders under the file list when the same vault is browsed as a repository, so one file serves both
@@ -61,7 +61,7 @@ export interface BootstrapDemoVaultParams {
 }
 
 /**
- * CodeScript Toolkit's settings, written into its `data.json` before it is enabled.
+ * `CodeScript Toolkit`'s settings, written into its `data.json` before it is enabled.
  */
 interface CodeScriptToolkitSettings {
   /**
@@ -81,7 +81,7 @@ interface CodeScriptToolkitSettings {
   readonly modulesRoot: string;
 
   /**
-   * Whether CodeScript Toolkit handles `obsidian://` protocol URLs.
+   * Whether `CodeScript Toolkit` handles `obsidian://` protocol URLs.
    */
   readonly shouldHandleProtocolUrls: boolean;
 
@@ -92,7 +92,7 @@ interface CodeScriptToolkitSettings {
 }
 
 /**
- * Folder Notes' settings, written into its `data.json` before it is enabled.
+ * `Folder Notes`' settings, written into its `data.json` before it is enabled.
  */
 interface FolderNotesSettings {
   /**
@@ -122,7 +122,7 @@ const CODE_SCRIPT_TOOLKIT_SETTINGS: CodeScriptToolkitSettings = {
 };
 
 const FOLDER_NOTES_PLUGIN_ID = 'folder-notes';
-// `README` rather than Folder Notes' own `{{folder_name}}` default: the same file has to be the folder's
+// `README` rather than `Folder Notes`' own `{{folder_name}}` default: the same file has to be the folder's
 // note in Obsidian AND the page GitHub renders when the vault is browsed as a repository, and GitHub
 // only does that for `README.md`. `insideFolder` keeps it with the notes it describes rather than beside
 // the folder, and hiding it lets the folder itself stand for the note instead of listing both.
@@ -145,16 +145,16 @@ const SANDBOX_NOTICE_DURATION_IN_MILLISECONDS = 0;
  * Bootstraps a demo vault so its notes' `code-button`s work with no manual setup: installs CodeScript
  * Toolkit from the community store (if it is not already installed), writes its settings, then enables
  * it — writing the settings BEFORE enabling so a fresh enable loads it already configured, with no
- * reload. If CodeScript Toolkit is already enabled but the settings just changed, it is reloaded
+ * reload. If `CodeScript Toolkit` is already enabled but the settings just changed, it is reloaded
  * (disabled then enabled) so it re-reads `data.json`; when the settings were already in place, nothing is
- * reloaded (so a routine vault re-open does not re-run CodeScript Toolkit's startup). CodeScript Toolkit
- * then runs the vault's `startup.ts`. Folder Notes is installed next, configured to treat `README.md` as
+ * reloaded (so a routine vault re-open does not re-run `CodeScript Toolkit`'s startup). `CodeScript Toolkit`
+ * then runs the vault's `startup.ts`. `Folder Notes` is installed next, configured to treat `README.md` as
  * a folder's own note, so a vault whose notes are grouped into folders describes each group in the file
  * explorer. Finally it closes Settings (so the notice cannot be raised inside the settings popout) and
  * raises the sandbox notice describing the opened vault as a throwaway copy.
  *
  * @param params - The {@link BootstrapDemoVaultParams}.
- * @returns A {@link Promise} that resolves once CodeScript Toolkit is installed, configured, and enabled
+ * @returns A {@link Promise} that resolves once `CodeScript Toolkit` is installed, configured, and enabled
  * and the sandbox notice has been shown.
  */
 export async function bootstrapDemoVault(params: BootstrapDemoVaultParams): Promise<void> {
@@ -172,12 +172,12 @@ export async function bootstrapDemoVault(params: BootstrapDemoVaultParams): Prom
   if (!app.plugins.enabledPlugins.has(CODE_SCRIPT_TOOLKIT_PLUGIN_ID)) {
     await enableCommunityPlugin({ app, pluginId: CODE_SCRIPT_TOOLKIT_PLUGIN_ID });
   } else if (result === ConfigureCommunityPluginResult.Success) {
-    // Already enabled with stale settings — reload so CodeScript Toolkit re-reads the freshly written data.json.
+    // Already enabled with stale settings — reload so `CodeScript Toolkit` re-reads the freshly written data.json.
     await disableCommunityPlugin({ app, pluginId: CODE_SCRIPT_TOOLKIT_PLUGIN_ID });
     await enableCommunityPlugin({ app, pluginId: CODE_SCRIPT_TOOLKIT_PLUGIN_ID });
   }
 
-  // After CodeScript Toolkit, so the vault's startup script has already opened the start note by the time
+  // After `CodeScript Toolkit`, so the vault's startup script has already opened the start note by the time
   // the file explorer gains its folder-note behavior.
   await installConfigureEnableCommunityPlugin({
     app,
@@ -210,8 +210,8 @@ function buildSandboxNoticeFragment(pluginName: string): DocumentFragment {
   });
 }
 
-// Creates CodeScript Toolkit's invocable-scripts folder (under `modulesRoot`) if it is missing.
-// Every demo vault then has the same CodeScript Toolkit layout even when it ships no invocable scripts.
+// Creates `CodeScript Toolkit`'s invocable-scripts folder (under `modulesRoot`) if it is missing.
+// Every demo vault then has the same `CodeScript Toolkit` layout even when it ships no invocable scripts.
 // The committed vault therefore carries no otherwise-empty placeholder folder.
 async function ensureInvocableScriptsFolder(app: App): Promise<void> {
   const invocableScriptsFolderPath = join(CODE_SCRIPT_TOOLKIT_MODULES_ROOT, CODE_SCRIPT_TOOLKIT_SETTINGS.invocableScriptsFolder);
@@ -246,7 +246,7 @@ async function getDemoedPluginId(app: App): Promise<string> {
 
 // Tells the user this vault is a sandbox, using Obsidian's own sandbox-vault treatment: an infinite
 // duration, dismissed by clicking it. Raised last, so it is the newest notice on screen once
-// CodeScript Toolkit's startup script has done its own work.
+// `CodeScript Toolkit`'s startup script has done its own work.
 //
 // A `Notice` is built inside whatever window is active at that moment, and Settings is a POPOUT WINDOW
 // (verified on 1.13.6) that becomes the active one while it is open — so a notice raised then would be

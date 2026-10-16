@@ -186,7 +186,7 @@ export function findNoPriorityWinnerReason(params: FindNoPriorityWinnerReasonPar
  *   path settings.
  *
  * When a note matches several entries the **longest** one decides its rank, so the most specific
- * entry wins and the order of the list is left to express priority. Without this an Excalidraw note
+ * entry wins and the order of the list is left to express priority. Without this an `Excalidraw` note
  * could never rank below a plain markdown one: `drawing.excalidraw.md` also ends with `.md`, so
  * `.md` above `.excalidraw.md` — the very example the request is built on — would tie instead of
  * resolving. Equal-length matches fall to the earlier entry.

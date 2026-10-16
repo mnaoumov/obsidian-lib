@@ -4,14 +4,14 @@
  * Vitest global setup for the `demo-vault-helper` bootstrap integration test.
  *
  * Builds the committed `demo-vault-helper` plugin, materializes a throwaway demo vault holding the
- * CodeScript Toolkit startup + probe scripts and a start note, seeds the helper's built binaries via
+ * `CodeScript Toolkit` startup + probe scripts and a start note, seeds the helper's built binaries via
  * {@link buildDemoVaultPopulate}, then runs `createSetup({ installPlugin: false, enableCommunityPlugins })`
  * to register the vault and enable the helper through the harness's retry/load-verify path — there is no
  * plugin-under-test, this vault is dedicated to exercising the helper's bootstrap in isolation (rather than
  * polluting the shared harness vault the other `*.obsidian.integration.test.ts` files use).
  *
  * The companion test (`src/obsidian/demo-vault-helper.obsidian.integration.test.ts`) polls from a worker and
- * asserts the helper installed + configured + enabled CodeScript Toolkit, ran its `startup.ts`, opened the
+ * asserts the helper installed + configured + enabled `CodeScript Toolkit`, ran its `startup.ts`, opened the
  * start note, and resolved a probe module — all with no manual reload.
  */
 
@@ -40,7 +40,7 @@ const DEMOED_PLUGIN_ID = 'my-demo-plugin';
 const DEMOED_PLUGIN_NAME = 'My Demo Plugin';
 const START_NOTE_PATH = '00 Start.md';
 const MODULES_ROOT = '_assets/CodeScriptToolkit';
-// CodeScript Toolkit resolves a single leading `/` against `modulesRoot`, so `/probe.ts` is `<modulesRoot>/probe.ts`.
+// `CodeScript Toolkit` resolves a single leading `/` against `modulesRoot`, so `/probe.ts` is `<modulesRoot>/probe.ts`.
 const PROBE_MODULE_PATH = '/probe.ts';
 
 const DIST_HELPER_DIR = join(import.meta.dirname, '../node_modules/@mnaoumov/obsidian-dev-toolkit/dist/demo-vault-helper');
@@ -66,7 +66,7 @@ const DEMOED_PLUGIN_MANIFEST = `${
   )
 }\n`;
 
-// The CodeScript Toolkit startup script (run once that plugin loads via `startupScriptPath`): opens the start note and resolves a module under `modulesRoot` via its `require`, proving the plugin loaded already configured with no reload. Runs inside that plugin, so it uses plain runtime `require` (not linted here).
+// The `CodeScript Toolkit` startup script (run once that plugin loads via `startupScriptPath`): opens the start note and resolves a module under `modulesRoot` via its `require`, proving the plugin loaded already configured with no reload. Runs inside that plugin, so it uses plain runtime `require` (not linted here).
 const STARTUP_SCRIPT = `
 export async function invoke(app) {
   const startNote = app.vault.getFileByPath('${START_NOTE_PATH}');
@@ -124,8 +124,8 @@ export async function teardown(): Promise<void> {
 
 /**
  * Builds the populate map (invoked once, during setup): materializes a throwaway demo vault holding the start
- * note plus the CodeScript Toolkit probe + startup scripts, then composes it with {@link buildDemoVaultPopulate},
- * injecting the built `demo-vault-helper` binaries. No CodeScript Toolkit config is seeded — the helper writes
+ * note plus the `CodeScript Toolkit` probe + startup scripts, then composes it with {@link buildDemoVaultPopulate},
+ * injecting the built `demo-vault-helper` binaries. No `CodeScript Toolkit` config is seeded — the helper writes
  * it at runtime.
  *
  * @returns The populate map for the temp vault.

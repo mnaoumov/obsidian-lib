@@ -480,7 +480,7 @@ describe('resource-lock', () => {
           const steps: SwapStep[] = [];
           let isCoveredAfterRelease: boolean;
           try {
-            // Advanced Note Composer's `swapFolder`, verbatim: both folders trade names first, then their files trade places through a staging folder.
+            // `Advanced Note Composer`'s `swapFolder`, verbatim: both folders trade names first, then their files trade places through a staging folder.
             await renameStep(`${root}/A/B`, `${root}/A/A`);
             await renameStep(`${root}/A`, `${root}/B`);
             await renameStep(`${root}/B/A/Overview.md`, `${temporaryFolderPath}/Overview.md`);

@@ -36,7 +36,7 @@ const SANDBOX_NOTICE_MARKER = 'temporary sandbox';
 
 // The bootstrap progress snapshot the poll closure returns each attempt: `startupRan` + `codeScriptToolkitEnabled` +
 // `sandboxNoticeText` are the acceptance signal; the rest are asserted on success and reported on a flake
-// (the CodeScript Toolkit store install is network-dependent, so a timeout shows how far the bootstrap got instead of a
+// (the `CodeScript Toolkit` store install is network-dependent, so a timeout shows how far the bootstrap got instead of a
 // bare `false`).
 interface BootstrapStatus {
   readonly activeFilePath: null | string;
@@ -72,9 +72,9 @@ describe('demo-vault-helper bootstrap', () => {
   // `scripts/demo-vault-helper-global-setup.ts`. That global setup seeds the vault with the committed helper
   // plus the probe/startup scripts + start note, and enables the helper via the harness's
   // `enableCommunityPlugins` path, which kicks off the helper's on-layout-ready bootstrap that installs
-  // CodeScript Toolkit from the store.
+  // `CodeScript Toolkit` from the store.
   //
-  // NOTE: CodeScript Toolkit is installed FROM THE STORE and bundles its own copy of obsidian-dev-utils, so the
+  // NOTE: `CodeScript Toolkit` is installed FROM THE STORE and bundles its own copy of obsidian-dev-utils, so the
   // `startupRan`/`probeValue`/`activeFilePath` assertions (it runs its startup script when enabled AFTER
   // layout-ready — the `LayoutReadyComponent` load-vs-execute race fixed in this repo) only pass once the
   // store serves a release of it built against the fixed dev-utils (13.4.1+).
@@ -123,7 +123,7 @@ describe('demo-vault-helper bootstrap', () => {
         until(pollResult: BootstrapStatus): boolean {
           lastStatus = pollResult;
           // The sandbox notice is required in the SAME sample as `startupRan`: that is what proves it
-          // survived CodeScript Toolkit's startup script opening the start note, rather than being
+          // survived `CodeScript Toolkit`'s startup script opening the start note, rather than being
           // replaced or dismissed by it.
           return pollResult.startupRan && pollResult.codeScriptToolkitEnabled && pollResult.folderNotesEnabled && pollResult.sandboxNoticeText !== '';
         },
@@ -139,7 +139,7 @@ describe('demo-vault-helper bootstrap', () => {
     expect(status.dataJson).toContain('startupScriptPath');
     expect(status.activeFilePath).toBe(START_NOTE_PATH);
     expect(status.probeValue).toBe('ok');
-    // Folder Notes comes from the same store install path as CodeScript Toolkit, pointed at `README` so a
+    // `Folder Notes` comes from the same store install path as `CodeScript Toolkit`, pointed at `README` so a
     // grouped vault's folders describe themselves in the file explorer and on GitHub alike.
     expect(status.folderNotesInstalled).toBe(true);
     expect(status.folderNotesEnabled).toBe(true);
@@ -210,7 +210,7 @@ describe('demo-vault-helper bootstrap', () => {
   // has that popout, so this cannot be a unit test.
   //
   // Runs last, and re-triggers the bootstrap by reloading the helper plugin — which is only possible
-  // because the demonstrated plugin is read from the helper's marker: CodeScript Toolkit is installed by
+  // because the demonstrated plugin is read from the helper's marker: `CodeScript Toolkit` is installed by
   // now, and counting plugin folders would make this second run ambiguous.
   it('should close the settings window before raising the sandbox notice', async () => {
     const vaultPath = getTemporaryVault().path;

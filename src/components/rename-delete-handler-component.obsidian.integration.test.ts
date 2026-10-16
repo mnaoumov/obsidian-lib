@@ -235,7 +235,7 @@ describe('rename-delete-handler', () => {
             app,
             pluginNoticeComponent,
             resourceLockComponent: null,
-            // The Custom Attachment Location configuration from issue #146: move attachments with the note, do not update links.
+            // The `Custom Attachment Location` configuration from issue #146: move attachments with the note, do not update links.
             settingsBuilder: (): Partial<RenameDeleteHandlerSettings> => ({
               isNote: (path: string): boolean => path.endsWith('.md'),
               shouldHandleRenames: false,
@@ -244,7 +244,7 @@ describe('rename-delete-handler', () => {
           });
           handlerComponent.load();
 
-          // A foreign plugin (mirroring Advanced Note Composer's folder merge) that holds a subtree lock over the source folder for the duration of its own rename. A plain subtree lock is enough: the fix keys off the subtree lock's presence, independent of whether it also blocks mutations. The component's unload releases every lock it holds.
+          // A foreign plugin (mirroring `Advanced Note Composer`'s folder merge) that holds a subtree lock over the source folder for the duration of its own rename. A plain subtree lock is enough: the fix keys off the subtree lock's presence, independent of whether it also blocks mutations. The component's unload releases every lock it holds.
           const foreignResourceLockComponent = new ResourceLockComponent(app, FOREIGN_PLUGIN_ID);
           foreignResourceLockComponent.load();
 

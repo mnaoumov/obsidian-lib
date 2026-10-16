@@ -133,7 +133,7 @@ export interface GetAvailablePathForAttachmentsExtendedFunctionParams {
 }
 
 /**
- * The slice of Custom Attachment Location's registry API this module calls, declared here rather than imported:
+ * The slice of `Custom Attachment Location`'s registry API this module calls, declared here rather than imported:
  * that plugin ships its surface as a hand-written `api.d.ts`, not as a package (see rule L9 in `AGENTS.md`).
  */
 interface CustomAttachmentLocationAttachmentPathApi {
@@ -166,18 +166,18 @@ interface CustomAttachmentLocationIsAttachmentUnitFolderParams {
 }
 
 /**
- * The plugin id Custom Attachment Location publishes its API under.
+ * The plugin id `Custom Attachment Location` publishes its API under.
  */
 export const CUSTOM_ATTACHMENT_LOCATION_PLUGIN_ID = 'obsidian-custom-attachment-location';
 
 /**
- * The contract versions of Custom Attachment Location's API this module compiled against. `1.3.0` is the first
+ * The contract versions of `Custom Attachment Location`'s API this module compiled against. `1.3.0` is the first
  * to carry the two attachment-path methods.
  */
 const CUSTOM_ATTACHMENT_LOCATION_ATTACHMENT_PATH_API_VERSION_RANGE = '^1.3.0';
 
 /**
- * The contract of the members of Custom Attachment Location's API this module calls, so a record that lacks
+ * The contract of the members of `Custom Attachment Location`'s API this module calls, so a record that lacks
  * either is passed over, and a payload that breaks its signature is reported while the `PluginApi` debugger is on.
  */
 const CUSTOM_ATTACHMENT_LOCATION_ATTACHMENT_PATH_API_CONTRACT: PluginApiContract<CustomAttachmentLocationAttachmentPathApi> = {
@@ -523,7 +523,7 @@ export async function getAttachmentFolderPath(params: GetAttachmentFolderPathPar
  * caller deciding whether to merely *offer* a command cannot await {@link getAttachmentFolderPath}. This is
  * the synchronous twin such a caller can use instead.
  *
- * The answer is `null` when it is not knowable synchronously — that is, when Custom Attachment Location publishes
+ * The answer is `null` when it is not knowable synchronously — that is, when `Custom Attachment Location` publishes
  * its attachment-path API and therefore owns the resolution, which is genuinely asynchronous. `null` means "ask {@link getAttachmentFolderPath}", never "there is no attachment
  * folder". Otherwise the answer is exact rather than a guess: it is produced by the very same code
  * {@link getAttachmentFolderPath} runs, whose only asynchronous step — creating a missing attachment folder —
@@ -575,7 +575,7 @@ export async function getAvailablePathForAttachments(params: GetAvailablePathFor
 }
 
 /**
- * Reads the attachment-unit-folder designation Custom Attachment Location publishes through its plugin API.
+ * Reads the attachment-unit-folder designation `Custom Attachment Location` publishes through its plugin API.
  *
  * The designation is one plugin's setting but every relocating plugin's business, so it is read from the same
  * API that answers the attachment path itself. Reading it here rather than having each caller look for the
@@ -607,7 +607,7 @@ export function getCheckIsAttachmentUnitFolderFunction(_app: App): ((folderPath:
  * would get: they differ only when the folder depends on the note's NAME. Every built-in
  * `attachmentFolderPath` mode — the vault root, a fixed folder, the note's own folder (`./`), a subfolder of
  * the note's folder (`./sub`) — is shared by every note in that folder, so it answers `false`; `true` arises
- * from Custom Attachment Location's resolver deriving the folder from the note's name.
+ * from `Custom Attachment Location`'s resolver deriving the folder from the note's name.
  *
  * This is the distinction a caller needs before sweeping an attachment folder wholesale: only a
  * note-specific folder can be treated as belonging to the note.
@@ -700,7 +700,7 @@ export async function isAtProperAttachmentPath(params: IsAtProperAttachmentPathP
 }
 
 /**
- * Finds Custom Attachment Location's attachment-path API in the plugin API registry. Its presence is the
+ * Finds `Custom Attachment Location`'s attachment-path API in the plugin API registry. Its presence is the
  * synchronous probe for "somebody else owns the resolution".
  *
  * @returns The API, or `null` when that plugin publishes no record satisfying the range and contract.
@@ -714,7 +714,7 @@ function findCustomAttachmentLocationApi(): CustomAttachmentLocationAttachmentPa
 }
 
 /**
- * The synchronous core of {@link getAttachmentFilePath}, reached when Custom Attachment Location publishes no
+ * The synchronous core of {@link getAttachmentFilePath}, reached when `Custom Attachment Location` publishes no
  * attachment-path API.
  *
  * @param params - Parameters for the get attachment file path sync function.

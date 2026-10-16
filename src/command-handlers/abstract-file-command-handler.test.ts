@@ -316,7 +316,7 @@ describe('AbstractFileCommandHandler', () => {
       }));
       handler.shouldAddToMenuFunction.mockReturnValue(true);
       const { context, fileMenuHandlers } = createMockContext();
-      // A surface that wraps everything in a parent entry of its own, e.g. Notebook Navigator's menus.
+      // A surface that wraps everything in a parent entry of its own, e.g. `Notebook Navigator`'s menus.
       await handler.onRegistered({
         ...context,
         shouldAddCommandToSubmenu: false

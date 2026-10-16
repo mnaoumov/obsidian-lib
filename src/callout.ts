@@ -1,7 +1,7 @@
 /**
  * @file
  *
- * This module provides utility functions for rendering callouts in Dataview.
+ * This module provides utility functions for rendering callouts in `Dataview`.
  */
 
 import type { MaybeReturn } from '@mnaoumov/typescript-lib/type';
@@ -85,7 +85,7 @@ export interface RenderCalloutParams {
 }
 
 /**
- * Renders a callout block in Dataview.
+ * Renders a callout block in `Dataview`.
  *
  * @param params - The parameters for rendering the callout.
  */

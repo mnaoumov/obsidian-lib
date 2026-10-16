@@ -3,7 +3,7 @@
  *
  * Integration tests for backlink-related functionality.
  * Tests the underlying metadata cache backlinks mechanism used by `backlink.ts`.
- * The full `renderBacklinksTable` requires Dataview, so we test the backlinks
+ * The full `renderBacklinksTable` requires `Dataview`, so we test the backlinks
  * retrieval layer directly.
  */
 

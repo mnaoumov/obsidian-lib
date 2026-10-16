@@ -355,7 +355,7 @@ export abstract class PluginBase extends mixinAsyncEvents<PluginEventMap>()(Plug
       this.abortSignalComponent = this.addUniversalChild(new AbortSignalComponent(this.manifest.id));
       this.consoleDebugComponent = this.addUniversalChild(new ConsoleDebugComponent(this.manifest.id));
       this.resourceLockComponent = this.addUniversalChild(new ResourceLockComponent(this.app, this.manifest.id));
-      // Notebook Navigator draws its own file tree and never raises Obsidian's `file-menu` /
+      // `Notebook Navigator` draws its own file tree and never raises Obsidian's `file-menu` /
       // `files-menu` events, so every plugin's context-menu items would vanish for anyone browsing
       // through it. Wired here rather than per-plugin: the bridge stays dormant when Notebook
       // Navigator is not installed, and a plugin with no file/folder handlers contributes nothing.
@@ -477,7 +477,7 @@ export abstract class PluginBase extends mixinAsyncEvents<PluginEventMap>()(Plug
   }
 
   /**
-   * Provides the icon shown on the plugin's parent entry in Notebook Navigator's context menus.
+   * Provides the icon shown on the plugin's parent entry in `Notebook Navigator`'s context menus.
    *
    * Override in subclass to brand that entry; the default leaves it without an icon. The entry is
    * titled with the plugin name and is added automatically — see

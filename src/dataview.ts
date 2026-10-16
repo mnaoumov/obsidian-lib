@@ -1,7 +1,7 @@
 /**
  * @file
  *
- * This module provides utility functions for working with Dataview in Obsidian.
+ * This module provides utility functions for working with `Dataview` in Obsidian.
  */
 
 import type {
@@ -27,7 +27,7 @@ import { t } from './i18n/i18n.ts';
 import { relativePathToResourceUrl } from './resource-url.ts';
 
 /**
- * Export DateTime and Link types from the Dataview API.
+ * Export DateTime and Link types from the `Dataview` API.
  */
 export type {
   DateTime,
@@ -36,14 +36,14 @@ export type {
 
 declare global {
   /**
-   * A {@link DataviewApi} object represents the API for interacting with Dataview in Obsidian.
+   * A {@link DataviewApi} object represents the API for interacting with `Dataview` in Obsidian.
    */
   // eslint-disable-next-line vars-on-top -- It is a `var` in module declaration. ESLint mistakenly confuses it with `var` as a variable declaration.
   var DataviewAPI: DataviewApi | undefined;
 
   interface Window {
     /**
-     * The global {@link DataviewApi} object Dataview installs on every window.
+     * The global {@link DataviewApi} object `Dataview` installs on every window.
      */
     DataviewAPI?: DataviewApi;
   }
@@ -57,7 +57,7 @@ declare global {
 export type CombinedPage<CustomFrontmatter = unknown> = CombinedFrontmatter<CustomFrontmatter> & SMarkdownPage;
 
 /**
- * Extended interface for the Dataview Inline API, providing additional methods for custom page types and array handling.
+ * Extended interface for the `Dataview` Inline API, providing additional methods for custom page types and array handling.
  */
 export interface DataviewInlineApi extends DataviewInlineApiOriginal {
   /**
@@ -119,7 +119,7 @@ interface ContainerInfo {
 }
 
 /**
- * Reloads the current file cache using the Dataview API.
+ * Reloads the current file cache using the `Dataview` API.
  *
  * @param dv - The DataviewInlineApi instance.
  * @returns A {@link Promise} that resolves when the cache is reloaded.
@@ -348,7 +348,7 @@ export async function getRenderedContainer(dv: DataviewInlineApi, renderer: () =
 }
 
 /**
- * Inserts a code block into the specified Dataview instance using the provided language and code.
+ * Inserts a code block into the specified `Dataview` instance using the provided language and code.
  *
  * @param params - The parameters for inserting the code block.
  */
@@ -372,7 +372,7 @@ ${resultFence}`);
 }
 
 /**
- * Renders an iframe in the Dataview container with the specified relative path, width, and height.
+ * Renders an iframe in the `Dataview` container with the specified relative path, width, and height.
  *
  * @param params - The parameters for rendering the iframe.
  */

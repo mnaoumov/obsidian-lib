@@ -90,7 +90,7 @@ describe('createCodeBlockRegExp', () => {
   // These inputs trigger catastrophic backtracking (a synchronous freeze) with the old content pattern.
   // A fence-open with no valid closing fence before EOF, where the line prefix can recur within a line.
   // Each test must simply COMPLETE; a re-hang surfaces as a test timeout.
-  // See the CodeScript Toolkit freeze report (issue #56).
+  // See the `CodeScript Toolkit` freeze report (issue #56).
   describe('does not backtrack catastrophically on unterminated blocks', () => {
     const LINE_COUNT = 40;
 

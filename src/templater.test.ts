@@ -1,7 +1,7 @@
 /**
  * @file
  *
- * Tests for the Templater internal-API wrapper.
+ * Tests for the `Templater` internal-API wrapper.
  */
 
 import type {
@@ -39,7 +39,7 @@ import {
   TemplaterUnavailableError
 } from './templater.ts';
 
-/* eslint-disable camelcase -- Templater API. */
+/* eslint-disable camelcase -- `Templater` API. */
 
 const FILES = {
   'Notes/Other.md': '',
@@ -56,7 +56,7 @@ const TEMPLATE_PATH = 'Templates/Template.md';
  */
 interface CreateTemplaterApiRecorderOptions {
   /**
-   * The `current_functions_object` the fake reports, or `undefined` for a Templater with no render in
+   * The `current_functions_object` the fake reports, or `undefined` for a `Templater` with no render in
    * flight.
    *
    * @default `undefined`
@@ -73,7 +73,7 @@ interface CreateTemplaterApiRecorderOptions {
 }
 
 /**
- * Records what a fake Templater was asked to do, so the calls can be asserted on.
+ * Records what a fake `Templater` was asked to do, so the calls can be asserted on.
  */
 interface TemplaterApiRecorder {
   /**
@@ -108,7 +108,7 @@ let app: AppOriginal;
 let appMock: App;
 
 /**
- * Builds a fake Templater API that passes every check the guard makes, and records what it is asked to
+ * Builds a fake `Templater` API that passes every check the guard makes, and records what it is asked to
  * do.
  *
  * @param options - The {@link CreateTemplaterApiRecorderOptions}.
@@ -166,7 +166,7 @@ function getFixtureFile(path: string): TFile {
 /**
  * Points the fixture app's plugin registry at the given `templater-obsidian` plugin.
  *
- * @param plugin - What `getPlugin('templater-obsidian')` returns. `null` means Templater is not loaded.
+ * @param plugin - What `getPlugin('templater-obsidian')` returns. `null` means `Templater` is not loaded.
  */
 function setTemplaterPlugin(plugin: unknown): void {
   if (plugin === null) {
@@ -202,7 +202,7 @@ describe('resolveTemplaterApi', () => {
   });
 
   /*
-   * Every shape below is a Templater too old, too new or too broken to talk to. Each has to read as
+   * Every shape below is a `Templater` too old, too new or too broken to talk to. Each has to read as
    * "not there" rather than throw, because the alternative is an exception raised from inside a render.
    */
   it.each([
@@ -476,4 +476,4 @@ function createProviderApp(): AppOriginal {
   return strictProxy<AppOriginal>({ workspace: { getActiveFile: (): null | TFile => workspaceActiveFile } });
 }
 
-/* eslint-enable camelcase -- Templater API. */
+/* eslint-enable camelcase -- `Templater` API. */

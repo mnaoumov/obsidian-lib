@@ -5,7 +5,7 @@
  * and the bootstrap that runs inside the opened vault.
  *
  * The helper has to name the plugin the vault demonstrates, and nothing inside the vault reliably says
- * which one that is: the plugin folders also hold the helper itself, CodeScript Toolkit once the
+ * which one that is: the plugin folders also hold the helper itself, `CodeScript Toolkit` once the
  * bootstrap has installed it, and anything a demo note's prerequisites installed, so counting them
  * guesses (and guesses differently on a re-open). The packaging step, on the other hand, KNOWS — it
  * reads the plugin's `manifest.json` to name the archive — so it writes the id down here and the

@@ -289,7 +289,7 @@ export interface RegisterFileCacheForNonExistingFileParams {
 }
 
 /**
- * The slice of Advanced Metadata Cache's published API this module calls, declared here rather than imported,
+ * The slice of `Advanced Metadata Cache`'s published API this module calls, declared here rather than imported,
  * because that plugin is not a dependency (rule L9 in `AGENTS.md`). Its `api.d.ts` declares the whole of it.
  */
 interface AdvancedMetadataCacheBacklinksApi {
@@ -357,14 +357,14 @@ interface ToParsedCachedMetadataExParams {
 }
 
 /**
- * The plugin id of the Advanced Metadata Cache plugin, the successor to Backlink Cache.
+ * The plugin id of the `Advanced Metadata Cache` plugin, the successor to `Backlink Cache`.
  *
  * Used by {@link hasBacklinkCachePlugin}, and as the provider id under which {@link getBacklinksForFileOrPath} and {@link getBacklinksForFileSafe} look up the plugin's published API.
  */
 export const ADVANCED_METADATA_CACHE_PLUGIN_ID = 'advanced-metadata-cache';
 
 /**
- * The contract versions of Advanced Metadata Cache's API this module compiled against. `1.3.0` is the first to carry the two backlink methods.
+ * The contract versions of `Advanced Metadata Cache`'s API this module compiled against. `1.3.0` is the first to carry the two backlink methods.
  */
 const ADVANCED_METADATA_CACHE_BACKLINKS_API_VERSION_RANGE = '^1.3.0';
 
@@ -377,7 +377,7 @@ const ADVANCED_METADATA_CACHE_BACKLINKS_METHOD_CONTRACT = {
 };
 
 /**
- * The contract of the members of Advanced Metadata Cache's API this module calls, so a record that lacks either is passed over, and a payload that breaks its signature is reported while the `PluginApi` debugger is on.
+ * The contract of the members of `Advanced Metadata Cache`'s API this module calls, so a record that lacks either is passed over, and a payload that breaks its signature is reported while the `PluginApi` debugger is on.
  */
 const ADVANCED_METADATA_CACHE_BACKLINKS_API_CONTRACT: PluginApiContract<AdvancedMetadataCacheBacklinksApi> = {
   getBacklinksForFile: ADVANCED_METADATA_CACHE_BACKLINKS_METHOD_CONTRACT,
@@ -385,11 +385,11 @@ const ADVANCED_METADATA_CACHE_BACKLINKS_API_CONTRACT: PluginApiContract<Advanced
 };
 
 /**
- * The plugin id of the retired Backlink Cache plugin, superseded by {@link ADVANCED_METADATA_CACHE_PLUGIN_ID}.
+ * The plugin id of the retired `Backlink Cache` plugin, superseded by {@link ADVANCED_METADATA_CACHE_PLUGIN_ID}.
  *
  * Still recognized by {@link hasBacklinkCachePlugin}, deliberately. Removing a plugin from the community registry blocks new installs; it uninstalls nothing, so every existing user keeps it until they migrate by hand.
  *
- * It may be dropped when all three of the following hold, and not before: Advanced Metadata Cache is listed in the community registry, so migrating is possible at all; the final Backlink Cache handover release has been out for at least twelve months; and this library is cutting a major release anyway, because dropping the id silently un-gates canvas link handling for anyone who has not migrated. There is no cost pressure to drop it earlier - recognizing a dead id is one string comparison on a path that already reads a plugin registry.
+ * It may be dropped when all three of the following hold, and not before: `Advanced Metadata Cache` is listed in the community registry, so migrating is possible at all; the final `Backlink Cache` handover release has been out for at least twelve months; and this library is cutting a major release anyway, because dropping the id silently un-gates canvas link handling for anyone who has not migrated. There is no cost pressure to drop it earlier - recognizing a dead id is one string comparison on a path that already reads a plugin registry.
  */
 export const BACKLINK_CACHE_PLUGIN_ID = 'backlink-cache';
 
@@ -409,7 +409,7 @@ export async function ensureMetadataCacheReady(app: App): Promise<void> {
  * Retrieves the backlinks for a file or path.
  * NOTE: The file may be non-existent.
  *
- * When Advanced Metadata Cache publishes its backlinks API and its `Backlinks` module is on, its cache answers.
+ * When `Advanced Metadata Cache` publishes its backlinks API and its `Backlinks` module is on, its cache answers.
  * Otherwise the answer comes from a backlink index whose cost is proportional to the candidate notes rather than
  * to every reference in the vault, and which gives the same references Obsidian's own `getBacklinksForFile` gives.
  *
@@ -426,7 +426,7 @@ export function getBacklinksForFileOrPath(app: App, pathOrFile: PathOrFile): Cus
 /**
  * Retrieves the backlinks for a file safely.
  *
- * When Advanced Metadata Cache publishes its backlinks API and its `Backlinks` module is on, that API answers.
+ * When `Advanced Metadata Cache` publishes its backlinks API and its `Backlinks` module is on, that API answers.
  *
  * Otherwise this is NOT a pure read. It verifies
  * each backlink against the note's current text, and to do that it calls {@link saveNote} on every
@@ -679,7 +679,7 @@ export function getLinks(params: GetLinksParams): Reference[] {
 }
 
 /**
- * Determines whether a backlink cache plugin is currently loaded - either Advanced Metadata Cache ({@link ADVANCED_METADATA_CACHE_PLUGIN_ID}) or its retired predecessor Backlink Cache ({@link BACKLINK_CACHE_PLUGIN_ID}).
+ * Determines whether a backlink cache plugin is currently loaded - either `Advanced Metadata Cache` ({@link ADVANCED_METADATA_CACHE_PLUGIN_ID}) or its retired predecessor `Backlink Cache` ({@link BACKLINK_CACHE_PLUGIN_ID}).
  *
  * Such a plugin keeps a drain-on-read backlink index and indexes canvas metadata, so a caller that compensates for Obsidian's own gaps can stand down while one is present. Both ids are recognized; {@link BACKLINK_CACHE_PLUGIN_ID} records when the retired one may be dropped.
  *

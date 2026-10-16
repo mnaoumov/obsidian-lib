@@ -10,7 +10,7 @@
  * SECOND, nested plugin-titled entry — the exact bug the forced-off
  * `CommandHandlerRegistrationContext.shouldAddCommandToSubmenu` exists to prevent.
  *
- * Notebook Navigator itself is not installed in the test vault; a stand-in exposing the same `menus`
+ * `Notebook Navigator` itself is not installed in the test vault; a stand-in exposing the same `menus`
  * API is seeded into the plugin registry, so what runs here is every part this library owns.
  */
 
@@ -81,7 +81,7 @@ describe('NotebookNavigatorMenuEventRegistrarComponent', () => {
         const fileMenuCallbacks: ((context: NotebookNavigatorFileMenuContext) => void)[] = [];
         const folderMenuCallbacks: ((context: NotebookNavigatorFolderMenuContext) => void)[] = [];
 
-        // A stand-in for Notebook Navigator, exposing exactly the API slice the bridge narrows to.
+        // A stand-in for `Notebook Navigator`, exposing exactly the API slice the bridge narrows to.
         const fakeNotebookNavigator = {
           api: {
             menus: {
@@ -102,7 +102,7 @@ describe('NotebookNavigatorMenuEventRegistrarComponent', () => {
         };
 
         /**
-         * Raises a Notebook Navigator file menu and collects what the bridge contributed.
+         * Raises a `Notebook Navigator` file menu and collects what the bridge contributed.
          *
          * @param file - The right-clicked file.
          * @returns A real menu holding the contributed items.
@@ -241,7 +241,7 @@ describe('NotebookNavigatorMenuEventRegistrarComponent', () => {
     // the bridging surface forced it off, so `Menu.sort()` had nothing to nest.
     expect(result.submenuTitles).toEqual([COMMAND_ITEM_TITLE]);
     expect(result.hasNestedSubmenu).toBe(false);
-    // A file the handler gates out gets nothing at all — Notebook Navigator's `addItem` cannot be
+    // A file the handler gates out gets nothing at all — `Notebook Navigator`'s `addItem` cannot be
     // taken back, so the bridge has to stay out of the menu entirely.
     expect(result.titlesForGatedOutFile).toEqual([]);
   });

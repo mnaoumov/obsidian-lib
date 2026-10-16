@@ -1,26 +1,26 @@
 /**
  * @file
  *
- * The slice of Templater's INTERNAL API this library talks to, and the runtime narrowing that gets hold
+ * The slice of `Templater`'s INTERNAL API this library talks to, and the runtime narrowing that gets hold
  * of it.
  *
- * **Templater publishes no API.** Rendering a template against a file and getting the resulting string
+ * **`Templater` publishes no API.** Rendering a template against a file and getting the resulting string
  * back is only reachable through undocumented internals hanging off
  * `app.plugins.getPlugin('templater-obsidian').templater` — `create_running_config`,
  * `functions_generator.generate_object`, `read_and_parse_template`, and a `RunMode` enum. Every plugin
  * that wants it re-derives the same reverse engineering, which is why it lives here instead.
  *
- * **This module is explicitly BEST-EFFORT.** Nothing it binds to is documented or covered by Templater's
- * semantic versioning, so a Templater release may rename or reshape any of it without warning. The shapes
- * below were read from Templater `2.24.3`. Two deliberate consequences follow:
+ * **This module is explicitly BEST-EFFORT.** Nothing it binds to is documented or covered by `Templater`'s
+ * semantic versioning, so a `Templater` release may rename or reshape any of it without warning. The shapes
+ * below were read from `Templater` `2.24.3`. Two deliberate consequences follow:
  *
- * - {@link resolveTemplaterApi} returns `null` — a Templater too old, too new or too broken to talk to
+ * - {@link resolveTemplaterApi} returns `null` — a `Templater` too old, too new or too broken to talk to
  *   reads as "not there" and the integration stays dormant.
  * - {@link requireTemplaterApi} throws a {@link TemplaterUnavailableError} that NAMES the plugin and the
  *   reason, rather than letting a `Cannot read properties of undefined` surface from somewhere inside
- *   Templater.
+ *   `Templater`.
  *
- * The types are DECLARED HERE rather than imported, and narrowed to the members actually called: Templater
+ * The types are DECLARED HERE rather than imported, and narrowed to the members actually called: `Templater`
  * ships no npm types package, and depending on it would turn an optional integration into a build-time
  * dependency.
  *
@@ -29,7 +29,7 @@
  * the template is being rendered for — so a plugin's own helper called from inside a template resolves
  * links against the wrong note. {@link TemplaterActiveFileProvider} answers with the render target for the
  * duration of a {@link parseTemplate} call and falls back to the workspace otherwise. Note this is about
- * the CONSUMER's helpers: Templater's own `tp.file.*` already resolves through the running config's
+ * the CONSUMER's helpers: `Templater`'s own `tp.file.*` already resolves through the running config's
  * `target_file` and needs no help.
  */
 
@@ -53,7 +53,7 @@ export interface GetTemplaterFunctionsParams {
   readonly app: App;
 
   /**
-   * Whether to return Templater's `current_functions_object` when it already has one, instead of
+   * Whether to return `Templater`'s `current_functions_object` when it already has one, instead of
    * generating a fresh object. Reuse is cheaper and gives the object of the render currently in flight;
    * pass `false` to force a new one built for `targetPathOrFile`.
    *
@@ -89,10 +89,10 @@ export interface ParseTemplateParams {
 }
 
 /**
- * Templater's internal API object, narrowed to the members this library calls.
+ * `Templater`'s internal API object, narrowed to the members this library calls.
  *
- * Its members are `snake_case` because Templater's are; they are transcribed rather than renamed so the
- * shape can be checked against Templater's source at a glance.
+ * Its members are `snake_case` because `Templater`'s are; they are transcribed rather than renamed so the
+ * shape can be checked against `Templater`'s source at a glance.
  */
 export interface TemplaterApi {
   /**
@@ -119,7 +119,7 @@ export interface TemplaterApi {
   /**
    * Reads the config's `template_file` and renders it, returning the resulting text.
    *
-   * @param config - The {@link TemplaterRunningConfig} describing the render. Templater throws when its
+   * @param config - The {@link TemplaterRunningConfig} describing the render. `Templater` throws when its
    * `template_file` is not a `TFile`.
    * @returns A {@link Promise} resolving to the rendered text.
    */
@@ -140,13 +140,13 @@ export interface TemplaterFunctionsGenerator {
 }
 
 /**
- * One Templater render, as Templater's `create_running_config` describes it.
+ * One `Templater` render, as `Templater`'s `create_running_config` describes it.
  *
- * Its members are `snake_case` because Templater's are.
+ * Its members are `snake_case` because `Templater`'s are.
  */
 export interface TemplaterRunningConfig {
   /**
-   * The file Templater considers active. Templater fills this in itself from
+   * The file `Templater` considers active. `Templater` fills this in itself from
    * `workspace.activeEditor?.file ?? workspace.getActiveFile()`; it is optional here because a
    * hand-built config may omit it.
    */
@@ -169,17 +169,17 @@ export interface TemplaterRunningConfig {
 }
 
 /**
- * Templater's plugin id, as its manifest declares it.
+ * `Templater`'s plugin id, as its manifest declares it.
  */
 export const TEMPLATER_PLUGIN_ID = 'templater-obsidian';
 
-/* eslint-disable no-magic-numbers -- These are Templater's own `RunMode` values, transcribed. */
+/* eslint-disable no-magic-numbers -- These are `Templater`'s own `RunMode` values, transcribed. */
 /**
- * Templater's `RunMode` enum, which says what kind of render a {@link TemplaterRunningConfig} describes.
+ * `Templater`'s `RunMode` enum, which says what kind of render a {@link TemplaterRunningConfig} describes.
  *
- * The numeric values ARE Templater's, and the members are listed in its declaration order so the two can
+ * The numeric values ARE `Templater`'s, and the members are listed in its declaration order so the two can
  * be compared line for line. They are written out explicitly all the same, because they cross into
- * Templater as integers — never renumber them.
+ * `Templater` as integers — never renumber them.
  */
 export enum TemplaterRunMode {
   /**
@@ -214,20 +214,20 @@ export enum TemplaterRunMode {
    */
   StartupTemplate = 5
 }
-/* eslint-enable no-magic-numbers -- These are Templater's own `RunMode` values, transcribed. */
+/* eslint-enable no-magic-numbers -- These are `Templater`'s own `RunMode` values, transcribed. */
 
 /**
- * Why Templater's internal API could not be handed over.
+ * Why `Templater`'s internal API could not be handed over.
  */
 export enum TemplaterUnavailabilityReason {
   /**
-   * Templater is not installed, or is installed but disabled. Obsidian's `getPlugin` cannot tell the two
+   * `Templater` is not installed, or is installed but disabled. Obsidian's `getPlugin` cannot tell the two
    * apart — it returns nothing either way.
    */
   NotLoaded = 'notLoaded',
 
   /**
-   * Templater is loaded, but does not expose the internals this library calls — it is too old, too new,
+   * `Templater` is loaded, but does not expose the internals this library calls — it is too old, too new,
    * or has been reshaped.
    */
   ShapeChanged = 'shapeChanged'
@@ -253,7 +253,7 @@ export class TemplaterActiveFileProvider extends AppActiveFileProvider {
 }
 
 /**
- * Thrown when Templater's internal API cannot be handed over, carrying the
+ * Thrown when `Templater`'s internal API cannot be handed over, carrying the
  * {@link TemplaterUnavailabilityReason} that says why.
  */
 export class TemplaterUnavailableError extends Error {
@@ -275,12 +275,12 @@ export class TemplaterUnavailableError extends Error {
 }
 
 /**
- * Gets Templater's functions object — the `tp` a template is evaluated against — so a caller can invoke
+ * Gets `Templater`'s functions object — the `tp` a template is evaluated against — so a caller can invoke
  * `tp.date.now()`, `tp.file.title` and the rest outside a template.
  *
  * @param params - The {@link GetTemplaterFunctionsParams}.
  * @returns A {@link Promise} resolving to the functions object.
- * @throws A {@link TemplaterUnavailableError} when Templater is not loaded or its shape has changed.
+ * @throws A {@link TemplaterUnavailableError} when `Templater` is not loaded or its shape has changed.
  */
 export async function getTemplaterFunctions(params: GetTemplaterFunctionsParams): Promise<object> {
   const {
@@ -315,7 +315,7 @@ export function getTemplaterRenderTargetFile(): null | TFile {
 }
 
 /**
- * Renders a Templater template against a target file and returns the resulting text, without writing
+ * Renders a `Templater` template against a target file and returns the resulting text, without writing
  * anything.
  *
  * For the duration of the call {@link getTemplaterRenderTargetFile} and
@@ -324,7 +324,7 @@ export function getTemplaterRenderTargetFile(): null | TFile {
  *
  * @param params - The {@link ParseTemplateParams}.
  * @returns A {@link Promise} resolving to the rendered text.
- * @throws A {@link TemplaterUnavailableError} when Templater is not loaded or its shape has changed.
+ * @throws A {@link TemplaterUnavailableError} when `Templater` is not loaded or its shape has changed.
  */
 export async function parseTemplate(params: ParseTemplateParams): Promise<string> {
   const {
@@ -345,11 +345,11 @@ export async function parseTemplate(params: ParseTemplateParams): Promise<string
   renderTargetFiles.push(targetFile);
   try {
     return await api.read_and_parse_template({
-      // eslint-disable-next-line camelcase -- Templater API.
+      // eslint-disable-next-line camelcase -- `Templater` API.
       run_mode: TemplaterRunMode.DynamicProcessor,
-      // eslint-disable-next-line camelcase -- Templater API.
+      // eslint-disable-next-line camelcase -- `Templater` API.
       target_file: targetFile,
-      // eslint-disable-next-line camelcase -- Templater API.
+      // eslint-disable-next-line camelcase -- `Templater` API.
       template_file: templateFile
     });
   } finally {
@@ -358,14 +358,14 @@ export async function parseTemplate(params: ParseTemplateParams): Promise<string
 }
 
 /**
- * Gets Templater's internal API, throwing when it cannot be had.
+ * Gets `Templater`'s internal API, throwing when it cannot be had.
  *
- * Use this where the caller cannot carry on without Templater — the error names the plugin and says which
+ * Use this where the caller cannot carry on without `Templater` — the error names the plugin and says which
  * of the two failures occurred. Use {@link resolveTemplaterApi} instead where the integration is optional.
  *
  * @param app - The Obsidian app instance.
- * @returns Templater's internal API.
- * @throws A {@link TemplaterUnavailableError} when Templater is not loaded or its shape has changed.
+ * @returns `Templater`'s internal API.
+ * @throws A {@link TemplaterUnavailableError} when `Templater` is not loaded or its shape has changed.
  */
 export function requireTemplaterApi(app: App): TemplaterApi {
   if (!app.plugins.getPlugin(TEMPLATER_PLUGIN_ID)) {
@@ -381,11 +381,11 @@ export function requireTemplaterApi(app: App): TemplaterApi {
 }
 
 /**
- * Gets Templater's internal API, when Templater is installed, enabled and still the shape this library
+ * Gets `Templater`'s internal API, when `Templater` is installed, enabled and still the shape this library
  * expects.
  *
  * @param app - The Obsidian app instance.
- * @returns The internal API, or `null` when Templater is not there to talk to.
+ * @returns The internal API, or `null` when `Templater` is not there to talk to.
  */
 export function resolveTemplaterApi(app: App): null | TemplaterApi {
   const plugin = app.plugins.getPlugin(TEMPLATER_PLUGIN_ID);
@@ -405,10 +405,10 @@ export function resolveTemplaterApi(app: App): null | TemplaterApi {
 const renderTargetFiles: TFile[] = [];
 
 /**
- * Checks that a value is Templater's internal API, by the members this library actually calls.
+ * Checks that a value is `Templater`'s internal API, by the members this library actually calls.
  *
  * A predicate rather than a cast on purpose: `templater` is not part of Obsidian's `Plugin` type, so the
- * value arrives as `unknown` and the only honest way to type it is to VERIFY it. A Templater that renames
+ * value arrives as `unknown` and the only honest way to type it is to VERIFY it. A `Templater` that renames
  * one of these therefore reads as "not there", instead of throwing from inside a render.
  *
  * @param value - The candidate `templater` object.

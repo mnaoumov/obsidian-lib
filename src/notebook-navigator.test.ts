@@ -33,7 +33,7 @@ const VALID_API = {
 };
 
 /**
- * Builds an app whose plugin registry holds the given Notebook Navigator.
+ * Builds an app whose plugin registry holds the given `Notebook Navigator`.
  *
  * Not a candidate for `obsidian-test-mocks`' `registerPlugin__`: this builds a standalone fake rather than
  * stubbing around `App.createConfigured__()`'s strict proxy, so there is no real registry here to seed. The
@@ -67,7 +67,7 @@ describe('resolveNotebookNavigatorApi', () => {
   });
 
   /*
-   * Every shape below is a Notebook Navigator too old, too new or too broken to talk to. Each has to
+   * Every shape below is a `Notebook Navigator` too old, too new or too broken to talk to. Each has to
    * read as "no API" rather than throw, because the alternative is an exception raised while the
    * user's context menu is opening.
    */

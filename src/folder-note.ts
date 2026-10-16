@@ -181,7 +181,7 @@ export const FOLDER_NOTES_PLUGIN_ID = 'folder-notes';
 const FOLDER_NOTES_FOLDER_NAME_TOKEN_REG_EXP = /\{\{folder_name\}\}/gi;
 
 /**
- * `folder-notes` offers Excalidraw folder notes, which are Markdown files with an Excalidraw payload — its
+ * `folder-notes` offers `Excalidraw` folder notes, which are Markdown files with an `Excalidraw` payload — its
  * own resolver normalizes the type the same way before looking the file up.
  */
 const EXCALIDRAW_FILE_EXTENSION = 'excalidraw';
@@ -265,7 +265,7 @@ export function resolveFolderNoteConfig(params: ResolveFolderNoteConfigParams): 
 
 /**
  * Normalizes extensions the way `folder-notes` does before it looks a file up: no leading dot, lower-case,
- * Excalidraw treated as Markdown, blanks dropped, duplicates collapsed while keeping the first occurrence's
+ * `Excalidraw` treated as Markdown, blanks dropped, duplicates collapsed while keeping the first occurrence's
  * position.
  *
  * @param extensions - The extensions as configured.

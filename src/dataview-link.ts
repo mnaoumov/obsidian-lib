@@ -1,7 +1,7 @@
 /**
  * @file
  *
- * This module provides utility functions for working with Dataview links in Obsidian
+ * This module provides utility functions for working with `Dataview` links in Obsidian
  */
 
 import {
