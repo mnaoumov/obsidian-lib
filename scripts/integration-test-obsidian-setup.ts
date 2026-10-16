@@ -8,7 +8,7 @@
  * on `window`, so the styles must be injected here for tests that rely on the library's CSS. The
  * injection is idempotent (keyed by a style element id), so running it once per test file is safe.
  *
- * The `lib` resolver comes from the PUBLISHED registration the `obsidian-dev-utils/integration-test-setup`
+ * The `lib` resolver comes from the PUBLISHED registration the `@mnaoumov/obsidian-dev-toolkit/integration-test-setup`
  * endpoint calls — the very code consumer plugins get — so this repo's own suites exercise the consumer path
  * rather than a private copy of it.
  *

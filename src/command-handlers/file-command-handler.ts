@@ -78,7 +78,7 @@ export abstract class FileCommandHandler extends AbstractFileCommandHandler {
    *
    * @param params - The parameters for the file command handler.
    */
-  // eslint-disable-next-line obsidian-dev-utils/params-options-name-match -- Inherits parent's params type.
+  // eslint-disable-next-line typescript-dev-toolkit/params-options-name-match -- Inherits parent's params type.
   public constructor(params: AbstractFileCommandHandlerConstructorParams) {
     super(params);
   }
@@ -175,7 +175,7 @@ export abstract class FileCommandHandler extends AbstractFileCommandHandler {
    * @param params - The parameters for the single-file menu check.
    * @returns Whether to add to the file menu.
    */
-  // eslint-disable-next-line obsidian-dev-utils/params-options-name-match -- Override keeps the base class param type.
+  // eslint-disable-next-line typescript-dev-toolkit/params-options-name-match -- Override keeps the base class param type.
   protected override shouldAddToAbstractFileMenu(params: AbstractFileCommandHandlerShouldAddToAbstractFileMenuParams): boolean {
     const {
       abstractFile,
@@ -195,7 +195,7 @@ export abstract class FileCommandHandler extends AbstractFileCommandHandler {
    * @param params - The parameters for the multi-file menu check.
    * @returns Whether to add to the files menu.
    */
-  // eslint-disable-next-line obsidian-dev-utils/params-options-name-match -- Override keeps the base class param type.
+  // eslint-disable-next-line typescript-dev-toolkit/params-options-name-match -- Override keeps the base class param type.
   protected override shouldAddToAbstractFilesMenu(params: AbstractFileCommandHandlerShouldAddToAbstractFilesMenuParams): boolean {
     const {
       abstractFiles,

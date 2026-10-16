@@ -493,7 +493,7 @@ export abstract class PluginSettingsTabBase<PluginSettings extends object> exten
     TValueComponent,
     PropertyName extends StringKeys<PluginSettings>
   >(
-    params: PluginSettingsTabBaseBindImplParams<PluginSettings, UIValue, TValueComponent, PropertyName> // eslint-disable-line obsidian-dev-utils/params-options-name-match -- bind overload shares the Bind* param family.
+    params: PluginSettingsTabBaseBindImplParams<PluginSettings, UIValue, TValueComponent, PropertyName> // eslint-disable-line typescript-dev-toolkit/params-options-name-match -- bind overload shares the Bind* param family.
   ): TValueComponent {
     const {
       propertyName,

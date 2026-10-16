@@ -22,7 +22,7 @@ import { Component } from 'obsidian';
 /**
  * Extended Component
  */
-// eslint-disable-next-line obsidian-dev-utils/require-component-suffix -- Extended base class.
+// eslint-disable-next-line obsidian-dev-toolkit/require-component-suffix -- Extended base class.
 export class ComponentEx extends Component implements Disposable {
   private readonly childrenSet = new Set<Component>();
   private hasBeenLoaded = false;

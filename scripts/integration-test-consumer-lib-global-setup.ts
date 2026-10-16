@@ -18,12 +18,12 @@ import type { TestProject } from 'vitest/node';
 
 import {
   getIntegrationTestPluginPopulate,
-  OBSIDIAN_DEV_UTILS_INTEGRATION_TEST_PLUGIN_ID
+  OBSIDIAN_DEV_TOOLKIT_INTEGRATION_TEST_PLUGIN_ID
 } from '@mnaoumov/obsidian-dev-toolkit/test-runners/integration-test-plugin';
 import { createSetup } from 'obsidian-integration-testing/vitest-global-setup-plugin';
 
 const setupPair = createSetup({
-  enableCommunityPlugins: [OBSIDIAN_DEV_UTILS_INTEGRATION_TEST_PLUGIN_ID],
+  enableCommunityPlugins: [OBSIDIAN_DEV_TOOLKIT_INTEGRATION_TEST_PLUGIN_ID],
   installPlugin: false,
   populate: getConsumerLibPopulate
 });

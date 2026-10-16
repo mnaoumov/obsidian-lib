@@ -27,7 +27,7 @@ const mocks = vi.hoisted(() => {
     events,
     requestAnimationFrameAsync: vi.fn(async (): Promise<void> => {
       events.push('frame');
-      // eslint-disable-next-line obsidian-dev-utils/prefer-noop-async -- Cannot use noopAsync() in vi.hoisted() since imports are not yet available.
+      // eslint-disable-next-line typescript-dev-toolkit/prefer-noop-async -- Cannot use noopAsync() in vi.hoisted() since imports are not yet available.
       await Promise.resolve();
     })
   };

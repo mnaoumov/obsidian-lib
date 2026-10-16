@@ -21,7 +21,7 @@ import {
 
 import { ComponentEx } from './component-ex.ts';
 
-// eslint-disable-next-line obsidian-dev-utils/require-component-suffix -- Testing ComponentEx.
+// eslint-disable-next-line obsidian-dev-toolkit/require-component-suffix -- Testing ComponentEx.
 class AncestryProbeComponentEx extends ComponentEx {
   public probeInFlightAncestryLoadPromise(): null | Promise<void> {
     return this.getInFlightAncestryLoadPromise();
@@ -32,7 +32,7 @@ class AncestryProbeComponentEx extends ComponentEx {
   }
 }
 
-// eslint-disable-next-line obsidian-dev-utils/require-component-suffix -- Testing ComponentEx.
+// eslint-disable-next-line obsidian-dev-toolkit/require-component-suffix -- Testing ComponentEx.
 class LifecycleGuardsComponentEx extends ComponentEx {
   public invokeEnsureLoaded(): void {
     this.ensureLoaded();
@@ -43,7 +43,7 @@ class LifecycleGuardsComponentEx extends ComponentEx {
   }
 }
 
-// eslint-disable-next-line obsidian-dev-utils/require-component-suffix -- Testing ComponentEx.
+// eslint-disable-next-line obsidian-dev-toolkit/require-component-suffix -- Testing ComponentEx.
 class SyncComponentEx extends ComponentEx {
   public onloadCalled = false;
 
@@ -52,7 +52,7 @@ class SyncComponentEx extends ComponentEx {
   }
 }
 
-// eslint-disable-next-line obsidian-dev-utils/require-component-suffix -- Testing ComponentEx.
+// eslint-disable-next-line obsidian-dev-toolkit/require-component-suffix -- Testing ComponentEx.
 class TestComponentEx extends ComponentEx {
   public asyncLoadFunction = vi.fn<() => Promise<void>>().mockResolvedValue(undefined);
 

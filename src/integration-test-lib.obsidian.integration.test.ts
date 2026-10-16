@@ -1,5 +1,6 @@
 /// <reference types="obsidian-integration-testing/vitest/typings" />
 
+import { OBSIDIAN_DEV_TOOLKIT_INTEGRATION_TEST_PLUGIN_ID } from '@mnaoumov/obsidian-dev-toolkit/test-runners/integration-test-plugin';
 import { evalInObsidian } from 'obsidian-integration-testing';
 import {
   describe,
@@ -7,7 +8,8 @@ import {
   it
 } from 'vitest';
 
-const HARNESS_PLUGIN_ID = 'obsidian-dev-utils-integration-test';
+// The seeded harness is the one `@mnaoumov/obsidian-dev-toolkit` ships, not this repo's own pooled one.
+const HARNESS_PLUGIN_ID = OBSIDIAN_DEV_TOOLKIT_INTEGRATION_TEST_PLUGIN_ID;
 
 // What an `evalInObsidian` closure can observe about the injected library, returned so the assertions live on
 // the Node side.

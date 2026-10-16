@@ -185,7 +185,7 @@ export class TemplatesLanguageComponent extends SyntaxHighlightingComponent {
    * @param factoryParams - The Prism module and language lookup handed to a grammar factory.
    * @returns The grammar.
    */
-  // eslint-disable-next-line obsidian-dev-utils/params-options-name-match -- This implements the exported grammar-factory signature of the base class, so it takes that seam's own parameter type rather than one named after this method.
+  // eslint-disable-next-line typescript-dev-toolkit/params-options-name-match -- This implements the exported grammar-factory signature of the base class, so it takes that seam's own parameter type rather than one named after this method.
   private buildGrammar(factoryParams: SyntaxHighlightingComponentGrammarFactoryParams): Grammar {
     const formatToken = this.resolveFormatToken(factoryParams);
 
@@ -269,7 +269,7 @@ export class TemplatesLanguageComponent extends SyntaxHighlightingComponent {
    * @param factoryParams - The Prism module and language lookup handed to a grammar factory.
    * @returns The format token.
    */
-  // eslint-disable-next-line obsidian-dev-utils/params-options-name-match -- Forwards the base class's exported grammar-factory parameter type to a caller-supplied factory, so it cannot take a type named after this method.
+  // eslint-disable-next-line typescript-dev-toolkit/params-options-name-match -- Forwards the base class's exported grammar-factory parameter type to a caller-supplied factory, so it cannot take a type named after this method.
   private resolveFormatToken(factoryParams: SyntaxHighlightingComponentGrammarFactoryParams): PrismTokenObject {
     if (this.formatSource instanceof RegExp) {
       return {
