@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## 4.3.0
+
+- chore(deps): bump obsidian-test-mocks to 7.2.3 and pin the root path answers
+- fix(vault): treat a file gone from disk as not read in readSafe and process
+- feat(plugin-api): gate payload validation on the obsidian-lib:validate-plugin-api-payloads debug switch
+- feat(link): decide the link style per reference when updating links
+
 ## 4.2.1
 
 - fix(metadata-cache): skip a backlink holder's unparseable frontmatter instead of throwing
