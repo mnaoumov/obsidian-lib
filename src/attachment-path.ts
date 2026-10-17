@@ -178,7 +178,7 @@ const CUSTOM_ATTACHMENT_LOCATION_ATTACHMENT_PATH_API_VERSION_RANGE = '^1.3.0';
 
 /**
  * The contract of the members of `Custom Attachment Location`'s API this module calls, so a record that lacks
- * either is passed over, and a payload that breaks its signature is reported while the `PluginApi` debugger is on.
+ * either is passed over, and a payload that breaks its signature is reported while the `obsidian-lib:validate-plugin-api-payloads` debug switch is on.
  *
  * A copy of those two entries of `CUSTOM_ATTACHMENT_LOCATION_API_CONTRACT`, which `Custom Attachment Location` ships as its root `api-contract.ts`
  * and publishes. Keep the guards in agreement with that file, so the provider and this consumer check one definition.

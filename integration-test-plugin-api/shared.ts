@@ -42,7 +42,7 @@ export interface GreeterApi {
 
 /**
  * The contract both sides declare: the method name that drives the shape check, plus the payload schemas
- * that drive validation once the library debugger is on.
+ * that drive validation once the payload-validation debug switch is on.
  */
 export const GREETER_CONTRACT: ApiContract<GreeterApi> = {
   greet: {

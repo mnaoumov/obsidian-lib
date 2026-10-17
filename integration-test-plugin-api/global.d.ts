@@ -71,8 +71,8 @@ declare global {
     readCachedApi(): CachedApiProbeResult;
 
     /**
-     * Turns the library debugger on, calls `greet` with an argument the PROVIDER's schema rejects, and turns
-     * the debugger back off — so the call is validated by the consumer's copy of the library against a schema
+     * Turns the payload-validation debug switch on, calls `greet` with an argument the PROVIDER's schema rejects, and
+     * turns the switch back off — so the call is validated by the consumer's copy of the library against a schema
      * authored and published by the provider's copy.
      *
      * @returns The error the validation raised, or the greeting if none did.

@@ -20,16 +20,16 @@ import type { GreeterApi } from '../shared.ts';
 
 import { PluginGateComponent } from '@mnaoumov/obsidian-lib/components/plugin-gate-component';
 import { PluginNoticeComponent } from '@mnaoumov/obsidian-lib/components/plugin-notice-component';
-import { watchPluginApi } from '@mnaoumov/obsidian-lib/plugin/plugin-api';
-import { getDebugController } from '@mnaoumov/typescript-lib/debug';
+import {
+  getValidatePluginApiPayloadsDebugSwitch,
+  watchPluginApi
+} from '@mnaoumov/obsidian-lib/plugin/plugin-api';
 import { noopAsync } from '@mnaoumov/typescript-lib/function';
 import { castTo } from '@mnaoumov/typescript-lib/object-utils';
 import {
   GREETER_CONTRACT,
   PROVIDER_PLUGIN_ID
 } from '../shared.ts';
-
-const PLUGIN_API_DEBUG_NAMESPACE = 'obsidian-dev-utils:PluginApi';
 
 // A number where the contract says string. The provider's published input schema is what rejects it.
 const WRONGLY_TYPED_ARGUMENT = 42;
@@ -110,16 +110,16 @@ export default class PluginApiConsumerPlugin extends Plugin {
         this.cachedApi = refV2.value;
       },
       callWithInvalidInputWhileValidating: (): CachedApiProbeResult => {
-        const debugController = getDebugController();
-        const savedNamespaces = debugController.get();
-        debugController.enable(PLUGIN_API_DEBUG_NAMESPACE);
+        const validationDebugSwitch = getValidatePluginApiPayloadsDebugSwitch();
+        const wasValidating = validationDebugSwitch.isEnabled();
+        validationDebugSwitch.setEnabled(true);
         try {
           // The cast is the point: a real consumer reaches this state by drifting out of step with the
           // provider, and the provider's own schema is what catches it — inside the CONSUMER's copy of the
           // library, which is the crossing under test.
           return callSafely(() => refV2.value?.greet(castTo<string>(WRONGLY_TYPED_ARGUMENT)) ?? null);
         } finally {
-          debugController.set(savedNamespaces);
+          validationDebugSwitch.setEnabled(wasValidating);
         }
       },
       greetV1: (): null | string => refV1.value?.greet('world') ?? null,

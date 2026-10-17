@@ -238,7 +238,7 @@ Some of what `obsidian-dev-utils` builds on top of this is consumer-side policy 
 
 - **The mandatory dependency gate** — refusing to run the plugin's feature surface until a dependency is present, the settings tab that explains why, the one-click repair button. Graceful degradation is a perfectly good alternative policy.
 - **Revocable handles.** The named error on a call into an unloaded provider is a convenience the library builds for its own consumers; the rule above — look it up per use — buys you the same safety.
-- **Payload validation.** Optional, debug-gated checking of an API call's arguments and return value.
+- **Payload validation.** Optional checking of an API call's arguments and return value, behind the `obsidian-lib:validate-plugin-api-payloads` debug switch.
 - **Shape checking.** Verifying that a published API actually carries every method its contract names, before handing it over.
 
 What *is* protocol is exactly the four things you need and cannot build for yourself: **discovery, readiness, handle retrieval, and version negotiation**.
