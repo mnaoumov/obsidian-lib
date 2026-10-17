@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## 4.2.0
+
+- build(deps): take obsidian-dev-toolkit 3.2.1 for the guarded require patch
+- build: run validate-dependencies in the build
+- build: declare the integration harness as an optional peer and add validate-dependencies
+- ci(docs-site): set the repository homepage from the docs site build
+- feat(plugin-gate): offer an update for an enabled dependency that is too old
+
 ## 4.1.0
 
 - feat(plugin-gate): let a dependency require a minimum plugin version
