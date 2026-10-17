@@ -559,6 +559,11 @@ describe('isNote', () => {
 });
 
 describe('getAbstractFileOrNull', () => {
+  it.each(['', '/', '.', './', 'folder/..'])('should return the root folder for the root spelling %j', (path) => {
+    expect(getAbstractFileOrNull({ app, pathOrFile: path })).toBe(app.vault.getRoot());
+    expect(getAbstractFileOrNull({ app, isCaseInsensitive: true, pathOrFile: path })).toBe(app.vault.getRoot());
+  });
+
   describe('should return the file when found by path', () => {
     let result: ReturnType<typeof getAbstractFileOrNull>;
     beforeAll(async () => {
@@ -729,6 +734,10 @@ describe('getFolder', () => {
 describe('getPath', () => {
   it('should return the path string when given a string', () => {
     expect(getPath(app, 'note.md')).toBe('note.md');
+  });
+
+  it.each(['', '/', '.', './', 'folder/..'])('should return the root path for the root spelling %j', (path) => {
+    expect(getPath(app, path)).toBe('/');
   });
 
   it('should return the path from a TFile', () => {
