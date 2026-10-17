@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 4.2.1
+
+- fix(metadata-cache): skip a backlink holder's unparseable frontmatter instead of throwing
+
 ## 4.2.0
 
 - build(deps): take obsidian-dev-toolkit 3.2.1 for the guarded require patch
