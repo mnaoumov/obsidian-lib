@@ -1206,6 +1206,18 @@ export interface UpdateLinksInFileParams extends ProcessOptions {
   readonly linkStyle?: LinkStyle;
 
   /**
+   * Decides the style of one link, overriding {@link linkStyle} for it. Returning `undefined` keeps
+   * {@link linkStyle}.
+   *
+   * Use it when one style for the whole file is wrong for some of its links. A caller forcing
+   * {@link LinkStyle.Markdown} over a note, for example, keeps a frontmatter wikilink a wikilink, because
+   * Obsidian reads a property value as a link only in that form.
+   *
+   * @default `undefined`
+   */
+  readonly linkStyleProvider?: (link: Reference) => LinkStyle | undefined;
+
+  /**
    * A file to update the links in.
    */
   readonly newSourcePathOrFile: PathOrFile;
@@ -1534,6 +1546,18 @@ interface UpdateLinksInContentParams {
    * A style of the link.
    */
   readonly linkStyle?: LinkStyle;
+
+  /**
+   * Decides the style of one link, overriding {@link linkStyle} for it. Returning `undefined` keeps
+   * {@link linkStyle}.
+   *
+   * Use it when one style for the whole content is wrong for some of its links. A caller forcing
+   * {@link LinkStyle.Markdown} over a note, for example, keeps a frontmatter wikilink a wikilink, because
+   * Obsidian reads a property value as a link only in that form.
+   *
+   * @default `undefined`
+   */
+  readonly linkStyleProvider?: (link: Reference) => LinkStyle | undefined;
 
   /**
    * A new source path or file.
@@ -2297,6 +2321,7 @@ export async function updateLinksInContent(params: UpdateLinksInContentParams): 
     isEmptyEmbedAliasAllowed,
     linkPathStyle,
     linkStyle,
+    linkStyleProvider,
     newSourcePathOrFile,
     offsetRange,
     oldSourcePathOrFile,
@@ -2321,7 +2346,7 @@ export async function updateLinksInContent(params: UpdateLinksInContentParams): 
           isEmptyEmbedAliasAllowed,
           link,
           linkPathStyle,
-          linkStyle,
+          linkStyle: linkStyleProvider?.(link) ?? linkStyle,
           newSourcePathOrFile,
           oldSourcePathOrFile,
           shouldEscapeAlias,
@@ -2348,6 +2373,7 @@ export async function updateLinksInFile(params: UpdateLinksInFileParams): Promis
     isEmptyEmbedAliasAllowed,
     linkPathStyle,
     linkStyle,
+    linkStyleProvider,
     newSourcePathOrFile,
     offsetRange,
     oldSourcePathOrFile,
@@ -2375,7 +2401,7 @@ export async function updateLinksInFile(params: UpdateLinksInFileParams): Promis
           isEmptyEmbedAliasAllowed,
           link,
           linkPathStyle,
-          linkStyle,
+          linkStyle: linkStyleProvider?.(link) ?? linkStyle,
           newSourcePathOrFile,
           oldSourcePathOrFile,
           shouldEscapeAlias,
