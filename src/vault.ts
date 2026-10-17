@@ -1103,7 +1103,9 @@ async function invokeFileActionSafe(params: InvokeFileActionSafeParams): Promise
     return InvokeFileActionSafeResult.Invoked;
   } catch (error) {
     file = getFileOrNull({ app, pathOrFile: path });
-    if (!file || file.deleted) {
+    // A file moved outside Obsidian is gone from disk before the watcher drops it from the vault, so the vault alone
+    // still calls it present and the action's `ENOENT` would escape.
+    if (!file || file.deleted || !await app.vault.adapter.exists(path)) {
       return InvokeFileActionSafeResult.NotInvoked;
     }
     throw error;

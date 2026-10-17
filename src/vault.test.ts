@@ -891,8 +891,18 @@ describe('readSafe error paths (invokeFileActionSafe catch)', () => {
 
   it('should rethrow when read throws and file still exists', async () => {
     vi.spyOn(app.vault, 'read').mockRejectedValue(new Error('Disk error'));
+    vi.spyOn(app.vault.adapter, 'exists').mockResolvedValue(true);
 
     await expect(readSafe(app, 'note.md')).rejects.toThrow('Disk error');
+  });
+
+  it('should return null when read throws and file is still in the vault but gone from disk', async () => {
+    vi.spyOn(app.vault, 'read').mockRejectedValue(new Error('ENOENT: no such file or directory'));
+    vi.spyOn(app.vault.adapter, 'exists').mockResolvedValue(false);
+
+    const content = await readSafe(app, 'note.md');
+    expect(content).toBeNull();
+    expect(vi.mocked(app.vault.adapter.exists)).toHaveBeenCalledWith('note.md');
   });
 });
 
