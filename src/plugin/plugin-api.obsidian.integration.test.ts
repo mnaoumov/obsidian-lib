@@ -134,7 +134,7 @@ describe('cross-copy plugin API registry', () => {
         return {
           // The schema doing the rejecting was authored and published by the PROVIDER's copy of the library
           // and traveled across in the registry record; the wrapper invoking it was built by the CONSUMER's
-          // copy, and the debug gate it consulted is the consumer's too.
+          // copy, and the debug switch it consulted lives in the bag both copies share.
           invalidCallError: String(testProbe.callWithInvalidInputWhileValidating().error),
           // Validation is off again afterwards, and a well-typed call is unaffected either way.
           validCallGreeting: testProbe.greetV2()

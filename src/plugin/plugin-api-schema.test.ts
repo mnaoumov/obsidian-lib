@@ -29,12 +29,10 @@ import {
   optionalGuard,
   STRING_GUARD
 } from '@mnaoumov/typescript-lib/api-contract';
-import { getDebugController } from '@mnaoumov/typescript-lib/debug';
 import { castTo } from '@mnaoumov/typescript-lib/object-utils';
 import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import {
   afterEach,
-  beforeEach,
   describe,
   expect,
   expectTypeOf,
@@ -55,11 +53,11 @@ import {
 } from './plugin-api-schema.ts';
 import {
   findPluginApi,
+  getValidatePluginApiPayloadsDebugSwitch,
   PluginApiValidationError,
   publishPluginApi
 } from './plugin-api.ts';
 
-const PLUGIN_API_DEBUG_NAMESPACE = 'obsidian-dev-utils:PluginApi';
 const PROVIDER_ID = 'schema-provider';
 
 interface CounterApi {
@@ -91,14 +89,8 @@ describe('the deprecated contract names', () => {
 });
 
 describe('a typed contract at runtime', () => {
-  let savedDebugNamespaces: string[];
-
-  beforeEach(() => {
-    savedDebugNamespaces = getDebugController().get();
-  });
-
   afterEach(() => {
-    getDebugController().set(savedDebugNamespaces);
+    getValidatePluginApiPayloadsDebugSwitch().setEnabled(false);
   });
 
   function publishCounter(count: CounterApi['count']): () => void {
@@ -125,8 +117,8 @@ describe('a typed contract at runtime', () => {
     return findPluginApi<CounterApi>({ apiVersionRange: '^1.0.0', contract: COUNTER_CONTRACT, pluginId: PROVIDER_ID });
   }
 
-  it('should report a provider whose output breaks the contract while the debugger is on', async () => {
-    getDebugController().set(PLUGIN_API_DEBUG_NAMESPACE);
+  it('should report a provider whose output breaks the contract while the validation switch is on', async () => {
+    getValidatePluginApiPayloadsDebugSwitch().setEnabled(true);
     const unload = publishCounter(() => Promise.resolve(castTo<number>('three')));
     try {
       await expect(findCounter()?.count('abc')).rejects.toThrow(PluginApiValidationError);
@@ -138,8 +130,8 @@ describe('a typed contract at runtime', () => {
     }
   });
 
-  it('should report a call whose input breaks the contract while the debugger is on', () => {
-    getDebugController().set(PLUGIN_API_DEBUG_NAMESPACE);
+  it('should report a call whose input breaks the contract while the validation switch is on', () => {
+    getValidatePluginApiPayloadsDebugSwitch().setEnabled(true);
     const unload = publishCounter((text) => Promise.resolve(text.length));
     try {
       expect(() => findCounter()?.count(castTo<string>(1))).toThrow(
@@ -150,8 +142,8 @@ describe('a typed contract at runtime', () => {
     }
   });
 
-  it('should not validate while the debugger is off', async () => {
-    getDebugController().set([]);
+  it('should not validate while the validation switch is off', async () => {
+    getValidatePluginApiPayloadsDebugSwitch().setEnabled(false);
     const unload = publishCounter(() => Promise.resolve(castTo<number>('three')));
     try {
       await expect(findCounter()?.count('abc')).resolves.toBe('three');

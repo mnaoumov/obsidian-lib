@@ -19,6 +19,7 @@ import {
 } from '@mnaoumov/typescript-lib/api-contract';
 import { nextTickAsync } from '@mnaoumov/typescript-lib/async';
 import { getDebugController } from '@mnaoumov/typescript-lib/debug';
+import { getDebugSwitch } from '@mnaoumov/typescript-lib/debug-switches';
 import {
   castTo,
   normalizeOptionalProperties
@@ -44,6 +45,7 @@ import { getObsidianLibDebugger } from '../debug.ts';
 import { getObsidianDevUtilsState } from '../obsidian-dev-utils-state.ts';
 import {
   findPluginApi,
+  getValidatePluginApiPayloadsDebugSwitch,
   PluginApiPayloadKind,
   PluginApiRevokedError,
   PluginApiUnavailabilityReason,
@@ -57,6 +59,7 @@ const PROVIDER_ID = 'provider-plugin';
 const PLUGIN_API_DEBUG_NAMESPACE = 'obsidian-dev-utils:PluginApi';
 const PLUGIN_API_DEBUGGER_NAME = 'PluginApi';
 const PLUGIN_API_REGISTRY_STATE_KEY = 'pluginApiRegistry';
+const VALIDATE_PLUGIN_API_PAYLOADS_DEBUG_SWITCH_ID = 'obsidian-lib:validate-plugin-api-payloads';
 const SHORT_TIMEOUT_IN_MILLISECONDS = 50;
 
 // `compare-versions` rejects a bare `*`, so "any version" is spelled as an open lower bound.
@@ -137,6 +140,7 @@ describe('plugin-api', () => {
 
   afterEach(() => {
     getDebugController().set(savedDebugNamespaces);
+    getValidatePluginApiPayloadsDebugSwitch().setEnabled(false);
     vi.restoreAllMocks();
   });
 
@@ -483,16 +487,60 @@ describe('plugin-api', () => {
     });
   });
 
-  describe('payload validation', () => {
-    beforeEach(() => {
-      getDebugController().set(PLUGIN_API_DEBUG_NAMESPACE);
+  describe('getValidatePluginApiPayloadsDebugSwitch', () => {
+    it('should register an off-by-default switch under the obsidian-lib id', () => {
+      const debugSwitch = getValidatePluginApiPayloadsDebugSwitch();
+      expect(debugSwitch.id).toBe(VALIDATE_PLUGIN_API_PAYLOADS_DEBUG_SWITCH_ID);
+      expect(debugSwitch.isEnabledByDefault).toBe(false);
+      expect(debugSwitch.name).toBe('Validate plugin-API payloads');
+      expect(debugSwitch.description).not.toBe('');
+      expect(getDebugSwitch(VALIDATE_PLUGIN_API_PAYLOADS_DEBUG_SWITCH_ID)?.isEnabled()).toBe(false);
     });
 
-    it('should not validate while the debugger is disabled', () => {
-      getDebugController().set([]);
+    it('should be registered once an API is published, watched or looked up', () => {
+      const harness = createHarness();
+      harness.publish();
+      harness.watch<GreeterApi>();
+      findPluginApi<GreeterApi>({ apiVersionRange: ANY_VERSION_RANGE, pluginId: PROVIDER_ID });
+      expect(getDebugSwitch(VALIDATE_PLUGIN_API_PAYLOADS_DEBUG_SWITCH_ID)).toBeDefined();
+    });
+  });
+
+  describe('payload validation', () => {
+    beforeEach(() => {
+      getValidatePluginApiPayloadsDebugSwitch().setEnabled(true);
+    });
+
+    it('should not validate by default', () => {
+      getValidatePluginApiPayloadsDebugSwitch().setEnabled(false);
       const harness = createHarness();
       harness.publish({ contract: { greet: { input: createAlwaysFailingSchema() } } });
       expect(harness.watch<GreeterApi>().ref.value?.greet('unchecked')).toBe('Hello, unchecked!');
+    });
+
+    it('should not validate while the switch is off, even with the debugger enabled', () => {
+      getValidatePluginApiPayloadsDebugSwitch().setEnabled(false);
+      getDebugController().set(PLUGIN_API_DEBUG_NAMESPACE);
+      const harness = createHarness();
+      harness.publish({ contract: { greet: { input: createAlwaysFailingSchema() } } });
+      expect(harness.watch<GreeterApi>().ref.value?.greet('unchecked')).toBe('Hello, unchecked!');
+    });
+
+    it('should validate while the switch is on, with the debugger disabled', () => {
+      const harness = createHarness();
+      harness.publish({ contract: { greet: { input: createAlwaysFailingSchema() } } });
+      const api = harness.watch<GreeterApi>().ref.value;
+      expect(() => api?.greet('bad')).toThrow(PluginApiValidationError);
+    });
+
+    it('should take a switch change on an already acquired handle', () => {
+      getValidatePluginApiPayloadsDebugSwitch().setEnabled(false);
+      const harness = createHarness();
+      harness.publish({ contract: { greet: { input: createAlwaysFailingSchema() } } });
+      const api = harness.watch<GreeterApi>().ref.value;
+      expect(api?.greet('unchecked')).toBe('Hello, unchecked!');
+      getValidatePluginApiPayloadsDebugSwitch().setEnabled(true);
+      expect(() => api?.greet('bad')).toThrow(PluginApiValidationError);
     });
 
     it('should not wrap a method the contract does not declare', () => {
@@ -592,6 +640,7 @@ describe('plugin-api', () => {
     });
 
     it('should report an asynchronous schema failure through the debugger instead of throwing', async () => {
+      getDebugController().set(PLUGIN_API_DEBUG_NAMESPACE);
       const loggedCalls = captureDebuggerCalls();
 
       const harness = createHarness();
@@ -616,6 +665,7 @@ describe('plugin-api', () => {
     });
 
     it('should stay silent when an asynchronous schema passes', async () => {
+      getDebugController().set(PLUGIN_API_DEBUG_NAMESPACE);
       const loggedCalls = captureDebuggerCalls();
 
       const harness = createHarness();

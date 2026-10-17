@@ -47,13 +47,15 @@
  *
  * Payload validation is opt-in per method through {@link https://standardschema.dev | Standard Schema}, so
  * zod / valibot / arktype / a hand-written validator all plug in and none of them is a dependency here. It
- * runs only while the `obsidian-dev-utils:PluginApi` debugger is enabled, so production pays nothing.
+ * runs only while the `obsidian-lib:validate-plugin-api-payloads` debug switch is on (off by default, see
+ * {@link getValidatePluginApiPayloadsDebugSwitch}), so production pays nothing. The `obsidian-dev-utils:PluginApi`
+ * debugger controls logging only: turning it on changes no behavior.
  *
  * The contract itself — its types and the schema builders — is not Obsidian-specific and lives in
  * `@mnaoumov/typescript-lib/api-contract` (`ApiContract`, `createArgumentsSchema`, `createTypeGuardSchema`,
  * `defineApiContract`). This module owns what is: the registry keyed by plugin id, the revocable handles, the
- * debug gate and the validation errors. A contract's KEYS drive the shape check that decides whether a published
- * record is usable at all; its schemas are only ever consulted while debugging.
+ * debug switch and the validation errors. A contract's KEYS drive the shape check that decides whether a published
+ * record is usable at all; its schemas are only ever consulted while the switch is on.
  *
  * Why the shape check is a `typeof` rather than a schema over the whole API object. In zod 4 `z.function()`
  * returns a function FACTORY, not a schema, so it cannot be a `z.object()` member directly. There is a known
@@ -61,7 +63,7 @@
  * `z.infer` types for a function member. It does not buy runtime validation here, though: `z.custom` is a
  * boolean predicate that returns its input unchanged, so the validating wrapper `implement` builds is
  * discarded and the check collapses back to "is it callable". Keeping that wrapper would need a further
- * `.transform()`, and would then move validation onto every call instead of behind the debug gate, and bind
+ * `.transform()`, and would then move validation onto every call instead of behind the debug switch, and bind
  * the contract to zod specifically — which is exactly what reaching through Standard Schema avoids. So the
  * declared method names are checked with `typeof`, and the payloads are validated per method instead.
  *
@@ -87,6 +89,10 @@ import type {
   TypedApiContract
 } from '@mnaoumov/typescript-lib/api-contract';
 import type { AsyncEventSource } from '@mnaoumov/typescript-lib/async-events';
+import type {
+  DebugSwitch,
+  DebugSwitchDefinition
+} from '@mnaoumov/typescript-lib/debug-switches';
 import type { StandardSchemaV1 } from '@standard-schema/spec';
 import type {
   App,
@@ -100,6 +106,7 @@ import {
   runWithTimeout
 } from '@mnaoumov/typescript-lib/async';
 import { mixinAsyncEvents } from '@mnaoumov/typescript-lib/async-events';
+import { registerDebugSwitch } from '@mnaoumov/typescript-lib/debug-switches';
 import { castTo } from '@mnaoumov/typescript-lib/object-utils';
 import {
   compareVersions,
@@ -111,6 +118,13 @@ import { getObsidianDevUtilsState } from '../obsidian-dev-utils-state.ts';
 
 const PLUGIN_API_DEBUGGER_NAMESPACE = 'PluginApi';
 const PLUGIN_API_REGISTRY_STATE_KEY = 'pluginApiRegistry';
+
+const VALIDATE_PLUGIN_API_PAYLOADS_DEBUG_SWITCH_DEFINITION: DebugSwitchDefinition = {
+  description: 'Validate every plugin-API call\'s arguments and return value against the contract the API declares, and throw on a mismatch.',
+  id: 'obsidian-lib:validate-plugin-api-payloads',
+  isEnabledByDefault: false,
+  name: 'Validate plugin-API payloads'
+};
 
 /**
  * How long {@link PluginApiRef.whenAvailable} waits before giving up and classifying the failure.
@@ -666,8 +680,8 @@ export class PluginApiRevokedError extends PluginApiUnavailableError {
 /**
  * Thrown when a published API's payload fails the schema its contract declares.
  *
- * Only ever thrown while the `obsidian-dev-utils:PluginApi` debugger is enabled — in production the methods
- * are not wrapped at all.
+ * Only ever thrown while the `obsidian-lib:validate-plugin-api-payloads` debug switch is on (see
+ * {@link getValidatePluginApiPayloadsDebugSwitch}) — otherwise no payload is validated at all.
  */
 export class PluginApiValidationError extends Error {
   /**
@@ -716,8 +730,26 @@ export class PluginApiValidationError extends Error {
  * @returns The API, or `null` when no live record satisfies the range and the contract.
  */
 export function findPluginApi<TApi extends object>(params: FindPluginApiParams<NoInfer<TApi>>): null | TApi {
+  getValidatePluginApiPayloadsDebugSwitch();
   const record = selectRecord(params);
   return record === null ? null : castTo<TApi>(createRevocableHandle(record, params.contract));
+}
+
+/**
+ * Gets the debug switch that decides whether a plugin-API call's payloads are validated against the contract.
+ *
+ * Its id is `obsidian-lib:validate-plugin-api-payloads` and it is off by default. While it is on, every call
+ * through a handle from {@link watchPluginApi} or {@link findPluginApi} checks its arguments and its return value
+ * against the method's declared schemas and throws a {@link PluginApiValidationError} on a mismatch. The
+ * `obsidian-dev-utils:PluginApi` debugger does not affect it: that only logs.
+ *
+ * The switch is registered on every read, which is idempotent, and whenever an API is published, watched or looked
+ * up, so a debug-settings UI lists it as soon as any plugin API is in play.
+ *
+ * @returns The debug switch.
+ */
+export function getValidatePluginApiPayloadsDebugSwitch(): DebugSwitch {
+  return registerDebugSwitch(VALIDATE_PLUGIN_API_PAYLOADS_DEBUG_SWITCH_DEFINITION);
 }
 
 /**
@@ -732,6 +764,7 @@ export function findPluginApi<TApi extends object>(params: FindPluginApiParams<N
  * @throws An {@link Error} if this plugin has already published this exact `apiVersion`.
  */
 export function publishPluginApi<TApi extends object>(params: PublishPluginApiParams<TApi>): void {
+  getValidatePluginApiPayloadsDebugSwitch();
   const pluginId = params.plugin.manifest.id;
   const registry = getRegistry();
   const records = registry.records[pluginId] ?? [];
@@ -772,6 +805,7 @@ export function publishPluginApi<TApi extends object>(params: PublishPluginApiPa
  * @returns The live reference.
  */
 export function watchPluginApi<TApi extends object>(params: WatchPluginApiParams<NoInfer<TApi>>): PluginApiRef<TApi> {
+  getValidatePluginApiPayloadsDebugSwitch();
   const ref = new PluginApiRefImpl<TApi>(params);
   const unsubscribe = subscribe(() => {
     ref.refresh();
@@ -810,9 +844,10 @@ function checkMatchesContractShape(record: PublishedPluginApiRecord, consumerCon
 
 /**
  * Builds the function a consumer actually calls: it always invokes the original with the raw API object as
- * `this`, and — only while the library debugger is enabled — validates the declared payloads around it.
+ * `this`, and — only while the `obsidian-lib:validate-plugin-api-payloads` debug switch is on — validates the
+ * declared payloads around it.
  *
- * The debugger is consulted per call rather than per wrap, so toggling `DEBUG` at runtime takes effect without
+ * The switch is consulted per call rather than per wrap, so toggling it at runtime takes effect without
  * re-acquiring the handle, while the wrapper's identity stays stable.
  *
  * @param params - The parameters for the wrapper.
@@ -825,7 +860,7 @@ function createMethodWrapper(params: CreateMethodWrapperParams): (...$arguments:
     const method = castTo<(...$innerArguments: unknown[]) => unknown>(getMember(params.target, params.propertyKey));
     const methodContract = params.methodContract;
 
-    if (methodContract === undefined || !getPluginApiDebugger().enabled) {
+    if (methodContract === undefined || !getValidatePluginApiPayloadsDebugSwitch().isEnabled()) {
       return method.apply(params.target, $arguments);
     }
 
@@ -952,7 +987,7 @@ function getMember(api: object, methodName: PropertyKey): unknown {
 }
 
 /**
- * The debugger that gates payload validation.
+ * The debugger that logs an asynchronous payload validation failure.
  *
  * @returns The debugger.
  */

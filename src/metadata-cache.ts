@@ -381,7 +381,7 @@ const ADVANCED_METADATA_CACHE_BACKLINKS_METHOD_CONTRACT = {
 };
 
 /**
- * The contract of the members of `Advanced Metadata Cache`'s API this module calls, so a record that lacks either is passed over, and a payload that breaks its signature is reported while the `PluginApi` debugger is on.
+ * The contract of the members of `Advanced Metadata Cache`'s API this module calls, so a record that lacks either is passed over, and a payload that breaks its signature is reported while the `obsidian-lib:validate-plugin-api-payloads` debug switch is on.
  */
 const ADVANCED_METADATA_CACHE_BACKLINKS_API_CONTRACT: ApiContract<AdvancedMetadataCacheBacklinksApi> = {
   getBacklinksForFile: ADVANCED_METADATA_CACHE_BACKLINKS_METHOD_CONTRACT,
