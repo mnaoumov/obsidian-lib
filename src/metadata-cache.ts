@@ -19,6 +19,7 @@ import {
   createTypeGuardSchema
 } from '@mnaoumov/typescript-lib/api-contract';
 import { CallbackDisposable } from '@mnaoumov/typescript-lib/disposable';
+import { printError } from '@mnaoumov/typescript-lib/error';
 import { getNestedPropertyValue } from '@mnaoumov/typescript-lib/object-utils';
 import { ensureNonNullable } from '@mnaoumov/typescript-lib/type-guards';
 import {
@@ -478,17 +479,25 @@ export async function getBacklinksForFileSafe(params: GetBacklinksForFileSafePar
         if (!content) {
           return false;
         }
-        const frontmatter = parseFrontmatter(content);
         const links = backlinks.get(notePath);
         if (!links) {
           return false;
         }
 
+        // Parsed only when a frontmatter link needs it: a note whose YAML does not parse still holds body links,
+        // and `null` marks a parse that failed, so its frontmatter links are skipped rather than retried forever.
+        let frontmatter: CombinedFrontmatter<unknown> | null | undefined;
         for (const link of links) {
           let actualLink: string;
           if (isReferenceCache(link)) {
             actualLink = content.slice(link.position.start.offset, link.position.end.offset);
           } else if (isFrontmatterLinkCache(link)) {
+            if (frontmatter === undefined) {
+              frontmatter = parseFrontmatterOrNull(content, notePath);
+            }
+            if (frontmatter === null) {
+              continue;
+            }
             const propertyValue = getNestedPropertyValue(frontmatter, link.key);
             if (typeof propertyValue !== 'string') {
               return false;
@@ -867,6 +876,15 @@ function parseExternalBodyLinks(content: string, cache: CachedMetadata): ParseLi
   return parseLinks(content)
     .filter((parseLinkResult) => parseLinkResult.isExternal && parseLinkResult.startOffset >= frontmatterEndOffset)
     .map((parseLinkResult) => toParseLinkReference({ content, parseLinkResult }));
+}
+
+function parseFrontmatterOrNull(content: string, path: string): CombinedFrontmatter<unknown> | null {
+  try {
+    return parseFrontmatter(content);
+  } catch (error) {
+    printError(new Error(`Frontmatter parsing failed in ${path}`, { cause: error }));
+    return null;
+  }
 }
 
 function toParsedCachedMetadataEx(params: ToParsedCachedMetadataExParams): CachedMetadataEx {

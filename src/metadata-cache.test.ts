@@ -1145,7 +1145,71 @@ describe('getBacklinksForFileSafe', () => {
     mockedParseFrontmatter.mockReturnValue({});
 
     await getBacklinksForFileSafe({ app, pathOrFile: 'target.md' });
-    expect(mockedParseFrontmatter).toHaveBeenCalled();
+    expect(mockedReadSafe).toHaveBeenCalled();
+    expect(mockedParseFrontmatter).not.toHaveBeenCalled();
+  });
+
+  it('should not parse the frontmatter of a holder with body links only, so invalid YAML there cannot throw', async () => {
+    let operationResult: boolean | undefined;
+    mockedRetryWithTimeoutNotice.mockImplementation(async (params: RetryWithTimeoutNoticeParams) => {
+      const operationFunction = params.operationFunction;
+      const abortSignal = strictProxy<AbortSignal>({ throwIfAborted: vi.fn() });
+      operationResult = await operationFunction(abortSignal);
+    });
+    const content = '---\nauthor: [x]y\n---\n[[target]]';
+    const referenceLink = makeReferenceCache('[[target]]', content.indexOf('[[target]]'));
+
+    mockedGetIndexedBacklinksForFile.mockReturnValue(
+      createBacklinksDict({ 'source.md': [referenceLink] })
+    );
+    mockedGetFileOrNull.mockReturnValue(castTo<ReturnType<typeof getFileOrNull>>({ path: 'source.md' }));
+    mockedReadSafe.mockResolvedValue(content);
+    mockedParseFrontmatter.mockImplementation(() => {
+      throw new Error('YAMLParseError');
+    });
+
+    const result = await getBacklinksForFileSafe({ app, pathOrFile: 'target.md' });
+    expect(operationResult).toBe(true);
+    expect(result.keys()).toEqual(['source.md']);
+    expect(mockedParseFrontmatter).not.toHaveBeenCalled();
+  });
+
+  it('should skip the frontmatter links of a holder whose frontmatter does not parse, parsing it once', async () => {
+    let operationResult: boolean | undefined;
+    mockedRetryWithTimeoutNotice.mockImplementation(async (params: RetryWithTimeoutNoticeParams) => {
+      const operationFunction = params.operationFunction;
+      const abortSignal = strictProxy<AbortSignal>({ throwIfAborted: vi.fn() });
+      operationResult = await operationFunction(abortSignal);
+    });
+
+    mockedGetIndexedBacklinksForFile.mockReturnValue(
+      createBacklinksDict({ 'source.md': [makeFrontmatterLink('target', 'a'), makeFrontmatterLink('target', 'b')] })
+    );
+    mockedGetFileOrNull.mockReturnValue(castTo<ReturnType<typeof getFileOrNull>>({ path: 'source.md' }));
+    mockedReadSafe.mockResolvedValue('---\na: [x]y\n---');
+    mockedParseFrontmatter.mockImplementation(() => {
+      throw new Error('YAMLParseError');
+    });
+
+    const result = await getBacklinksForFileSafe({ app, pathOrFile: 'target.md' });
+    expect(operationResult).toBe(true);
+    expect(result.keys()).toEqual(['source.md']);
+    expect(mockedParseFrontmatter).toHaveBeenCalledTimes(1);
+  });
+
+  it('should parse the frontmatter once for several frontmatter links of one holder', async () => {
+    setupRetryToInvokeOperationFunction();
+
+    mockedGetIndexedBacklinksForFile.mockReturnValue(
+      createBacklinksDict({ 'source.md': [makeFrontmatterLink('target', 'a'), makeFrontmatterLink('target', 'b')] })
+    );
+    mockedGetFileOrNull.mockReturnValue(castTo<ReturnType<typeof getFileOrNull>>({ path: 'source.md' }));
+    mockedReadSafe.mockResolvedValue('---\na: target\nb: target\n---');
+    mockedParseFrontmatter.mockReturnValue(castTo<ReturnType<typeof parseFrontmatter>>({ a: 'target', b: 'target' }));
+
+    const result = await getBacklinksForFileSafe({ app, pathOrFile: 'target.md' });
+    expect(result.keys()).toEqual(['source.md']);
+    expect(mockedParseFrontmatter).toHaveBeenCalledTimes(1);
   });
 
   it('should succeed when reference cache link matches content', async () => {
