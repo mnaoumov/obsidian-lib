@@ -2846,6 +2846,47 @@ describe('app-dependent functions', () => {
       expect(ensureNonNullable(changes).map((change) => change.newContent)).toEqual(['[[../target]]']);
     });
 
+    it('should let linkStyleProvider decide the style per link, falling back to linkStyle', async () => {
+      vi.mocked(parseMetadata).mockResolvedValue(castTo<CachedMetadataEx>({
+        embeds: undefined,
+        frontmatterLinks: undefined,
+        links: [{
+          displayText: 'target',
+          link: 'target',
+          original: '[[target]]',
+          position: { end: { col: 10, line: 0, offset: 10 }, start: { col: 0, line: 0, offset: 0 } }
+        }],
+        sections: undefined
+      }));
+
+      let changes = null as FileChange[] | null;
+      vi.mocked(applyContentChanges).mockImplementation(
+        async ({ changesProvider, content }) => {
+          if (typeof changesProvider === 'function') {
+            changes = castTo<FileChange[]>(await (changesProvider as () => Promise<unknown>)());
+          }
+          return content;
+        }
+      );
+
+      // `UpdateLinksInContentParams` is module-private, so the params object is inferred rather than annotated.
+      const params = {
+        app,
+        content: '[[target]]',
+        linkStyle: LinkStyle.Markdown,
+        newSourcePathOrFile: 'folder/other.md'
+      };
+
+      const linkStyleProvider = vi.fn((): LinkStyle | undefined => LinkStyle.Wikilink);
+      await updateLinksInContent({ ...params, linkStyleProvider });
+      expect(linkStyleProvider).toHaveBeenCalledWith(expect.objectContaining({ original: '[[target]]' }));
+      expect(ensureNonNullable(changes).map((change) => change.newContent)).toEqual(['[[target]]']);
+
+      linkStyleProvider.mockReturnValue(undefined);
+      await updateLinksInContent({ ...params, linkStyleProvider });
+      expect(ensureNonNullable(changes).map((change) => change.newContent)).toEqual(['[target](target.md)']);
+    });
+
     it.each(SHAPING_PARAMS_CASES)('should forward $title to convertLink', async (shapingParamsCase) => {
       vi.mocked(parseMetadata).mockResolvedValue(castTo<CachedMetadataEx>({
         embeds: undefined,
@@ -3022,6 +3063,50 @@ describe('app-dependent functions', () => {
 
       await updateLinksInFile({ ...params, linkPathStyle: LinkPathStyle.RelativePathToTheSource });
       expect(ensureNonNullable(changes).map((change) => change.newContent)).toEqual(['[[../target]]']);
+    });
+
+    it('should let linkStyleProvider decide the style per link, falling back to linkStyle', async () => {
+      const link = {
+        displayText: 'target',
+        link: 'target',
+        original: '[[target]]',
+        position: { end: { col: 10, line: 0, offset: 10 }, start: { col: 0, line: 0, offset: 0 } }
+      };
+      vi.mocked(getCacheSafe).mockResolvedValue(castTo<CachedMetadataEx>({
+        embeds: undefined,
+        frontmatterLinks: undefined,
+        links: [link],
+        sections: undefined
+      }));
+
+      let changes = null as FileChange[] | null;
+      vi.mocked(applyFileChanges).mockImplementation(
+        async ({ changesProvider }) => {
+          if (typeof changesProvider !== 'function') {
+            return;
+          }
+
+          const abortSignal = strictProxy<AbortSignal>({ throwIfAborted: vi.fn() });
+          changes = castTo<FileChange[]>(await resolveValue(changesProvider, { abortSignal, content: '# Other' }));
+        }
+      );
+
+      const params: UpdateLinksInFileParams = {
+        app,
+        linkStyle: LinkStyle.Markdown,
+        newSourcePathOrFile: 'folder/other.md',
+        pluginNoticeComponent: null,
+        resourceLockComponent
+      };
+
+      const linkStyleProvider = vi.fn((): LinkStyle | undefined => LinkStyle.Wikilink);
+      await updateLinksInFile({ ...params, linkStyleProvider });
+      expect(linkStyleProvider).toHaveBeenCalledWith(expect.objectContaining({ original: link.original }));
+      expect(ensureNonNullable(changes).map((change) => change.newContent)).toEqual(['[[target]]']);
+
+      linkStyleProvider.mockReturnValue(undefined);
+      await updateLinksInFile({ ...params, linkStyleProvider });
+      expect(ensureNonNullable(changes).map((change) => change.newContent)).toEqual(['[target](target.md)']);
     });
 
     it.each(SHAPING_PARAMS_CASES)('should forward $title to convertLink', async (shapingParamsCase) => {
