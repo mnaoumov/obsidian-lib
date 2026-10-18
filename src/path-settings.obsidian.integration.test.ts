@@ -238,6 +238,6 @@ describe('PathSettings', () => {
     expect(result.savedExcludePaths).toStrictEqual([REPORTED_REG_EXP]);
     expect(result.validationMessageForCompletedRegExp).toBe('');
     expect(result.isInboxNoteIgnored).toBe(true);
-    expect(result.validationMessageForInvalidRegExp).toBe(`Invalid regular expression: ${INVALID_REG_EXP}`);
+    expect(result.validationMessageForInvalidRegExp).toBe(String.raw`Invalid regular expression: ${INVALID_REG_EXP} (\ at end of pattern)`);
   });
 });
