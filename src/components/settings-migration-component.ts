@@ -80,7 +80,7 @@ export interface SettingsMigrationComponentConstructorParams<TMigratableSettings
    * Taken as a whole component rather than as a bare "ready" flag so the host cannot forget to wire the wait:
    * whatever {@link getProposedSettings} reads is meaningless until this component has read `data.json`.
    */
-  readonly pluginSettingsComponent: PluginSettingsComponentBase<object>;
+  readonly pluginSettingsComponent: Pick<PluginSettingsComponentBase<object>, 'on'>;
 
   /**
    * The `manifest.id` of the plugin that owns these settings now, as listed in Obsidian's community plugin
@@ -120,7 +120,7 @@ export class SettingsMigrationComponent<TMigratableSettings extends object> exte
   private readonly contract: ApiContract<SettingsMigrationApi<TMigratableSettings>>;
   private readonly getProposedSettings: () => null | TMigratableSettings;
   private isProposing = false;
-  private readonly pluginSettingsComponent: PluginSettingsComponentBase<object>;
+  private readonly pluginSettingsComponent: Pick<PluginSettingsComponentBase<object>, 'on'>;
   private readonly providerPluginId: string;
   private readonly retireProposedSettings: () => Promisable<void>;
   private readonly sourcePluginId: string;

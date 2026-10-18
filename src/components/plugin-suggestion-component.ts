@@ -91,7 +91,7 @@ export interface PluginSuggestionComponentConstructorParams {
    * {@link PluginSettingsComponentBase.whenLoadedFromFile} for why the read cannot simply happen at
    * layout-ready.
    */
-  readonly pluginSettingsComponent: PluginSettingsComponentBase<object>;
+  readonly pluginSettingsComponent: Pick<PluginSettingsComponentBase<object>, 'whenLoadedFromFile'>;
 
   /**
    * The localized sentence explaining what the host plugin cannot do without the suggested plugin. The
@@ -134,7 +134,7 @@ export class PluginSuggestionComponent extends ComponentEx {
   private readonly app: App;
   private readonly isSuggestionDeclined: () => boolean;
   private readonly pluginNoticeComponent: PluginNoticeComponent;
-  private readonly pluginSettingsComponent: PluginSettingsComponentBase<object>;
+  private readonly pluginSettingsComponent: Pick<PluginSettingsComponentBase<object>, 'whenLoadedFromFile'>;
   private readonly reason: DocumentFragment | string;
   private readonly setSuggestionDeclined: (isDeclined: boolean) => Promisable<void>;
   private readonly suggestedPluginId: string;
