@@ -144,6 +144,177 @@ describe('PathSettings', () => {
     });
   });
 
+  describe('case-insensitive matching', () => {
+    it('should match plain paths case-insensitively', () => {
+      const ps = new PathSettings();
+      ps.excludePaths = ['Secret'];
+      expect(ps.isPathIgnored('secret/note.md')).toBe(true);
+      expect(ps.isPathIgnored('SECRET')).toBe(true);
+    });
+
+    it('should match globs case-insensitively', () => {
+      const ps = new PathSettings();
+      ps.excludePaths = ['*.pdf'];
+      expect(ps.isPathIgnored('a/b/C.PDF')).toBe(true);
+    });
+
+    it('should match regular expressions case-insensitively', () => {
+      const ps = new PathSettings();
+      ps.excludePaths = [String.raw`/\.locked$/`];
+      expect(ps.isPathIgnored('note.LOCKED')).toBe(true);
+    });
+  });
+
+  describe('regular expression flags', () => {
+    it('should honour a regular expression with flags', () => {
+      const ps = new PathSettings();
+      ps.excludePaths = [String.raw`/\.locked$/i`];
+      expect(ps.isPathIgnored('folder/note.locked')).toBe(true);
+      expect(ps.isPathIgnored('folder/note.md')).toBe(false);
+    });
+
+    it('should honour the s flag', () => {
+      const ps = new PathSettings();
+      ps.excludePaths = ['/^a.b$/s'];
+      expect(ps.isPathIgnored('a\nb')).toBe(true);
+    });
+
+    it('should drop the stateful g and y flags so repeated matches agree', () => {
+      const ps = new PathSettings();
+      ps.excludePaths = ['/note/gy'];
+      expect(ps.isPathIgnored('note.md')).toBe(true);
+      expect(ps.isPathIgnored('note.md')).toBe(true);
+    });
+
+    it.each(['/note/x', '/note/ii'])('should fall back to the default pattern for invalid flags in %s', (entry) => {
+      const ps = new PathSettings();
+      ps.excludePaths = [entry];
+      expect(ps.isPathIgnored('note.md')).toBe(false);
+    });
+  });
+
+  describe('glob patterns', () => {
+    it('should match a name-only glob at any depth', () => {
+      const ps = new PathSettings();
+      ps.excludePaths = ['*.pdf'];
+      expect(ps.isPathIgnored('c.pdf')).toBe(true);
+      expect(ps.isPathIgnored('a/b/c.pdf')).toBe(true);
+      expect(ps.isPathIgnored('a/b/c.pdf.md')).toBe(false);
+      expect(ps.isPathIgnored('a/b/c.md')).toBe(false);
+    });
+
+    it('should match everything inside a folder whose name matches', () => {
+      const ps = new PathSettings();
+      ps.excludePaths = ['tmp*'];
+      expect(ps.isPathIgnored('a/tmp1/note.md')).toBe(true);
+    });
+
+    it('should anchor a glob with a slash to the vault root', () => {
+      const ps = new PathSettings();
+      ps.excludePaths = ['Attachments/*.pdf'];
+      expect(ps.isPathIgnored('Attachments/c.pdf')).toBe(true);
+      expect(ps.isPathIgnored('Notes/Attachments/c.pdf')).toBe(false);
+      expect(ps.isPathIgnored('Attachments/sub/c.pdf')).toBe(false);
+    });
+
+    it('should match across segments with **', () => {
+      const ps = new PathSettings();
+      ps.excludePaths = ['Attachments/**/*.pdf'];
+      expect(ps.isPathIgnored('Attachments/c.pdf')).toBe(true);
+      expect(ps.isPathIgnored('Attachments/a/b/c.pdf')).toBe(true);
+      expect(ps.isPathIgnored('Other/a/c.pdf')).toBe(false);
+    });
+
+    it('should match everything inside a folder with a trailing /**', () => {
+      const ps = new PathSettings();
+      ps.excludePaths = ['Archive/**'];
+      expect(ps.isPathIgnored('Archive/a/b.md')).toBe(true);
+      expect(ps.isPathIgnored('Archive')).toBe(false);
+    });
+
+    it('should treat ** inside a segment as an ordinary *', () => {
+      const ps = new PathSettings();
+      ps.excludePaths = ['a/b**c'];
+      expect(ps.isPathIgnored('a/basic')).toBe(true);
+      expect(ps.isPathIgnored('a/b/c')).toBe(false);
+    });
+
+    it('should treat ** at the end of a segment that is not the last as an ordinary *', () => {
+      const ps = new PathSettings();
+      ps.excludePaths = ['a/b**'];
+      expect(ps.isPathIgnored('a/bxx')).toBe(true);
+    });
+
+    it('should match one character with ?', () => {
+      const ps = new PathSettings();
+      ps.excludePaths = ['note?.md'];
+      expect(ps.isPathIgnored('note1.md')).toBe(true);
+      expect(ps.isPathIgnored('note12.md')).toBe(false);
+      expect(ps.isPathIgnored('note/.md')).toBe(false);
+    });
+
+    it('should match a character class', () => {
+      const ps = new PathSettings();
+      ps.excludePaths = ['note[0-9].md'];
+      expect(ps.isPathIgnored('note5.md')).toBe(true);
+      expect(ps.isPathIgnored('noteA.md')).toBe(false);
+    });
+
+    it.each(['note[!0-9].md', 'note[^0-9].md'])('should match a negated character class %s', (entry) => {
+      const ps = new PathSettings();
+      ps.excludePaths = [entry];
+      expect(ps.isPathIgnored('noteA.md')).toBe(true);
+      expect(ps.isPathIgnored('note5.md')).toBe(false);
+    });
+
+    it('should treat a leading ] in a character class as literal', () => {
+      const ps = new PathSettings();
+      ps.excludePaths = ['note[]A].md'];
+      expect(ps.isPathIgnored('note].md')).toBe(true);
+      expect(ps.isPathIgnored('noteA.md')).toBe(true);
+      expect(ps.isPathIgnored('noteB.md')).toBe(false);
+    });
+
+    it('should honour escapes and special characters inside a character class', () => {
+      const ps = new PathSettings();
+      ps.excludePaths = [String.raw`note[\*^\\].md`];
+      expect(ps.isPathIgnored('note*.md')).toBe(true);
+      expect(ps.isPathIgnored('note^.md')).toBe(true);
+      expect(ps.isPathIgnored(String.raw`note\.md`)).toBe(true);
+      expect(ps.isPathIgnored('noteA.md')).toBe(false);
+    });
+
+    it('should match an escaped glob character literally', () => {
+      const ps = new PathSettings();
+      ps.excludePaths = [String.raw`a\*b*`];
+      expect(ps.isPathIgnored('a*bc')).toBe(true);
+      expect(ps.isPathIgnored('abc')).toBe(false);
+    });
+
+    it('should match a folder-only glob against folders and their contents', () => {
+      const ps = new PathSettings();
+      ps.excludePaths = ['tmp*/'];
+      expect(ps.isPathIgnored('a/tmp1', true)).toBe(true);
+      expect(ps.isPathIgnored('a/tmp1')).toBe(false);
+      expect(ps.isPathIgnored('a/tmp1/note.md')).toBe(true);
+    });
+
+    it.each(['a*\\', 'note[0-9.md', 'note[0-9\\', 'note[z-a].md'])('should fall back to the default pattern for invalid glob %s', (entry) => {
+      const ps = new PathSettings();
+      ps.excludePaths = [entry];
+      expect(ps.isPathIgnored('anything')).toBe(false);
+    });
+  });
+
+  describe('escaped plain paths', () => {
+    it('should match an escaped plain path literally', () => {
+      const ps = new PathSettings();
+      ps.excludePaths = [String.raw`Notes \[old\]`];
+      expect(ps.isPathIgnored('Notes [old]/a.md')).toBe(true);
+      expect(ps.isPathIgnored('Notes o')).toBe(false);
+    });
+  });
+
   describe('un-parseable regex patterns', () => {
     it('should not throw for any prefix typed on the way to a valid regex', () => {
       const ps = new PathSettings();
@@ -227,5 +398,25 @@ describe('pathsValidator', () => {
 
   it('should report the first un-parseable entry', () => {
     expect(pathsValidator(['dir', UNBALANCED_GROUP, DANGLING_ESCAPE])).toContain(UNBALANCED_GROUP);
+  });
+
+  it('should report the reason a regular expression is invalid', () => {
+    expect(pathsValidator([DANGLING_ESCAPE])).toBe(String.raw`Invalid regular expression: /^Inbox\/ (\ at end of pattern)`);
+  });
+
+  it('should report an invalid regular expression flag', () => {
+    expect(pathsValidator(['/note/x'])).toContain('/note/x');
+  });
+
+  it('should accept valid globs and flags', () => {
+    expect(pathsValidator(['*.pdf', 'Attachments/**/*.pdf', 'tmp*/', String.raw`/\.locked$/i`])).toBeUndefined();
+  });
+
+  it.each([
+    ['a*\\', String.raw`Invalid glob pattern: a*\ (it ends with an unescaped \)`],
+    ['note[0-9.md', 'Invalid glob pattern: note[0-9.md (a [ character class is never closed with ])'],
+    ['note[z-a].md', 'Invalid glob pattern: note[z-a].md (Range out of order in character class)']
+  ])('should report invalid glob %s with its reason', (entry, message) => {
+    expect(pathsValidator([entry])).toBe(message);
   });
 });

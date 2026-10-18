@@ -42,7 +42,10 @@ export const en = {
       unhandledError: 'An unhandled error occurred. Please check the console for more information.'
     },
     pathSettings: {
-      invalidRegularExpression: 'Invalid regular expression: {{regExp}}'
+      invalidGlob: 'Invalid glob pattern: {{glob}} ({{reason}})',
+      invalidRegularExpression: 'Invalid regular expression: {{regExp}} ({{reason}})',
+      trailingEscape: 'it ends with an unescaped \\',
+      unclosedCharacterClass: 'a [ character class is never closed with ]'
     },
     pluginConflict: {
       blockedNotice: '{{pluginName}} does nothing while {{conflictingPluginName}} is enabled. Update or disable it to continue.',
