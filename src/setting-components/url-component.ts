@@ -20,7 +20,7 @@ import { TypedTextComponent } from './typed-text-component.ts';
  *
  * In order to add the styles for the component, use {@link initPluginContext} in your plugin's `onload()` function.
  *
- * Alternatively, you can copy styles from {@link https://github.com/mnaoumov/obsidian-dev-utils/releases/latest/download/styles.css}.
+ * Alternatively, you can copy styles from {@link https://unpkg.com/@mnaoumov/obsidian-lib/dist/styles.css}.
  */
 export class UrlComponent extends TypedTextComponent<string> implements TextBasedComponent<string> {
   /**

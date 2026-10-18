@@ -5,7 +5,9 @@ description: The Obsidian-specific helpers, the import paths they are grouped un
 
 `@mnaoumov/obsidian-lib` provides a range of Obsidian-specific helper functions. The general-purpose ones live in `@mnaoumov/typescript-lib`; see its [Getting started](https://mnaoumov.dev/typescript-lib/guides/getting-started/) guide.
 
-The functions are grouped by files and folders and you have multiple ways to import them:
+The functions are grouped by files and folders and you have multiple ways to import them. Each of the following is an alternative to the others.
+
+From the module's own subpath:
 
 ```typescript
 import { prompt } from '@mnaoumov/obsidian-lib/modals/prompt';
@@ -13,19 +15,31 @@ await prompt({
   app,
   title: 'Enter your name'
 });
+```
 
+From the folder's subpath, where each module is a namespace:
+
+```typescript
 import { prompt } from '@mnaoumov/obsidian-lib/modals';
 await prompt.prompt({
   app,
   title: 'Enter your name'
 });
+```
 
+From the main entry, where each folder is a namespace:
+
+```typescript
 import { modals } from '@mnaoumov/obsidian-lib';
 await modals.prompt.prompt({
   app,
   title: 'Enter your name'
 });
+```
 
+As a namespace import of the main entry:
+
+```typescript
 import * as obsidianLib from '@mnaoumov/obsidian-lib';
 await obsidianLib.modals.prompt.prompt({
   app,

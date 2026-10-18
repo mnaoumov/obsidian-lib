@@ -19,7 +19,7 @@ checkbox.setValue(false);
 
 import { SettingEx } from '@mnaoumov/obsidian-lib/setting-ex';
 
-new SettingEx()
+new SettingEx(containerEl)
   .addCheckbox((checkbox) => {
     checkbox.setValue(false);
   });
@@ -43,7 +43,7 @@ codeHighlighter
 
 import { SettingEx } from '@mnaoumov/obsidian-lib/setting-ex';
 
-new SettingEx()
+new SettingEx(containerEl)
   .addCodeHighlighter((codeHighlighter) => {
     codeHighlighter
       .setLanguage('javascript')
@@ -67,7 +67,7 @@ date.setValue(new Date());
 
 import { SettingEx } from '@mnaoumov/obsidian-lib/setting-ex';
 
-new SettingEx()
+new SettingEx(containerEl)
   .addDate((date) => {
     date.setValue(new Date());
   });
@@ -87,7 +87,7 @@ dateTime.setValue(new Date());
 
 import { SettingEx } from '@mnaoumov/obsidian-lib/setting-ex';
 
-new SettingEx()
+new SettingEx(containerEl)
   .addDateTime((dateTime) => {
     dateTime.setValue(new Date());
   });
@@ -107,7 +107,7 @@ email.setValue('alpha@bravo.com');
 
 import { SettingEx } from '@mnaoumov/obsidian-lib/setting-ex';
 
-new SettingEx()
+new SettingEx(containerEl)
   .addEmail((email) => {
     email.setValue('alpha@bravo.com');
   });
@@ -127,7 +127,7 @@ file.onChange((value) => console.log(value));
 
 import { SettingEx } from '@mnaoumov/obsidian-lib/setting-ex';
 
-new SettingEx()
+new SettingEx(containerEl)
   .addFile((file) => {
     file.onChange((value) => console.log(value));
   });
@@ -150,7 +150,7 @@ month.setValue({
 
 import { SettingEx } from '@mnaoumov/obsidian-lib/setting-ex';
 
-new SettingEx()
+new SettingEx(containerEl)
   .addMonth((month) => {
     month.setValue({
       month: 4,
@@ -180,7 +180,7 @@ multipleDropdown.setValue(['Value2', 'Value3']);
 
 import { SettingEx } from '@mnaoumov/obsidian-lib/setting-ex';
 
-new SettingEx()
+new SettingEx(containerEl)
   .addMultipleDropdown((multipleDropdown) => {
     multipleDropdown.addOptions({
       Value1: 'Display 1',
@@ -207,7 +207,7 @@ multipleEmail.setValue(['alpha@bravo.com', 'charlie@delta.com']);
 
 import { SettingEx } from '@mnaoumov/obsidian-lib/setting-ex';
 
-new SettingEx()
+new SettingEx(containerEl)
   .addMultipleEmail((multipleEmail) => {
     multipleEmail.setValue(['alpha@bravo.com', 'charlie@delta.com']);
   });
@@ -227,7 +227,7 @@ multipleFile.onChange((value) => console.log(value));
 
 import { SettingEx } from '@mnaoumov/obsidian-lib/setting-ex';
 
-new SettingEx()
+new SettingEx(containerEl)
   .addMultipleFile((multipleFile) => {
     multipleFile.onChange((value) => console.log(value));
   });
@@ -247,7 +247,7 @@ multipleText.setValue(['alpha', 'bravo']);
 
 import { SettingEx } from '@mnaoumov/obsidian-lib/setting-ex';
 
-new SettingEx()
+new SettingEx(containerEl)
   .addMultipleText((multipleText) => {
     multipleText.setValue(['alpha', 'bravo']);
   });
@@ -267,7 +267,7 @@ number.setValue(42);
 
 import { SettingEx } from '@mnaoumov/obsidian-lib/setting-ex';
 
-new SettingEx()
+new SettingEx(containerEl)
   .addNumber((number) => {
     number.setValue(42);
   });
@@ -287,7 +287,7 @@ password.setValue('alpha');
 
 import { SettingEx } from '@mnaoumov/obsidian-lib/setting-ex';
 
-new SettingEx()
+new SettingEx(containerEl)
   .addPassword((password) => {
     password.setValue('alpha');
   });
@@ -307,7 +307,7 @@ telephone.setValue('+123 456 78 90');
 
 import { SettingEx } from '@mnaoumov/obsidian-lib/setting-ex';
 
-new SettingEx()
+new SettingEx(containerEl)
   .addTelephone((telephone) => {
     telephone.setValue('+123 456 78 90');
   });
@@ -330,10 +330,9 @@ time.setValue(moment.duration({ hours: 12, minutes: 34 }));
 
 // or
 
-import { moment } from 'obsidian';
 import { SettingEx } from '@mnaoumov/obsidian-lib/setting-ex';
 
-new SettingEx()
+new SettingEx(containerEl)
   .addTime((time) => {
     time.setValue(moment.duration({ hours: 12, minutes: 34 }));
   });
@@ -353,7 +352,7 @@ triStateCheckbox.setValue(null);
 
 import { SettingEx } from '@mnaoumov/obsidian-lib/setting-ex';
 
-new SettingEx()
+new SettingEx(containerEl)
   .addTriStateCheckbox((triStateCheckbox) => {
     triStateCheckbox.setValue(null);
   });
@@ -386,15 +385,7 @@ typedDropdown.setValue(TypedItem.Bravo);
 
 import { SettingEx } from '@mnaoumov/obsidian-lib/setting-ex';
 
-export class TypedItem {
-  public static readonly Bravo = new TypedItem('Bravo');
-  public static readonly Baz = new TypedItem('Baz');
-  public static readonly Alpha = new TypedItem('Alpha');
-
-  public constructor(public readonly name: string) {}
-}
-
-new SettingEx()
+new SettingEx(containerEl)
   .addTypedDropdown((typedDropdown) => {
     const map = new Map<TypedItem, string>();
     map.set(TypedItem.Alpha, 'Display Alpha');
@@ -432,15 +423,7 @@ typedMultipleDropdown.setValue([TypedItem.Bravo, TypedItem.Baz]);
 
 import { SettingEx } from '@mnaoumov/obsidian-lib/setting-ex';
 
-export class TypedItem {
-  public static readonly Bravo = new TypedItem('Bravo');
-  public static readonly Baz = new TypedItem('Baz');
-  public static readonly Alpha = new TypedItem('Alpha');
-
-  public constructor(public readonly name: string) {}
-}
-
-new SettingEx()
+new SettingEx(containerEl)
   .addTypedMultipleDropdown((typedMultipleDropdown) => {
     const map = new Map<TypedItem, string>();
     map.set(TypedItem.Alpha, 'Display Alpha');
@@ -465,8 +448,8 @@ url.setValue('https://alpha.com/');
 
 import { SettingEx } from '@mnaoumov/obsidian-lib/setting-ex';
 
-new SettingEx()
-  .addUrl((dateTime) => {
+new SettingEx(containerEl)
+  .addUrl((url) => {
     url.setValue('https://alpha.com/');
   });
 ```
@@ -479,7 +462,7 @@ new SettingEx()
 import { WeekComponent } from '@mnaoumov/obsidian-lib/setting-components/week-component';
 
 const week = new WeekComponent(containerEl);
-dateTime.setValue({
+week.setValue({
   weekNumber: 6,
   year: 2025
 });
@@ -488,9 +471,9 @@ dateTime.setValue({
 
 import { SettingEx } from '@mnaoumov/obsidian-lib/setting-ex';
 
-new SettingEx()
+new SettingEx(containerEl)
   .addWeek((week) => {
-    dateTime.setValue({
+    week.setValue({
       weekNumber: 6,
       year: 2025
     });

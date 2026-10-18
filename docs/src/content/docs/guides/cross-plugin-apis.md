@@ -77,8 +77,13 @@ But the names are the cheap half. The schemas are the half that checks the versi
 
 A plugin built on `PluginBase` declares its APIs by overriding `getPluginApis()`:
 
+<!-- snippet-check: context interface SearchApi { search(query: string, options: { limit: number }): Promise<{ path: string; score: number }[]>; } -->
+<!-- snippet-check: context declare const SEARCH_CONTRACT: import('@mnaoumov/typescript-lib/api-contract').ApiContract<SearchApi>; -->
+<!-- snippet-check: context declare class MySearchApi implements SearchApi { public constructor(plugin: import('obsidian').Plugin); public search(query: string, options: { limit: number }): Promise<{ path: string; score: number }[]>; } -->
 ```typescript
 import type { PluginApiDeclaration } from '@mnaoumov/obsidian-lib/plugin/plugin-api';
+
+import { PluginBase } from '@mnaoumov/obsidian-lib/plugin/plugin';
 
 export class Plugin extends PluginBase {
   protected override getPluginApis(): PluginApiDeclaration[] {
@@ -97,20 +102,39 @@ The record is keyed by `plugin.manifest.id`, which Obsidian already keeps unique
 
 `apiVersion` is the **contract** version, not the plugin version. Plugin `1.4.7` may perfectly well expose API `2.1.0`, and the two move independently. You may publish several versions side by side, which is how you move to `3.0.0` without breaking consumers pinned to `^2`:
 
+<!-- snippet-check: context interface SearchApi { search(query: string, options: { limit: number }): Promise<{ path: string; score: number }[]>; } -->
+<!-- snippet-check: context interface SearchApiV3 { search(query: string): Promise<{ path: string; score: number }[]>; } -->
+<!-- snippet-check: context declare const SEARCH_CONTRACT: import('@mnaoumov/typescript-lib/api-contract').ApiContract<SearchApi>; -->
+<!-- snippet-check: context declare const SEARCH_CONTRACT_V3: import('@mnaoumov/typescript-lib/api-contract').ApiContract<SearchApiV3>; -->
+<!-- snippet-check: context declare const legacyApi: SearchApi; -->
+<!-- snippet-check: context declare const nextApi: SearchApiV3; -->
 ```typescript
-return [
-  { api: legacyApi, apiVersion: '2.1.0', contract: SEARCH_CONTRACT },
-  { api: nextApi, apiVersion: '3.0.0', contract: SEARCH_CONTRACT_V3 }
-];
+import type { PluginApiDeclaration } from '@mnaoumov/obsidian-lib/plugin/plugin-api';
+
+import { PluginBase } from '@mnaoumov/obsidian-lib/plugin/plugin';
+
+export class Plugin extends PluginBase {
+  protected override getPluginApis(): PluginApiDeclaration[] {
+    return [
+      { api: legacyApi, apiVersion: '2.1.0', contract: SEARCH_CONTRACT },
+      { api: nextApi, apiVersion: '3.0.0', contract: SEARCH_CONTRACT_V3 }
+    ];
+  }
+}
 ```
 
 ## Consuming an API
 
 `watchPluginApi` is the whole consumer surface. It returns a **live ref** whose `value` is always current.
 
+<!-- snippet-check: context interface SearchApi { search(query: string, options: { limit: number }): Promise<{ path: string; score: number }[]>; } -->
+<!-- snippet-check: context declare const SEARCH_CONTRACT: import('@mnaoumov/typescript-lib/api-contract').ApiContract<SearchApi>; -->
 ```typescript
+import { watchPluginApi } from '@mnaoumov/obsidian-lib/plugin/plugin-api';
+import { Plugin } from 'obsidian';
+
 export default class MyConsumerPlugin extends Plugin {
-  private searchApi: SearchApi | null = null;
+  private searchApi: null | SearchApi = null;
 
   public override onload(): void {
     const ref = watchPluginApi<SearchApi>({
@@ -130,6 +154,8 @@ export default class MyConsumerPlugin extends Plugin {
 
 Three ways to read it, in the order you will usually want them:
 
+<!-- snippet-check: context interface SearchApi { search(query: string, options: { limit: number }): Promise<{ path: string; score: number }[]>; } -->
+<!-- snippet-check: context declare const ref: import('@mnaoumov/obsidian-lib/plugin/plugin-api').PluginApiRef<SearchApi>; -->
 ```typescript
 ref.value;                   // SearchApi | null — synchronous, free, always correct
 await ref.whenAvailable();   // one-shot flows: a command execution, a script
@@ -144,9 +170,27 @@ The watch is scoped to the `component` you pass, so it is torn down with it.
 
 Some Obsidian callbacks cannot `await` — `checkCallback(isChecking): boolean`, `canExecute()`, a settings-row `visible` predicate. The answer is not a lookup function; it is the field the ref already maintains for you:
 
+<!-- snippet-check: context interface SearchApi { search(query: string, options: { limit: number }): Promise<{ path: string; score: number }[]>; } -->
 ```typescript
-protected canExecute(): boolean {
-  return this.searchApi !== null;
+import type { PluginApiRef } from '@mnaoumov/obsidian-lib/plugin/plugin-api';
+
+import { GlobalCommandHandler } from '@mnaoumov/obsidian-lib/command-handlers/global-command-handler';
+
+export class SearchCommandHandler extends GlobalCommandHandler {
+  private readonly searchApiRef: PluginApiRef<SearchApi>;
+
+  public constructor(searchApiRef: PluginApiRef<SearchApi>) {
+    super({ icon: 'search', id: 'search', name: 'Search' });
+    this.searchApiRef = searchApiRef;
+  }
+
+  protected override canExecute(): boolean {
+    return this.searchApiRef.value !== null;
+  }
+
+  protected override async execute(): Promise<void> {
+    await this.searchApiRef.value?.search('query', { limit: 10 });
+  }
 }
 ```
 
@@ -180,7 +224,11 @@ Note that a re-enabled provider publishes a **new** record, so an old handle sta
 
 There is a sixth reason, `Revoked`, which `whenAvailable()` never reports: it describes a handle that *was* valid, and it arrives on a `PluginApiRevokedError` thrown by the handle itself. See [Revoked handles](#revoked-handles).
 
+<!-- snippet-check: context interface SearchApi { search(query: string, options: { limit: number }): Promise<{ path: string; score: number }[]>; } -->
+<!-- snippet-check: context declare const ref: import('@mnaoumov/obsidian-lib/plugin/plugin-api').PluginApiRef<SearchApi>; -->
 ```typescript
+import { PluginApiUnavailableError } from '@mnaoumov/obsidian-lib/plugin/plugin-api';
+
 try {
   const api = await ref.whenAvailable();
   await api.search('query', { limit: 10 });
@@ -204,8 +252,10 @@ Both sides may declare a contract, and **the consumer's wins when it supplies on
 An API is a bag of functions, and in zod 4 `z.function()` returns a function *factory* rather than a schema, so it cannot be a `z.object()` member directly. There is a [known workaround](https://github.com/colinhacks/zod/issues/4143#issuecomment-2845134912):
 
 ```typescript
+import { z } from 'zod/v4';
+
 const functionSchema = <T extends z.core.$ZodFunction>(schema: T) =>
-  z.custom<Parameters<T['implement']>[0]>((fn) => schema.implement(fn));
+  z.custom<Parameters<T['implement']>[0]>((fn) => schema.implement(fn as Parameters<T['implement']>[0]));
 ```
 
 It is genuinely useful if you want `z.infer` to produce your API type from a single schema. It does **not** give you runtime validation, though: `z.custom` is a boolean predicate that returns its input unchanged, so the validating wrapper `implement` builds is thrown away and the runtime check collapses back to "is it callable". Keeping the wrapper would take a further `.transform()` — and that would put validation on every call rather than behind the debug gate, and tie the contract to zod specifically, which is the coupling reaching through Standard Schema is meant to avoid.
@@ -218,41 +268,62 @@ When a feature moves from one plugin to another, the settings the user configure
 
 The envelope is generic, so both ends compile against one declaration:
 
+<!-- snippet-check: context interface MyMigratableSettings { shouldHandleRenames: boolean; } -->
+<!-- snippet-check: context declare const settingsMigrationApi: import('@mnaoumov/obsidian-lib/plugin/settings-migration-api').SettingsMigrationApi<MyMigratableSettings>; -->
 ```typescript
 import type { PluginApiDeclaration } from '@mnaoumov/obsidian-lib/plugin/plugin-api';
 import type { SettingsMigrationApi } from '@mnaoumov/obsidian-lib/plugin/settings-migration-api';
 
+import { PluginBase } from '@mnaoumov/obsidian-lib/plugin/plugin';
 import { getSettingsMigrationApiContract } from '@mnaoumov/obsidian-lib/plugin/settings-migration-api';
 
-// The provider declares it in `getPluginApis()`. The payload type is yours; the envelope is not.
-const declaration: PluginApiDeclaration<SettingsMigrationApi<MyMigratableSettings>> = {
-  api: this.settingsMigrationApi,
-  apiVersion: '1.0.0',
-  contract: getSettingsMigrationApiContract<MyMigratableSettings>()
-};
+export class Plugin extends PluginBase {
+  protected override getPluginApis(): PluginApiDeclaration[] {
+    // The payload type is yours; the envelope is not.
+    const declaration: PluginApiDeclaration<SettingsMigrationApi<MyMigratableSettings>> = {
+      api: settingsMigrationApi,
+      apiVersion: '1.0.0',
+      contract: getSettingsMigrationApiContract<MyMigratableSettings>()
+    };
+    return [declaration];
+  }
+}
 ```
 
 The consumer parks the values it no longer acts on in its own settings, and lets the component do the rest:
 
+<!-- snippet-check: context interface MyMigratableSettings { shouldHandleRenames: boolean; } -->
+<!-- snippet-check: context interface MyPluginSettings { proposedShouldHandleRenames: boolean | null; } -->
+<!-- snippet-check: context declare const settingsComponent: import('@mnaoumov/obsidian-lib/components/plugin-settings-component').PluginSettingsComponentBase<MyPluginSettings>; -->
 ```typescript
-import { SettingsMigrationComponent } from '@mnaoumov/obsidian-lib/components/settings-migration-component';
+import type { PluginSettingsComponentBase } from '@mnaoumov/obsidian-lib/components/plugin-settings-component';
 
-this.addChild(new SettingsMigrationComponent<MyMigratableSettings>({
-  apiVersionRange: '^1',
-  app: this.app,
-  getProposedSettings: () => {
-    const pending = this.settingsComponent.settings.proposedShouldHandleRenames;
-    return pending === null ? null : { shouldHandleRenames: pending };
-  },
-  pluginSettingsComponent: this.settingsComponent,
-  providerPluginId: 'their-plugin-id',
-  retireProposedSettings: async () => {
-    await this.settingsComponent.editAndSave((settings) => {
-      settings.proposedShouldHandleRenames = null;
-    });
-  },
-  sourcePluginId: this.manifest.id
-}));
+import { SettingsMigrationComponent } from '@mnaoumov/obsidian-lib/components/settings-migration-component';
+import { PluginBase } from '@mnaoumov/obsidian-lib/plugin/plugin';
+import { castTo } from '@mnaoumov/typescript-lib/object-utils';
+
+export class Plugin extends PluginBase {
+  protected override onloadImpl(): void {
+    // `settingsComponent` is your own `PluginSettingsComponentBase<MyPluginSettings>`.
+    this.addChild(new SettingsMigrationComponent<MyMigratableSettings>({
+      apiVersionRange: '^1',
+      app: this.app,
+      getProposedSettings: () => {
+        const pending = settingsComponent.settings.proposedShouldHandleRenames;
+        return pending === null ? null : { shouldHandleRenames: pending };
+      },
+      // The parameter is typed `PluginSettingsComponentBase<object>`, which a typed component does not satisfy yet.
+      pluginSettingsComponent: castTo<PluginSettingsComponentBase<object>>(settingsComponent),
+      providerPluginId: 'their-plugin-id',
+      retireProposedSettings: async () => {
+        await settingsComponent.editAndSave((settings) => {
+          settings.proposedShouldHandleRenames = null;
+        });
+      },
+      sourcePluginId: this.manifest.id
+    }));
+  }
+}
 ```
 
 Your plugin **proposes**; it never writes into another plugin's `data.json`. The provider owns the settings, so it owns the dialog, and the user approves, edits or declines.
@@ -278,6 +349,8 @@ Declare the dependency instead:
 
 ```typescript
 import type { PluginDependency } from '@mnaoumov/obsidian-lib/components/plugin-gate-component';
+
+import { PluginBase } from '@mnaoumov/obsidian-lib/plugin/plugin';
 
 export class Plugin extends PluginBase {
   protected override getPluginDependencies(): PluginDependency[] {
@@ -317,6 +390,7 @@ Declare the overlap:
 import type { PluginConflict } from '@mnaoumov/obsidian-lib/components/plugin-gate-component';
 
 import { PluginConflictSeverity } from '@mnaoumov/obsidian-lib/components/plugin-gate-component';
+import { PluginBase } from '@mnaoumov/obsidian-lib/plugin/plugin';
 
 export class Plugin extends PluginBase {
   protected override getPluginConflicts(): PluginConflict[] {
@@ -334,7 +408,33 @@ export class Plugin extends PluginBase {
 `Block` behaves exactly like an unsatisfied dependency: `onloadImpl` does not run, and the user gets a notice plus a stand-in settings tab carrying your `reason`, a button that disables the other plugin, and a link into its settings. `Warn` is for an overlap that is annoying rather than destructive — a duplicated command, work done twice — where refusing to load would cost the user more than the overlap does. Both plugins keep running, the user is told once, and you can place the same explanation in your own settings tab:
 
 ```typescript
-this.pluginGateComponent.renderConflictWarningBanner(containerEl);
+import type { PluginGateComponent } from '@mnaoumov/obsidian-lib/components/plugin-gate-component';
+import type { App } from 'obsidian';
+
+import { PluginBase } from '@mnaoumov/obsidian-lib/plugin/plugin';
+import { PluginSettingTab } from 'obsidian';
+
+class MySettingTab extends PluginSettingTab {
+  private readonly pluginGateComponent: PluginGateComponent;
+
+  public constructor(app: App, plugin: PluginBase, pluginGateComponent: PluginGateComponent) {
+    super(app, plugin);
+    this.pluginGateComponent = pluginGateComponent;
+  }
+
+  public override display(): void {
+    this.containerEl.empty();
+    this.pluginGateComponent.renderConflictWarningBanner(this.containerEl);
+    // Your own settings follow.
+  }
+}
+
+export class Plugin extends PluginBase {
+  protected override onloadImpl(): void {
+    // `pluginGateComponent` is protected, so the plugin hands it to its settings tab.
+    this.addSettingTab(new MySettingTab(this.app, this, this.pluginGateComponent));
+  }
+}
 ```
 
 Three things about the detection are worth knowing, because each has a plausible-looking alternative:
@@ -354,10 +454,18 @@ import {
   PLUGIN_LOADED_EVENT_NAME,
   PLUGIN_UNLOADED_EVENT_NAME
 } from '@mnaoumov/obsidian-lib/plugin/plugin-lifecycle-events';
+import { Plugin } from 'obsidian';
 
-this.registerEvent(this.app.workspace.on(PLUGIN_LOADED_EVENT_NAME, (payload) => {
-  console.log(payload.pluginId, payload.apiVersions);
-}));
+export default class MyPlugin extends Plugin {
+  public override onload(): void {
+    this.registerEvent(this.app.workspace.on(PLUGIN_LOADED_EVENT_NAME, (payload) => {
+      console.log(payload.pluginId, payload.apiVersions);
+    }));
+    this.registerEvent(this.app.workspace.on(PLUGIN_UNLOADED_EVENT_NAME, (payload) => {
+      console.log(payload.pluginId);
+    }));
+  }
+}
 ```
 
 `obsidian-dev-utils:plugin-loaded` fires only after every API that plugin declares has been published, so a listener may call them immediately. The payload carries `pluginId`, `pluginName`, `pluginVersion`, `apiVersions`, and `dependencyPluginIds` — the last of which is how a provider answers "which installed plugins depend on me", something the registry cannot tell it.

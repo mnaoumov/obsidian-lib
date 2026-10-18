@@ -7,7 +7,7 @@
  * (`export { fn } from './kebab-file.ts'`), so an `evalInObsidian` closure can reach any helper as
  * `lib.fn` after `registerLibResolver(() => window.__obsidianDevUtilsModule.__merged)`.
  *
- * Only VALUE exports are flattened: `typeof import('obsidian-dev-utils/__merged')` (the type the
+ * Only VALUE exports are flattened: `typeof import('@mnaoumov/obsidian-lib/__merged')` (the type the
  * harness `Lib` interface extends) captures the value space, so type-only exports contribute nothing
  * to `lib` and are skipped. Every flat name must be unique — the generator throws (failing the build)
  * if two distinct symbols are exported under the same name, so a genuine clash must be resolved by

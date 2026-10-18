@@ -16,11 +16,11 @@
  */
 
 /**
- * A version of the `obsidian-dev-utils` library.
+ * The version of the `@mnaoumov/obsidian-lib` library.
  */
 export const LIBRARY_VERSION = '$(LIBRARY_VERSION)' as string;
 
 /**
- * A styles of the `obsidian-dev-utils` library.
+ * The styles of the `@mnaoumov/obsidian-lib` library.
  */
 export const LIBRARY_STYLES = '$(LIBRARY_STYLES)' as string;

@@ -1,10 +1,13 @@
 /**
  * @file
  *
- * Provides access to a process-wide shared-state bag used internally by `obsidian-dev-utils`.
+ * LEGACY: provides access to the process-wide shared-state bag on the `__obsidianDevUtils` global. The name is
+ * the retired `obsidian-dev-utils` package's; it stays because plugins bundling an older copy read and write the same
+ * bag, so it is a wire format rather than a name to copy. New generic state belongs in
+ * `@mnaoumov/typescript-lib/typescript-lib-state` (the `Symbol.for('@mnaoumov/typescript-lib/state')` slot).
  *
  * The bag is stored on `globalThis.__obsidianDevUtils`, i.e. on the global object of the realm in
- * which `obsidian-dev-utils` is loaded. Because a function's `globalThis` resolves to its defining
+ * which this library is loaded. Because a function's `globalThis` resolves to its defining
  * realm (not the caller's), every consumer that bundles the library in the main Obsidian renderer
  * shares the same bag, regardless of which window is currently active. This intentionally replaces
  * the previous `App`-scoped storage, so callers no longer need to pass an `App` instance.

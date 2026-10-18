@@ -23,7 +23,7 @@ export type {
  * Options for {@link SuggestModalCommandBuilder.build}.
  *
  * @deprecated Use {@link ModalCommandBuilderBuildOptions} from
- * `obsidian-dev-utils/obsidian/modals/modal-command-builder` instead.
+ * `@mnaoumov/obsidian-lib/modals/modal-command-builder` instead.
  */
 export type SuggestModalCommandBuilderBuildOptions = ModalCommandBuilderBuildOptions;
 
@@ -31,7 +31,7 @@ export type SuggestModalCommandBuilderBuildOptions = ModalCommandBuilderBuildOpt
  * Builds a `SuggestModal`'s instruction bar.
  *
  * @deprecated Use {@link ModalCommandBuilder} from
- * `obsidian-dev-utils/obsidian/modals/modal-command-builder` instead.
+ * `@mnaoumov/obsidian-lib/modals/modal-command-builder` instead.
  */
 export const SuggestModalCommandBuilder = ModalCommandBuilder;
 
@@ -39,6 +39,6 @@ export const SuggestModalCommandBuilder = ModalCommandBuilder;
  * Builds a `SuggestModal`'s instruction bar.
  *
  * @deprecated Use {@link ModalCommandBuilder} from
- * `obsidian-dev-utils/obsidian/modals/modal-command-builder` instead.
+ * `@mnaoumov/obsidian-lib/modals/modal-command-builder` instead.
  */
 export type SuggestModalCommandBuilder = ModalCommandBuilder;

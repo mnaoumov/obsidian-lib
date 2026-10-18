@@ -12,6 +12,7 @@ description: The `PluginBase` family - notices, settings components, settings ta
 >
 > Most of the functionality in this section is defined in `public/protected` methods, which is very easy to accidentally override incorrectly.
 >
+> <!-- snippet-check: skip pseudo-code: Alpha, Bravo, charlie and delta are placeholder names illustrating super calls, not library API -->
 > ```ts
 > class Alpha extends Bravo {
 >   public override charlie(): void {
@@ -35,26 +36,32 @@ The links below contains the full documentation. Here in the docs we mention onl
 `PluginBase` is a base class for plugins, that has some additional useful features to standard [Obsidian Plugin class](https://docs.obsidian.md/Reference/TypeScript+API/Plugin).
 
 ```ts
+import { PluginBase } from '@mnaoumov/obsidian-lib/plugin/plugin';
+
 export class FooPlugin extends PluginBase {
 }
 ```
 
-The most important methods in the execution order:
+The most important methods to override:
 
-- `onload()` - usually you don't need to override it.
-- `onloadImpl()`
-- `onLoadSettings()`
-- `onLayoutReady()`
-- `onSaveSettings()`
-- `onExternalSettingsChange()` - usually you don't need to override it.
-- `onunload()` - usually you don't need to override it.
+- `onloadImpl()` - your load logic. Add child components here with `addChild()`; the universal components, such as `pluginNoticeComponent` and `consoleDebugComponent`, are already available.
+- `getPluginApis()`, `getPluginDependencies()`, `getPluginConflicts()` - declare the APIs the plugin publishes and the plugins it needs or conflicts with. See [Cross-plugin APIs](/obsidian-lib/guides/cross-plugin-apis/).
+- `createTranslationsMap()` - supply the plugin's own translations.
+
+Three are public Obsidian methods that `PluginBase` already implements, so you rarely override them: `onload()`, `onExternalSettingsChange()` and `onunload()`. Settings are loaded and saved by the plugin's settings component, whose `onLoadSettings()` and `onSaveSettings()` hooks you override there; see the `PluginSettingsComponentBase` section below.
 
 ## [PluginNoticeComponent](https://github.com/mnaoumov/obsidian-lib/blob/main/src/components/plugin-notice-component.ts)
 
-`plugin.pluginNoticeComponent` shows notices prefixed with the plugin name and tied to the plugin lifecycle. Prefer it over constructing an Obsidian `Notice` directly.
+`this.pluginNoticeComponent` shows notices prefixed with the plugin name and tied to the plugin lifecycle. Prefer it over constructing an Obsidian `Notice` directly. It is a `protected` member of `PluginBase`, so reach it from inside your plugin class, or pass it to the components that need it.
 
 ```ts
-plugin.pluginNoticeComponent.showNotice('Something happened');
+import { PluginBase } from '@mnaoumov/obsidian-lib/plugin/plugin';
+
+export class FooPlugin extends PluginBase {
+  protected override onloadImpl(): void {
+    this.pluginNoticeComponent.showNotice('Something happened');
+  }
+}
 ```
 
 `showNotice(message, options?)` accepts these options:
@@ -72,27 +79,43 @@ The implication rules are enforced — a contradictory combination throws:
 ## [PluginSettingsComponentBase](https://github.com/mnaoumov/obsidian-lib/blob/main/src/components/plugin-settings-component.ts)
 
 ```ts
+import { PluginSettingsComponentBase } from '@mnaoumov/obsidian-lib/components/plugin-settings-component';
+
+export class FooPluginSettings {
+  public invalidCharacterAction: 'Remove' | 'Replace' = 'Remove';
+  public replacementCharacter = '_';
+}
+
 export class FooPluginSettingsComponent extends PluginSettingsComponentBase<FooPluginSettings> {
 }
 ```
 
+The default settings are a default-constructed instance of the settings class, passed to the component's constructor as `pluginSettingsClass`.
+
 The most important methods in the execution order:
 
-- `createDefaultSettings()`
 - `registerValidators()`
 - `onLoadRecord()`
 - `onSavingRecord()`
 
 ## [PluginSettingsTabBase](https://github.com/mnaoumov/obsidian-lib/blob/main/src/plugin/plugin-settings-tab.ts)
 
+<!-- snippet-check: context declare class FooPluginSettings { invalidCharacterAction: 'Remove' | 'Replace'; replacementCharacter: string; } -->
 ```ts
+import { PluginSettingsTabBase } from '@mnaoumov/obsidian-lib/plugin/plugin-settings-tab';
+
 export class FooPluginSettingsTab extends PluginSettingsTabBase<FooPluginSettings> {
 }
 ```
 
 Obsidian 1.13 renders a settings tab from the definitions it returns, so a tab describes its rows instead of building them into a container. Override `getSettingDefinitionItems()` and build each row with `settingEx()`, grouping them with `settingGroupEx()`:
 
+<!-- snippet-check: context declare class FooPluginSettings { invalidCharacterAction: 'Remove' | 'Replace'; replacementCharacter: string; } -->
 ```ts
+import type { SettingDefinitionItem } from 'obsidian';
+
+import { PluginSettingsTabBase } from '@mnaoumov/obsidian-lib/plugin/plugin-settings-tab';
+
 export class FooPluginSettingsTab extends PluginSettingsTabBase<FooPluginSettings> {
   protected override getSettingDefinitionItems(): SettingDefinitionItem[] {
     return [
@@ -159,19 +182,26 @@ Emptiness is decided from the adapter, not from the vault file tree - the tree o
 It is deliberately opt-in. `app.vault.adapter` is shared by the whole app, so a library that installed this patch on its own would change `rmdir` semantics for every other plugin, including the ones that never asked for it. A plugin that deletes folders opts in for itself:
 
 ```ts
-this.addChild(new RmdirGuardComponent(this.app));
+import { RmdirGuardComponent } from '@mnaoumov/obsidian-lib/components/rmdir-guard-component';
+import { PluginBase } from '@mnaoumov/obsidian-lib/plugin/plugin';
+
+export class FooPlugin extends PluginBase {
+  protected override onloadImpl(): void {
+    this.addChild(new RmdirGuardComponent(this.app));
+  }
+}
 ```
 
 Check `error.code === 'ENOTEMPTY'` rather than `instanceof` - every plugin bundles its own copy of the library, so the error may cross a copy boundary.
 
 ## [SyntaxHighlightingComponent](https://github.com/mnaoumov/obsidian-lib/blob/main/src/components/syntax-highlighting-component.ts)
 
-`SyntaxHighlightingComponent` registers your own syntax highlighting languages and unregisters them when it is unloaded. Add it as a child of your plugin: `const syntaxHighlightingComponent = this.addChild(new SyntaxHighlightingComponent());`.
+`SyntaxHighlightingComponent` registers your own syntax highlighting languages and unregisters them when it is unloaded. Add it as a child of your plugin: `const syntaxHighlightingComponent = this.addChild(new SyntaxHighlightingComponent());`, as in the example below.
 
 Obsidian highlights code through two independent registries, so there are two methods:
 
-- `registerPrismLanguageAsync({ grammar, language })` - registers a Prism language, which highlights code in reading view and in every `<pre><code>` the library renders, including the `SettingEx.addCodeHighlighter()` field.
-- `registerCodeBlockLanguageAsync({ editorMode, language, prismGrammar })` - additionally registers a CodeMirror 5 mode, which is what highlights a fenced code block inside the editor. `editorMode` is the mode name or MIME type the fence is highlighted as, e.g. `text/typescript`. Omit `prismGrammar` when the fence is replaced in reading view, e.g. rendered as a button.
+- `registerPrismLanguage({ grammar, language })` - registers a Prism language, which highlights code in reading view and in every `<pre><code>` the library renders, including the `SettingEx.addCodeHighlighter()` field.
+- `registerCodeBlockLanguage({ editorMode, language, prismGrammar })` - additionally registers a CodeMirror 5 mode, which is what highlights a fenced code block inside the editor. `editorMode` is the mode name or MIME type the fence is highlighted as, e.g. `text/typescript`. Omit `prismGrammar` when the fence is replaced in reading view, e.g. rendered as a button.
 
 `grammar` / `prismGrammar` accepts three forms:
 
@@ -182,18 +212,26 @@ Obsidian highlights code through two independent registries, so there are two me
 A missing language always throws - both when aliasing a language that is not registered and from `requirePrismLanguage()` - so a typo fails loudly instead of silently leaving your code without highlighting.
 
 ```ts
-await syntaxHighlightingComponent.registerCodeBlockLanguageAsync({
-  editorMode: 'text/typescript',
-  language: 'my-language',
-  prismGrammar: 'typescript'
-});
+import { SyntaxHighlightingComponent } from '@mnaoumov/obsidian-lib/components/syntax-highlighting-component';
+import { PluginBase } from '@mnaoumov/obsidian-lib/plugin/plugin';
+
+export class FooPlugin extends PluginBase {
+  protected override async onloadImpl(): Promise<void> {
+    const syntaxHighlightingComponent = this.addChild(new SyntaxHighlightingComponent());
+    await syntaxHighlightingComponent.registerCodeBlockLanguage({
+      editorMode: 'text/typescript',
+      language: 'my-language',
+      prismGrammar: 'typescript'
+    });
+  }
+}
 ```
 
 ## Working with plugin settings
 
-Most of the times, it's enough to use `plugin.settings` which is just an alias to `plugin.settingsComponent.settingsState.effectiveValues`.
+Most of the times, it's enough to use `this.pluginSettingsComponent.settings` (`pluginSettingsComponent` is a `protected` member of `PluginBase`) which is just an alias to `this.pluginSettingsComponent.settingsState.effectiveValues`.
 
-For more advanced scenarios, you can use `plugin.settingsComponent.settingsState` with the following properties:
+For more advanced scenarios, you can use `this.pluginSettingsComponent.settingsState` with the following properties:
 
 - `inputValues` - values as been set, even if they don't pass validation.
 - `effectiveValues` - set values, if they pass validation, or default value, otherwise.

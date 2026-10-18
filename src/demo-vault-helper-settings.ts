@@ -11,7 +11,7 @@
  * reads the plugin's `manifest.json` to name the archive — so it writes the id down here and the
  * bootstrap simply reads it.
  *
- * The marker and the helper binary are written together, by the same `obsidian-dev-utils` version, into
+ * The marker and the helper binary are written together, by the same `@mnaoumov/obsidian-lib` version, into
  * the same archive, so the two can never disagree.
  *
  * Kept free of `obsidian` imports on purpose: the packaging step ({@link archivePluginDemoVault}) runs

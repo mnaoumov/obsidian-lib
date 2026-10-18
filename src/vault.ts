@@ -956,7 +956,7 @@ export async function process(params: ProcessParams): Promise<void> {
  * This is NOT a pure read: it calls {@link saveNote} first, which saves any open editor view of the
  * note that has unsaved changes, so the content it returns is what the user sees. Do not call it from
  * an automatic trigger that only decides whether to act. See `getCacheSafe` in
- * `obsidian-dev-utils/obsidian/metadata-cache` for why.
+ * `@mnaoumov/obsidian-lib/metadata-cache` for why.
  *
  * @param app - The application instance.
  * @param pathOrFile - The path or file to read.
@@ -1018,7 +1018,7 @@ export async function renameSafe(params: RenameSafeParams): Promise<string> {
  *
  * Calls `view.save()` on every open markdown view of the note that has unsaved changes. This is a
  * write, and several helpers whose names read as reads call it: {@link readSafe}, and `getCacheSafe`,
- * `getFrontmatterSafe` and `getBacklinksForFileSafe` in `obsidian-dev-utils/obsidian/metadata-cache`.
+ * `getFrontmatterSafe` and `getBacklinksForFileSafe` in `@mnaoumov/obsidian-lib/metadata-cache`.
  *
  * @param app - The Obsidian app instance.
  * @param pathOrFile - The note to be saved.

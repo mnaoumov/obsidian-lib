@@ -16,7 +16,7 @@ import { ComponentEx } from './component-ex.ts';
 /**
  * Installs a {@link CaseInsensitiveFileIndex} for the vault while loaded and keeps it in sync with
  * `create`/`delete`/`rename` events. Once loaded, case-insensitive path resolution in
- * `obsidian-dev-utils` becomes O(1) even on a miss; on unload the index is removed and resolution
+ * this library becomes O(1) even on a miss; on unload the index is removed and resolution
  * falls back to the native O(vault)-on-miss lookup.
  */
 export class CaseInsensitiveFileIndexComponent extends ComponentEx {

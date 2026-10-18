@@ -310,6 +310,7 @@
     "build:validate-dependencies": "jiti scripts/build-validate-dependencies.ts",
     "commit": "jiti scripts/commit.ts",
     "docs:build": "jiti scripts/docs-build.ts",
+    "docs:check-snippets": "jiti scripts/docs-check-snippets.ts",
     "docs:dev": "jiti scripts/docs-dev.ts",
     "docs:preview": "jiti scripts/docs-preview.ts",
     "find-overexposed": "jiti scripts/find-overexposed.ts",

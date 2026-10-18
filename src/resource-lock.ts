@@ -294,7 +294,7 @@ class ResourceLockEventsComponent extends ComponentEx {
 
 /**
  * Tracks path-scoped editor locks and keeps every open {@link MarkdownView} in sync with the locked
- * set. A single instance lives on the shared `obsidian-dev-utils` state. Each lock is one
+ * set. A single instance lives in the shared state under the legacy `__obsidianDevUtils` global. Each lock is one
  * {@link LockEntry} in a per-path list, so a path can be held by several plugins (or several times by
  * one) concurrently and is released only when its last entry is removed; the indicators report which
  * plugins currently hold a lock.
