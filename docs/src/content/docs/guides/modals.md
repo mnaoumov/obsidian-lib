@@ -5,14 +5,14 @@ description: Promise-returning `alert`, `confirm`, `prompt`, and item-selection 
 
 `@mnaoumov/obsidian-lib` provides some modals that you can use in your plugin.
 
-In order for models to look properly, their styles have to be initialized. See [Styling](/obsidian-lib/guides/styling/) for more details.
+In order for modals to look properly, their styles have to be initialized. See [Styling](/obsidian-lib/guides/styling/) for more details.
 
 ## Alert
 
 ```ts
 import { alert } from '@mnaoumov/obsidian-lib/modals/alert';
 
-await prompt({
+await alert({
   app,
   message: 'Sample alert message',
   title: 'Sample alert title'
@@ -39,14 +39,14 @@ await confirm({
 
 ```ts
 import { prompt } from '@mnaoumov/obsidian-lib/modals/prompt';
-import { MaybeReturn } from '@mnaoumov/typescript-lib/type';
+import type { MaybeReturn } from '@mnaoumov/typescript-lib/type';
 
 await prompt({
   app,
-  message: 'Sample prompt message',
+  defaultValue: 'Sample prompt default value',
   title: 'Sample prompt title',
   valueValidator(value: string): MaybeReturn<string> {
-    if (value.length<30>) {
+    if (value.length < 30) {
       return 'Value must be at least 30 characters long';
     }
   }
@@ -63,7 +63,7 @@ import { selectItem } from '@mnaoumov/obsidian-lib/modals/select-item';
 await selectItem({
   app,
   items: ['Item 1', 'Item 2', 'Item 3'],
-  itemTextFunc(item: string): string {
+  itemTextFunction(item: string): string {
     return item;
   },
   placeholder: 'Sample select item placeholder'

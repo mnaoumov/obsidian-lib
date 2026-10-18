@@ -83,12 +83,12 @@ export function initPluginContext(pluginId: string): void {
   showInitialDebugMessage(pluginId);
 
   // Nothing else in the library reaches for the shared abort controller -- only consumer plugins do. Create
-  // it here so `__obsidianDevUtils.sharedAbortController.value.abort()` always resolves in the devtools
-  // console, instead of throwing until some plugin happens to start an abortable operation.
+  // it here so the devtools console recipe in the debugging guide always resolves, instead of throwing until some
+  // plugin happens to start an abortable operation.
   getSharedAbortController();
 
   // The debuggers, the `debug` instance and the shared abort controller moved out of `__obsidianDevUtils`. Link them
-  // back, so plugins bundling an older copy of this library share them, and the devtools line above keeps working.
+  // back under the legacy global, so plugins bundling an older copy of this library share them.
   shareTypescriptLibStateWithObsidianDevUtilsState();
 
   injectLibraryStyles({

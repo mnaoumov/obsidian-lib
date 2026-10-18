@@ -26,7 +26,7 @@
  * The wrapper reuses the modal's own title (`titleEl`) as the minimized bar label, so set the title
  * the usual way (`modal.setTitle(...)`). Render arbitrary content into {@link Modal.contentEl},
  * including clickable note links produced by `renderInternalLink` from
- * `obsidian-dev-utils/obsidian/markdown`:
+ * `@mnaoumov/obsidian-lib/markdown`:
  *
  * ```ts
  * const modal = new MyModal(app);

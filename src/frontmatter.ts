@@ -241,7 +241,7 @@ export function parseFrontmatter<CustomFrontmatter = unknown>(content: string): 
  *
  * There is at most one, shared by every plugin loaded in the same realm — like every other registration in this library it lives in the `globalThis.__obsidianDevUtils` bag — so a single call makes every write this library performs formatting-preserving, `processFrontmatter()` and `applyFileChanges()` included. Pass `null` to unregister.
  *
- * The preserver is NOT registered by default, and that is a bundle-size decision rather than a doubt about the engine: the one this library ships needs the `yaml` package's CST API, which Obsidian does not hand to plugins and which costs about 100 KB of a plugin's `main.js`. A plugin that wants it calls `enableFrontmatterFormattingPreservation()` from `obsidian-dev-utils/obsidian/frontmatter-formatting`, and pays for it only then.
+ * The preserver is NOT registered by default, and that is a bundle-size decision rather than a doubt about the engine: the one this library ships needs the `yaml` package's CST API, which Obsidian does not hand to plugins and which costs about 100 KB of a plugin's `main.js`. A plugin that wants it calls `enableFrontmatterFormattingPreservation()` from `@mnaoumov/obsidian-lib/frontmatter-formatting`, and pays for it only then.
  *
  * @param preserver - The preserver to route front-matter writes through, or `null` to unregister the current one.
  */

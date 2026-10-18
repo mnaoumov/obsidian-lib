@@ -1,11 +1,13 @@
 /**
  * @file
  *
- * CSS classes used by the `obsidian-dev-utils` library.
+ * CSS classes used by the `@mnaoumov/obsidian-lib` library. {@link CssClass.LibraryName} keeps the legacy
+ * `obsidian-dev-utils` name, so stylesheets written for older copies still match.
  */
 
 /**
- * CSS classes used by the `obsidian-dev-utils` library.
+ * CSS classes used by the `@mnaoumov/obsidian-lib` library. {@link CssClass.LibraryName} keeps the legacy
+ * `obsidian-dev-utils` name, so stylesheets written for older copies still match.
  */
 export enum CssClass {
   /**

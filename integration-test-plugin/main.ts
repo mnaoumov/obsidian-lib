@@ -3,7 +3,7 @@
  *
  * Integration test harness plugin.
  *
- * Imports the entire `obsidian-dev-utils` library and exposes it as a strongly
+ * Imports the entire `@mnaoumov/obsidian-lib` library and exposes it as a strongly
  * typed namespace on `window.__obsidianDevUtilsModule`. This allows
  * `evalInObsidian` callbacks to access any part of the library.
  */
@@ -16,7 +16,7 @@ import * as obsidianDevUtils from '@mnaoumov/obsidian-lib';
 import { Plugin } from 'obsidian';
 
 /**
- * Minimal plugin that exposes the entire obsidian-dev-utils library for integration testing.
+ * Minimal plugin that exposes the entire obsidian-lib library for integration testing.
  */
 export default class IntegrationTestPlugin extends Plugin {
   public override onload(): void {

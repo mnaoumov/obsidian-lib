@@ -25,7 +25,7 @@ window.DEBUG.enable('*:obsidian-dev-utils:*'); // show all debug messages for th
 window.DEBUG.enable('*'); // show all debug messages
 ```
 
-The library's own messages keep the `obsidian-dev-utils` namespace it had before it moved into this package, so a namespace you enabled for an older plugin still works.
+The library's own messages use the namespace `obsidian-dev-utils`, not `obsidian-lib`. That is the name of the retired package this library replaced. It is kept so that a filter you enabled for an older plugin, or one still built on `obsidian-dev-utils`, keeps working.
 
 See full documentation of [`window.DEBUG`](https://github.com/mnaoumov/typescript-lib/blob/main/src/debug-controller.ts).
 
@@ -35,11 +35,20 @@ See full documentation of [`window.DEBUG`](https://github.com/mnaoumov/typescrip
 >
 > Do not add `window.DEBUG` calls in your plugin code. This is designed to be run only from the console.
 
-In order to write your debug messages from your plugin, use:
+To write debug messages from your plugin, call `consoleDebug()` on the plugin's `consoleDebugComponent`. `PluginBase` creates that component for you and logs through it under your plugin's id:
 
-```js
-consoleDebugComponent.debug('alpha', 'bravo', 'charlie');
+```typescript
+import { PluginBase } from '@mnaoumov/obsidian-lib/plugin/plugin';
+
+export class AlphaBravoPlugin extends PluginBase {
+  protected override async onloadImpl(): Promise<void> {
+    await super.onloadImpl();
+    this.consoleDebugComponent.consoleDebug('alpha', 'bravo', 'charlie');
+  }
+}
 ```
+
+The member is `protected`, so call it from inside your plugin class.
 
 ## Advanced Debug Mode
 
@@ -50,27 +59,39 @@ You can use [Advanced Debug Mode](https://community.obsidian.md/plugins/advanced
 A vault-wide operation that turns out to be slower, or wronger, than expected can be aborted from the console:
 
 ```javascript
-__obsidianDevUtils.sharedAbortController.value.abort();
+globalThis[Symbol.for('@mnaoumov/typescript-lib/state')].values.sharedAbortController.value.abort();
 ```
 
-This aborts the app-wide shared abort signal, so every operation currently observing it stops. It is shared across every plugin built on this library or on `obsidian-dev-utils`, so it cancels whichever one is running.
+This aborts the app-wide shared abort signal, so every operation currently observing it stops. The controller is the one [`getSharedAbortController()`](https://mnaoumov.dev/typescript-lib/api/abort-controller/getSharedAbortController/) returns. Every plugin built on this library shares it, so the call cancels whichever operation is running.
+
+> [!NOTE]
+>
+> Older guides used `__obsidianDevUtils.sharedAbortController.value.abort()`. That global is a legacy mirror, kept so that plugins still built on `obsidian-dev-utils` share the same controller. Use the line above instead. <!-- outdated-reference-ok: names the old recipe on purpose -->
 
 The signal is replaced immediately after the abort, which means the next operation starts with a fresh one and the call above works as many times as you press it. A plain `AbortController` would stay aborted forever after the first call.
 
 For this to cancel anything, the operation has to be observing that signal in the first place. From plugin code, pass it wherever an `abortSignal` is accepted — most usefully to `loop()`:
 
+<!-- snippet-check: context declare function processFile(file: import('obsidian').TFile): Promise<void>; -->
+
 ```typescript
 import { getSharedAbortSignal } from '@mnaoumov/typescript-lib/abort-controller';
 import { loop } from '@mnaoumov/obsidian-lib/loop';
+import { PluginBase } from '@mnaoumov/obsidian-lib/plugin/plugin';
 
-await loop({
-  abortSignal: getSharedAbortSignal(),
-  buildNoticeMessage: ({ item, iterationString }) => `Processing ${iterationString} - ${item.path}`,
-  items: app.vault.getMarkdownFiles(),
-  processItem: async (file) => {
-    await processFile(file);
+export class AlphaBravoPlugin extends PluginBase {
+  private async processAllNotes(): Promise<void> {
+    await loop({
+      abortSignal: getSharedAbortSignal(),
+      buildNoticeMessage: ({ item, iterationString }) => `Processing ${iterationString} - ${item.path}`,
+      items: this.app.vault.getMarkdownFiles(),
+      pluginNoticeComponent: this.pluginNoticeComponent,
+      processItem: async (file) => {
+        await processFile(file);
+      }
+    });
   }
-});
+}
 ```
 
 Call `getSharedAbortSignal()` at the start of each operation rather than caching it, or the operation after the first abort starts already aborted.

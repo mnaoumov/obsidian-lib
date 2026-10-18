@@ -112,7 +112,7 @@ describe('i18n module', { timeout: HEAVY_IMPORT_TIMEOUT }, () => {
       const callArguments = vi.mocked(console.debug).mock.calls[0];
       assertNonNullable(callArguments);
       // The debug library prefixes the namespace onto the message, so match on the message itself.
-      expect(callArguments[0]).toContain('I18N was not initialized, initializing default obsidian-dev-utils translations');
+      expect(callArguments[0]).toContain('I18N was not initialized, initializing default obsidian-lib translations');
       // The real invokeAsyncSafely runs the fire-and-forget initI18N synchronously up to its first
       // await, so the observable effect of auto-initialization is that init() was called once.
       expect(mockInitFunction).toHaveBeenCalledTimes(1);

@@ -12,11 +12,13 @@ If your plugin class extends `PluginBase` (it does if your project was generated
 Otherwise, you need to initialize it manually:
 
 ```ts
+import { Plugin } from 'obsidian';
+
 import {
   initPluginContext
 } from '@mnaoumov/obsidian-lib/plugin/plugin-context';
 
-class MyPlugin extends Plugin {
+export class MyPlugin extends Plugin {
   public override onload(): void {
     initPluginContext(this.manifest.id);
     // ...

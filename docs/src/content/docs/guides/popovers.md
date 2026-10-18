@@ -13,6 +13,8 @@ In order for popovers to look properly, their styles have to be initialized. See
 
 A popover is placed at a resolved `PopoverAnchor` — viewport coordinates plus the document they belong to — rather than at an element, because callers know the position in different ways. Carrying the document explicitly is what makes an anchor inside a pop-out window work: the panel is appended to, and clamped against, that window rather than the main one.
 
+<!-- snippet-check: context declare const linkEl: HTMLAnchorElement; -->
+<!-- snippet-check: context declare const evt: MouseEvent; -->
 ```ts
 import {
   createAnchorFromDocumentCenter,
@@ -33,8 +35,13 @@ Wherever the popover is anchored, it is clamped back inside the window, so an an
 
 `editFieldsInPopover` is the common case spelled declaratively: a text field per entry, resolving with their values keyed by `key`, or `null` if the popover was dismissed. The keys are inferred, so the result is typed without a cast.
 
+<!-- snippet-check: context declare const linkEl: HTMLAnchorElement; -->
+<!-- snippet-check: context declare const url: string; -->
+<!-- snippet-check: context declare const alias: string; -->
+<!-- snippet-check: context declare function applyLink(url: string, alias: string): void; -->
 ```ts
 import { editFieldsInPopover } from '@mnaoumov/obsidian-lib/popovers/field-popover';
+import { createAnchorFromElement } from '@mnaoumov/obsidian-lib/popovers/popover-anchor';
 
 const values = await editFieldsInPopover({
   anchor: createAnchorFromElement(linkEl),
@@ -56,6 +63,8 @@ For anything the declarative form cannot express — a dropdown, a toggle, rende
 
 ```ts
 import { showPopover } from '@mnaoumov/obsidian-lib/popovers/popover';
+import { createAnchorFromSelection } from '@mnaoumov/obsidian-lib/popovers/popover-anchor';
+import { DropdownComponent } from 'obsidian';
 
 const chosen = await showPopover<string>({
   anchor: createAnchorFromSelection(activeDocument),
@@ -76,11 +85,27 @@ Obsidian's `file-menu` and `url-menu` events carry the target file or url but no
 
 ```ts
 import { PointerPositionComponent } from '@mnaoumov/obsidian-lib/components/pointer-position-component';
+import { editFieldsInPopover } from '@mnaoumov/obsidian-lib/popovers/field-popover';
+import { createAnchorFromDocumentCenter } from '@mnaoumov/obsidian-lib/popovers/popover-anchor';
+import { Plugin } from 'obsidian';
 
-const pointerPositionComponent = this.addChild(new PointerPositionComponent(this.app));
+export class MyPlugin extends Plugin {
+  public override onload(): void {
+    const pointerPositionComponent = this.addChild(new PointerPositionComponent(this.app));
 
-// Later, inside a menu item's callback:
-const anchor = pointerPositionComponent.getLastPointerAnchor() ?? createAnchorFromDocumentCenter(activeDocument);
+    this.registerEvent(this.app.workspace.on('file-menu', (menu, file) => {
+      menu.addItem((item) => {
+        item.setTitle('Rename here').onClick(async () => {
+          const anchor = pointerPositionComponent.getLastPointerAnchor() ?? createAnchorFromDocumentCenter(activeDocument);
+          const values = await editFieldsInPopover({
+            anchor,
+            fields: [{ defaultValue: file.name, key: 'name', name: 'Name' }]
+          });
+        });
+      });
+    }));
+  }
+}
 ```
 
 ## Dismissal

@@ -1,9 +1,9 @@
 ---
 title: Plugin API protocol
-description: The wire-level contract behind cross-plugin APIs, so a plugin that will never install obsidian-dev-utils can still depend on one that did.
+description: The wire-level contract behind cross-plugin APIs, so a plugin that will never install @mnaoumov/obsidian-lib can still depend on one that did.
 ---
 
-[Cross-plugin APIs](/obsidian-lib/guides/cross-plugin-apis/) describes the registry from the inside, through `publishPluginApi` and `watchPluginApi`. This page describes the same mechanism from the **outside**, as a wire protocol, for the developer whose plugin does not use `obsidian-dev-utils` and is not going to.
+[Cross-plugin APIs](/obsidian-lib/guides/cross-plugin-apis/) describes the registry from the inside, through `publishPluginApi` and `watchPluginApi`. This page describes the same mechanism from the **outside**, as a wire protocol, for the developer whose plugin does not use `@mnaoumov/obsidian-lib` and is not going to.
 
 You are in the right place if some plugin you want to depend on is built on this library, you want its API, and you would rather not take on somebody else's framework to get it. You do not have to. Everything below is reachable with the `obsidian` module you already import and nothing else — no install, no dependency, no bundle weight.
 
@@ -11,13 +11,13 @@ You are in the right place if some plugin you want to depend on is built on this
 
 Three things are a permanent contract: the two **event names**, the **event payload**, and the **registry record**. None of them may ever change incompatibly, and new fields may only ever be added.
 
-That is worth stating plainly because it sounds like a favour, and it is not. Every plugin built on `obsidian-dev-utils` bundles **its own copy** of it, so two plugins in one vault routinely run two different versions of this library, publishing to and reading from the same registry. The wire format is therefore already a compatibility boundary *between the library and itself*, and a breaking change to it would break the library against its own older copies before it ever reached you. The constraint predates you, and it is load-bearing.
+That is worth stating plainly because it sounds like a favour, and it is not. Every plugin built on this library bundles **its own copy** of it (or of `obsidian-dev-utils`, the package it replaced), so two plugins in one vault routinely run two different versions of this library, publishing to and reading from the same registry. The wire format is therefore already a compatibility boundary *between the library and itself*, and a breaking change to it would break the library against its own older copies before it ever reached you. The constraint predates you, and it is load-bearing.
 
 The practical consequence: you may hardcode the strings and the shapes below. They are as stable as Obsidian's own API surface, and considerably more stable than most plugins' internals.
 
 ## Yes, the names say `obsidian-dev-utils`
 
-The events are called `obsidian-dev-utils:plugin-loaded` and `obsidian-dev-utils:plugin-unloaded`. The prefix names the library that introduced them rather than the thing they describe, which is a wart, and it is a permanent one.
+The events are called `obsidian-dev-utils:plugin-loaded` and `obsidian-dev-utils:plugin-unloaded`. The prefix names the library that introduced them, published as `obsidian-dev-utils` before it became `@mnaoumov/obsidian-lib`, rather than the thing they describe. That is a wart, and it is a permanent one. The same goes for the `__obsidianDevUtils` global below.
 
 It stays for a reason that cuts in your favour. A neutral second name would not retire the first: every already-released plugin emits the old name and only the old one, so a correct consumer would have to listen for **both**, forever, and would have twice as much protocol to learn. Renaming outright would be worse still — it would silently break every listener already written. So the spelling is historical, it is the only spelling, and you can rely on it.
 
@@ -26,12 +26,20 @@ It stays for a reason that cuts in your favour. A neutral second name would not 
 Both events ride `app.workspace`, which every plugin can reach without holding anything belonging to anyone else:
 
 ```typescript
-this.registerEvent(
-  this.app.workspace.on('obsidian-dev-utils:plugin-loaded', (payload) => {
-    console.log(payload.pluginId, payload.apiVersions);
-  })
-);
+import { Plugin } from 'obsidian';
+
+export class MyPlugin extends Plugin {
+  public override onload(): void {
+    this.registerEvent(
+      this.app.workspace.on('obsidian-dev-utils:plugin-loaded', (payload) => {
+        console.log(payload.pluginId, payload.apiVersions);
+      })
+    );
+  }
+}
 ```
+
+The `payload` parameter is typed by the `Workspace.on` overload that [Types, without installing anything](#types-without-installing-anything) declares.
 
 The payload is plain data:
 
@@ -104,10 +112,11 @@ Contract versions are plain `major.minor.patch` semver — that is what the libr
 
 ## Revocation, and the one rule that matters
 
-When a provider's surface unloads, its record is marked `isRevoked` **and removed from the array**. Consumers using `obsidian-dev-utils` never notice, because what they hold is a revocable handle that starts throwing a named error at that moment. Reading the registry directly, you hold the raw object instead — and a raw object does not know it has been retired. It will go on answering calls into a plugin that is no longer there.
+When a provider's surface unloads, its record is marked `isRevoked` **and removed from the array**. Consumers using `@mnaoumov/obsidian-lib` never notice, because what they hold is a revocable handle that starts throwing a named error at that moment. Reading the registry directly, you hold the raw object instead — and a raw object does not know it has been retired. It will go on answering calls into a plugin that is no longer there.
 
 So: **look the record up every time you use it, and never cache `record.api` in a field.** The lookup is a property read on an object already in memory; it is cheaper than the defensive code you would otherwise have to write around a stale handle.
 
+<!-- snippet-check: context declare function compareApiVersions(a: string, b: string): number; -->
 ```typescript
 function getApi<TApi extends object>(pluginId: string, majorVersion: number): null | TApi {
   const records = globalThis.__obsidianDevUtils?.pluginApiRegistry?.value?.records?.[pluginId] ?? [];
@@ -180,6 +189,7 @@ That import also carries the `Workspace.on` overload with it, so the `declare mo
 
 Putting it together — read the current state at load, then follow the transitions:
 
+<!-- snippet-check: context declare function getApi<TApi extends object>(pluginId: string, majorVersion: number): null | TApi; -->
 ```typescript
 import { Plugin } from 'obsidian';
 
@@ -234,7 +244,7 @@ Note what this example does **not** do when the provider is missing — it decli
 
 ## What is deliberately not in the protocol
 
-Some of what `obsidian-dev-utils` builds on top of this is consumer-side policy rather than contract, and it stays on that side on purpose. None of it is a gap, and you are entitled to a different answer for every item:
+Some of what `@mnaoumov/obsidian-lib` builds on top of this is consumer-side policy rather than contract, and it stays on that side on purpose. None of it is a gap, and you are entitled to a different answer for every item:
 
 - **The mandatory dependency gate** — refusing to run the plugin's feature surface until a dependency is present, the settings tab that explains why, the one-click repair button. Graceful degradation is a perfectly good alternative policy.
 - **Revocable handles.** The named error on a call into an unloaded provider is a convenience the library builds for its own consumers; the rule above — look it up per use — buys you the same safety.

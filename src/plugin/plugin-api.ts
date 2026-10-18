@@ -68,7 +68,7 @@
  * declared method names are checked with `typeof`, and the payloads are validated per method instead.
  *
  * @remarks
- * Every plugin bundles its OWN copy of `obsidian-dev-utils`, so a registry record is a wire format between
+ * Every plugin bundles its OWN copy of this library (or of the older `obsidian-dev-utils`), so a registry record is a wire format between
  * different library versions and must stay backward-compatible forever. Nothing crossing it may be
  * `instanceof`-checked — reads are structural, and only plain data objects and plain functions are stored.
  *
@@ -483,7 +483,7 @@ interface CreateMethodWrapperParams {
 }
 
 /**
- * The realm-global registry shared by every `obsidian-dev-utils` copy in the renderer.
+ * The realm-global registry shared by every copy of this library, and of the older `obsidian-dev-utils`, in the renderer.
  */
 interface PluginApiRegistry {
   records: Record<string, PublishedPluginApiRecord[]>;
@@ -494,7 +494,7 @@ interface PluginApiRegistry {
  * A record as it sits in the shared registry.
  *
  * @remarks
- * This is the WIRE FORMAT between different `obsidian-dev-utils` copies, so it holds nothing but plain data
+ * This is the WIRE FORMAT between different copies of this library and of the older `obsidian-dev-utils`, so it holds nothing but plain data
  * and plain functions, and every read of it elsewhere in this file is structural.
  *
  * Unexported and nonetheless PUBLIC: the `Plugin API protocol` guide documents these five field names for
@@ -996,7 +996,7 @@ function getPluginApiDebugger(): ReturnType<typeof getObsidianLibDebugger> {
 }
 
 /**
- * Retrieves the shared registry, tolerating a bag written by a DIFFERENT `obsidian-dev-utils` copy that may
+ * Retrieves the shared registry, tolerating a bag written by a DIFFERENT copy of this library, or of `obsidian-dev-utils`, that may
  * predate one of its fields.
  *
  * @returns The registry.

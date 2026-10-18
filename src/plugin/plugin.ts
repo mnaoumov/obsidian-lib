@@ -468,7 +468,7 @@ export abstract class PluginBase extends mixinAsyncEvents<PluginEventMap>()(Plug
    * Provides the translations map used to initialize i18n during {@link onload}.
    *
    * Override in subclass to supply plugin-specific translations. The default returns the built-in
-   * `obsidian-dev-utils` translations.
+   * `@mnaoumov/obsidian-lib` translations.
    *
    * @returns The translations map.
    */
