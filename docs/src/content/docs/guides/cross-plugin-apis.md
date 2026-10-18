@@ -296,11 +296,8 @@ The consumer parks the values it no longer acts on in its own settings, and lets
 <!-- snippet-check: context interface MyPluginSettings { proposedShouldHandleRenames: boolean | null; } -->
 <!-- snippet-check: context declare const settingsComponent: import('@mnaoumov/obsidian-lib/components/plugin-settings-component').PluginSettingsComponentBase<MyPluginSettings>; -->
 ```typescript
-import type { PluginSettingsComponentBase } from '@mnaoumov/obsidian-lib/components/plugin-settings-component';
-
 import { SettingsMigrationComponent } from '@mnaoumov/obsidian-lib/components/settings-migration-component';
 import { PluginBase } from '@mnaoumov/obsidian-lib/plugin/plugin';
-import { castTo } from '@mnaoumov/typescript-lib/object-utils';
 
 export class Plugin extends PluginBase {
   protected override onloadImpl(): void {
@@ -312,8 +309,7 @@ export class Plugin extends PluginBase {
         const pending = settingsComponent.settings.proposedShouldHandleRenames;
         return pending === null ? null : { shouldHandleRenames: pending };
       },
-      // The parameter is typed `PluginSettingsComponentBase<object>`, which a typed component does not satisfy yet.
-      pluginSettingsComponent: castTo<PluginSettingsComponentBase<object>>(settingsComponent),
+      pluginSettingsComponent: settingsComponent,
       providerPluginId: 'their-plugin-id',
       retireProposedSettings: async () => {
         await settingsComponent.editAndSave((settings) => {

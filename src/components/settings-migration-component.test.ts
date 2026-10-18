@@ -16,10 +16,7 @@ import {
   noop,
   noopAsync
 } from '@mnaoumov/typescript-lib/function';
-import {
-  castTo,
-  normalizeOptionalProperties
-} from '@mnaoumov/typescript-lib/object-utils';
+import { normalizeOptionalProperties } from '@mnaoumov/typescript-lib/object-utils';
 import { waitForAllAsyncOperations } from '@mnaoumov/typescript-test-toolkit/async-operation-tracking';
 import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import {
@@ -284,14 +281,7 @@ function createHarness(options: CreateHarnessOptions = {}): Harness {
         const proposedShouldHandleRenames = settingsComponent.settings.proposedShouldHandleRenames;
         return proposedShouldHandleRenames === null ? null : { shouldHandleRenames: proposedShouldHandleRenames };
       },
-      // `PluginSettingsComponentBase` is INVARIANT in its settings type, and this repo's own
-      // `test-helpers/mocks/obsidian-typings` augmentation exposes the `constructor__` pseudo-method, which
-      // makes the private `propertyNames` structurally visible and turns that invariance into a hard TS2322.
-      // A consuming plugin has no such augmentation and passes its concrete settings component with no cast —
-      // which is exactly what the five consumers already do against `PluginSuggestionComponent`, whose
-      // parameter is declared identically. So the cast is an artifact of testing HERE, not a rough edge in the
-      // public surface.
-      pluginSettingsComponent: castTo<PluginSettingsComponentBase<object>>(settingsComponent),
+      pluginSettingsComponent: settingsComponent,
       providerPluginId: PROVIDER_PLUGIN_ID,
       retireProposedSettings: async (): Promise<void> => {
         await settingsComponent.editAndSave((settings) => {
