@@ -53,21 +53,21 @@
 - feat: merge letting plugin suggestion and gate reasons be a DocumentFragment
 - fix(plugin-api): merge making the copied provider contracts agree with the providers' own
 - docs: mark plugin names as code in comments and AGENTS.md
-- docs: name the Dataview import replacement in the 3.0.0 changelog
+- docs: name the `Dataview` import replacement in the 3.0.0 changelog
 
 ## 3.0.0
 
-- feat!: type Dataview through @mnaoumov/obsidian-dataview and drop the vendored declarations
+- feat!: type `Dataview` through @mnaoumov/obsidian-dataview and drop the vendored declarations
   - BREAKING: `@mnaoumov/obsidian-lib/@types/dataview/<x>` is removed; import `@mnaoumov/obsidian-dataview/<x>` instead.
 
 ## 2.0.0
 
 - feat: render plugin names in notices and dialogs as inline code
 - feat!: type plugin API contracts over their APIs, with full payload schemas
-- feat!: merge finding Custom Attachment Location through its plugin API, not grafted members
+- feat!: merge finding `Custom Attachment Location` through its plugin API, not grafted members
 - build: drop stale workspace sibling includes from tsconfig.types.json
 - refactor: read the global app through obsidian-typings' declaration
-- feat!: merge finding Advanced Metadata Cache through its plugin API, not a grafted .safe
+- feat!: merge finding `Advanced Metadata Cache` through its plugin API, not a grafted .safe
 
 ## 1.0.1
 
