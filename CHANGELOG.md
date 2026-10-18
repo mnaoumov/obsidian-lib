@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## 5.0.0
+
+- feat(path-settings)!: support glob entries, case-insensitive matching and regex flags
+- build: take typescript-dev-toolkit 3.7.0's shared documentation checks
+- docs: mark plugin names as code
+- fix(components): accept a typed settings component without a cast
+- docs: fix guide snippets and retired obsidian-dev-utils references
+- build(docs): re-render the OG cards when the favicon changes
+- docs: replace the site logo and favicon with the approved obsidian-lib mark
+
 ## 4.3.0
 
 - chore(deps): bump obsidian-test-mocks to 7.2.3 and pin the root path answers
