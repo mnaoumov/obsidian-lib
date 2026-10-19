@@ -12,9 +12,9 @@ const BUILD_STEPS = [
   'build:clean',
   'build:generate-merged',
   'build:generate-index',
-  // The orchestrator, not the `build:compile:typescript` leaf it fans out to.
+  // The orchestrator, which runs the svelte and TypeScript passes in process.
   // Naming a leaf here is exactly the mis-wire swept out of this repo and its sibling plugin repos:
-  // It silently skips the sibling svelte pass. Both leaf scripts survive as the targets it npm-runs.
+  // It silently skips the sibling svelte pass.
   'build:compile',
   'build:types',
   'build:validate-declarations',
