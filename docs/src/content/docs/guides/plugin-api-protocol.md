@@ -15,11 +15,7 @@ That is worth stating plainly because it sounds like a favour, and it is not. Ev
 
 The practical consequence: you may hardcode the strings and the shapes below. They are as stable as Obsidian's own API surface, and considerably more stable than most plugins' internals.
 
-## Yes, the names say `obsidian-dev-utils`
-
-The events are called `obsidian-dev-utils:plugin-loaded` and `obsidian-dev-utils:plugin-unloaded`. The prefix names the library that introduced them, published as `obsidian-dev-utils` before it became `@mnaoumov/obsidian-lib`, rather than the thing they describe. That is a wart, and it is a permanent one. The same goes for the `__obsidianDevUtils` global below.
-
-It stays for a reason that cuts in your favour. A neutral second name would not retire the first: every already-released plugin emits the old name and only the old one, so a correct consumer would have to listen for **both**, forever, and would have twice as much protocol to learn. Renaming outright would be worse still — it would silently break every listener already written. So the spelling is historical, it is the only spelling, and you can rely on it.
+This library was published as `obsidian-dev-utils` before it became `@mnaoumov/obsidian-lib`, and the protocol first shipped under that name. Every name on this page has a legacy twin that still works, and always will. [Compatibility](#compatibility) lists them and explains which one to pick.
 
 ## Knowing when a plugin is ready
 
@@ -31,7 +27,7 @@ import { Plugin } from 'obsidian';
 export class MyPlugin extends Plugin {
   public override onload(): void {
     this.registerEvent(
-      this.app.workspace.on('obsidian-dev-utils:plugin-loaded', (payload) => {
+      this.app.workspace.on('obsidian-lib:plugin-loaded', (payload) => {
         console.log(payload.pluginId, payload.apiVersions);
       })
     );
@@ -65,12 +61,12 @@ The one thing the events do not do is replay. Obsidian's `trigger` has no backlo
 The published APIs live in a registry on the renderer's global object, at a fixed path:
 
 ```text
-globalThis.__obsidianDevUtils.pluginApiRegistry.value.records[pluginId]
+globalThis.__obsidianLib.pluginApiRegistry.value.records[pluginId]
 ```
 
 Every segment of that path is part of the contract:
 
-- `__obsidianDevUtils` is a bag of shared state. **Only `pluginApiRegistry` is public**; the rest of the bag is the library's business and will change without notice. Do not browse it.
+- `__obsidianLib` is a bag of shared state. It is the same object as its legacy name, `__obsidianDevUtils`, and in a vault whose plugins all predate the rename only the legacy name exists, so read `__obsidianLib ?? __obsidianDevUtils`. **Only `pluginApiRegistry` is public**; the rest of the bag is the library's business and will change without notice. Do not browse it.
 - `pluginApiRegistry` is a wrapper object whose `value` holds the registry. The indirection exists for reasons internal to the library; for you it is one extra `.value`.
 - `records` maps a provider's `manifest.id` to an array of everything it currently has published.
 
@@ -119,7 +115,8 @@ So: **look the record up every time you use it, and never cache `record.api` in 
 <!-- snippet-check: context declare function compareApiVersions(a: string, b: string): number; -->
 ```typescript
 function getApi<TApi extends object>(pluginId: string, majorVersion: number): null | TApi {
-  const records = globalThis.__obsidianDevUtils?.pluginApiRegistry?.value?.records?.[pluginId] ?? [];
+  const bag = globalThis.__obsidianLib ?? globalThis.__obsidianDevUtils;
+  const records = bag?.pluginApiRegistry?.value?.records?.[pluginId] ?? [];
 
   const match = records
     .filter((record) => !record.isRevoked)
@@ -155,21 +152,29 @@ export interface PublishedPluginApiRecord {
   readonly pluginId: string;
 }
 
-declare global {
-  // eslint-disable-next-line no-var -- `declare global` can only add a global through `var`.
-  var __obsidianDevUtils: undefined | {
-    pluginApiRegistry?: {
-      value?: {
-        records?: Record<string, PublishedPluginApiRecord[] | undefined>;
-      };
+export interface SharedStateBag {
+  pluginApiRegistry?: {
+    value?: {
+      records?: Record<string, PublishedPluginApiRecord[] | undefined>;
     };
   };
+}
+
+declare global {
+  /* eslint-disable no-var -- `declare global` can only add a global through `var`. */
+  var __obsidianLib: SharedStateBag | undefined;
+  var __obsidianDevUtils: SharedStateBag | undefined;
+  /* eslint-enable no-var -- `declare global` can only add a global through `var`. */
 }
 
 declare module 'obsidian' {
   interface Workspace {
     on(
-      name: 'obsidian-dev-utils:plugin-loaded' | 'obsidian-dev-utils:plugin-unloaded',
+      name:
+        | 'obsidian-dev-utils:plugin-loaded'
+        | 'obsidian-dev-utils:plugin-unloaded'
+        | 'obsidian-lib:plugin-loaded'
+        | 'obsidian-lib:plugin-unloaded',
       callback: (payload: PluginLifecycleEventPayload) => unknown,
       context?: unknown
     ): EventRef;
@@ -206,13 +211,13 @@ export class MyPlugin extends Plugin {
   public override onload(): void {
     this.isProviderReady = this.getProviderApi() !== null;
 
-    this.registerEvent(this.app.workspace.on('obsidian-dev-utils:plugin-loaded', (payload) => {
+    this.registerEvent(this.app.workspace.on('obsidian-lib:plugin-loaded', (payload) => {
       if (payload.pluginId === PROVIDER_ID) {
         this.isProviderReady = true;
       }
     }));
 
-    this.registerEvent(this.app.workspace.on('obsidian-dev-utils:plugin-unloaded', (payload) => {
+    this.registerEvent(this.app.workspace.on('obsidian-lib:plugin-unloaded', (payload) => {
       if (payload.pluginId === PROVIDER_ID) {
         this.isProviderReady = false;
       }
@@ -252,3 +257,21 @@ Some of what `@mnaoumov/obsidian-lib` builds on top of this is consumer-side pol
 - **Shape checking.** Verifying that a published API actually carries every method its contract names, before handing it over.
 
 What *is* protocol is exactly the four things you need and cannot build for yourself: **discovery, readiness, handle retrieval, and version negotiation**.
+
+## Compatibility
+
+The protocol first shipped under the library's old name, `obsidian-dev-utils`. Plugins built on that package are already released, they emit and read only the old names, and they will stay in vaults for years. So the old names are not deprecated. They are permanent aliases:
+
+| Current name | Legacy name |
+| --- | --- |
+| `obsidian-lib:plugin-loaded` | `obsidian-dev-utils:plugin-loaded` |
+| `obsidian-lib:plugin-unloaded` | `obsidian-dev-utils:plugin-unloaded` |
+| `globalThis.__obsidianLib` | `globalThis.__obsidianDevUtils` |
+
+The rename is additive, which is how neither side of a vault notices it:
+
+- **A plugin on `@mnaoumov/obsidian-lib` triggers each event under both names.** The current name goes first and the identical payload object follows under the legacy name. A listener on the legacy name hears every plugin, from either package.
+- **It also relays the old ones.** A plugin still on `obsidian-dev-utils` triggers only the legacy name. Every plugin on `@mnaoumov/obsidian-lib` re-triggers that event under the current name, and they coordinate so it is re-triggered once, however many of them are loaded. A listener on the current name therefore hears every plugin whenever at least one plugin on `@mnaoumov/obsidian-lib` is loaded. That is always the case when the provider you depend on is built on it, since the provider triggers the current name itself.
+- **`__obsidianLib` is not a second registry.** It is an accessor onto `__obsidianDevUtils`, so both names are the same object, and publishing through either is visible through both. Only a plugin on `@mnaoumov/obsidian-lib` installs the accessor, which is why the lookup above falls back to the legacy name.
+
+So listen on **one** name per event, never both, or every plugin on `@mnaoumov/obsidian-lib` is announced to you twice. Take the current name, unless you must also hear a provider still on `obsidian-dev-utils` in a vault where nothing built on `@mnaoumov/obsidian-lib` is enabled. In that case take the legacy name, which hears everything, always.

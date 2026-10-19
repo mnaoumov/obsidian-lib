@@ -1,9 +1,10 @@
 /**
  * @file
  *
- * LEGACY: provides access to the process-wide shared-state bag on the `__obsidianDevUtils` global. The name is
- * the retired `obsidian-dev-utils` package's; it stays because plugins bundling an older copy read and write the same
- * bag, so it is a wire format rather than a name to copy. New generic state belongs in
+ * LEGACY: provides access to the process-wide shared-state bag on the `__obsidianDevUtils` global, also reachable as
+ * `__obsidianLib`. The legacy name is the retired `obsidian-dev-utils` package's; it stays, and stays the authority,
+ * because plugins bundling an older copy read and write the same bag, so it is a wire format rather than a name to
+ * copy. `__obsidianLib` is an accessor onto it, never a second object. New generic state belongs in
  * `@mnaoumov/typescript-lib/typescript-lib-state` (the `Symbol.for('@mnaoumov/typescript-lib/state')` slot).
  *
  * The bag is stored on `globalThis.__obsidianDevUtils`, i.e. on the global object of the realm in
@@ -25,6 +26,11 @@ import { ValueWrapper } from '@mnaoumov/typescript-lib/value-wrapper';
 interface ObsidianDevUtilsWrapper {
   __obsidianDevUtils: GenericObject;
 }
+
+/**
+ * The name of the global through which the shared-state bag is also reachable, an alias of `__obsidianDevUtils`.
+ */
+export const OBSIDIAN_LIB_GLOBAL_NAME = '__obsidianLib';
 
 /**
  * The keys whose state moved from `__obsidianDevUtils` to the generic shared state, and which older copies of
@@ -84,5 +90,33 @@ function getObsidianDevUtilsBag(): GenericObject {
   // eslint-disable-next-line obsidianmd/no-global-this -- The shared state intentionally lives on the realm global.
   const wrapper = globalThis as Partial<ObsidianDevUtilsWrapper>;
   wrapper.__obsidianDevUtils ??= {};
+  installObsidianLibAlias();
   return wrapper.__obsidianDevUtils;
+}
+
+/**
+ * Makes `globalThis.__obsidianLib` an accessor onto `globalThis.__obsidianDevUtils`, so the two names are always the
+ * same object.
+ *
+ * The legacy name stays the authority, because every older copy of this library only ever sees it, and code outside
+ * the library assigns it directly. An accessor follows such an assignment, where a second data property would drift.
+ * Another copy may already have installed the alias; any copy's accessor behaves the same, so it is left as it is.
+ */
+function installObsidianLibAlias(): void {
+  // eslint-disable-next-line obsidianmd/no-global-this -- The shared state intentionally lives on the realm global.
+  const realmGlobal = globalThis as Partial<ObsidianDevUtilsWrapper>;
+  if (Object.hasOwn(realmGlobal, OBSIDIAN_LIB_GLOBAL_NAME)) {
+    return;
+  }
+
+  Object.defineProperty(realmGlobal, OBSIDIAN_LIB_GLOBAL_NAME, {
+    configurable: true,
+    enumerable: false,
+    get(): GenericObject | undefined {
+      return realmGlobal.__obsidianDevUtils;
+    },
+    set(value: GenericObject): void {
+      realmGlobal.__obsidianDevUtils = value;
+    }
+  });
 }

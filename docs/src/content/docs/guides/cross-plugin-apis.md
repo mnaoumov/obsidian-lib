@@ -241,9 +241,9 @@ try {
 
 ## When validation runs
 
-Validation runs **only while the `obsidian-lib:validate-plugin-api-payloads` debug switch is on**, and it is off by default, so production pays no schema call. A debug switch is an app-wide boolean from `@mnaoumov/typescript-lib/debug-switches`, shared by every copy of the library loaded in the app: turn it on with `getValidatePluginApiPayloadsDebugSwitch().setEnabled(true)`, with `setDebugSwitch('obsidian-lib:validate-plugin-api-payloads', true)`, or from a debug-settings UI that lists `getDebugSwitches()`. The switch is checked per call, so flipping it at runtime takes effect without re-acquiring the handle. The `obsidian-dev-utils:PluginApi` debugger does not turn validation on: a debug namespace controls logging only (see [Debugging](/obsidian-lib/guides/debugging/)).
+Validation runs **only while the `obsidian-lib:validate-plugin-api-payloads` debug switch is on**, and it is off by default, so production pays no schema call. A debug switch is an app-wide boolean from `@mnaoumov/typescript-lib/debug-switches`, shared by every copy of the library loaded in the app: turn it on with `getValidatePluginApiPayloadsDebugSwitch().setEnabled(true)`, with `setDebugSwitch('obsidian-lib:validate-plugin-api-payloads', true)`, or from a debug-settings UI that lists `getDebugSwitches()`. The switch is checked per call, so flipping it at runtime takes effect without re-acquiring the handle. The `obsidian-lib:PluginApi` debugger does not turn validation on: a debug namespace controls logging only (see [Debugging](/obsidian-lib/guides/debugging/)).
 
-A schema that answers **synchronously** throws a `PluginApiValidationError` at the call site — which is the point, because that is where the wrong assumption lives. A schema that answers with a **`Promise`** cannot do that: the synchronous call it was guarding has already returned by the time the answer arrives, so there is nothing left to throw into and the failure is logged through the `obsidian-dev-utils:PluginApi` debugger instead, so turn that namespace on too to see it. Prefer synchronous schemas for anything you want to fail loudly.
+A schema that answers **synchronously** throws a `PluginApiValidationError` at the call site — which is the point, because that is where the wrong assumption lives. A schema that answers with a **`Promise`** cannot do that: the synchronous call it was guarding has already returned by the time the answer arrives, so there is nothing left to throw into and the failure is logged through the `obsidian-lib:PluginApi` debugger instead, so turn that namespace on too to see it. Prefer synchronous schemas for anything you want to fail loudly.
 
 Both sides may declare a contract, and **the consumer's wins when it supplies one** — it is the consumer's own compiled-against expectation, so its violation is the consumer's problem to see. With no consumer contract, the provider's published one is used.
 
@@ -437,7 +437,7 @@ Three things about the detection are worth knowing, because each has a plausible
 
 - **It reads the other plugin's VERSION, not the registry.** A plugin that has not loaded yet has registered nothing, so the registry answers differently depending on when it is asked, while `app.plugins.manifests` is populated for everything installed before any of them load. Unlike a dependency, a conflicting plugin need not publish anything at all.
 - **Only enabled plugins count, and an unparseable version counts as conflicting.** A disabled plugin registers nothing, so refusing over it would be an alarm the user can only answer by uninstalling something they already switched off. Failing closed on a version it cannot read is the other direction of the same care: a false alarm costs a notice, a false all-clear costs a vault.
-- **Obsidian raises no event for another plugin being enabled or disabled.** A conflicting plugin built on this library announces itself through the `obsidian-dev-utils:plugin-loaded` / `-unloaded` broadcast below, so it is caught the moment it is toggled. Any other plugin is caught at your next load. That is a real ceiling, not an oversight.
+- **Obsidian raises no event for another plugin being enabled or disabled.** A conflicting plugin built on this library announces itself through the `obsidian-lib:plugin-loaded` / `-unloaded` broadcast below, so it is caught the moment it is toggled. Any other plugin is caught at your next load. That is a real ceiling, not an oversight.
 
 `conflictingVersionRange` is a range rather than a minimum, so an overlap confined to one major is expressible as `'>=3 <4'`. Spell "every version conflicts" as `'>=0.0.0'` — `compare-versions` rejects a bare `*`.
 
@@ -464,7 +464,9 @@ export default class MyPlugin extends Plugin {
 }
 ```
 
-`obsidian-dev-utils:plugin-loaded` fires only after every API that plugin declares has been published, so a listener may call them immediately. The payload carries `pluginId`, `pluginName`, `pluginVersion`, `apiVersions`, and `dependencyPluginIds` — the last of which is how a provider answers "which installed plugins depend on me", something the registry cannot tell it.
+`obsidian-lib:plugin-loaded` fires only after every API that plugin declares has been published, so a listener may call them immediately. The payload carries `pluginId`, `pluginName`, `pluginVersion`, `apiVersions`, and `dependencyPluginIds` — the last of which is how a provider answers "which installed plugins depend on me", something the registry cannot tell it.
+
+A plugin still built on `obsidian-dev-utils` announces itself only under the legacy names, `obsidian-dev-utils:plugin-loaded` / `-unloaded`. Every `PluginBase` relays those to the current names, once, so the two constants hear it too whenever a plugin on this library is loaded. If your plugin extends `PluginBase`, that is always true. Every event is also triggered under its legacy name, so listen on one of the two names, never both. The [protocol's compatibility section](/obsidian-lib/guides/plugin-api-protocol/#compatibility) has the details.
 
 It deliberately carries **no API handle**. A handle delivered by a one-shot event is a probe: it answers "now" and never says when "now" changed, and one that outlives its provider is exactly the stale handle the revocable handles exist to prevent. Hold a `PluginApiRef` for that.
 

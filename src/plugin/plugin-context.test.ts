@@ -43,7 +43,7 @@ vi.mock('../library-styles.ts', () => ({
 vi.mock('@mnaoumov/typescript-lib/debug-controller', () => ({}));
 
 vi.mock('../css-class.ts', () => ({
-  CssClass: { LibraryName: 'obsidian-dev-utils' }
+  CssClass: { LegacyLibraryName: 'obsidian-dev-utils', LibraryName: 'obsidian-lib' }
 }));
 
 vi.mock('@mnaoumov/typescript-lib/debug', () => ({
@@ -66,21 +66,21 @@ describe('addPluginCssClasses', () => {
     const addClass = vi.fn();
     const element = strictProxy<HTMLElement>({ addClass });
     addPluginCssClasses(element, 'custom-class');
-    expect(addClass).toHaveBeenCalledWith('obsidian-dev-utils', 'test-plugin', 'custom-class');
+    expect(addClass).toHaveBeenCalledWith('obsidian-lib', 'obsidian-dev-utils', 'test-plugin', 'custom-class');
   });
 
   it('should add library name, plugin id, and custom css classes array', () => {
     const addClass = vi.fn();
     const element = strictProxy<HTMLElement>({ addClass });
     addPluginCssClasses(element, ['class-a', 'class-b']);
-    expect(addClass).toHaveBeenCalledWith('obsidian-dev-utils', 'test-plugin', 'class-a', 'class-b');
+    expect(addClass).toHaveBeenCalledWith('obsidian-lib', 'obsidian-dev-utils', 'test-plugin', 'class-a', 'class-b');
   });
 
   it('should add only library name and plugin id when no css classes provided', () => {
     const addClass = vi.fn();
     const element = strictProxy<HTMLElement>({ addClass });
     addPluginCssClasses(element);
-    expect(addClass).toHaveBeenCalledWith('obsidian-dev-utils', 'test-plugin');
+    expect(addClass).toHaveBeenCalledWith('obsidian-lib', 'obsidian-dev-utils', 'test-plugin');
   });
 
   it('should omit the scope class when the css class scope is empty', () => {
@@ -88,7 +88,7 @@ describe('addPluginCssClasses', () => {
     const addClass = vi.fn();
     const element = strictProxy<HTMLElement>({ addClass });
     addPluginCssClasses(element, 'custom-class');
-    expect(addClass).toHaveBeenCalledWith('obsidian-dev-utils', 'custom-class');
+    expect(addClass).toHaveBeenCalledWith('obsidian-lib', 'obsidian-dev-utils', 'custom-class');
   });
 });
 

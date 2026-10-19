@@ -1,13 +1,13 @@
 /**
  * @file
  *
- * CSS classes used by the `@mnaoumov/obsidian-lib` library. {@link CssClass.LibraryName} keeps the legacy
- * `obsidian-dev-utils` name, so stylesheets written for older copies still match.
+ * CSS classes used by the `@mnaoumov/obsidian-lib` library. {@link CssClass.LegacyLibraryName} keeps the legacy
+ * `obsidian-dev-utils` name beside {@link CssClass.LibraryName}, so stylesheets written for older copies still match.
  */
 
 /**
- * CSS classes used by the `@mnaoumov/obsidian-lib` library. {@link CssClass.LibraryName} keeps the legacy
- * `obsidian-dev-utils` name, so stylesheets written for older copies still match.
+ * CSS classes used by the `@mnaoumov/obsidian-lib` library. {@link CssClass.LegacyLibraryName} keeps the legacy
+ * `obsidian-dev-utils` name beside {@link CssClass.LibraryName}, so stylesheets written for older copies still match.
  */
 export enum CssClass {
   /**
@@ -77,9 +77,16 @@ export enum CssClass {
   IsPlaceholder = 'is-placeholder',
 
   /**
-   * A CSS class for the library name.
+   * The legacy CSS class for the library name. Set beside {@link CssClass.LibraryName} on every element, for good,
+   * because stylesheets written for older copies select it, and so do this library's own styles, which also style
+   * the elements an older copy built.
    */
-  LibraryName = 'obsidian-dev-utils',
+  LegacyLibraryName = 'obsidian-dev-utils',
+
+  /**
+   * A CSS class for the library name. Always set together with {@link CssClass.LegacyLibraryName}.
+   */
+  LibraryName = 'obsidian-lib',
 
   /**
    * Obsidian's class marking rendered-markdown content (used by `appendCodeBlock`).

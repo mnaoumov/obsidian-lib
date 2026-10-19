@@ -19,13 +19,22 @@ To see debug messages for your plugin `alpha-bravo`, you have to enable them by 
 
 ```javascript
 window.DEBUG.enable('alpha-bravo'); // show all debug messages from the `alpha-bravo` plugin
-window.DEBUG.enable('alpha-bravo:obsidian-dev-utils:*'); // show all debug messages from this library within the `alpha-bravo` plugin
+window.DEBUG.enable('alpha-bravo:obsidian-lib:*'); // show all debug messages from this library within the `alpha-bravo` plugin
 window.DEBUG.enable('alpha-bravo:*'); // show all debug messages from the `alpha-bravo` plugin and its submodules
-window.DEBUG.enable('*:obsidian-dev-utils:*'); // show all debug messages for this library within any plugin
+window.DEBUG.enable('*:obsidian-lib:*'); // show all debug messages for this library within any plugin
 window.DEBUG.enable('*'); // show all debug messages
 ```
 
-The library's own messages use the namespace `obsidian-dev-utils`, not `obsidian-lib`. That is the name of the retired package this library replaced. It is kept so that a filter you enabled for an older plugin, or one still built on `obsidian-dev-utils`, keeps working.
+The library's own messages use the namespace `obsidian-lib`, such as `alpha-bravo:obsidian-lib:PluginApi`.
+
+### Compatibility
+
+The library used to log under `obsidian-dev-utils`, the name of the retired package it replaced, and that namespace still works. A filter such as `alpha-bravo:obsidian-dev-utils:*`, enabled for an older plugin, keeps showing the messages. Each message still prints once. It prints under `obsidian-lib` when a filter enables that, and under `obsidian-dev-utils` only when no filter enables `obsidian-lib`. So `alpha-bravo:*`, which enables both, shows no duplicates.
+
+Two kinds of message still print only under `obsidian-dev-utils`:
+
+- **Messages from the generic helpers** that come from `@mnaoumov/typescript-lib`, such as the async and error helpers. They log under the namespace a plugin context sets for them, which stays `obsidian-dev-utils` for now. So the filter that shows every library message in a plugin is `alpha-bravo:*`, or `alpha-bravo:obsidian-lib:*` plus `alpha-bravo:obsidian-dev-utils:*`.
+- **Messages from plugins still built on `obsidian-dev-utils`.** They log only under the old name.
 
 See full documentation of [`window.DEBUG`](https://github.com/mnaoumov/typescript-lib/blob/main/src/debug-controller.ts).
 

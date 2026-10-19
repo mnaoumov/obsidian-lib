@@ -56,7 +56,7 @@ import {
 } from './plugin-api.ts';
 
 const PROVIDER_ID = 'provider-plugin';
-const PLUGIN_API_DEBUG_NAMESPACE = 'obsidian-dev-utils:PluginApi';
+const PLUGIN_API_DEBUG_NAMESPACE = 'obsidian-lib:PluginApi';
 const PLUGIN_API_DEBUGGER_NAME = 'PluginApi';
 const PLUGIN_API_REGISTRY_STATE_KEY = 'pluginApiRegistry';
 const VALIDATE_PLUGIN_API_PAYLOADS_DEBUG_SWITCH_ID = 'obsidian-lib:validate-plugin-api-payloads';

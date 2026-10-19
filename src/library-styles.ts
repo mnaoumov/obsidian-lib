@@ -12,14 +12,14 @@
 
 import { compareVersions } from 'compare-versions';
 
-import { OBSIDIAN_LIBRARY_NAME } from './library.ts';
+import { LEGACY_OBSIDIAN_LIBRARY_NAME } from './library.ts';
 import { getObsidianDevUtilsState } from './obsidian-dev-utils-state.ts';
 
 /**
  * The id of the `<style>` element holding the library styles. It is the id `obsidian-dev-utils` copies use too, so
  * whichever copy injects last replaces the element instead of adding a second one.
  */
-export const LIBRARY_STYLES_ELEMENT_ID = `${OBSIDIAN_LIBRARY_NAME}-styles`;
+export const LIBRARY_STYLES_ELEMENT_ID = `${LEGACY_OBSIDIAN_LIBRARY_NAME}-styles`;
 
 /**
  * The shared-state key under which `obsidian-lib` copies record the version that injected the styles.

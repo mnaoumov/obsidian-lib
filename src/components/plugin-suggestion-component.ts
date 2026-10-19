@@ -237,7 +237,7 @@ export class PluginSuggestionComponent extends ComponentEx {
     }
 
     const bannerEl = containerEl.createDiv({
-      cls: [CssClass.LibraryName, CssClass.PluginSuggestionBanner]
+      cls: [CssClass.LibraryName, CssClass.LegacyLibraryName, CssClass.PluginSuggestionBanner]
     });
     appendTextOrFragmentClone(bannerEl.createDiv(), this.reason);
 
