@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 5.1.0
+
+- feat: publish the wire names under obsidian-lib, keeping the legacy ones
+- chore(build): drop the duplicate build:compile:typescript script
+- docs(changelog): add the 5.0.0 path settings migration note
+
 ## 5.0.0
 
 Migration: `PathSettings` entries now all match case-insensitively, whether they are plain paths, globs or regular expressions. An unescaped `*`, `?` or `[` makes an entry a glob (`*.pdf`, `Attachments/**/*.pdf`, `tmp*/`), so a plain path that contains one of those characters literally must escape it (`Notes \[old\]`). An entry shaped `/pattern/flags` is a regular expression whose flags are honoured, and `isPathIgnored` takes an optional `isFolder`. The `pathSettings.invalidRegularExpression` message now carries a `{{reason}}`.
