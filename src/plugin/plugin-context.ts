@@ -22,6 +22,7 @@ import {
 import { injectLibraryStyles } from '../library-styles.ts';
 import {
   LEGACY_OBSIDIAN_LIBRARY_NAME,
+  OBSIDIAN_LIBRARY_NAME,
   ObsidianLibrary
 } from '../library.ts';
 import { shareTypescriptLibStateWithObsidianDevUtilsState } from '../obsidian-dev-utils-state.ts';
@@ -77,9 +78,9 @@ export function initPluginContext(pluginId: string): void {
   ObsidianLibrary.init({ cssClassScope: pluginId });
   Library.init({
     debugGuideUrl: DEBUG_GUIDE_URL,
-    // TODO: Move to `OBSIDIAN_LIBRARY_NAME` once `@mnaoumov/typescript-lib` honours a legacy namespace alias, so
-    // filters written for this one keep showing the generic modules' messages.
-    debugNamespace: LEGACY_OBSIDIAN_LIBRARY_NAME,
+    debugNamespace: OBSIDIAN_LIBRARY_NAME,
+    // A filter written for the old name keeps showing the generic modules' messages.
+    debugNamespaceAliases: [LEGACY_OBSIDIAN_LIBRARY_NAME],
     debugPrefixNamespace: `${pluginId}:`,
     shouldPrintStackTrace: true
   });

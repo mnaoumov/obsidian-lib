@@ -160,7 +160,8 @@ describe('initPluginContext', () => {
   it('should initialize the Library and show debug message', () => {
     initPluginContext('my-plugin');
     expect(ObsidianLibrary.cssClassScope).toBe('my-plugin');
-    expect(Library.debugNamespace).toBe('obsidian-dev-utils');
+    expect(Library.debugNamespace).toBe('obsidian-lib');
+    expect(Library.debugNamespaceAliases).toEqual(['obsidian-dev-utils']);
     expect(Library.debugPrefixNamespace).toBe('my-plugin:');
     expect(Library.shouldPrintStackTrace).toBe(true);
     expect(Library.debugGuideUrl).toBe('https://mnaoumov.dev/obsidian-lib/guides/debugging/');

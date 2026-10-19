@@ -25,16 +25,13 @@ window.DEBUG.enable('*:obsidian-lib:*'); // show all debug messages for this lib
 window.DEBUG.enable('*'); // show all debug messages
 ```
 
-The library's own messages use the namespace `obsidian-lib`, such as `alpha-bravo:obsidian-lib:PluginApi`.
+The library's own messages use the namespace `obsidian-lib`, such as `alpha-bravo:obsidian-lib:PluginApi`. So do the messages of the generic helpers that come from `@mnaoumov/typescript-lib`, such as the async and error helpers, because a plugin context sets that namespace for them. So `alpha-bravo:obsidian-lib:*` shows every library message in a plugin.
 
 ### Compatibility
 
-The library used to log under `obsidian-dev-utils`, the name of the retired package it replaced, and that namespace still works. A filter such as `alpha-bravo:obsidian-dev-utils:*`, enabled for an older plugin, keeps showing the messages. Each message still prints once. It prints under `obsidian-lib` when a filter enables that, and under `obsidian-dev-utils` only when no filter enables `obsidian-lib`. So `alpha-bravo:*`, which enables both, shows no duplicates.
+The library used to log under `obsidian-dev-utils`, the name of the retired package it replaced, and that namespace still works, for the generic helpers too. A filter such as `alpha-bravo:obsidian-dev-utils:*`, enabled for an older plugin, keeps showing the messages. Each message still prints once. It prints under `obsidian-lib` when a filter enables that, and under `obsidian-dev-utils` only when no filter enables `obsidian-lib`. So `alpha-bravo:*`, which enables both, shows no duplicates.
 
-Two kinds of message still print only under `obsidian-dev-utils`:
-
-- **Messages from the generic helpers** that come from `@mnaoumov/typescript-lib`, such as the async and error helpers. They log under the namespace a plugin context sets for them, which stays `obsidian-dev-utils` for now. So the filter that shows every library message in a plugin is `alpha-bravo:*`, or `alpha-bravo:obsidian-lib:*` plus `alpha-bravo:obsidian-dev-utils:*`.
-- **Messages from plugins still built on `obsidian-dev-utils`.** They log only under the old name.
+Messages from plugins still built on `obsidian-dev-utils` print only under the old name.
 
 See full documentation of [`window.DEBUG`](https://github.com/mnaoumov/typescript-lib/blob/main/src/debug-controller.ts).
 
