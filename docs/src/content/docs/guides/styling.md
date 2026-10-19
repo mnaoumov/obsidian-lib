@@ -33,7 +33,9 @@ The list of css classes is defined in [css-class.ts](https://github.com/mnaoumov
 You can override those styles in your plugin's `styles.css` file via adding your plugin's id to the selector, e.g. for plugin `alpha-bravo`:
 
 ```css
-.alpha-bravo.obsidian-dev-utils :invalid {
+.alpha-bravo.obsidian-lib :invalid {
   box-shadow: 0 0 0 2px var(--text-error);
 }
 ```
+
+Every element the library styles carries two classes: `obsidian-lib`, and the legacy `obsidian-dev-utils` from the retired package this library replaced. A stylesheet written against `.obsidian-dev-utils` keeps matching, and so do elements built by a plugin that still bundles `obsidian-dev-utils`, which carry only the legacy class. To style those as well, select the legacy class.

@@ -752,7 +752,7 @@ export class PluginGateComponent extends ComponentEx {
 
     for (const dependency of unsatisfiedDependencies) {
       const bannerEl = containerEl.createDiv({
-        cls: [CssClass.LibraryName, CssClass.PluginDependencyBanner]
+        cls: [CssClass.LibraryName, CssClass.LegacyLibraryName, CssClass.PluginDependencyBanner]
       });
       bannerEl.append(this.createBlockedMessage(dependency));
       appendTextOrFragmentClone(bannerEl.createDiv(), dependency.reason);
@@ -828,7 +828,7 @@ export class PluginGateComponent extends ComponentEx {
    */
   private renderConflictEntry(containerEl: HTMLElement, conflict: PluginConflict, messageFragment: DocumentFragment): void {
     const bannerEl = containerEl.createDiv({
-      cls: [CssClass.LibraryName, CssClass.PluginConflictBanner]
+      cls: [CssClass.LibraryName, CssClass.LegacyLibraryName, CssClass.PluginConflictBanner]
     });
     bannerEl.append(messageFragment);
     appendTextOrFragmentClone(bannerEl.createDiv(), conflict.reason);

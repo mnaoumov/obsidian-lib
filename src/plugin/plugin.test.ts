@@ -94,14 +94,33 @@ vi.mock('../generated-during-build.ts', () => ({
   LIBRARY_VERSION: '1.0.0'
 }));
 
-vi.mock('../obsidian-dev-utils-state.ts', () => ({
-  getObsidianDevUtilsState: vi.fn((_key: string, defaultValue: unknown) => ({ value: defaultValue })),
-  shareTypescriptLibStateWithObsidianDevUtilsState: vi.fn()
-}));
+/**
+ * A shared-state wrapper, as the mocked bag below hands it out.
+ */
+interface StateWrapper {
+  value: unknown;
+}
+
+vi.mock('../obsidian-dev-utils-state.ts', () => {
+  // Keyed like the real bag, so state a module reads twice — the announced lifecycle payloads — is the same object.
+  const wrappers = new Map<string, StateWrapper>();
+  return {
+    getObsidianDevUtilsState: vi.fn((key: string, defaultValue: unknown) => {
+      let wrapper = wrappers.get(key);
+      if (!wrapper) {
+        wrapper = { value: defaultValue };
+        wrappers.set(key, wrapper);
+      }
+      return wrapper;
+    }),
+    shareTypescriptLibStateWithObsidianDevUtilsState: vi.fn()
+  };
+});
 
 vi.mock('../css-class.ts', () => ({
   CssClass: {
-    LibraryName: 'obsidian-dev-utils',
+    LegacyLibraryName: 'obsidian-dev-utils',
+    LibraryName: 'obsidian-lib',
     PluginSettingsTab: 'plugin-settings-tab',
     Tooltip: 'tooltip',
     TooltipArrow: 'tooltip-arrow',

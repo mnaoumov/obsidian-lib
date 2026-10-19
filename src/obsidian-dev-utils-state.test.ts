@@ -13,12 +13,14 @@ import {
 
 import {
   getObsidianDevUtilsState,
+  OBSIDIAN_LIB_GLOBAL_NAME,
   resetObsidianDevUtilsState,
   shareTypescriptLibStateWithObsidianDevUtilsState
 } from './obsidian-dev-utils-state.ts';
 
 interface GlobalThisWithState {
   __obsidianDevUtils: unknown;
+  __obsidianLib: unknown;
 }
 
 describe('getObsidianDevUtilsState', () => {
@@ -62,6 +64,47 @@ describe('getObsidianDevUtilsState', () => {
     const second = getObsidianDevUtilsState('resettable', 'b');
     expect(second).not.toBe(first);
     expect(second.value).toBe('b');
+  });
+});
+
+describe('__obsidianLib', () => {
+  afterEach(() => {
+    resetObsidianDevUtilsState();
+  });
+
+  function getRealmGlobal(): Partial<GlobalThisWithState> {
+    // eslint-disable-next-line obsidianmd/no-global-this -- The shared state intentionally lives on the realm global.
+    return globalThis as Partial<GlobalThisWithState>;
+  }
+
+  it('should be the same object as __obsidianDevUtils', () => {
+    getObsidianDevUtilsState('aliasKey', 1);
+    const realmGlobal = getRealmGlobal();
+    expect(realmGlobal.__obsidianLib).toBe(realmGlobal.__obsidianDevUtils);
+    expect(Object.keys(realmGlobal.__obsidianLib as object)).toContain('aliasKey');
+  });
+
+  it('should follow a bag an older copy put under __obsidianDevUtils', () => {
+    getObsidianDevUtilsState('aliasKey', 1);
+    const realmGlobal = getRealmGlobal();
+    const olderCopyBag = {};
+    realmGlobal.__obsidianDevUtils = olderCopyBag;
+    expect(realmGlobal.__obsidianLib).toBe(olderCopyBag);
+  });
+
+  it('should write an assignment through to __obsidianDevUtils', () => {
+    getObsidianDevUtilsState('aliasKey', 1);
+    const realmGlobal = getRealmGlobal();
+    const bag = {};
+    realmGlobal.__obsidianLib = bag;
+    expect(realmGlobal.__obsidianDevUtils).toBe(bag);
+  });
+
+  it('should keep an alias another copy already installed', () => {
+    getObsidianDevUtilsState('aliasKey', 1);
+    const descriptor = Object.getOwnPropertyDescriptor(getRealmGlobal(), OBSIDIAN_LIB_GLOBAL_NAME);
+    getObsidianDevUtilsState('otherKey', 2);
+    expect(Object.getOwnPropertyDescriptor(getRealmGlobal(), OBSIDIAN_LIB_GLOBAL_NAME)).toStrictEqual(descriptor);
   });
 });
 

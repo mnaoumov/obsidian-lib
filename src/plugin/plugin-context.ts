@@ -21,7 +21,7 @@ import {
 } from '../generated-during-build.ts';
 import { injectLibraryStyles } from '../library-styles.ts';
 import {
-  OBSIDIAN_LIBRARY_NAME,
+  LEGACY_OBSIDIAN_LIBRARY_NAME,
   ObsidianLibrary
 } from '../library.ts';
 import { shareTypescriptLibStateWithObsidianDevUtilsState } from '../obsidian-dev-utils-state.ts';
@@ -42,6 +42,7 @@ export function addPluginCssClasses(element: HTMLElement, cssClasses?: string | 
   const extraCssClasses = typeof cssClasses === 'string' ? [cssClasses] : cssClasses ?? [];
   element.addClass(
     CssClass.LibraryName,
+    CssClass.LegacyLibraryName,
     // The scope is empty until the plugin context is initialized; skip it so we never add an empty class.
     ...(ObsidianLibrary.cssClassScope ? [ObsidianLibrary.cssClassScope] : []),
     ...extraCssClasses
@@ -76,7 +77,9 @@ export function initPluginContext(pluginId: string): void {
   ObsidianLibrary.init({ cssClassScope: pluginId });
   Library.init({
     debugGuideUrl: DEBUG_GUIDE_URL,
-    debugNamespace: OBSIDIAN_LIBRARY_NAME,
+    // TODO: Move to `OBSIDIAN_LIBRARY_NAME` once `@mnaoumov/typescript-lib` honours a legacy namespace alias, so
+    // filters written for this one keep showing the generic modules' messages.
+    debugNamespace: LEGACY_OBSIDIAN_LIBRARY_NAME,
     debugPrefixNamespace: `${pluginId}:`,
     shouldPrintStackTrace: true
   });
