@@ -4,14 +4,14 @@
  * Integration test harness plugin.
  *
  * Imports the entire `@mnaoumov/obsidian-lib` library and exposes it as a strongly
- * typed namespace on `window.__obsidianDevUtilsModule`. This allows
+ * typed namespace on `window.__obsidianLibModule`. This allows
  * `evalInObsidian` callbacks to access any part of the library.
  */
 
 /// <reference path="./global.d.ts" />
 
 // eslint-disable-next-line import-x/no-namespace -- Need entire module.
-import * as obsidianDevUtils from '@mnaoumov/obsidian-lib';
+import * as obsidianLib from '@mnaoumov/obsidian-lib';
 
 import { Plugin } from 'obsidian';
 
@@ -20,10 +20,10 @@ import { Plugin } from 'obsidian';
  */
 export default class IntegrationTestPlugin extends Plugin {
   public override onload(): void {
-    window.__obsidianDevUtilsModule = obsidianDevUtils;
+    window.__obsidianLibModule = obsidianLib;
   }
 
   public override onunload(): void {
-    delete window.__obsidianDevUtilsModule;
+    delete window.__obsidianLibModule;
   }
 }
