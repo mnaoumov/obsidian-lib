@@ -265,7 +265,9 @@ export class PluginSuggestionComponent extends ComponentEx {
 
     const fragment = createFragment((fragmentEl) => {
       appendTextOrFragmentClone(fragmentEl.createDiv(), this.reason);
-      const buttonsEl = fragmentEl.createDiv();
+      const buttonsEl = fragmentEl.createDiv({
+        cls: [CssClass.LibraryName, CssClass.LegacyLibraryName, CssClass.PluginSuggestionNoticeButtons]
+      });
 
       new ButtonComponent(buttonsEl)
         .setButtonText(this.getActionButtonText(state))
