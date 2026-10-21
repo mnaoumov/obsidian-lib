@@ -1212,6 +1212,36 @@ describe('getBacklinksForFileSafe', () => {
     expect(mockedParseFrontmatter).toHaveBeenCalledTimes(1);
   });
 
+  it('should succeed for offset-carrying frontmatter links whose original is the whole multi-link value', async () => {
+    let operationResult: boolean | undefined;
+    mockedRetryWithTimeoutNotice.mockImplementation(async (params: RetryWithTimeoutNoticeParams) => {
+      const operationFunction = params.operationFunction;
+      const abortSignal = strictProxy<AbortSignal>({ throwIfAborted: vi.fn() });
+      operationResult = await operationFunction(abortSignal);
+    });
+    const value = '[[target]] and [Multi B](<target.md>)';
+    const wikilink = '[[target]]';
+    const markdownLink = '[Multi B](<target.md>)';
+    const wikilinkStartOffset = value.indexOf(wikilink);
+    const markdownLinkStartOffset = value.indexOf(markdownLink);
+
+    mockedGetIndexedBacklinksForFile.mockReturnValue(
+      createBacklinksDict({
+        'source.md': [
+          makeFrontmatterLinkWithOffsets(value, 'related', wikilinkStartOffset, wikilinkStartOffset + wikilink.length),
+          makeFrontmatterLinkWithOffsets(value, 'related', markdownLinkStartOffset, markdownLinkStartOffset + markdownLink.length)
+        ]
+      })
+    );
+    mockedGetFileOrNull.mockReturnValue(castTo<ReturnType<typeof getFileOrNull>>({ path: 'source.md' }));
+    mockedReadSafe.mockResolvedValue(`---\nrelated: "${value}"\n---`);
+    mockedParseFrontmatter.mockReturnValue(castTo<ReturnType<typeof parseFrontmatter>>({ related: value }));
+
+    const result = await getBacklinksForFileSafe({ app, pathOrFile: 'target.md' });
+    expect(operationResult).toBe(true);
+    expect(result.keys()).toEqual(['source.md']);
+  });
+
   it('should succeed when reference cache link matches content', async () => {
     setupRetryToInvokeOperationFunction();
     const content = '0123456789[[target]]more text';

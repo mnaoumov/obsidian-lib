@@ -91,6 +91,7 @@ import {
   parseLink
 } from './parse-link.ts';
 import {
+  getReferenceLinkText,
   isCanvasFileNodeReference,
   isReferenceInOffsetRange,
   referenceToFileChange
@@ -1735,7 +1736,7 @@ export function convertLink(params: ConvertLinkParams): string {
       shouldUseLeadingDotForRelativePaths: params.shouldUseLeadingDotForRelativePaths,
       shouldUseLeadingSlashForAbsolutePaths: params.shouldUseLeadingSlashForAbsolutePaths
     }))
-    : params.link.original;
+    : getReferenceLinkText(params.link);
 }
 
 /**
@@ -2236,8 +2237,9 @@ export function updateLink(params: UpdateLinkParams): string {
     shouldUseLeadingDotForRelativePaths,
     shouldUseLeadingSlashForAbsolutePaths
   } = params;
+  const originalLinkText = getReferenceLinkText(link);
   if (!newTargetPathOrFile) {
-    return link.original;
+    return originalLinkText;
   }
   const newTargetFile = getFile({ app, pathOrFile: newTargetPathOrFile, shouldIncludeNonExisting: true });
   const oldSourcePath = getPath(app, oldSourcePathOrFile ?? newSourcePathOrFile);
@@ -2245,7 +2247,7 @@ export function updateLink(params: UpdateLinkParams): string {
   const isWikilink = shouldUseWikilinkStyle(normalizeOptionalProperties<ShouldUseWikilinkStyleParams>({
     app,
     linkStyle,
-    originalLink: link.original
+    originalLink: originalLinkText
   }));
 
   const { subpath } = splitSubpath(link.link);
@@ -2257,7 +2259,7 @@ export function updateLink(params: UpdateLinkParams): string {
     /* v8 ignore stop */
   }
 
-  const parseLinkResult = parseLink(link.original);
+  const parseLinkResult = parseLink(originalLinkText);
   let alias: string | undefined;
 
   if (isWikilink && parseLinkResult?.alias) {
@@ -2295,7 +2297,7 @@ export function updateLink(params: UpdateLinkParams): string {
     isSingleSubpathAllowed: oldSourcePath === oldTargetPath && !!parseLinkResult?.alias,
     linkPathStyle,
     linkStyle,
-    originalLink: link.original,
+    originalLink: originalLinkText,
     shouldEscapeAlias,
     shouldIncludeAttachmentExtensionToEmbedAlias,
     shouldUseAngleBrackets,
@@ -2338,7 +2340,7 @@ export async function updateLinksInContent(params: UpdateLinksInContentParams): 
     app,
     content,
     linkConverter: (link) => {
-      const isEmbedLink = hasEmbedSyntax(link.original);
+      const isEmbedLink = hasEmbedSyntax(getReferenceLinkText(link));
       return shouldUpdateEmbedOnlyLinks !== undefined && shouldUpdateEmbedOnlyLinks !== isEmbedLink
         ? undefined
         : convertLink(normalizeOptionalProperties<ConvertLinkParams>({
@@ -2393,7 +2395,7 @@ export async function updateLinksInFile(params: UpdateLinksInFileParams): Promis
   await editLinks(normalizeOptionalProperties<EditLinksParams>({
     ...params,
     linkConverter: (link) => {
-      const isEmbedLink = hasEmbedSyntax(link.original);
+      const isEmbedLink = hasEmbedSyntax(getReferenceLinkText(link));
       return shouldUpdateEmbedOnlyLinks !== undefined && shouldUpdateEmbedOnlyLinks !== isEmbedLink
         ? undefined
         : convertLink(normalizeOptionalProperties<ConvertLinkParams>({

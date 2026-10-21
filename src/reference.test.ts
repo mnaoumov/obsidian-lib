@@ -14,6 +14,7 @@ import type { FrontmatterLinkCacheWithOffsets } from './frontmatter-link-cache-w
 import type { CanvasReference } from './reference.ts';
 
 import {
+  getReferenceLinkText,
   isCanvasFileNodeReference,
   isCanvasReference,
   isCanvasTextNodeReference,
@@ -186,6 +187,22 @@ describe('isReferenceInOffsetRange', () => {
   it('should return false for a canvas reference', () => {
     const reference = makeCanvasReference('file', 'k');
     expect(isReferenceInOffsetRange(reference, { endOffset: 1000, startOffset: 0 })).toBe(false);
+  });
+});
+
+describe('getReferenceLinkText', () => {
+  it('should return the original of a regular reference cache', () => {
+    expect(getReferenceLinkText(makeReferenceCache('[[link]]', 10))).toBe('[[link]]');
+  });
+
+  it('should return the original of a frontmatter link without offsets', () => {
+    expect(getReferenceLinkText(makeFrontmatterLink('link', 'aliases'))).toBe('link');
+  });
+
+  it('should return the span of each link in a multi-link frontmatter value', () => {
+    const value = '[[a]] and [B](<b.md>)';
+    expect(getReferenceLinkText(makeFrontmatterLinkWithOffsets(value, 'related', 0, 5))).toBe('[[a]]');
+    expect(getReferenceLinkText(makeFrontmatterLinkWithOffsets(value, 'related', 10, value.length))).toBe('[B](<b.md>)');
   });
 });
 
