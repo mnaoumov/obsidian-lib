@@ -13,12 +13,15 @@ const ROOT_DIR = fileURLToPath(new URL('..', import.meta.url));
 // Compiling every guide snippet builds one program over `src/`, which takes tens of seconds.
 const FULL_CHECK_TIMEOUT_IN_MILLISECONDS = 180_000;
 
+// Walking every file of the package takes well under a second alone, but past vitest's 5 s default under the full gate's load.
+const OUTDATED_REFERENCES_TIMEOUT_IN_MILLISECONDS = 60_000;
+
 describe('documentation checks', () => {
   it('should type-check every snippet of the guides', { timeout: FULL_CHECK_TIMEOUT_IN_MILLISECONDS }, async () => {
     await assertDocsSnippetsCompile({ prelude: DOCS_SNIPPET_PRELUDE, rootDirectory: ROOT_DIR });
   });
 
-  it('should find no outdated reference in the package', async () => {
+  it('should find no outdated reference in the package', { timeout: OUTDATED_REFERENCES_TIMEOUT_IN_MILLISECONDS }, async () => {
     await assertNoOutdatedReferences(ROOT_DIR);
   });
 });
