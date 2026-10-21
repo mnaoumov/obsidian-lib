@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 5.2.0
+
+- feat(debug): log the generic typescript-lib modules under obsidian-lib
+
 ## 5.1.0
 
 - feat: publish the wire names under obsidian-lib, keeping the legacy ones
