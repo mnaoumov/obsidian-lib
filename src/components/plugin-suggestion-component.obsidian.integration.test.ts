@@ -10,7 +10,7 @@ describe('PluginSuggestionComponent notice', () => {
     const gapInPixels = await evalInObsidian({
       callback({ lib: { CssClass }, obsidianModule: { ButtonComponent } }) {
         const buttonsEl = activeDocument.body.createDiv({
-          cls: [CssClass.LibraryName, CssClass.LegacyLibraryName, CssClass.PluginSuggestionNoticeButtons]
+          cls: [CssClass.LibraryName, CssClass.PluginSuggestionNoticeButtons]
         });
         try {
           const actionButton = new ButtonComponent(buttonsEl).setButtonText('Install and enable').setCta();

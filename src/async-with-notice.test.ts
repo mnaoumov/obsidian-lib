@@ -72,7 +72,7 @@ vi.mock('@mnaoumov/typescript-lib/debug', () => ({
 vi.mock('./i18n/i18n.ts', () => ({
   t: vi.fn((selectorFunction: (translations: GenericObject) => string, _options?: GenericObject) => {
     const translations = {
-      obsidianDevUtils: {
+      obsidianLib: {
         asyncWithNotice: {
           milliseconds: 'milliseconds...',
           operation: 'Operation',

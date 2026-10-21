@@ -73,8 +73,8 @@ vi.mock('obsidian', async (importOriginal) => {
   };
 });
 
-vi.mock('../obsidian-dev-utils-state.ts', () => ({
-  getObsidianDevUtilsState: vi.fn((key: string, defaultValue: unknown) => {
+vi.mock('../obsidian-lib-state.ts', () => ({
+  getObsidianLibState: vi.fn((key: string, defaultValue: unknown) => {
     let wrapper = stateMocks.store.get(key);
     if (!wrapper) {
       wrapper = { value: defaultValue };

@@ -205,7 +205,7 @@ function compileGlobEntry(glob: string): CompileResult {
   const globSource = getGlobSource(body);
   if (!globSource.isValid) {
     return {
-      error: t(($) => $.obsidianDevUtils.pathSettings.invalidGlob, { glob, reason: globSource.error })
+      error: t(($) => $.obsidianLib.pathSettings.invalidGlob, { glob, reason: globSource.error })
     };
   }
   const { source } = globSource;
@@ -220,7 +220,7 @@ function compileGlobEntry(glob: string): CompileResult {
   } catch (error_) {
     // An out-of-order character class range (`[z-a]`) is the one invalid glob only the engine can tell.
     return {
-      error: t(($) => $.obsidianDevUtils.pathSettings.invalidGlob, { glob, reason: getRegExpErrorReason(error_) })
+      error: t(($) => $.obsidianLib.pathSettings.invalidGlob, { glob, reason: getRegExpErrorReason(error_) })
     };
   }
 
@@ -252,7 +252,7 @@ function compileRegExpEntry(entry: string, source: string, flags: string): Compi
     // A partially typed regex literal (`/^Inbox\/`) is not parseable.
     // Report it instead of throwing from a settings setter, which would break both the settings UI and the save path.
     return {
-      error: t(($) => $.obsidianDevUtils.pathSettings.invalidRegularExpression, { reason: getRegExpErrorReason(error), regExp: entry })
+      error: t(($) => $.obsidianLib.pathSettings.invalidRegularExpression, { reason: getRegExpErrorReason(error), regExp: entry })
     };
   }
 
@@ -303,7 +303,7 @@ function getCharacterClassSource(glob: string, openIndex: number): CharacterClas
     index++;
   }
 
-  return { error: t(($) => $.obsidianDevUtils.pathSettings.unclosedCharacterClass), isValid: false };
+  return { error: t(($) => $.obsidianLib.pathSettings.unclosedCharacterClass), isValid: false };
 }
 
 function getDefaultMatcher(type: PathSettingType): PathMatcher {
@@ -371,7 +371,7 @@ function getGlobSource(glob: string): GlobSourceResult {
       case '\\': {
         index++;
         if (index >= glob.length) {
-          return { error: t(($) => $.obsidianDevUtils.pathSettings.trailingEscape), isValid: false };
+          return { error: t(($) => $.obsidianLib.pathSettings.trailingEscape), isValid: false };
         }
         source += escapeRegExp(glob.charAt(index));
         index++;

@@ -10,7 +10,7 @@ import type { ConditionalKeys } from 'type-fest';
 
 import { around as originalAround } from 'monkey-around';
 
-import { getObsidianDevUtilsState } from '../obsidian-dev-utils-state.ts';
+import { getObsidianLibState } from '../obsidian-lib-state.ts';
 import { ComponentEx } from './component-ex.ts';
 
 /**
@@ -368,5 +368,5 @@ export function hasPatchToken($function: GenericFunction, patchToken: symbol): b
 }
 
 function getMonkeyAroundPatches(): WeakMap<GenericFunction, symbol> {
-  return getObsidianDevUtilsState('monkeyAroundPatches', new WeakMap<GenericFunction, symbol>()).value;
+  return getObsidianLibState('monkeyAroundPatches', new WeakMap<GenericFunction, symbol>()).value;
 }

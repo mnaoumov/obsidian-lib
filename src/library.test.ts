@@ -5,7 +5,6 @@ import {
 } from 'vitest';
 
 import {
-  LEGACY_OBSIDIAN_LIBRARY_NAME,
   OBSIDIAN_LIBRARY_NAME,
   ObsidianLibrary
 } from './library.ts';
@@ -13,10 +12,6 @@ import {
 describe('ObsidianLibrary', () => {
   it('should name the library by its package', () => {
     expect(OBSIDIAN_LIBRARY_NAME).toBe('obsidian-lib');
-  });
-
-  it('should keep the user-visible name the library was published under as the legacy name', () => {
-    expect(LEGACY_OBSIDIAN_LIBRARY_NAME).toBe('obsidian-dev-utils');
   });
 
   it('should default to an empty css class scope before init', () => {

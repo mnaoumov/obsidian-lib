@@ -18,7 +18,6 @@ describe('CssClass', () => {
     ['EmailComponent', 'email-component'],
     ['FileComponent', 'file-component'],
     ['IsPlaceholder', 'is-placeholder'],
-    ['LegacyLibraryName', 'obsidian-dev-utils'],
     ['LibraryName', 'obsidian-lib'],
     ['MonthComponent', 'month-component'],
     ['MultipleDropdownComponent', 'multiple-dropdown-component'],

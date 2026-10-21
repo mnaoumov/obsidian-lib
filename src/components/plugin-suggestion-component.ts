@@ -237,7 +237,7 @@ export class PluginSuggestionComponent extends ComponentEx {
     }
 
     const bannerEl = containerEl.createDiv({
-      cls: [CssClass.LibraryName, CssClass.LegacyLibraryName, CssClass.PluginSuggestionBanner]
+      cls: [CssClass.LibraryName, CssClass.PluginSuggestionBanner]
     });
     appendTextOrFragmentClone(bannerEl.createDiv(), this.reason);
 
@@ -252,8 +252,8 @@ export class PluginSuggestionComponent extends ComponentEx {
   private getActionButtonText(state: SuggestedPluginState): string {
     return t(($) =>
       state === SuggestedPluginState.InstalledButDisabled
-        ? $.obsidianDevUtils.pluginSuggestion.enable
-        : $.obsidianDevUtils.pluginSuggestion.install
+        ? $.obsidianLib.pluginSuggestion.enable
+        : $.obsidianLib.pluginSuggestion.install
     );
   }
 
@@ -266,7 +266,7 @@ export class PluginSuggestionComponent extends ComponentEx {
     const fragment = createFragment((fragmentEl) => {
       appendTextOrFragmentClone(fragmentEl.createDiv(), this.reason);
       const buttonsEl = fragmentEl.createDiv({
-        cls: [CssClass.LibraryName, CssClass.LegacyLibraryName, CssClass.PluginSuggestionNoticeButtons]
+        cls: [CssClass.LibraryName, CssClass.PluginSuggestionNoticeButtons]
       });
 
       new ButtonComponent(buttonsEl)
@@ -277,7 +277,7 @@ export class PluginSuggestionComponent extends ComponentEx {
         }));
 
       new ButtonComponent(buttonsEl)
-        .setButtonText(t(($) => $.obsidianDevUtils.pluginSuggestion.notNow))
+        .setButtonText(t(($) => $.obsidianLib.pluginSuggestion.notNow))
         .onClick(convertAsyncToSync(async () => {
           await this.setSuggestionDeclined(true);
         }));

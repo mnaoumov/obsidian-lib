@@ -1,7 +1,7 @@
 {
   "author": "mnaoumov",
   "description": "Test harness plugin that exposes obsidian-lib API for integration testing.",
-  "id": "obsidian-dev-utils-integration-test",
+  "id": "obsidian-lib-integration-test",
   "minAppVersion": "1.11.0",
   "name": "Integration Test Harness",
   "version": "0.0.0"

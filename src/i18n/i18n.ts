@@ -93,7 +93,7 @@ function tImpl(
  * If {@link initI18N} has not been called yet — which is the case for a plugin that extends Obsidian's raw `Plugin`
  * instead of `PluginBase`, since `PluginBase.onload` is the only caller of {@link initI18N} — the first call lazily
  * initializes the library's default translations and still returns the correct string. That fallback is a
- * supported path, so it is reported through the `obsidian-dev-utils:I18N:t` debug namespace rather than the console:
+ * supported path, so it is reported through the `obsidian-lib:I18N:t` debug namespace rather than the console:
  * it stays silent unless debug messages are enabled. See
  * {@link https://mnaoumov.dev/obsidian-lib/guides/debugging/}.
  */

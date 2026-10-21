@@ -74,7 +74,7 @@ describe('demo-vault-helper bootstrap', () => {
   // `enableCommunityPlugins` path, which kicks off the helper's on-layout-ready bootstrap that installs
   // `CodeScript Toolkit` from the store.
   //
-  // NOTE: `CodeScript Toolkit` is installed FROM THE STORE and bundles its own copy of obsidian-dev-utils, so the
+  // NOTE: `CodeScript Toolkit` is installed FROM THE STORE and bundles its own copy of obsidian-lib, so the
   // `startupRan`/`probeValue`/`activeFilePath` assertions (it runs its startup script when enabled AFTER
   // layout-ready — the `LayoutReadyComponent` load-vs-execute race fixed in this repo) only pass once the
   // store serves a release of it built against the fixed dev-utils (13.4.1+).

@@ -57,7 +57,7 @@ vi.mock('../i18n/i18n.ts', () => ({
   initI18N: vi.fn(),
   t: vi.fn(($function: (t: unknown) => string) =>
     $function({
-      obsidianDevUtils: {
+      obsidianLib: {
         notices: { unhandledError: 'error' },
         pluginConflict: {
           blockedNotice: 'conflict blocked',
@@ -101,25 +101,23 @@ interface StateWrapper {
   value: unknown;
 }
 
-vi.mock('../obsidian-dev-utils-state.ts', () => {
+vi.mock('../obsidian-lib-state.ts', () => {
   // Keyed like the real bag, so state a module reads twice — the announced lifecycle payloads — is the same object.
   const wrappers = new Map<string, StateWrapper>();
   return {
-    getObsidianDevUtilsState: vi.fn((key: string, defaultValue: unknown) => {
+    getObsidianLibState: vi.fn((key: string, defaultValue: unknown) => {
       let wrapper = wrappers.get(key);
       if (!wrapper) {
         wrapper = { value: defaultValue };
         wrappers.set(key, wrapper);
       }
       return wrapper;
-    }),
-    shareTypescriptLibStateWithObsidianDevUtilsState: vi.fn()
+    })
   };
 });
 
 vi.mock('../css-class.ts', () => ({
   CssClass: {
-    LegacyLibraryName: 'obsidian-dev-utils',
     LibraryName: 'obsidian-lib',
     PluginSettingsTab: 'plugin-settings-tab',
     Tooltip: 'tooltip',
@@ -139,7 +137,7 @@ vi.mock('compare-versions', async (importOriginal) => {
   };
 });
 
-// The registry is reached through `getObsidianDevUtilsState`, which this file mocks to hand back a fresh
+// The registry is reached through `getObsidianLibState`, which this file mocks to hand back a fresh
 // bag per call — so a real publish and a real watch would never meet. Mocking the publish instead keeps
 // the assertions about WHAT gets published and WHEN, which is what this file is responsible for; the
 // registry's own behavior is covered by `plugin-api.test.ts`.

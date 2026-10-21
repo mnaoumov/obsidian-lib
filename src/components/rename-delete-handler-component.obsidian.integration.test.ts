@@ -522,7 +522,7 @@ describe('rename-delete-handler', () => {
                 }
               }
 
-              const noticeTexts = [...activeDocument.querySelectorAll<HTMLElement>('.obsidian-dev-utils.plugin-notice-content')]
+              const noticeTexts = [...activeDocument.querySelectorAll<HTMLElement>('.obsidian-lib.plugin-notice-content')]
                 .map((noticeContentEl) => noticeContentEl.textContent);
 
               return {
@@ -688,7 +688,7 @@ describe('rename-delete-handler', () => {
              */
             const observedNoticeTexts: string[] = [];
             function recordNoticesIn(root: ParentNode): void {
-              for (const noticeContentEl of root.querySelectorAll<HTMLElement>('.obsidian-dev-utils.plugin-notice-content')) {
+              for (const noticeContentEl of root.querySelectorAll<HTMLElement>('.obsidian-lib.plugin-notice-content')) {
                 observedNoticeTexts.push(noticeContentEl.textContent);
               }
             }
@@ -702,7 +702,7 @@ describe('rename-delete-handler', () => {
 
                   // The content element sits inside the `.notice` container that is what actually gets added,
                   // so sweep the added subtree as well as testing the added node itself.
-                  if (addedNode.matches('.obsidian-dev-utils.plugin-notice-content')) {
+                  if (addedNode.matches('.obsidian-lib.plugin-notice-content')) {
                     observedNoticeTexts.push(addedNode.textContent);
                   }
                   recordNoticesIn(addedNode);
@@ -852,7 +852,7 @@ describe('rename-delete-handler', () => {
            */
           const observedNoticeTexts: string[] = [];
           function recordNoticesIn(root: ParentNode): void {
-            for (const noticeContentEl of root.querySelectorAll<HTMLElement>('.obsidian-dev-utils.plugin-notice-content')) {
+            for (const noticeContentEl of root.querySelectorAll<HTMLElement>('.obsidian-lib.plugin-notice-content')) {
               observedNoticeTexts.push(noticeContentEl.textContent);
             }
           }
@@ -866,7 +866,7 @@ describe('rename-delete-handler', () => {
 
                 // The content element sits inside the `.notice` container that is what actually gets added,
                 // so sweep the added subtree as well as testing the added node itself.
-                if (addedNode.matches('.obsidian-dev-utils.plugin-notice-content')) {
+                if (addedNode.matches('.obsidian-lib.plugin-notice-content')) {
                   observedNoticeTexts.push(addedNode.textContent);
                 }
                 recordNoticesIn(addedNode);

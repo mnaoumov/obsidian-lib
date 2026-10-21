@@ -30,7 +30,8 @@ vi.mock('./async-with-notice.ts', () => ({
 }));
 
 const mockedRetryWithTimeoutNotice = vi.mocked(retryWithTimeoutNotice);
-const DEFAULT_STAGING_FOLDER_PATH = '.obsidian-dev-utils-temp';
+const DEFAULT_STAGING_FOLDER_PATH = '.obsidian-lib-temp';
+const RETIRED_STAGING_FOLDER_PATH = '.obsidian-dev-utils-temp';
 let app: AppOriginal;
 let mockApp: App;
 
@@ -166,6 +167,41 @@ describe('VaultTransaction', () => {
       await vaultTransaction.commit();
       expect(trashLocalSpy).toHaveBeenCalledOnce();
       expect(await exists('a.md')).toBe(false);
+    });
+
+    it('should move the retired staging folder to the trash once a default-path transaction settles', async () => {
+      await app.vault.adapter.mkdir(RETIRED_STAGING_FOLDER_PATH);
+      await app.vault.adapter.write(`${RETIRED_STAGING_FOLDER_PATH}/left.md`, 'L');
+      await app.vault.create('a.md', 'A');
+      const vaultTransaction = new VaultTransaction({ app });
+      await vaultTransaction.trash('a.md');
+      const trashSystemSpy = vi.spyOn(app.vault.adapter, 'trashSystem');
+
+      await vaultTransaction.commit();
+      expect(trashSystemSpy).toHaveBeenCalledWith(RETIRED_STAGING_FOLDER_PATH);
+      expect(await exists(RETIRED_STAGING_FOLDER_PATH)).toBe(false);
+    });
+
+    it('should move the retired staging folder to the local trash when the system trash refuses it', async () => {
+      await app.vault.adapter.mkdir(RETIRED_STAGING_FOLDER_PATH);
+      await app.vault.create('a.md', 'A');
+      const vaultTransaction = new VaultTransaction({ app });
+      await vaultTransaction.trash('a.md');
+      vi.spyOn(app.vault.adapter, 'trashSystem').mockResolvedValue(false);
+      const trashLocalSpy = vi.spyOn(app.vault.adapter, 'trashLocal');
+
+      await vaultTransaction.rollback();
+      expect(trashLocalSpy).toHaveBeenCalledWith(RETIRED_STAGING_FOLDER_PATH);
+    });
+
+    it('should leave the retired staging folder alone under a custom staging folder path', async () => {
+      await app.vault.adapter.mkdir(RETIRED_STAGING_FOLDER_PATH);
+      await app.vault.create('a.md', 'A');
+      const vaultTransaction = new VaultTransaction({ app, stagingFolderPath: '.custom-temp' });
+      await vaultTransaction.trash('a.md');
+
+      await vaultTransaction.commit();
+      expect(await exists(RETIRED_STAGING_FOLDER_PATH)).toBe(true);
     });
 
     it('should throw when committing an already-committed transaction', async () => {

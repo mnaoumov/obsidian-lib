@@ -79,7 +79,7 @@ import {
   parseMetadata,
   registerFiles
 } from './metadata-cache.ts';
-import { getObsidianDevUtilsState } from './obsidian-dev-utils-state.ts';
+import { getObsidianLibState } from './obsidian-lib-state.ts';
 import {
   getNewLinkFormat,
   shouldUseWikilinks
@@ -2016,7 +2016,7 @@ export function generateRawMarkdownLink(params: GenerateRawMarkdownLinkParams): 
  * @returns The mutable list of default-params functions.
  */
 export function getGenerateMarkdownLinkDefaultParamsFns(): (() => Partial<GenerateMarkdownLinkParams>)[] {
-  return getObsidianDevUtilsState<(() => Partial<GenerateMarkdownLinkParams>)[]>('generateMarkdownLinkDefaultParamsFns', []).value;
+  return getObsidianLibState<(() => Partial<GenerateMarkdownLinkParams>)[]>('generateMarkdownLinkDefaultParamsFns', []).value;
 }
 
 /**

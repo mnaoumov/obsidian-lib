@@ -112,7 +112,7 @@ export function renderCallout(params: RenderCalloutParams): void {
       addToQueue(normalizeOptionalProperties<AddToQueueParams>({
         abortSignal: params.abortSignal,
         operationFunction: loadContent,
-        operationName: t(($) => $.obsidianDevUtils.callout.loadContent)
+        operationName: t(($) => $.obsidianLib.callout.loadContent)
       }));
     }
   });

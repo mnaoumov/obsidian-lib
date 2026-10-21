@@ -335,7 +335,7 @@ The component's `contract` defaults to `getSettingsMigrationApiContract()`, whic
 
 ## A note on library copies
 
-Every plugin bundles its own copy of this library, or of `obsidian-dev-utils`, whose registry it shares, so a registry record travels between **different library versions**. The record therefore holds nothing but plain data and plain functions, and every read of it is structural — never `instanceof`. You do not have to do anything about this; it just means a provider on an old library version and a consumer on a new one keep working.
+Every plugin bundles its own copy of this library, so a registry record travels between **different library versions**. The record therefore holds nothing but plain data and plain functions, and every read of it is structural — never `instanceof`. You do not have to do anything about this; it just means a provider on an old library version and a consumer on a new one keep working.
 
 ## Requiring another plugin
 
@@ -465,8 +465,6 @@ export default class MyPlugin extends Plugin {
 ```
 
 `obsidian-lib:plugin-loaded` fires only after every API that plugin declares has been published, so a listener may call them immediately. The payload carries `pluginId`, `pluginName`, `pluginVersion`, `apiVersions`, and `dependencyPluginIds` — the last of which is how a provider answers "which installed plugins depend on me", something the registry cannot tell it.
-
-A plugin still built on `obsidian-dev-utils` announces itself only under the legacy names, `obsidian-dev-utils:plugin-loaded` / `-unloaded`. Every `PluginBase` relays those to the current names, once, so the two constants hear it too whenever a plugin on this library is loaded. If your plugin extends `PluginBase`, that is always true. Every event is also triggered under its legacy name, so listen on one of the two names, never both. The [protocol's compatibility section](/obsidian-lib/guides/plugin-api-protocol/#compatibility) has the details.
 
 It deliberately carries **no API handle**. A handle delivered by a one-shot event is a probe: it answers "now" and never says when "now" changed, and one that outlives its provider is exactly the stale handle the revocable handles exist to prevent. Hold a `PluginApiRef` for that.
 

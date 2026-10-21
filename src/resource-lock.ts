@@ -68,7 +68,7 @@ import { getPath } from './file-system.ts';
 import { appendCodeBlock } from './html-element.ts';
 import { t } from './i18n/i18n.ts';
 import { confirm } from './modals/confirm.ts';
-import { getObsidianDevUtilsState } from './obsidian-dev-utils-state.ts';
+import { getObsidianLibState } from './obsidian-lib-state.ts';
 import {
   isChild,
   isChildOrSelf
@@ -76,8 +76,8 @@ import {
 
 const RESOURCE_LOCK_STATE_KEY = 'resourceLock';
 const LOCK_ICON_ID = 'lock';
-const LOCK_INDICATOR_CSS_CLASS = 'obsidian-dev-utils-lock-indicator';
-const LOCK_INDICATOR_FLASH_CSS_CLASS = 'obsidian-dev-utils-lock-indicator-flash';
+const LOCK_INDICATOR_CSS_CLASS = 'obsidian-lib-lock-indicator';
+const LOCK_INDICATOR_FLASH_CSS_CLASS = 'obsidian-lib-lock-indicator-flash';
 const STATUS_BAR_ITEM_CSS_CLASS = 'status-bar-item';
 const STATUS_BAR_CSS_SELECTOR = '.status-bar';
 const UNLOCK_ICON_ID = 'unlock';
@@ -294,7 +294,7 @@ class ResourceLockEventsComponent extends ComponentEx {
 
 /**
  * Tracks path-scoped editor locks and keeps every open {@link MarkdownView} in sync with the locked
- * set. A single instance lives in the shared state under the legacy `__obsidianDevUtils` global. Each lock is one
+ * set. A single instance lives in the shared state under the `__obsidianLib` global. Each lock is one
  * {@link LockEntry} in a per-path list, so a path can be held by several plugins (or several times by
  * one) concurrently and is released only when its last entry is removed; the indicators report which
  * plugins currently hold a lock.
@@ -483,13 +483,13 @@ class ResourceLockManager {
   private addUnlockMenuItem(app: App, menu: Menu, path: string): void {
     menu.addItem((item) => {
       item
-        .setTitle(t(($) => $.obsidianDevUtils.resourceLock.unlockMenuItem))
+        .setTitle(t(($) => $.obsidianLib.resourceLock.unlockMenuItem))
         .setIcon(UNLOCK_ICON_ID)
         .onClick(convertAsyncToSync(async () => {
           const isConfirmed = await confirm({
             app,
             message: this.unlockConfirmMessage(app, path),
-            title: t(($) => $.obsidianDevUtils.resourceLock.unlockConfirmTitle)
+            title: t(($) => $.obsidianLib.resourceLock.unlockConfirmTitle)
           });
           if (isConfirmed) {
             // `path` is the resolved owner path, so cancel its operations and release the lock outright.
@@ -746,7 +746,7 @@ class ResourceLockManager {
   }
 
   private lockTooltip(app: App, path: string): string {
-    const header = t(($) => $.obsidianDevUtils.resourceLock.lockedByTooltip);
+    const header = t(($) => $.obsidianLib.resourceLock.lockedByTooltip);
     // A runtime-length list of plugin names, one per line under the header.
     return [header, ...this.lockingPluginNames(app, path)].join('\n');
   }
@@ -908,7 +908,7 @@ class ResourceLockManager {
 
   private unlockConfirmMessage(app: App, path: string): DocumentFragment {
     const fragment = createFragment();
-    fragment.appendText(t(($) => $.obsidianDevUtils.resourceLock.unlockConfirmMessage));
+    fragment.appendText(t(($) => $.obsidianLib.resourceLock.unlockConfirmMessage));
     // A runtime-length list of the locks currently held: each plugin name as a code block followed by
     // the operation it is running, one per line.
     for (const descriptor of this.lockDescriptors(app, path)) {
@@ -1364,7 +1364,7 @@ export function unlockResourceForPath(app: App, pathOrFile: PathOrFile, pluginId
 }
 
 function getManager(): ResourceLockManager {
-  return getObsidianDevUtilsState<ResourceLockManager>(RESOURCE_LOCK_STATE_KEY, new ResourceLockManager()).value;
+  return getObsidianLibState<ResourceLockManager>(RESOURCE_LOCK_STATE_KEY, new ResourceLockManager()).value;
 }
 
 /**

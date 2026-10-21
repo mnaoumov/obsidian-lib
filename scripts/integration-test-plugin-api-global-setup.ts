@@ -5,7 +5,7 @@
  *
  * The vault has NO plugin-under-test (`installPlugin: false`). Instead it carries two purpose-built,
  * SEPARATELY BUNDLED community plugins — a provider and a consumer — each holding its own copy of
- * `obsidian-dev-utils`. That is the claim the companion test
+ * `obsidian-lib`. That is the claim the companion test
  * (`src/obsidian/plugin/plugin-api.obsidian.integration.test.ts`) verifies and that no unit test can reach:
  * the registry record is a wire format between different library copies, so it must be read structurally,
  * never by class identity.
@@ -31,12 +31,12 @@ const PROJECT_ROOT = join(import.meta.dirname, '..');
  * The `manifest.id` of the consuming plugin. Kept in step with `integration-test-plugin-api/shared.ts`, which
  * this Node-side setup cannot import: that module is compiled INTO the bundles.
  */
-export const PLUGIN_API_CONSUMER_PLUGIN_ID = 'obsidian-dev-utils-plugin-api-consumer';
+export const PLUGIN_API_CONSUMER_PLUGIN_ID = 'obsidian-lib-plugin-api-consumer';
 
 /**
  * The `manifest.id` of the providing plugin.
  */
-export const PLUGIN_API_PROVIDER_PLUGIN_ID = 'obsidian-dev-utils-plugin-api-provider';
+export const PLUGIN_API_PROVIDER_PLUGIN_ID = 'obsidian-lib-plugin-api-provider';
 
 const setupPair = createSetup({
   // The consumer comes first on purpose: its watches must already be running when the provider publishes.

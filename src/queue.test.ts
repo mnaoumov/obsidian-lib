@@ -23,7 +23,7 @@ const mocks = vi.hoisted(() => ({
   addErrorHandler: vi.fn(async ($function: () => Promise<void>) => {
     await $function();
   }),
-  getObsidianDevUtilsState: vi.fn(),
+  getObsidianLibState: vi.fn(),
   invokeAsyncAndLog: vi.fn(async (params: InvokeAsyncAndLogParams) => {
     await params.$function(params.abortSignal ?? new AbortController().signal);
   }),
@@ -61,8 +61,8 @@ const functionMocks = vi.hoisted(() => {
 
 vi.mock('@mnaoumov/typescript-lib/function', () => functionMocks);
 
-vi.mock('./obsidian-dev-utils-state.ts', () => ({
-  getObsidianDevUtilsState: mocks.getObsidianDevUtilsState
+vi.mock('./obsidian-lib-state.ts', () => ({
+  getObsidianLibState: mocks.getObsidianLibState
 }));
 
 vi.mock('./async-with-notice.ts', () => ({
@@ -98,7 +98,7 @@ describe('addToQueue', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     queue = createMockQueue();
-    mocks.getObsidianDevUtilsState.mockReturnValue({ value: queue });
+    mocks.getObsidianLibState.mockReturnValue({ value: queue });
   });
 
   it('should add an item to the queue via invokeAsyncSafely', () => {
@@ -114,7 +114,7 @@ describe('addToQueueAndWait', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     queue = createMockQueue();
-    mocks.getObsidianDevUtilsState.mockReturnValue({ value: queue });
+    mocks.getObsidianLibState.mockReturnValue({ value: queue });
   });
 
   it('should add an item to the queue and process it', async () => {
@@ -188,7 +188,7 @@ describe('flushQueue', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     queue = createMockQueue();
-    mocks.getObsidianDevUtilsState.mockReturnValue({ value: queue });
+    mocks.getObsidianLibState.mockReturnValue({ value: queue });
   });
 
   it('should add a noop operation to the queue', async () => {

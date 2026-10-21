@@ -43,7 +43,7 @@ describe('CommandHandlerComponent menu-event teardown', () => {
       async callback(
         { app, lib: { AppActiveFileProvider, CommandHandler, CommandHandlerComponent, MenuEventRegistrarComponent, PluginCommandRegistrar }, obsidianModule }
       ): Promise<MenuTeardownResult> {
-        const HARNESS_PLUGIN_ID = 'obsidian-dev-utils-integration-test';
+        const HARNESS_PLUGIN_ID = 'obsidian-lib-integration-test';
 
         const harnessPlugin = app.plugins.getPlugin(HARNESS_PLUGIN_ID);
         if (!harnessPlugin) {
@@ -123,7 +123,7 @@ describe('CommandHandlerComponent menu-event teardown', () => {
       async callback(
         { app, lib: { AppActiveFileProvider, CommandHandler, CommandHandlerComponent, ComponentEx, MenuEventRegistrarComponent, PluginCommandRegistrar } }
       ): Promise<LifetimeOwnerResult> {
-        const HARNESS_PLUGIN_ID = 'obsidian-dev-utils-integration-test';
+        const HARNESS_PLUGIN_ID = 'obsidian-lib-integration-test';
         const COMMAND_ID = 'lifetime-owner-test-cmd';
         const FULL_COMMAND_ID = `${HARNESS_PLUGIN_ID}:${COMMAND_ID}`;
 

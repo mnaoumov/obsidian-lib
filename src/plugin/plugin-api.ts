@@ -48,7 +48,7 @@
  * Payload validation is opt-in per method through {@link https://standardschema.dev | Standard Schema}, so
  * zod / valibot / arktype / a hand-written validator all plug in and none of them is a dependency here. It
  * runs only while the `obsidian-lib:validate-plugin-api-payloads` debug switch is on (off by default, see
- * {@link getValidatePluginApiPayloadsDebugSwitch}), so production pays nothing. The `obsidian-dev-utils:PluginApi`
+ * {@link getValidatePluginApiPayloadsDebugSwitch}), so production pays nothing. The `obsidian-lib:PluginApi`
  * debugger controls logging only: turning it on changes no behavior.
  *
  * The contract itself — its types and the schema builders — is not Obsidian-specific and lives in
@@ -68,13 +68,13 @@
  * declared method names are checked with `typeof`, and the payloads are validated per method instead.
  *
  * @remarks
- * Every plugin bundles its OWN copy of this library (or of the older `obsidian-dev-utils`), so a registry record is a wire format between
+ * Every plugin bundles its OWN copy of this library, so a registry record is a wire format between
  * different library versions and must stay backward-compatible forever. Nothing crossing it may be
  * `instanceof`-checked — reads are structural, and only plain data objects and plain functions are stored.
  *
  * That wire format is also PUBLISHED, as of the `Plugin API protocol` guide: a plugin that does not use
  * this library reaches an API by reading
- * `globalThis.__obsidianDevUtils.pluginApiRegistry.value.records[pluginId]` and applying the selection rule
+ * `globalThis.__obsidianLib.pluginApiRegistry.value.records[pluginId]` and applying the selection rule
  * {@link selectRecord} implements. So {@link PublishedPluginApiRecord}'s field names, the state key, and
  * "highest live record satisfying the range wins" are a documented contract with an audience outside this
  * repository, and the guide has to be updated in the same change as any of them. Only `pluginApiRegistry`
@@ -83,10 +83,7 @@
 
 import type {
   ApiContract,
-  ApiMethodContract,
-  ApiMethodName,
-  ApiMethods,
-  TypedApiContract
+  ApiMethodContract
 } from '@mnaoumov/typescript-lib/api-contract';
 import type { AsyncEventSource } from '@mnaoumov/typescript-lib/async-events';
 import type {
@@ -114,7 +111,7 @@ import {
 } from 'compare-versions';
 
 import { getObsidianLibDebugger } from '../debug.ts';
-import { getObsidianDevUtilsState } from '../obsidian-dev-utils-state.ts';
+import { getObsidianLibState } from '../obsidian-lib-state.ts';
 
 const PLUGIN_API_DEBUGGER_NAMESPACE = 'PluginApi';
 const PLUGIN_API_REGISTRY_STATE_KEY = 'pluginApiRegistry';
@@ -218,14 +215,6 @@ export interface FindPluginApiParams<TApi extends object = object> {
 }
 
 /**
- * The contract a provider declares for its API.
- *
- * @typeParam TApi - The API the contract describes. `object`, the default, means "not typed".
- * @deprecated Use `ApiContract` from `@mnaoumov/typescript-lib/api-contract`.
- */
-export type PluginApiContract<TApi extends object = object> = ApiContract<TApi>;
-
-/**
  * One API a plugin exposes: the object, the contract version it satisfies, and optionally the contract
  * itself. This is {@link PublishPluginApiParams} without the publishing plugin, so a plugin can DECLARE what
  * it exposes without also stating who is publishing it — which is what lets `PluginBase.getPluginApis` collect
@@ -253,31 +242,6 @@ export interface PluginApiDeclaration<TApi extends object = object> {
    */
   readonly contract?: ApiContract<TApi>;
 }
-
-/**
- * The payload schemas for a single API method.
- *
- * @typeParam TParameters - The method's parameters, as a tuple, which the input schema must produce.
- * @typeParam TReturnValue - The method's return value, awaited, which the output schema must produce.
- * @deprecated Use `ApiMethodContract` from `@mnaoumov/typescript-lib/api-contract`.
- */
-export type PluginApiMethodContract<TParameters = unknown, TReturnValue = unknown> = ApiMethodContract<TParameters, TReturnValue>;
-
-/**
- * The names of the function members of an API.
- *
- * @typeParam TApi - The API.
- * @deprecated Use `ApiMethodName` from `@mnaoumov/typescript-lib/api-contract`.
- */
-export type PluginApiMethodName<TApi extends object> = ApiMethodName<TApi>;
-
-/**
- * The function members of an API.
- *
- * @typeParam TApi - The API.
- * @deprecated Use `ApiMethods` from `@mnaoumov/typescript-lib/api-contract`.
- */
-export type PluginApiMethods<TApi extends object> = ApiMethods<TApi>;
 
 /**
  * A live reference to another plugin's API.
@@ -403,14 +367,6 @@ export interface PublishPluginApiParams<TApi extends object> extends PluginApiDe
 }
 
 /**
- * The contract of a named API, with both schemas required on every entry.
- *
- * @typeParam TApi - The API the contract describes.
- * @deprecated Use `TypedApiContract` from `@mnaoumov/typescript-lib/api-contract`.
- */
-export type TypedPluginApiContract<TApi extends object> = TypedApiContract<TApi>;
-
-/**
  * Parameters for {@link watchPluginApi}.
  *
  * @typeParam TApi - The API type the consumer compiled against, which a typed contract is checked against.
@@ -483,7 +439,7 @@ interface CreateMethodWrapperParams {
 }
 
 /**
- * The realm-global registry shared by every copy of this library, and of the older `obsidian-dev-utils`, in the renderer.
+ * The realm-global registry shared by every copy of this library in the renderer.
  */
 interface PluginApiRegistry {
   records: Record<string, PublishedPluginApiRecord[]>;
@@ -494,7 +450,7 @@ interface PluginApiRegistry {
  * A record as it sits in the shared registry.
  *
  * @remarks
- * This is the WIRE FORMAT between different copies of this library and of the older `obsidian-dev-utils`, so it holds nothing but plain data
+ * This is the WIRE FORMAT between different copies of this library, so it holds nothing but plain data
  * and plain functions, and every read of it elsewhere in this file is structural.
  *
  * Unexported and nonetheless PUBLIC: the `Plugin API protocol` guide documents these five field names for
@@ -741,7 +697,7 @@ export function findPluginApi<TApi extends object>(params: FindPluginApiParams<N
  * Its id is `obsidian-lib:validate-plugin-api-payloads` and it is off by default. While it is on, every call
  * through a handle from {@link watchPluginApi} or {@link findPluginApi} checks its arguments and its return value
  * against the method's declared schemas and throws a {@link PluginApiValidationError} on a mismatch. The
- * `obsidian-dev-utils:PluginApi` debugger does not affect it: that only logs.
+ * `obsidian-lib:PluginApi` debugger does not affect it: that only logs.
  *
  * The switch is registered on every read, which is idempotent, and whenever an API is published, watched or looked
  * up, so a debug-settings UI lists it as soon as any plugin API is in play.
@@ -996,13 +952,13 @@ function getPluginApiDebugger(): ReturnType<typeof getObsidianLibDebugger> {
 }
 
 /**
- * Retrieves the shared registry, tolerating a bag written by a DIFFERENT copy of this library, or of `obsidian-dev-utils`, that may
+ * Retrieves the shared registry, tolerating a bag written by a DIFFERENT copy of this library that may
  * predate one of its fields.
  *
  * @returns The registry.
  */
 function getRegistry(): PluginApiRegistry {
-  const wrapper = getObsidianDevUtilsState<Partial<PluginApiRegistry>>(PLUGIN_API_REGISTRY_STATE_KEY, {});
+  const wrapper = getObsidianLibState<Partial<PluginApiRegistry>>(PLUGIN_API_REGISTRY_STATE_KEY, {});
   const registry = wrapper.value;
   registry.records ??= {};
   registry.subscribers ??= [];

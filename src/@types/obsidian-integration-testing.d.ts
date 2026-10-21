@@ -2,7 +2,7 @@
  * @file
  *
  * Augments the `obsidian-integration-testing` `Lib` interface with the entire flat
- * `obsidian-dev-utils` surface (the generated `__merged` barrel), so an `evalInObsidian` closure can
+ * `obsidian-lib` surface (the generated `__merged` barrel), so an `evalInObsidian` closure can
  * reach any library helper as `lib.<helper>`. The runtime side is registered by the published
  * `@mnaoumov/obsidian-dev-toolkit/integration-test-setup` endpoint via `registerLibResolver`; this file supplies the
  * matching types.

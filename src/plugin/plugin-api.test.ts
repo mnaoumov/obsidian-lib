@@ -14,8 +14,13 @@ import type {
 } from 'obsidian';
 
 import {
+  BOOLEAN_GUARD,
   createArgumentsSchema,
-  createTypeGuardSchema
+  createTypeGuardSchema,
+  defineApiContract,
+  NUMBER_GUARD,
+  optionalGuard,
+  STRING_GUARD
 } from '@mnaoumov/typescript-lib/api-contract';
 import { nextTickAsync } from '@mnaoumov/typescript-lib/async';
 import { getDebugController } from '@mnaoumov/typescript-lib/debug';
@@ -42,7 +47,7 @@ import type {
 } from './plugin-api.ts';
 
 import { getObsidianLibDebugger } from '../debug.ts';
-import { getObsidianDevUtilsState } from '../obsidian-dev-utils-state.ts';
+import { getObsidianLibState } from '../obsidian-lib-state.ts';
 import {
   findPluginApi,
   getValidatePluginApiPayloadsDebugSwitch,
@@ -56,6 +61,7 @@ import {
 } from './plugin-api.ts';
 
 const PROVIDER_ID = 'provider-plugin';
+const SCHEMA_PROVIDER_ID = 'schema-provider';
 const PLUGIN_API_DEBUG_NAMESPACE = 'obsidian-lib:PluginApi';
 const PLUGIN_API_DEBUGGER_NAME = 'PluginApi';
 const PLUGIN_API_REGISTRY_STATE_KEY = 'pluginApiRegistry';
@@ -287,10 +293,10 @@ describe('plugin-api', () => {
 
     it('should read a record written by a different library copy', () => {
       const harness = createHarness();
-      // Written by hand — exactly the bytes a FOREIGN `obsidian-dev-utils` copy would leave behind, never
+      // Written by hand — exactly the bytes a FOREIGN `obsidian-lib` copy would leave behind, never
       // through `publishPluginApi`. Nothing here is an instance of any class this copy owns, and the bag
       // deliberately omits `subscribers`, as an older copy's would.
-      getObsidianDevUtilsState<object>(PLUGIN_API_REGISTRY_STATE_KEY, {}).value = {
+      getObsidianLibState<object>(PLUGIN_API_REGISTRY_STATE_KEY, {}).value = {
         records: {
           [PROVIDER_ID]: [{
             api: createGreeterApi('Foreign'),
@@ -700,6 +706,11 @@ describe('plugin-api', () => {
   });
 });
 
+interface CounterApi {
+  count: (text: string, isCaseSensitive?: boolean) => Promise<number>;
+  readonly name: string;
+}
+
 /**
  * Options for {@link createHarness}.
  */
@@ -886,5 +897,77 @@ async function expectUnavailable<TApi extends object>(
  * @returns The registry.
  */
 function getRegistry(): RegistryShape {
-  return castTo<RegistryShape>(getObsidianDevUtilsState<object>(PLUGIN_API_REGISTRY_STATE_KEY, {}).value);
+  return castTo<RegistryShape>(getObsidianLibState<object>(PLUGIN_API_REGISTRY_STATE_KEY, {}).value);
 }
+
+const COUNTER_CONTRACT = defineApiContract<CounterApi>({
+  count: {
+    input: createArgumentsSchema([STRING_GUARD, optionalGuard(BOOLEAN_GUARD)]),
+    output: createTypeGuardSchema(NUMBER_GUARD)
+  }
+});
+
+describe('a typed contract at runtime', () => {
+  afterEach(() => {
+    getValidatePluginApiPayloadsDebugSwitch().setEnabled(false);
+  });
+
+  function publishCounter(count: CounterApi['count']): () => void {
+    const unloadCallbacks: (() => void)[] = [];
+    publishPluginApi<CounterApi>({
+      api: { count, name: 'counter' },
+      apiVersion: '1.0.0',
+      contract: COUNTER_CONTRACT,
+      plugin: strictProxy<Plugin>({
+        manifest: strictProxy<PluginManifest>({ id: SCHEMA_PROVIDER_ID }),
+        register: (callback: () => void): void => {
+          unloadCallbacks.push(callback);
+        }
+      })
+    });
+    return (): void => {
+      for (const callback of unloadCallbacks) {
+        callback();
+      }
+    };
+  }
+
+  function findCounter(): CounterApi | null {
+    return findPluginApi<CounterApi>({ apiVersionRange: '^1.0.0', contract: COUNTER_CONTRACT, pluginId: SCHEMA_PROVIDER_ID });
+  }
+
+  it('should report a provider whose output breaks the contract while the validation switch is on', async () => {
+    getValidatePluginApiPayloadsDebugSwitch().setEnabled(true);
+    const unload = publishCounter(() => Promise.resolve(castTo<number>('three')));
+    try {
+      await expect(findCounter()?.count('abc')).rejects.toThrow(PluginApiValidationError);
+      await expect(findCounter()?.count('abc')).rejects.toThrow(
+        'The output of "schema-provider" API method "count" failed validation: Expected a number.'
+      );
+    } finally {
+      unload();
+    }
+  });
+
+  it('should report a call whose input breaks the contract while the validation switch is on', () => {
+    getValidatePluginApiPayloadsDebugSwitch().setEnabled(true);
+    const unload = publishCounter((text) => Promise.resolve(text.length));
+    try {
+      expect(() => findCounter()?.count(castTo<string>(1))).toThrow(
+        'The input of "schema-provider" API method "count" failed validation: 0: Expected a string.'
+      );
+    } finally {
+      unload();
+    }
+  });
+
+  it('should not validate while the validation switch is off', async () => {
+    getValidatePluginApiPayloadsDebugSwitch().setEnabled(false);
+    const unload = publishCounter(() => Promise.resolve(castTo<number>('three')));
+    try {
+      await expect(findCounter()?.count('abc')).resolves.toBe('three');
+    } finally {
+      unload();
+    }
+  });
+});

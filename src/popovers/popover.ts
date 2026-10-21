@@ -176,14 +176,14 @@ export async function showPopover<Value>(params: ShowPopoverParams<Value>): Prom
     const buttonsSetting = new Setting(popoverEl);
     buttonsSetting.addButton((button) => {
       button
-        .setButtonText(okButtonText ?? t(($) => $.obsidianDevUtils.buttons.ok))
+        .setButtonText(okButtonText ?? t(($) => $.obsidianLib.buttons.ok))
         .setCta()
         .setClass(CssClass.OkButton)
         .onClick(handleOk);
     });
     buttonsSetting.addButton((button) => {
       button
-        .setButtonText(cancelButtonText ?? t(($) => $.obsidianDevUtils.buttons.cancel))
+        .setButtonText(cancelButtonText ?? t(($) => $.obsidianLib.buttons.cancel))
         .setClass(CssClass.CancelButton)
         .onClick(handleCancel);
     });

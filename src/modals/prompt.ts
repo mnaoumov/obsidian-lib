@@ -129,10 +129,10 @@ class PromptModal extends ModalBase<null | string> {
   public constructor(params: PromptModalConstructorParams) {
     super(params);
     this.addCssClasses(CssClass.PromptModal);
-    this.cancelButtonText = params.cancelButtonText ?? t(($) => $.obsidianDevUtils.buttons.cancel);
+    this.cancelButtonText = params.cancelButtonText ?? t(($) => $.obsidianLib.buttons.cancel);
     this.commandBuilder = params.commandBuilder ?? null;
     this.commandsRenderMode = params.commandsRenderMode;
-    this.okButtonText = params.okButtonText ?? t(($) => $.obsidianDevUtils.buttons.ok);
+    this.okButtonText = params.okButtonText ?? t(($) => $.obsidianLib.buttons.ok);
     this.placeholder = params.placeholder ?? '';
     this.spellcheckMode = params.spellcheckMode ?? SpellcheckMode.FollowObsidianSetting;
     this.title = params.title ?? '';

@@ -22,7 +22,7 @@ import type {
 
 import { snapshot } from '@mnaoumov/typescript-lib/array';
 
-import { getObsidianDevUtilsState } from './obsidian-dev-utils-state.ts';
+import { getObsidianLibState } from './obsidian-lib-state.ts';
 
 const STATE_KEY = 'caseInsensitiveFileIndex';
 
@@ -125,7 +125,7 @@ export class CaseInsensitiveFileIndex {
  * @returns The index if one is installed for this application, otherwise `null`.
  */
 export function getCaseInsensitiveFileIndex(app: App): CaseInsensitiveFileIndex | null {
-  const index = getObsidianDevUtilsState<CaseInsensitiveFileIndex | null>(STATE_KEY, null).value;
+  const index = getObsidianLibState<CaseInsensitiveFileIndex | null>(STATE_KEY, null).value;
   return index?.ownsApp(app) ? index : null;
 }
 
@@ -135,7 +135,7 @@ export function getCaseInsensitiveFileIndex(app: App): CaseInsensitiveFileIndex 
  * @param index - The index to install.
  */
 export function setCaseInsensitiveFileIndex(index: CaseInsensitiveFileIndex): void {
-  getObsidianDevUtilsState<CaseInsensitiveFileIndex | null>(STATE_KEY, null).value = index;
+  getObsidianLibState<CaseInsensitiveFileIndex | null>(STATE_KEY, null).value = index;
 }
 
 /**
@@ -144,7 +144,7 @@ export function setCaseInsensitiveFileIndex(index: CaseInsensitiveFileIndex): vo
  * @param index - The index to uninstall.
  */
 export function unsetCaseInsensitiveFileIndex(index: CaseInsensitiveFileIndex): void {
-  const wrapper = getObsidianDevUtilsState<CaseInsensitiveFileIndex | null>(STATE_KEY, null);
+  const wrapper = getObsidianLibState<CaseInsensitiveFileIndex | null>(STATE_KEY, null);
   if (wrapper.value === index) {
     wrapper.value = null;
   }

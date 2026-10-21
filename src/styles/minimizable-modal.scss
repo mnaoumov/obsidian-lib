@@ -1,4 +1,4 @@
-@keyframes obsidian-dev-utils-minimized-modal-bar-pulse {
+@keyframes obsidian-lib-minimized-modal-bar-pulse {
   0%,
   100% {
     box-shadow: var(--shadow-s);
@@ -9,7 +9,7 @@
   }
 }
 
-@keyframes obsidian-dev-utils-minimized-modal-bar-attention {
+@keyframes obsidian-lib-minimized-modal-bar-attention {
   0% {
     box-shadow: 0 0 0 0 var(--interactive-accent);
   }
@@ -23,7 +23,7 @@
   }
 }
 
-.obsidian-dev-utils {
+.obsidian-lib {
   // The minimize button lives inside the modal container, left of Obsidian's close button.
   &.minimizable-modal {
     .minimize-button {
@@ -66,7 +66,7 @@
     background: var(--background-secondary);
     box-shadow: var(--shadow-s);
     cursor: pointer;
-    animation: obsidian-dev-utils-minimized-modal-bar-pulse 2s ease-in-out infinite;
+    animation: obsidian-lib-minimized-modal-bar-pulse 2s ease-in-out infinite;
 
     // Layer the translucent hover tint over the opaque `background` (`--background-secondary`) via
     // `background-image` instead of replacing the background-color. `--background-modifier-hover` is
@@ -82,7 +82,7 @@
     // silent. Its higher specificity overrides the gentle infinite idle pulse while it plays; the
     // class is removed on `animationend`, restoring the idle pulse.
     &.minimized-modal-bar-attention {
-      animation: obsidian-dev-utils-minimized-modal-bar-attention 0.35s ease-out;
+      animation: obsidian-lib-minimized-modal-bar-attention 0.35s ease-out;
     }
 
     .minimized-modal-bar-title {

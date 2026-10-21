@@ -30,7 +30,7 @@ describe('compiled styles', () => {
   const selectors = getCompiledSelectors();
 
   it('should never glue a selector onto the library class', () => {
-    expect(selectors.filter((selector) => /\.obsidian-dev-utils[\w-]/.test(selector.replaceAll(/\.obsidian-dev-utils-lock-indicator[\w-]*/g, ''))))
+    expect(selectors.filter((selector) => /\.obsidian-lib[\w-]/.test(selector.replaceAll(/\.obsidian-lib-lock-indicator[\w-]*/g, ''))))
       .toEqual([]);
   });
 

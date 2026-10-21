@@ -87,7 +87,7 @@ import {
   registerFileCacheForNonExistingFile,
   registerFiles
 } from '../metadata-cache.ts';
-import { getObsidianDevUtilsState } from '../obsidian-dev-utils-state.ts';
+import { getObsidianLibState } from '../obsidian-lib-state.ts';
 import { addToQueue } from '../queue.ts';
 import { isResourceLockedForPathByAncestor } from '../resource-lock.ts';
 import { deleteIfNotUsed } from '../vault-delete.ts';
@@ -654,7 +654,7 @@ class FileManagerRunAsyncLinkUpdatePatchComponent extends MonkeyAroundComponent 
       /*
        * Suppressing Obsidian's own link updates is NOT idempotent, so two live copies of this component
        * would fight over the same method. `PATCH_TOKEN` is a `Symbol.for` and the token registry is
-       * `getObsidianDevUtilsState`-backed, so the arbitration spans independently bundled copies of this
+       * `getObsidianLibState`-backed, so the arbitration spans independently bundled copies of this
        * library: the first patcher stays live, a copy that patches afterwards sees the token on its own
        * `originalMethod` and defers via the guard above, and it takes over on its next call once the
        * leader unloads and the token is dropped.
@@ -847,8 +847,8 @@ class RenameHandler {
 
     const pluginNoticeComponent = this.pluginNoticeComponent;
 
-    const renamedFilePaths = getObsidianDevUtilsState('renamedFilePaths', new Set<string>()).value;
-    const renamedLinks = getObsidianDevUtilsState('renamedLinkPaths', new Set<string>()).value;
+    const renamedFilePaths = getObsidianLibState('renamedFilePaths', new Set<string>()).value;
+    const renamedLinks = getObsidianLibState('renamedLinkPaths', new Set<string>()).value;
 
     try {
       const renameMap = new RenameMap({
@@ -1022,11 +1022,11 @@ class RenameHandler {
           if (renamedLinks.size === 0) {
             return;
           }
-          pluginNoticeComponent.showNotice(t(($) => $.obsidianDevUtils.renameDeleteHandler.updatedLinks, { filesCount: renamedFilePaths.size, linksCount: renamedLinks.size }));
+          pluginNoticeComponent.showNotice(t(($) => $.obsidianLib.renameDeleteHandler.updatedLinks, { filesCount: renamedFilePaths.size, linksCount: renamedLinks.size }));
           renamedFilePaths.clear();
           renamedLinks.clear();
         },
-        operationName: t(($) => $.obsidianDevUtils.renameDeleteHandler.handleOrphanedRenames)
+        operationName: t(($) => $.obsidianLib.renameDeleteHandler.handleOrphanedRenames)
       });
     }
   }
@@ -1445,7 +1445,7 @@ export class RenameDeleteHandlerComponent extends ComponentEx {
           pluginNoticeComponent: this.pluginNoticeComponent,
           settingsManager: this.settingsManager
         }).handle(),
-      operationName: t(($) => $.obsidianDevUtils.renameDeleteHandler.handleDelete, { filePath: file.path })
+      operationName: t(($) => $.obsidianLib.renameDeleteHandler.handleDelete, { filePath: file.path })
     });
   }
 
@@ -1530,7 +1530,7 @@ export class RenameDeleteHandlerComponent extends ComponentEx {
           resourceLockComponent: this.resourceLockComponent,
           settingsManager: this.settingsManager
         }).handle(),
-      operationName: t(($) => $.obsidianDevUtils.renameDeleteHandler.handleRename, { newPath, oldPath })
+      operationName: t(($) => $.obsidianLib.renameDeleteHandler.handleRename, { newPath, oldPath })
     });
   }
 
@@ -1613,7 +1613,7 @@ async function didRescueStillUsedAttachment(params: DidRescueStillUsedAttachment
     await waitForPendingLinkUpdates(params.app);
 
     getObsidianLibDebugger('RenameDeleteHandler:didRescueStillUsedAttachment')(`Rescued ${attachmentPath} to ${newAttachmentPath}.`);
-    params.pluginNoticeComponent.showNotice(t(($) => $.obsidianDevUtils.notices.attachmentRescued, { attachmentPath, newAttachmentPath }));
+    params.pluginNoticeComponent.showNotice(t(($) => $.obsidianLib.notices.attachmentRescued, { attachmentPath, newAttachmentPath }));
     return true;
   } catch (error) {
     /*

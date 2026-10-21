@@ -339,7 +339,7 @@ describe('onload', () => {
     await vi.runAllTimersAsync();
 
     const fragment = castTo<DocumentFragment>(showNotice.mock.calls[0]?.[0]);
-    const buttonsEl = fragment.querySelector('.obsidian-lib.obsidian-dev-utils.plugin-suggestion-notice-buttons');
+    const buttonsEl = fragment.querySelector('.obsidian-lib.plugin-suggestion-notice-buttons');
     expect(buttonsEl?.querySelectorAll('button')).toHaveLength(2);
     vi.useRealTimers();
   });

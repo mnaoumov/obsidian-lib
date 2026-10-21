@@ -766,7 +766,7 @@ describe('resource-lock', () => {
     it('should register the "Unlock active note" command (with a checkCallback) via the real registrar and remove it on dispose', async () => {
       const result = await evalInObsidian({
         async callback({ app, lib: { AppActiveFileProvider, CommandHandlerComponent, MenuEventRegistrarComponent, PluginCommandRegistrar, ResourceLockComponent, UnlockActiveNoteCommandHandler } }): Promise<UnlockCommandResult> {
-          const HARNESS_PLUGIN_ID = 'obsidian-dev-utils-integration-test';
+          const HARNESS_PLUGIN_ID = 'obsidian-lib-integration-test';
           const harnessPlugin = app.plugins.getPlugin(HARNESS_PLUGIN_ID);
           if (!harnessPlugin) {
             throw new Error(`Harness plugin "${HARNESS_PLUGIN_ID}" is not loaded`);

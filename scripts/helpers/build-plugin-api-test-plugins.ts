@@ -2,7 +2,7 @@
  * @file
  *
  * Builds the two test-only plugins that prove the cross-plugin API registry works between SEPARATE copies of
- * `obsidian-dev-utils`.
+ * `obsidian-lib`.
  *
  * The separate esbuild runs are the point, not an implementation detail: two bundles mean two module
  * instances of `src/obsidian/plugin/plugin-api.ts` in one renderer, sharing nothing but the realm-global

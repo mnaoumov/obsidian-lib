@@ -35,7 +35,8 @@ const GLOBAL_STUB_TEST_FILES = ['src/is-in-obsidian.test.ts'];
 
 const UNIT_TEST_SETUP_FILES = [
   'obsidian-test-mocks/vitest-setup',
-  '@mnaoumov/obsidian-dev-toolkit/vitest-setup'
+  '@mnaoumov/obsidian-dev-toolkit/vitest-setup',
+  './scripts/vitest-setup-obsidian-lib-state.ts'
 ];
 
 const BIG_TIMEOUT_IN_MILLISECONDS = 30_000;

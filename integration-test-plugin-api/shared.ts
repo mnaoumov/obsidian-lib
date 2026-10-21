@@ -7,7 +7,7 @@
  * declarations — exactly as two independently released plugins would. What crosses the registry at runtime
  * is the provider's contract object, schemas included, which is precisely what has to survive the trip.
  *
- * The schemas are HAND-WRITTEN rather than built with zod, for two reasons: `obsidian-dev-utils` has no
+ * The schemas are HAND-WRITTEN rather than built with zod, for two reasons: `obsidian-lib` has no
  * schema library as a dependency and must not acquire one through a test, and a hand-rolled validator is
  * itself the proof that the Standard Schema interface — not any particular library — is what the registry
  * talks to.
@@ -20,12 +20,12 @@ import type { ApiContract } from '@mnaoumov/typescript-lib/api-contract';
 /**
  * The `manifest.id` of the consuming plugin.
  */
-export const CONSUMER_PLUGIN_ID = 'obsidian-dev-utils-plugin-api-consumer';
+export const CONSUMER_PLUGIN_ID = 'obsidian-lib-plugin-api-consumer';
 
 /**
  * The `manifest.id` of the providing plugin — the key the registry record is filed under.
  */
-export const PROVIDER_PLUGIN_ID = 'obsidian-dev-utils-plugin-api-provider';
+export const PROVIDER_PLUGIN_ID = 'obsidian-lib-plugin-api-provider';
 
 /**
  * The API the provider publishes and the consumer compiled against.
@@ -67,7 +67,7 @@ function createSchema<T>(checkIsValid: (value: unknown) => value is T, message: 
   return {
     '~standard': {
       validate: (value: unknown): StandardSchemaV1.Result<T> => checkIsValid(value) ? { value } : { issues: [{ message }] },
-      vendor: 'obsidian-dev-utils-integration-test',
+      vendor: 'obsidian-lib-integration-test',
       version: 1
     }
   };

@@ -3,23 +3,14 @@
  *
  * Helpers for working with the `@mnaoumov/obsidian-lib` library.
  *
- * The user-visible name is `obsidian-lib`: the debug namespace of this library's own modules and its CSS class. The
- * legacy name, `obsidian-dev-utils`, is the one this library was published under before it split into packages, and
- * it is kept beside the new one for good, so plugins, their users' debug filters and their stylesheets keep matching:
- * every element carries both classes, and a debug filter on either namespace shows the messages. The stylesheet id
- * and the namespace of the generic `@mnaoumov/typescript-lib` modules stay legacy only.
+ * The user-visible name is `obsidian-lib`: the debug namespace of this library's own modules and of the generic
+ * `@mnaoumov/typescript-lib` modules it initializes, its CSS class and its stylesheet id.
  */
 
 /**
- * The user-visible name of the library: the debug namespace of its own modules, and its CSS class.
+ * The user-visible name of the library: the debug namespace of its own modules, its CSS class and its stylesheet id.
  */
 export const OBSIDIAN_LIBRARY_NAME = 'obsidian-lib';
-
-/**
- * The legacy user-visible name of the library, kept beside {@link OBSIDIAN_LIBRARY_NAME} for good: a debug namespace
- * and a CSS class that older copies and existing filters and stylesheets use, and the stylesheet id.
- */
-export const LEGACY_OBSIDIAN_LIBRARY_NAME = 'obsidian-dev-utils';
 
 /**
  * Parameters for {@link ObsidianLibrary.init}.

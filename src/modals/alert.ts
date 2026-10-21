@@ -53,7 +53,7 @@ class AlertModal extends ModalBase<void> {
     super(params);
     this.addCssClasses(CssClass.AlertModal);
     this.message = params.message;
-    this.okButtonText = params.okButtonText ?? t(($) => $.obsidianDevUtils.buttons.ok);
+    this.okButtonText = params.okButtonText ?? t(($) => $.obsidianLib.buttons.ok);
     this.title = params.title ?? '';
   }
 

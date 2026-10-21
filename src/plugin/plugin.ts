@@ -500,7 +500,7 @@ export abstract class PluginBase extends mixinAsyncEvents<PluginEventMap>()(Plug
    * versions published side by side, which is how a provider ships a breaking `2.0.0` without stranding
    * consumers still pinned to `^1`.
    *
-   * Every declaration here is published BEFORE the `obsidian-dev-utils:plugin-loaded` broadcast, which is
+   * Every declaration here is published BEFORE the `obsidian-lib:plugin-loaded` broadcast, which is
    * what lets a listener call these APIs the moment it hears that event.
    *
    * @returns The API declarations.

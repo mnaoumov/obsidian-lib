@@ -202,13 +202,13 @@ export async function installAndEnablePlugin(params: InstallAndEnablePluginParam
     }
   } catch (error) {
     pluginNoticeComponent.showNotice(createFragmentWithCodeBlocks(
-      t(($) => $.obsidianDevUtils.pluginSuggestion.installFailed, { pluginName: asCodeBlock(pluginName) })
+      t(($) => $.obsidianLib.pluginSuggestion.installFailed, { pluginName: asCodeBlock(pluginName) })
     ));
     throw error;
   }
 
   pluginNoticeComponent.showNotice(createFragmentWithCodeBlocks(
-    t(($) => $.obsidianDevUtils.pluginSuggestion.installed, { pluginName: asCodeBlock(pluginName) })
+    t(($) => $.obsidianLib.pluginSuggestion.installed, { pluginName: asCodeBlock(pluginName) })
   ));
 }
 
@@ -238,15 +238,15 @@ export async function updatePlugin(params: UpdatePluginParams): Promise<void> {
     result = await updateCommunityPlugin({ app, pluginId });
   } catch (error) {
     pluginNoticeComponent.showNotice(createFragmentWithCodeBlocks(
-      t(($) => $.obsidianDevUtils.pluginDependency.updateFailed, { dependencyPluginName: asCodeBlock(pluginName) })
+      t(($) => $.obsidianLib.pluginDependency.updateFailed, { dependencyPluginName: asCodeBlock(pluginName) })
     ));
     throw error;
   }
 
   pluginNoticeComponent.showNotice(createFragmentWithCodeBlocks(
     result === UpdateCommunityPluginResult.Updated
-      ? t(($) => $.obsidianDevUtils.pluginDependency.updated, { dependencyPluginName: asCodeBlock(pluginName) })
-      : t(($) => $.obsidianDevUtils.pluginDependency.alreadyUpToDate, {
+      ? t(($) => $.obsidianLib.pluginDependency.updated, { dependencyPluginName: asCodeBlock(pluginName) })
+      : t(($) => $.obsidianLib.pluginDependency.alreadyUpToDate, {
         dependencyPluginName: asCodeBlock(pluginName),
         pluginName: asCodeBlock(requestingPluginName)
       })

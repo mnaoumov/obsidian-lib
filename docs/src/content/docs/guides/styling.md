@@ -38,4 +38,4 @@ You can override those styles in your plugin's `styles.css` file via adding your
 }
 ```
 
-Every element the library styles carries two classes: `obsidian-lib`, and the legacy `obsidian-dev-utils` from the retired package this library replaced. A stylesheet written against `.obsidian-dev-utils` keeps matching, and so do elements built by a plugin that still bundles `obsidian-dev-utils`, which carry only the legacy class. To style those as well, select the legacy class.
+Every element the library styles carries the `obsidian-lib` class, so a stylesheet scopes a rule to the library's elements by selecting `.obsidian-lib`.

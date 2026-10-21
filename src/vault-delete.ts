@@ -124,7 +124,7 @@ export async function deleteIfNotUsed(params: DeleteIfNotUsedParams): Promise<De
         return DeleteIfNotUsedResult.Rescued;
       }
 
-      params.pluginNoticeComponent?.showNotice(t(($) => $.obsidianDevUtils.notices.attachmentIsStillUsed, { attachmentPath: file.path }));
+      params.pluginNoticeComponent?.showNotice(t(($) => $.obsidianLib.notices.attachmentIsStillUsed, { attachmentPath: file.path }));
       canDelete = false;
     }
     /* v8 ignore start -- TAbstractFile is always TFile or TFolder in Obsidian; defensive fallback. */

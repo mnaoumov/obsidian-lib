@@ -65,7 +65,7 @@ describe('NotebookNavigatorMenuEventRegistrarComponent', () => {
           obsidianModule
         }
       ): Promise<NotebookNavigatorMenuResult> {
-        const HARNESS_PLUGIN_ID = 'obsidian-dev-utils-integration-test';
+        const HARNESS_PLUGIN_ID = 'obsidian-lib-integration-test';
         const WAIT_TIMEOUT_IN_MILLISECONDS = 12_000;
         // Kept in step with the module-level constant the assertions below compare against; the
         // closure is serialized, so it cannot read one.

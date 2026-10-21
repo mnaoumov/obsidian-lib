@@ -39,7 +39,7 @@ interface TypingResult {
   readonly validationMessageForInvalidRegExp: string;
 }
 
-const HARNESS_PLUGIN_ID = 'obsidian-dev-utils-integration-test';
+const HARNESS_PLUGIN_ID = 'obsidian-lib-integration-test';
 const REPORTED_REG_EXP = String.raw`/^Inbox\/[^\/]*$/`;
 const INVALID_REG_EXP = String.raw`/^Inbox\/`;
 // Distinctive on purpose: the notice component keys its permanent-notice slot by the plugin name.

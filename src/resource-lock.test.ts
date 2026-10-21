@@ -48,7 +48,7 @@ vi.mock('./editor.ts', () => ({
 vi.mock('./i18n/i18n.ts', () => ({
   t: vi.fn(($function: (messages: GenericObject) => unknown) =>
     $function({
-      obsidianDevUtils: {
+      obsidianLib: {
         resourceLock: {
           lockedByTooltip: 'Locked by',
           lockedNoteTooltip: 'Locked note',
@@ -414,14 +414,14 @@ describe('lock indicators', () => {
     stubLeaves(leafOf(view));
 
     lockResourceForPath({ app, operationName: 'Test operation', pathOrFile: 'note.md', pluginId: 'test-plugin' });
-    expect(statusBarEl.querySelectorAll('.obsidian-dev-utils-lock-indicator')).toHaveLength(1);
+    expect(statusBarEl.querySelectorAll('.obsidian-lib-lock-indicator')).toHaveLength(1);
 
     // A second reconcile must not duplicate the item.
     app.workspace.trigger('layout-change');
-    expect(statusBarEl.querySelectorAll('.obsidian-dev-utils-lock-indicator')).toHaveLength(1);
+    expect(statusBarEl.querySelectorAll('.obsidian-lib-lock-indicator')).toHaveLength(1);
 
     unlockResourceForPath(app, 'note.md', 'test-plugin');
-    expect(statusBarEl.querySelector('.obsidian-dev-utils-lock-indicator')).toBeNull();
+    expect(statusBarEl.querySelector('.obsidian-lib-lock-indicator')).toBeNull();
   });
 
   it('should not add a status-bar item when the window has no status bar', () => {
@@ -431,7 +431,7 @@ describe('lock indicators', () => {
 
     lockResourceForPath({ app, operationName: 'Test operation', pathOrFile: 'note.md', pluginId: 'test-plugin' });
 
-    expect(view.containerEl.ownerDocument.body.querySelector('.obsidian-dev-utils-lock-indicator')).toBeNull();
+    expect(view.containerEl.ownerDocument.body.querySelector('.obsidian-lib-lock-indicator')).toBeNull();
   });
 });
 
@@ -875,7 +875,7 @@ describe('unlock context menu', () => {
     const getMenu = captureMenuOnShow();
 
     new ResourceLockComponent(app, 'test-plugin').lockForPath({ abortController: new AbortController(), operationName: 'Test operation', pathOrFile: 'note.md' });
-    const tabIconEl = view.leaf.tabHeaderStatusContainerEl?.querySelector('.obsidian-dev-utils-lock-indicator');
+    const tabIconEl = view.leaf.tabHeaderStatusContainerEl?.querySelector('.obsidian-lib-lock-indicator');
     assertNonNullable(tabIconEl);
     dispatchContextMenu(tabIconEl);
 
@@ -890,7 +890,7 @@ describe('unlock context menu', () => {
     const getMenu = captureMenuOnShow();
 
     new ResourceLockComponent(app, 'test-plugin').lockForPath({ abortController: new AbortController(), operationName: 'Test operation', pathOrFile: 'note.md' });
-    const statusBarItemEl = statusBarEl.querySelector('.obsidian-dev-utils-lock-indicator');
+    const statusBarItemEl = statusBarEl.querySelector('.obsidian-lib-lock-indicator');
     assertNonNullable(statusBarItemEl);
     dispatchContextMenu(statusBarItemEl);
 
@@ -905,7 +905,7 @@ describe('unlock context menu', () => {
     const showSpy = vi.spyOn(Menu.prototype, 'showAtMouseEvent');
 
     lockResourceForPath({ app, operationName: 'Test operation', pathOrFile: 'note.md', pluginId: 'test-plugin' });
-    const statusBarItemEl = statusBarEl.querySelector('.obsidian-dev-utils-lock-indicator');
+    const statusBarItemEl = statusBarEl.querySelector('.obsidian-lib-lock-indicator');
     assertNonNullable(statusBarItemEl);
 
     // The active note is gone by the time the status-bar item is right-clicked.
@@ -977,7 +977,7 @@ describe('unlock file menu', () => {
 });
 
 describe('lock type-attempt flash', () => {
-  const FLASH_CLASS = 'obsidian-dev-utils-lock-indicator-flash';
+  const FLASH_CLASS = 'obsidian-lib-lock-indicator-flash';
 
   it('should flash the lock indicators when typing is attempted in a locked view', () => {
     const view = createMarkdownView('note.md');
@@ -986,7 +986,7 @@ describe('lock type-attempt flash', () => {
     stubLeaves(leafOf(view));
 
     new ResourceLockComponent(app, 'test-plugin').lockForPath({ abortController: new AbortController(), operationName: 'Test operation', pathOrFile: 'note.md' });
-    const tabIconEl = view.leaf.tabHeaderStatusContainerEl?.querySelector('.obsidian-dev-utils-lock-indicator');
+    const tabIconEl = view.leaf.tabHeaderStatusContainerEl?.querySelector('.obsidian-lib-lock-indicator');
     assertNonNullable(tabIconEl);
     expect(actionIconEl.hasClass(FLASH_CLASS)).toBe(false);
 
@@ -1197,7 +1197,7 @@ describe('subtree locking', () => {
     const showSpy = vi.spyOn(Menu.prototype, 'showAtMouseEvent');
 
     new ResourceLockComponent(app, 'test-plugin').lockForPath({ abortController: new AbortController(), mode: 'subtree', operationName: 'Test operation', pathOrFile: 'folder' });
-    const statusBarItemEl = statusBarEl.querySelector('.obsidian-dev-utils-lock-indicator');
+    const statusBarItemEl = statusBarEl.querySelector('.obsidian-lib-lock-indicator');
     assertNonNullable(statusBarItemEl);
 
     // The active note switches to an unlocked one before the right-click, so no owner resolves.
@@ -1254,7 +1254,7 @@ describe('subtree locking', () => {
     const getMenu = captureMenuOnShow();
 
     new ResourceLockComponent(app, 'test-plugin').lockForPath({ abortController: new AbortController(), mode: 'subtree', operationName: 'Test operation', pathOrFile: 'folder' });
-    const statusBarItemEl = statusBarEl.querySelector('.obsidian-dev-utils-lock-indicator');
+    const statusBarItemEl = statusBarEl.querySelector('.obsidian-lib-lock-indicator');
     assertNonNullable(statusBarItemEl);
     dispatchContextMenu(statusBarItemEl);
 

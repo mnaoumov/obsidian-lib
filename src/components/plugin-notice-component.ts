@@ -22,7 +22,7 @@ import {
 import { CssClass } from '../css-class.ts';
 import { appendCodeBlock } from '../html-element.ts';
 import { t } from '../i18n/i18n.ts';
-import { getObsidianDevUtilsState } from '../obsidian-dev-utils-state.ts';
+import { getObsidianLibState } from '../obsidian-lib-state.ts';
 import { addPluginCssClasses } from '../plugin/plugin-context.ts';
 import { ComponentEx } from './component-ex.ts';
 import { MonkeyAroundComponent } from './monkey-around-component.ts';
@@ -580,7 +580,7 @@ export class PluginNoticeComponent extends ComponentEx {
   private appendCloseButton(params: PluginNoticeComponentAppendCloseButtonParams): void {
     const { contentEl, getNotice, onCloseClick } = params;
     const closeButtonEl = contentEl.createEl('button', {
-      attr: { 'aria-label': t(($) => $.obsidianDevUtils.notices.closeAriaLabel) }
+      attr: { 'aria-label': t(($) => $.obsidianLib.notices.closeAriaLabel) }
     });
     // Reuse Obsidian's modal close-button classes so this button matches the native modal close button
     // (look and hover); the stylesheet only positions it in the notice corner.
@@ -668,7 +668,7 @@ export class PluginNoticeComponent extends ComponentEx {
       // `ButtonComponent` requires an `HTMLElement` parent, so build it on a throwaway
       // detached element and move its `buttonEl` into the fragment.
       const cancelButton = new ButtonComponent(createDiv());
-      cancelButton.setButtonText(cancelButtonText ?? t(($) => $.obsidianDevUtils.buttons.cancel));
+      cancelButton.setButtonText(cancelButtonText ?? t(($) => $.obsidianLib.buttons.cancel));
       addPluginCssClasses(cancelButton.buttonEl, CssClass.CancelButton);
       // The click is wired via `addEventListener` rather than `ButtonComponent.onClick` so it
       // bubbles through the interactive-element guard (keeping the notice open) and stays
@@ -757,7 +757,7 @@ export class PluginNoticeComponent extends ComponentEx {
   }
 
   private getPermanentNotices(): Map<string, Notice> {
-    return getObsidianDevUtilsState<Map<string, Notice>>(PERMANENT_NOTICES_STATE_KEY, new Map<string, Notice>()).value;
+    return getObsidianLibState<Map<string, Notice>>(PERMANENT_NOTICES_STATE_KEY, new Map<string, Notice>()).value;
   }
 
   /**

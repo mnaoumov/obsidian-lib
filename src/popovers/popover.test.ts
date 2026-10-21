@@ -234,7 +234,7 @@ describe('showPopover', () => {
     const popoverEl = requirePopoverEl();
 
     expect(popoverEl.classList.contains('menu')).toBe(true);
-    expect(popoverEl.classList.contains('obsidian-dev-utils')).toBe(true);
+    expect(popoverEl.classList.contains('obsidian-lib')).toBe(true);
     expect(popoverEl.classList.contains('my-popover')).toBe(true);
 
     clickCancel();

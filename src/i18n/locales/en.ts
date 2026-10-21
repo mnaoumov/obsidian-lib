@@ -8,7 +8,7 @@
  * The English translations.
  */
 export const en = {
-  obsidianDevUtils: {
+  obsidianLib: {
     asyncWithNotice: {
       milliseconds: 'milliseconds...',
       operation: 'Operation',

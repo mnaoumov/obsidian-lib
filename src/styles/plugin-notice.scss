@@ -1,4 +1,4 @@
-.obsidian-dev-utils {
+.obsidian-lib {
   &.plugin-notice-name {
     color: var(--text-accent);
     display: inline-block;
@@ -15,7 +15,7 @@
     padding-right: var(--size-4-5);
     position: relative;
 
-    .obsidian-dev-utils.cancel-button {
+    .obsidian-lib.cancel-button {
       display: block;
       margin-top: var(--size-4-2);
       width: fit-content;
@@ -23,7 +23,7 @@
 
     // The close button reuses Obsidian's `modal-header-button` + `clickable-icon` classes so it matches
     // The native modal close button (box + hover); only its corner position is set here.
-    .obsidian-dev-utils.plugin-notice-close-button {
+    .obsidian-lib.plugin-notice-close-button {
       position: absolute;
       right: var(--size-4-3);
       top: var(--size-4-3);
@@ -36,7 +36,7 @@
   &.plugin-notice-requires-explicit-close.notice {
     padding: 0;
 
-    .obsidian-dev-utils.plugin-notice-content {
+    .obsidian-lib.plugin-notice-content {
       padding: var(--size-4-3) var(--size-4-4);
     }
   }

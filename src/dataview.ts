@@ -503,7 +503,7 @@ async function renderPaginated<T>(params: RenderPaginatedParams<T>): Promise<voi
 
     const paginationRow2Div = paginationDiv.createDiv();
 
-    paginationRow2Div.createSpan({ text: ` ${t(($) => $.obsidianDevUtils.dataview.itemsPerPage)} ` });
+    paginationRow2Div.createSpan({ text: ` ${t(($) => $.obsidianLib.dataview.itemsPerPage)} ` });
 
     const itemsPerPageSelect = paginationRow2Div.createEl('select');
     for (const option of itemsPerPageOptions) {
@@ -519,7 +519,7 @@ async function renderPaginated<T>(params: RenderPaginatedParams<T>): Promise<voi
       })
     );
 
-    paginationRow2Div.createSpan({ text: ` ${t(($) => $.obsidianDevUtils.dataview.jumpToPage)} ` });
+    paginationRow2Div.createSpan({ text: ` ${t(($) => $.obsidianLib.dataview.jumpToPage)} ` });
 
     const jumpToPageInput = paginationRow2Div.createEl('input', { attr: { max: totalPages, min: 1 }, type: 'number' });
     jumpToPageInput.addEventListener(
@@ -536,7 +536,7 @@ async function renderPaginated<T>(params: RenderPaginatedParams<T>): Promise<voi
       })
     );
 
-    paginationRow2Div.createSpan({ text: t(($) => $.obsidianDevUtils.dataview.pageHeader, { pageNumber, totalItems: rows.length, totalPages }) });
+    paginationRow2Div.createSpan({ text: t(($) => $.obsidianLib.dataview.pageHeader, { pageNumber, totalItems: rows.length, totalPages }) });
 
     function createPageLink(params2: CreatePageLinkParams): HTMLAnchorElement {
       const {

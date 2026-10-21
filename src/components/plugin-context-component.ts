@@ -1,8 +1,7 @@
 /**
  * @file
  *
- * Component that initializes the plugin context, debug controller, and library styles, and relays older copies'
- * lifecycle events to their current names.
+ * Component that initializes the plugin context, debug controller, and library styles.
  */
 
 import type { App } from 'obsidian';
@@ -14,7 +13,6 @@ import {
   initDebugController,
   initPluginContext
 } from '../plugin/plugin-context.ts';
-import { registerPluginLifecycleEventRelay } from '../plugin/plugin-lifecycle-events.ts';
 import { AllWindowsEventComponent } from './all-windows-event-component.ts';
 import { ComponentEx } from './component-ex.ts';
 
@@ -61,6 +59,5 @@ export class PluginContextComponent extends ComponentEx {
     this.addChild(new AllWindowsEventComponent(this.app)).registerAllWindowsHandler((win) => {
       initDebugController(win, this);
     });
-    registerPluginLifecycleEventRelay({ app: this.app, component: this });
   }
 }

@@ -706,7 +706,7 @@ describe('MonkeyAroundComponent', () => {
 
     it('should keep only the first patch live when a later patch defers on the shared token', () => {
       const $object = createTestObject();
-      const patchToken = Symbol.for('obsidian-dev-utils:deferring-patch');
+      const patchToken = Symbol.for('obsidian-lib:deferring-patch');
       const component1 = new MonkeyAroundComponent();
       component1.load();
       const component2 = new MonkeyAroundComponent();
@@ -730,7 +730,7 @@ describe('MonkeyAroundComponent', () => {
 
     it('should let a later patch take over once the first patching component unloads', () => {
       const $object = createTestObject();
-      const patchToken = Symbol.for('obsidian-dev-utils:deferring-patch');
+      const patchToken = Symbol.for('obsidian-lib:deferring-patch');
       const component1 = new MonkeyAroundComponent();
       component1.load();
       const component2 = new MonkeyAroundComponent();

@@ -21,11 +21,9 @@ import {
 } from '../generated-during-build.ts';
 import { injectLibraryStyles } from '../library-styles.ts';
 import {
-  LEGACY_OBSIDIAN_LIBRARY_NAME,
   OBSIDIAN_LIBRARY_NAME,
   ObsidianLibrary
 } from '../library.ts';
-import { shareTypescriptLibStateWithObsidianDevUtilsState } from '../obsidian-dev-utils-state.ts';
 
 interface PluginContextWindow {
   DEBUG: DebugController | undefined;
@@ -43,7 +41,6 @@ export function addPluginCssClasses(element: HTMLElement, cssClasses?: string | 
   const extraCssClasses = typeof cssClasses === 'string' ? [cssClasses] : cssClasses ?? [];
   element.addClass(
     CssClass.LibraryName,
-    CssClass.LegacyLibraryName,
     // The scope is empty until the plugin context is initialized; skip it so we never add an empty class.
     ...(ObsidianLibrary.cssClassScope ? [ObsidianLibrary.cssClassScope] : []),
     ...extraCssClasses
@@ -79,8 +76,6 @@ export function initPluginContext(pluginId: string): void {
   Library.init({
     debugGuideUrl: DEBUG_GUIDE_URL,
     debugNamespace: OBSIDIAN_LIBRARY_NAME,
-    // A filter written for the old name keeps showing the generic modules' messages.
-    debugNamespaceAliases: [LEGACY_OBSIDIAN_LIBRARY_NAME],
     debugPrefixNamespace: `${pluginId}:`,
     shouldPrintStackTrace: true
   });
@@ -90,10 +85,6 @@ export function initPluginContext(pluginId: string): void {
   // it here so the devtools console recipe in the debugging guide always resolves, instead of throwing until some
   // plugin happens to start an abortable operation.
   getSharedAbortController();
-
-  // The debuggers, the `debug` instance and the shared abort controller moved out of `__obsidianDevUtils`. Link them
-  // back under the legacy global, so plugins bundling an older copy of this library share them.
-  shareTypescriptLibStateWithObsidianDevUtilsState();
 
   injectLibraryStyles({
     doc: document,
