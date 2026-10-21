@@ -1,5 +1,19 @@
 # CHANGELOG
 
+## 6.0.0
+
+Migration: this release drops every name the library kept from the retired `obsidian-dev-utils` package. Plugins built on `obsidian-dev-utils`, or on `@mnaoumov/obsidian-lib` before `6.0.0`, no longer share the shared-state bag (plugin-API registry, queue, resource locks, backlink index), the lifecycle events, the debug namespace or the CSS class with a plugin on this release, so rebuild every plugin that depends on another one through the plugin-API registry on `6.0.0` together.
+
+- The shared-state module `@mnaoumov/obsidian-lib/obsidian-dev-utils-state` is now `@mnaoumov/obsidian-lib/obsidian-lib-state`: `getObsidianDevUtilsState` is `getObsidianLibState` and `resetObsidianDevUtilsState` is `resetObsidianLibState`. The bag lives on `globalThis.__obsidianLib` only, and `shareTypescriptLibStateWithObsidianDevUtilsState` is gone.
+- Elements carry only the `obsidian-lib` CSS class: `CssClass.LegacyLibraryName` is gone, so select `.obsidian-lib`. The stylesheet element id is `obsidian-lib-styles`, and the lock indicator classes are `obsidian-lib-lock-indicator` and `obsidian-lib-lock-indicator-flash`.
+- The lifecycle events fire as `obsidian-lib:plugin-loaded` / `obsidian-lib:plugin-unloaded` only. `LEGACY_PLUGIN_LOADED_EVENT_NAME`, `LEGACY_PLUGIN_UNLOADED_EVENT_NAME` and `registerPluginLifecycleEventRelay` are gone.
+- The library logs under `obsidian-lib` only. `LEGACY_OBSIDIAN_LIBRARY_NAME` is gone, and a debug filter on `obsidian-dev-utils` shows nothing.
+- The i18n namespace `obsidianDevUtils` is `obsidianLib`, so `t(($) => $.obsidianDevUtils.buttons.ok)` becomes `t(($) => $.obsidianLib.buttons.ok)`.
+- `VaultTransaction` stages under `.obsidian-lib-temp`, and a default-path transaction moves a leftover `.obsidian-dev-utils-temp` folder to the trash once it settles.
+- The deprecated `PluginApiContract`, `TypedPluginApiContract`, `PluginApiMethodContract`, `PluginApiMethodName` and `PluginApiMethods` aliases and the `@mnaoumov/obsidian-lib/plugin/plugin-api-schema` re-exports are removed. Use `ApiContract`, `TypedApiContract`, `ApiMethodContract`, `ApiMethodName`, `ApiMethods`, `createArgumentsSchema` and `createTypeGuardSchema` from `@mnaoumov/typescript-lib/api-contract`.
+
+- refactor!: drop the obsidian-dev-utils wire names
+
 ## 5.2.1
 
 - fix(plugin-notice): drop a leading plugin name and colon from a notice message
