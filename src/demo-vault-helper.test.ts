@@ -502,15 +502,34 @@ describe('bootstrapDemoVault sandbox notice', () => {
 
   // While the Settings popout is the active window, a reading view re-rendered by a plugin's enable books
   // its render on the popout's animation frame, which never fires once the popout closes — the start note
-  // then stays blank until its tab is reopened. So Settings is closed before anything is installed.
-  it('should close the settings window before installing or enabling any plugin', async () => {
+  // then stays blank until its tab is reopened. After the trust click Obsidian opens Settings while the
+  // bootstrap is already downloading plugins, so a close before the first install would miss it: Settings is
+  // closed after each download and right before each enable.
+  it('should close the settings window between each plugin install and its enable', async () => {
     const { app, enablePluginAndSave, installPlugin, settingClose } = createApp();
     await bootstrapDemoVault({ app });
-    const closeOrder = vi.mocked(settingClose).mock.invocationCallOrder[0] ?? Infinity;
-    const installOrder = vi.mocked(installPlugin).mock.invocationCallOrder[0] ?? 0;
-    const enableOrder = vi.mocked(enablePluginAndSave).mock.invocationCallOrder[0] ?? 0;
-    expect(closeOrder).toBeLessThan(installOrder);
-    expect(closeOrder).toBeLessThan(enableOrder);
+    const closeOrders = vi.mocked(settingClose).mock.invocationCallOrder;
+    const installOrders = vi.mocked(installPlugin).mock.invocationCallOrder;
+    const enableOrders = vi.mocked(enablePluginAndSave).mock.invocationCallOrder;
+    expect(enableOrders).toHaveLength(2);
+    for (const enableOrder of enableOrders) {
+      const lastInstallOrder = Math.max(...installOrders.filter((order) => order < enableOrder));
+      expect(closeOrders.some((order) => order > lastInstallOrder && order < enableOrder)).toBe(true);
+    }
+  });
+
+  it('should close the settings window before reloading an enabled plugin', async () => {
+    const { app, disablePluginAndSave, enablePluginAndSave, settingClose } = createApp({
+      existingFolderNotesData: JSON.stringify({ folderNoteName: '{{folder_name}}' }),
+      isFolderNotesEnabled: true,
+      isFolderNotesInstalled: true
+    });
+    await bootstrapDemoVault({ app });
+    // The `CodeScript Toolkit` enable comes first, so the close has to land between it and the `Folder Notes` reload.
+    const codeScriptToolkitEnableOrder = vi.mocked(enablePluginAndSave).mock.invocationCallOrder[0] ?? Infinity;
+    const disableOrder = vi.mocked(disablePluginAndSave).mock.invocationCallOrder[0] ?? 0;
+    const closeOrders = vi.mocked(settingClose).mock.invocationCallOrder;
+    expect(closeOrders.some((order) => order > codeScriptToolkitEnableOrder && order < disableOrder)).toBe(true);
   });
 
   it('should leave the settings window open when it refuses the vault', async () => {
