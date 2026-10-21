@@ -313,11 +313,7 @@ describe('demo-vault-helper bootstrap', () => {
   // Runs after the previous test, so `CodeScript Toolkit` is installed and enabled with its settings in place
   // and the re-run leaves it alone; `Folder Notes` is uninstalled first so the re-run downloads and enables it
   // again, which is the step that re-renders the open note.
-  //
-  // TODO: Drop the `.skip` once `@mnaoumov/obsidian-dev-toolkit` ships a `demo-vault-helper` built on an
-  // `obsidian-lib` release that closes Settings right before each enable. This project seeds the helper that
-  // package ships, so until then the test fails every time; against a helper bundled from these sources it passes.
-  it.skip('should leave an open reading view rendered when Settings opens after the bootstrap has started', async () => {
+  it('should leave an open reading view rendered when Settings opens after the bootstrap has started', async () => {
     const vaultPath = getTemporaryVault().path;
 
     await withAppConfig({
