@@ -34,6 +34,11 @@ const DISMISS_POLL_TIMEOUT_IN_MILLISECONDS = 15_000;
 // wording. The vault it describes ships only the helper, so the notice names no plugin.
 const SANDBOX_NOTICE_MARKER = 'temporary sandbox';
 
+// A body paragraph, not a heading: `rerender(true)` keeps the header section and empties the body, so only
+// body text tells a rendered note from a blank one.
+const RENDER_PROBE_MARKER = 'Render probe body paragraph.';
+const RENDER_PROBE_NOTE_PATH = 'Render probe.md';
+
 // The bootstrap progress snapshot the poll closure returns each attempt: `startupRan` + `codeScriptToolkitEnabled` +
 // `sandboxNoticeText` are the acceptance signal; the rest are asserted on success and reported on a flake
 // (the `CodeScript Toolkit` store install is network-dependent, so a timeout shows how far the bootstrap got instead of a
@@ -52,6 +57,14 @@ interface BootstrapStatus {
   readonly probeValue: unknown;
   readonly sandboxNoticeText: string;
   readonly startupRan: boolean;
+}
+
+// Whether the reading view opened before the re-run bootstrap shows its body again once that bootstrap has
+// enabled `Folder Notes` and closed the settings window.
+interface ReadingViewRenderResult {
+  readonly isFolderNotesEnabled: boolean;
+  readonly isMarkerRendered: boolean;
+  readonly isSettingsWindowClosed: boolean;
 }
 
 // Whether the sandbox notice has left the DOM. Polled rather than read once, because Obsidian fades a
@@ -284,6 +297,101 @@ describe('demo-vault-helper bootstrap', () => {
           });
         } catch (error) {
           throw new Error(`the re-run bootstrap did not close the settings window and raise the notice in the main window; last state: ${String(JSON.stringify(lastState))}`, { cause: error });
+        }
+      },
+      configKey: 'settingsPopoutWindow',
+      value: true,
+      vaultPath
+    });
+  }, TEST_TIMEOUT_IN_MILLISECONDS);
+
+  // Enabling `Folder Notes` registers a markdown post-processor, and every reading view answers with
+  // `rerender(true)`: its body is emptied and the render is queued on `activeWindow`'s animation frame. With
+  // the Settings popout active at that moment, closing the popout afterwards destroys the window before the
+  // frame fires, and the note stays blank for good. So the bootstrap closes Settings before enabling anything.
+  //
+  // Runs after the previous test, so `CodeScript Toolkit` is installed and enabled with its settings in place
+  // and the re-run leaves it alone; `Folder Notes` is disabled first so the re-run enables it again, which is
+  // the step that re-renders the open note.
+  //
+  // TODO: Drop the `.skip` once `@mnaoumov/obsidian-dev-toolkit` ships a `demo-vault-helper` built on an
+  // `obsidian-lib` release that closes Settings before enabling plugins. This project seeds the helper that
+  // package ships, so until then the test fails every time; against a helper bundled from these sources it passes.
+  it.skip('should leave an open reading view rendered when it enables plugins with the settings window open', async () => {
+    const vaultPath = getTemporaryVault().path;
+
+    await withAppConfig({
+      async callback(): Promise<void> {
+        const wasSettingsWindowOpen = await evalInObsidian({
+          async callback({ app, folderNotesPluginId, helperPluginId, lib: { waitUntil }, renderProbeMarker, renderProbeNotePath }): Promise<boolean> {
+            const RENDER_TIMEOUT_IN_MILLISECONDS = 5000;
+            const SETTINGS_WINDOW_TIMEOUT_IN_MILLISECONDS = 15_000;
+
+            const note = app.vault.getFileByPath(renderProbeNotePath) ?? await app.vault.create(renderProbeNotePath, `# Render probe\n\n${renderProbeMarker}\n`);
+            const leaf = app.workspace.getLeaf('tab');
+            await leaf.openFile(note, { active: true, state: { mode: 'preview' } });
+            await waitUntil({
+              message: 'the render probe note to render in reading view',
+              predicate: (): boolean => leaf.view.containerEl.querySelector('.markdown-reading-view')?.textContent.includes(renderProbeMarker) ?? false,
+              timeoutInMilliseconds: RENDER_TIMEOUT_IN_MILLISECONDS
+            });
+
+            await app.plugins.disablePluginAndSave(folderNotesPluginId);
+
+            app.setting.open();
+            await waitUntil({
+              message: 'the settings window to become the active window',
+              predicate: (): boolean => activeWindow !== window,
+              timeoutInMilliseconds: SETTINGS_WINDOW_TIMEOUT_IN_MILLISECONDS
+            });
+            const isSettingsWindowActive = activeWindow !== window;
+
+            // Whether a frame booked on the popout fires before the bootstrap closes it is a race, which a real
+            // demo vault lost about one time in three. The popout's frames are made never to fire, which is what
+            // a frame booked on a window destroyed before its next paint amounts to, so the test fails every
+            // time the bootstrap re-renders a reading view while Settings is the active window.
+            activeWindow.requestAnimationFrame = (): number => 0;
+
+            await app.plugins.disablePlugin(helperPluginId);
+            await app.plugins.enablePlugin(helperPluginId);
+            return isSettingsWindowActive;
+          },
+          input: { folderNotesPluginId: FOLDER_NOTES_PLUGIN_ID, helperPluginId: HELPER_PLUGIN_ID, renderProbeMarker: RENDER_PROBE_MARKER, renderProbeNotePath: RENDER_PROBE_NOTE_PATH },
+          vaultPath
+        });
+
+        expect(wasSettingsWindowOpen).toBe(true);
+
+        let lastState: ReadingViewRenderResult | undefined;
+        try {
+          await pollInObsidian({
+            input: { folderNotesPluginId: FOLDER_NOTES_PLUGIN_ID, renderProbeMarker: RENDER_PROBE_MARKER, renderProbeNotePath: RENDER_PROBE_NOTE_PATH },
+            intervalInMilliseconds: POLL_INTERVAL_IN_MILLISECONDS,
+            poll({ app, folderNotesPluginId, renderProbeMarker, renderProbeNotePath }): ReadingViewRenderResult {
+              let isMarkerRendered = false;
+              app.workspace.iterateAllLeaves((leaf) => {
+                if (leaf.getViewState().state?.['file'] !== renderProbeNotePath) {
+                  return;
+                }
+                if (leaf.view.containerEl.querySelector('.markdown-reading-view')?.textContent.includes(renderProbeMarker)) {
+                  isMarkerRendered = true;
+                }
+              });
+              return {
+                isFolderNotesEnabled: app.plugins.enabledPlugins.has(folderNotesPluginId),
+                isMarkerRendered,
+                isSettingsWindowClosed: !Reflect.get(app.setting, 'popout')
+              };
+            },
+            timeoutInMilliseconds: POLL_TIMEOUT_IN_MILLISECONDS,
+            until(pollResult: ReadingViewRenderResult): boolean {
+              lastState = pollResult;
+              return pollResult.isFolderNotesEnabled && pollResult.isSettingsWindowClosed && pollResult.isMarkerRendered;
+            },
+            vaultPath
+          });
+        } catch (error) {
+          throw new Error(`the reading view did not render again after the re-run bootstrap; last state: ${String(JSON.stringify(lastState))}`, { cause: error });
         }
       },
       configKey: 'settingsPopoutWindow',

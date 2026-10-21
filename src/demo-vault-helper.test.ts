@@ -499,4 +499,23 @@ describe('bootstrapDemoVault sandbox notice', () => {
     const noticeOrder = mockNotice.mock.invocationCallOrder[0] ?? 0;
     expect(closeOrder).toBeLessThan(noticeOrder);
   });
+
+  // While the Settings popout is the active window, a reading view re-rendered by a plugin's enable books
+  // its render on the popout's animation frame, which never fires once the popout closes — the start note
+  // then stays blank until its tab is reopened. So Settings is closed before anything is installed.
+  it('should close the settings window before installing or enabling any plugin', async () => {
+    const { app, enablePluginAndSave, installPlugin, settingClose } = createApp();
+    await bootstrapDemoVault({ app });
+    const closeOrder = vi.mocked(settingClose).mock.invocationCallOrder[0] ?? Infinity;
+    const installOrder = vi.mocked(installPlugin).mock.invocationCallOrder[0] ?? 0;
+    const enableOrder = vi.mocked(enablePluginAndSave).mock.invocationCallOrder[0] ?? 0;
+    expect(closeOrder).toBeLessThan(installOrder);
+    expect(closeOrder).toBeLessThan(enableOrder);
+  });
+
+  it('should leave the settings window open when it refuses the vault', async () => {
+    const { app, settingClose } = createApp({ helperSettingsJson: null });
+    await expect(bootstrapDemoVault({ app })).rejects.toThrow(INVALID_DEMO_VAULT_ERROR_MESSAGE);
+    expect(settingClose).not.toHaveBeenCalled();
+  });
 });

@@ -13,6 +13,11 @@
  * The plugin the vault demonstrates is read from the helper's own `data.json`, written by the packaging
  * step ({@link DemoVaultHelperSettings}); a vault without that marker is refused as not a demo vault.
  *
+ * Settings is closed before any plugin is enabled. After the trust prompt Obsidian leaves Settings open as
+ * a popout window, and a reading view re-rendered while that popout is the active window queues its
+ * render on the popout's animation frame — which never fires once the popout closes, leaving the start
+ * note blank until its tab is reopened.
+ *
  * It writes `CodeScript Toolkit`'s settings BEFORE enabling it, so the plugin loads already configured —
  * no reload. `CodeScript Toolkit` then runs the vault's `startup.ts` (via its `startupScriptPath`
  * setting), which is where each vault opens its start note and does any plugin-specific setup.
@@ -142,7 +147,8 @@ const OPEN_DEMO_VAULT_COMMAND_NAME = 'Open demo vault';
 const SANDBOX_NOTICE_DURATION_IN_MILLISECONDS = 0;
 
 /**
- * Bootstraps a demo vault so its notes' `code-button`s work with no manual setup: installs CodeScript
+ * Bootstraps a demo vault so its notes' `code-button`s work with no manual setup. It first closes Settings,
+ * so no reading view queues a re-render on the settings popout's animation frame. It then installs CodeScript
  * Toolkit from the community store (if it is not already installed), writes its settings, then enables
  * it — writing the settings BEFORE enabling so a fresh enable loads it already configured, with no
  * reload. If `CodeScript Toolkit` is already enabled but the settings just changed, it is reloaded
@@ -150,7 +156,7 @@ const SANDBOX_NOTICE_DURATION_IN_MILLISECONDS = 0;
  * reloaded (so a routine vault re-open does not re-run `CodeScript Toolkit`'s startup). `CodeScript Toolkit`
  * then runs the vault's `startup.ts`. `Folder Notes` is installed next, configured to treat `README.md` as
  * a folder's own note, so a vault whose notes are grouped into folders describes each group in the file
- * explorer. Finally it closes Settings (so the notice cannot be raised inside the settings popout) and
+ * explorer. Finally it closes Settings again (so the notice cannot be raised inside the settings popout) and
  * raises the sandbox notice describing the opened vault as a throwaway copy.
  *
  * @param params - The {@link BootstrapDemoVaultParams}.
@@ -161,6 +167,7 @@ export async function bootstrapDemoVault(params: BootstrapDemoVaultParams): Prom
   const { app } = params;
   // Resolved first, so a vault that is not a demo vault is refused before anything is installed into it.
   const demoedPluginId = await getDemoedPluginId(app);
+  closeSettingsBeforeEnablingPlugins(app);
   await installCommunityPlugin({ app, pluginId: CODE_SCRIPT_TOOLKIT_PLUGIN_ID });
   const result = await configureCommunityPlugin({
     app,
@@ -210,6 +217,18 @@ function buildSandboxNoticeFragment(pluginName: string): DocumentFragment {
   });
 }
 
+// Closes Settings before any plugin is enabled. This is load-bearing, not cosmetic. A freshly opened demo
+// vault asks the user to trust its author, and Obsidian then opens Settings as a POPOUT WINDOW that becomes
+// `activeWindow`. Enabling a plugin that registers a markdown post-processor (`Folder Notes`) makes every
+// reading view `rerender(true)`: it empties the body sections and queues the render through
+// `activeWindow.requestAnimationFrame`. If that is the Settings popout, closing it later destroys the window
+// before the frame fires, the renderer's queued handle never clears, and every later render request is
+// ignored, so the start note stays blank until its tab is closed. With Settings closed first, every such
+// frame is booked on the main window. Closing an already-closed Settings is a no-op.
+function closeSettingsBeforeEnablingPlugins(app: App): void {
+  app.setting.close();
+}
+
 // Creates `CodeScript Toolkit`'s invocable-scripts folder (under `modulesRoot`) if it is missing.
 // Every demo vault then has the same `CodeScript Toolkit` layout even when it ships no invocable scripts.
 // The committed vault therefore carries no otherwise-empty placeholder folder.
@@ -250,10 +269,11 @@ async function getDemoedPluginId(app: App): Promise<string> {
 //
 // A `Notice` is built inside whatever window is active at that moment, and Settings is a POPOUT WINDOW
 // (verified on 1.13.6) that becomes the active one while it is open — so a notice raised then would be
-// created in the settings window and vanish with it. Settings is therefore closed first: Obsidian hands
-// the main window back as the popout goes away (synchronously, before the notice is built), and a user
-// who has just opened a demo vault wants to see the vault rather than a settings window anyway. Closing
-// an already-closed Settings is a no-op, so no open-state probe is needed.
+// created in the settings window and vanish with it. `bootstrapDemoVault` already closed Settings before
+// enabling anything, but a plugin enabled since may have opened it again, so it is closed once more here:
+// Obsidian hands the main window back as the popout goes away (synchronously, before the notice is built),
+// and a user who has just opened a demo vault wants to see the vault rather than a settings window anyway.
+// Closing an already-closed Settings is a no-op, so no open-state probe is needed.
 function showSandboxNotice(app: App, demoedPluginId: string): void {
   const pluginName = app.plugins.manifests[demoedPluginId]?.name ?? demoedPluginId;
   const fragment = buildSandboxNoticeFragment(pluginName);
