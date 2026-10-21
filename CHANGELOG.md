@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 6.0.2
+
+- fix: close Settings right before each demo-vault plugin enable
+- test: re-enable the demo-vault-helper reading-view regression test
+- chore(deps): move to obsidian-dev-toolkit 5
+
 ## 6.0.1
 
 - fix: close Settings before the demo-vault bootstrap enables plugins
