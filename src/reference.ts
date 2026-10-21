@@ -82,6 +82,21 @@ export interface OffsetRange {
 }
 
 /**
+ * Gets the text of the one link a reference stands for.
+ *
+ * For most references that is {@link Reference.original}. A frontmatter link that carries offsets is the
+ * exception: its `original` is the WHOLE property value, which may hold several links, and `startOffset` /
+ * `endOffset` give this link's span in it. Anything that parses, compares or replaces the link as one link
+ * must read that span, never the whole value.
+ *
+ * @param reference - The reference.
+ * @returns The text of the link.
+ */
+export function getReferenceLinkText(reference: Reference): string {
+  return isFrontmatterLinkCacheWithOffsets(reference) ? reference.original.slice(reference.startOffset, reference.endOffset) : reference.original;
+}
+
+/**
  * Checks if a reference is a canvas file node reference.
  *
  * @param reference - The reference to check.
@@ -141,7 +156,7 @@ export function isReferenceInOffsetRange(reference: Reference, offsetRange: Offs
 export function referenceToFileChange(reference: Reference, newContent: string): FileChange {
   return {
     newContent,
-    oldContent: isFrontmatterLinkCacheWithOffsets(reference) ? reference.original.slice(reference.startOffset, reference.endOffset) : reference.original,
+    oldContent: getReferenceLinkText(reference),
     reference
   };
 }

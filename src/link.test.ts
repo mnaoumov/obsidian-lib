@@ -684,6 +684,11 @@ const SHAPING_PARAMS_CASES: ShapingParamsCase[] = [
   }
 ];
 
+interface CanvasFileNodeReferenceEx extends CanvasReference {
+  endOffset?: undefined;
+  startOffset?: undefined;
+}
+
 function createShapingParamsCaseLink(shapingParamsCase: ShapingParamsCase): Reference {
   const { originalLink } = shapingParamsCase;
   return castTo<Reference>({
@@ -1303,13 +1308,15 @@ describe('app-dependent functions', () => {
       ).asOriginalType__();
       const canvasFile = ensureNonNullable(canvasApp.vault.getFileByPath('canvas.canvas'));
       canvasFile.extension = 'canvas';
-      const link = strictProxy<CanvasReference>({
+      const link = strictProxy<CanvasFileNodeReferenceEx>({
         displayText: 'target',
+        endOffset: undefined,
         isCanvas: true,
         key: 'file',
         link: 'target',
         nodeIndex: 0,
         original: 'target.md',
+        startOffset: undefined,
         type: 'file'
       });
       const result = updateLink({
@@ -1334,6 +1341,48 @@ describe('app-dependent functions', () => {
         newTargetPathOrFile: 'target.md'
       });
       expect(result).toBe('[[target|my alias]]');
+    });
+
+    it('should read style and alias from the span of an offset-carrying frontmatter link, not from the whole value', () => {
+      const value = '[[old-a]] and [Multi B](<old-b.md>)';
+      const wikilink = '[[old-a]]';
+      const markdownLink = '[Multi B](<old-b.md>)';
+
+      function updateMultiLink(linkText: string, displayText: string, linkPath: string, oldTargetPath: string, newTargetPath: string): string {
+        const startOffset = value.indexOf(linkText);
+        const link = castTo<Reference>({
+          displayText,
+          endOffset: startOffset + linkText.length,
+          key: 'related',
+          link: linkPath,
+          original: value,
+          startOffset
+        });
+        return updateLink({
+          app,
+          link,
+          newSourcePathOrFile: 'note.md',
+          newTargetPathOrFile: newTargetPath,
+          oldTargetPathOrFile: oldTargetPath
+        });
+      }
+
+      // The target is `a b.md`, whose space makes the angle brackets of the markdown link observable.
+      expect(updateMultiLink(wikilink, 'old-a', 'old-a', 'old-a.md', 'a b.md')).toBe('[[a b]]');
+      expect(updateMultiLink(markdownLink, 'Multi B', 'old-b.md', 'old-b.md', 'a b.md')).toBe('[Multi B](<a b.md>)');
+    });
+
+    it('should return the span of an offset-carrying frontmatter link when newTargetPathOrFile is falsy', () => {
+      const value = '[[a]] and [[b]]';
+      const link = castTo<Reference>({
+        displayText: 'b',
+        endOffset: value.length,
+        key: 'related',
+        link: 'b',
+        original: value,
+        startOffset: value.indexOf('[[b]]')
+      });
+      expect(updateLink({ app, link, newSourcePathOrFile: 'note.md', newTargetPathOrFile: '' })).toBe('[[b]]');
     });
 
     it('should refresh a wikilink alias equal to the old base name when shouldUpdateFileNameAlias is true', () => {

@@ -61,7 +61,10 @@ import {
   toParseLinkReference
 } from './parse-link.ts';
 import { findPluginApi } from './plugin/plugin-api.ts';
-import { sortReferences } from './reference.ts';
+import {
+  getReferenceLinkText,
+  sortReferences
+} from './reference.ts';
 import {
   readSafe,
   saveNote
@@ -508,7 +511,7 @@ export async function getBacklinksForFileSafe(params: GetBacklinksForFileSafePar
           } else {
             continue;
           }
-          if (actualLink !== link.original) {
+          if (actualLink !== getReferenceLinkText(link)) {
             return false;
           }
         }
