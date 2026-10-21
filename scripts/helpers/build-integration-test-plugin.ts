@@ -2,7 +2,7 @@
  * @file
  *
  * Builds the integration test harness plugin — the plugin that exposes the whole library on
- * `window.__obsidianDevUtilsModule`, which is what makes every helper reachable as `lib.<helper>` inside
+ * `window.__obsidianLibModule`, which is what makes every helper reachable as `lib.<helper>` inside
  * an `evalInObsidian` closure.
  *
  * Two callers, two output folders:

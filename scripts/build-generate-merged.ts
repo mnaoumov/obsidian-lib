@@ -5,7 +5,7 @@
  *
  * `__merged.ts` re-exports every renderer-safe value export of the library flatly
  * (`export { fn } from './kebab-file.ts'`), so an `evalInObsidian` closure can reach any helper as
- * `lib.fn` after `registerLibResolver(() => window.__obsidianDevUtilsModule.__merged)`.
+ * `lib.fn` after `registerLibResolver(() => window.__obsidianLibModule.__merged)`.
  *
  * Only VALUE exports are flattened: `typeof import('@mnaoumov/obsidian-lib/__merged')` (the type the
  * harness `Lib` interface extends) captures the value space, so type-only exports contribute nothing

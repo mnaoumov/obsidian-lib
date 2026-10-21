@@ -38,6 +38,7 @@ import type { LoopBuildNoticeMessageParams } from './loop.ts';
 
 import { PluginNoticeComponent } from './components/plugin-notice-component.ts';
 import { getObsidianLibDebugger } from './debug.ts';
+import { appendCodeBlock } from './html-element.ts';
 import { loop } from './loop.ts';
 import { addPluginCssClasses } from './plugin/plugin-context.ts';
 
@@ -625,7 +626,7 @@ describe('loop', () => {
     const fake = createFakePluginNoticeComponent();
     const contents: (DocumentFragment | string)[] = [];
     const progressBarTitle = createFragment((fragmentEl) => {
-      fragmentEl.createEl('code', { text: 'Dataview' });
+      appendCodeBlock(fragmentEl, 'Dataview');
       fragmentEl.appendText(': Initializing...');
     });
 
@@ -643,7 +644,7 @@ describe('loop', () => {
     for (const content of contents) {
       const fragment = castTo<DocumentFragment>(content);
       expect(fragment.textContent).toBe('Dataview: Initializing...');
-      expect(fragment.firstElementChild?.querySelector(':scope > code')?.textContent).toBe('Dataview');
+      expect(fragment.firstElementChild?.querySelector(':scope > strong > code')?.textContent).toBe('Dataview');
     }
     expect(progressBarTitle.textContent).toBe('Dataview: Initializing...');
   });

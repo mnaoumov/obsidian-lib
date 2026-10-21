@@ -4,7 +4,7 @@
  * Vitest global setup for the consumer-path `lib` injection test.
  *
  * Proves the setup a CONSUMER plugin wires up, which this repo's own suites cannot: there, the harness plugin
- * IS the plugin-under-test, so `window.__obsidianDevUtilsModule` is present for free. Here the vault has NO
+ * IS the plugin-under-test, so `window.__obsidianLibModule` is present for free. Here the vault has NO
  * plugin-under-test at all (`installPlugin: false`) and the harness plugin rides along purely as a seeded,
  * enabled community plugin — exactly how it reaches a consumer's test vault, via the published
  * {@link getIntegrationTestPluginPopulate} + `enableCommunityPlugins` pair.
