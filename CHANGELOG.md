@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## 5.2.1
+
+- fix(plugin-notice): drop a leading plugin name and colon from a notice message
+- test(docs): give the outdated-reference check a timeout sized for the full gate's load
+- chore(deps): float brace-expansion, sharp and fast-uri past their advisories
+- fix(plugin-suggestion): space the notice's action and decline buttons apart
+
 ## 5.2.0
 
 - feat(debug): log the generic typescript-lib modules under obsidian-lib
