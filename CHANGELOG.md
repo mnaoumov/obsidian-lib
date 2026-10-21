@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 6.0.1
+
+- fix: close Settings before the demo-vault bootstrap enables plugins
+- fix: read the link span of an offset-carrying frontmatter link
+
 ## 6.0.0
 
 Migration: this release drops every name the library kept from the retired `obsidian-dev-utils` package. Plugins built on `obsidian-dev-utils`, or on `@mnaoumov/obsidian-lib` before `6.0.0`, no longer share the shared-state bag (plugin-API registry, queue, resource locks, backlink index), the lifecycle events, the debug namespace or the CSS class with a plugin on this release, so rebuild every plugin that depends on another one through the plugin-API registry on `6.0.0` together.
