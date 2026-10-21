@@ -425,7 +425,8 @@ export class PluginNoticeComponent extends ComponentEx {
   /**
    * Displays a notice message to the user.
    *
-   * @param message - The message to display.
+   * @param message - The message to display. The notice shows the plugin name above it, so a leading
+   * `<plugin name>:` in the message is dropped rather than shown twice.
    * @param options - The options for displaying the notice.
    * @returns The notice object.
    */
@@ -690,7 +691,8 @@ export class PluginNoticeComponent extends ComponentEx {
    * @returns The {@link PluginNoticeComponentNoticeContent} holding the wrapped notice content.
    */
   private buildNoticeContent(params: PluginNoticeComponentBuildNoticeContentParams): PluginNoticeComponentNoticeContent {
-    const { getNotice, message, onCloseClick, requiresExplicitClose = false, shouldPrefixWithPluginName = true, shouldShowCloseButton = true } = params;
+    const { getNotice, onCloseClick, requiresExplicitClose = false, shouldPrefixWithPluginName = true, shouldShowCloseButton = true } = params;
+    const message = this.stripPluginNamePrefix(params.message);
     const fragment = createFragment();
     const contentEl = fragment.createDiv();
     addPluginCssClasses(contentEl, CssClass.PluginNoticeContent);
@@ -756,6 +758,22 @@ export class PluginNoticeComponent extends ComponentEx {
 
   private getPermanentNotices(): Map<string, Notice> {
     return getObsidianDevUtilsState<Map<string, Notice>>(PERMANENT_NOTICES_STATE_KEY, new Map<string, Notice>()).value;
+  }
+
+  /**
+   * Measures a leading `<plugin name>:` in a message, together with the whitespace around the colon and
+   * after it.
+   *
+   * @param text - The message text.
+   * @returns The length of the prefix, or `0` when the text does not open with this plugin's name and a
+   * colon.
+   */
+  private getPluginNamePrefixLength(text: string): number {
+    if (!this.pluginName || !text.startsWith(this.pluginName)) {
+      return 0;
+    }
+    const separatorMatch = /^\s*:\s*/.exec(text.slice(this.pluginName.length));
+    return separatorMatch ? this.pluginName.length + separatorMatch[0].length : 0;
   }
 
   /**
@@ -885,6 +903,48 @@ export class PluginNoticeComponent extends ComponentEx {
   }
 
   /**
+   * Drops a leading `<plugin name>:` from a message. The notice already opens with the plugin name in its
+   * own styled header, so a message that repeats it reads as the name twice.
+   *
+   * A fragment is matched on its text, so a name wrapped in an element (such as inline code) still
+   * counts; the prefix is cut out of its text nodes, and an element it leaves empty is removed. The name
+   * is matched exactly, and only at the start: a message that merely mentions the name later is left
+   * alone.
+   *
+   * @param message - The message.
+   * @returns The message without the prefix. A fragment is changed in place and returned.
+   */
+  private stripPluginNamePrefix(message: DocumentFragment | string): DocumentFragment | string {
+    if (typeof message === 'string') {
+      return message.slice(this.getPluginNamePrefixLength(message));
+    }
+
+    let remainingLength = this.getPluginNamePrefixLength(message.textContent);
+    if (remainingLength === 0) {
+      return message;
+    }
+
+    for (const textNode of getTextNodes(message)) {
+      if (textNode.data.length > remainingLength) {
+        textNode.data = textNode.data.slice(remainingLength);
+        break;
+      }
+      remainingLength -= textNode.data.length;
+      // Climb to the outermost element holding nothing but this text, so no empty wrapper is left behind.
+      // A node directly in the fragment has no parent element, which is where the climb stops.
+      let emptiedNode: ChildNode = textNode;
+      while (emptiedNode.parentElement?.childNodes.length === 1) {
+        emptiedNode = emptiedNode.parentElement;
+      }
+      emptiedNode.remove();
+      if (remainingLength === 0) {
+        break;
+      }
+    }
+    return message;
+  }
+
+  /**
    * Wraps a notice's `hide` so the given callback runs the first time the notice is hidden — by the
    * user, by a replacing notice, by its duration elapsing, or on unload. Does nothing when no callback
    * is given.
@@ -917,4 +977,33 @@ export class PluginNoticeComponent extends ComponentEx {
       }
     });
   }
+}
+
+/**
+ * Collects the text nodes under a node, in document order.
+ *
+ * @param node - The node to walk.
+ * @returns The text nodes.
+ */
+function getTextNodes(node: Node): Text[] {
+  const textNodes: Text[] = [];
+  for (const childNode of node.childNodes) {
+    if (isTextNode(childNode)) {
+      textNodes.push(childNode);
+    } else {
+      textNodes.push(...getTextNodes(childNode));
+    }
+  }
+  return textNodes;
+}
+
+/**
+ * Checks whether a node is a text node. It reads the node type rather than `instanceof Text`, which is
+ * false for a node from a popout window's realm.
+ *
+ * @param node - The node to check.
+ * @returns Whether the node is a text node.
+ */
+function isTextNode(node: Node): node is Text {
+  return node.nodeType === Node.TEXT_NODE;
 }

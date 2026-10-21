@@ -379,6 +379,104 @@ describe('PluginNoticeComponent', () => {
     expect(currentNotice.messageEl.textContent).not.toContain(PLUGIN_NAME);
   });
 
+  it('should drop a leading plugin name and colon from a string message', () => {
+    const component = new PluginNoticeComponent({ app, pluginName: PLUGIN_NAME });
+    component.load();
+    component.showNotice('My Plugin: Something happened');
+
+    const fragment = castTo<DocumentFragment>(mocks.NoticeMock.mock.calls[0]?.[0]);
+    expect(fragment.textContent).toBe('My Plugin\nSomething happened');
+  });
+
+  it('should drop a leading plugin name with whitespace before the colon', () => {
+    const component = new PluginNoticeComponent({ app, pluginName: PLUGIN_NAME });
+    component.load();
+    component.showNotice('My Plugin :\nSomething happened');
+
+    const fragment = castTo<DocumentFragment>(mocks.NoticeMock.mock.calls[0]?.[0]);
+    expect(fragment.textContent).toBe('My Plugin\nSomething happened');
+  });
+
+  it('should drop a leading plugin name and colon from a fragment message', () => {
+    const component = new PluginNoticeComponent({ app, pluginName: PLUGIN_NAME });
+    component.load();
+    const message = createFragment();
+    message.appendText('My Plugin: Something ');
+    message.createEl('em', { text: 'Important' });
+    component.showNotice(message);
+
+    const fragment = castTo<DocumentFragment>(mocks.NoticeMock.mock.calls[0]?.[0]);
+    expect(fragment.textContent).toBe('My Plugin\nSomething Important');
+    expect(fragment.querySelector('em')?.textContent).toBe('Important');
+  });
+
+  it('should drop a plugin name wrapped in an element, removing the element it empties', () => {
+    const component = new PluginNoticeComponent({ app, pluginName: PLUGIN_NAME });
+    component.load();
+    const message = createFragment();
+    message.createEl('code', { text: 'My' });
+    message.createEl('code', { text: ' Plugin' });
+    message.appendText(': ');
+    message.appendText('Something happened');
+    component.showNotice(message);
+
+    const fragment = castTo<DocumentFragment>(mocks.NoticeMock.mock.calls[0]?.[0]);
+    expect(fragment.textContent).toBe('My Plugin\nSomething happened');
+    // Only the header's own code element is left.
+    expect(fragment.querySelectorAll('code')).toHaveLength(1);
+  });
+
+  it('should leave a message that mentions the plugin name later on alone', () => {
+    const component = new PluginNoticeComponent({ app, pluginName: PLUGIN_NAME });
+    component.load();
+    component.showNotice('Updated by My Plugin: 3 links');
+
+    const fragment = castTo<DocumentFragment>(mocks.NoticeMock.mock.calls[0]?.[0]);
+    expect(fragment.textContent).toBe('My Plugin\nUpdated by My Plugin: 3 links');
+  });
+
+  it('should leave a message that opens with the plugin name but no colon alone', () => {
+    const component = new PluginNoticeComponent({ app, pluginName: PLUGIN_NAME });
+    component.load();
+    const message = createFragment();
+    message.createEl('code', { text: PLUGIN_NAME });
+    message.appendText(' does nothing until Other Plugin is enabled.');
+    component.showNotice(message);
+
+    const fragment = castTo<DocumentFragment>(mocks.NoticeMock.mock.calls[0]?.[0]);
+    expect(fragment.textContent).toBe('My Plugin\nMy Plugin does nothing until Other Plugin is enabled.');
+  });
+
+  it('should leave a message that opens with a different plugin name alone', () => {
+    const component = new PluginNoticeComponent({ app, pluginName: PLUGIN_NAME });
+    component.load();
+    component.showNotice('My Plugin Pro: Something happened');
+    const caseFoldedMessage = `${PLUGIN_NAME.toLowerCase()}: Something happened`;
+    component.showNotice(caseFoldedMessage);
+
+    expect(castTo<DocumentFragment>(mocks.NoticeMock.mock.calls[0]?.[0]).textContent).toBe('My Plugin\nMy Plugin Pro: Something happened');
+    expect(castTo<DocumentFragment>(mocks.NoticeMock.mock.calls[1]?.[0]).textContent).toBe('My Plugin\nmy plugin: Something happened');
+  });
+
+  it('should not strip anything when the plugin name is empty', () => {
+    const component = new PluginNoticeComponent({ app, pluginName: '' });
+    component.load();
+    component.showNotice(': Something happened');
+
+    expect(castTo<DocumentFragment>(mocks.NoticeMock.mock.calls[0]?.[0]).textContent).toBe('\n: Something happened');
+  });
+
+  it('should drop a leading plugin name and colon from an appended message', () => {
+    const component = new PluginNoticeComponent({ app, pluginName: PLUGIN_NAME });
+    component.load();
+    component.showNotice('alpha');
+    const currentNotice = ensureNonNullable(mocks.instances[0]);
+
+    component.showNotice('My Plugin: bravo', { mode: PluginNoticeMode.Append });
+
+    expect(currentNotice.messageEl.textContent).toBe('bravo');
+  });
+
   it('should wrap an appended message so an interactive element keeps the notice open', () => {
     const component = new PluginNoticeComponent({ app, pluginName: PLUGIN_NAME });
     component.load();
@@ -933,6 +1031,21 @@ describe('PluginNoticeComponent.showNoticeAfterDelay', () => {
     await vi.advanceTimersByTimeAsync(DELAY_IN_MILLISECONDS);
 
     expect(mocks.NoticeMock).not.toHaveBeenCalled();
+  });
+
+  it('should drop a leading plugin name and colon from a delayed notice and its updates', async () => {
+    const component = new PluginNoticeComponent({ app, pluginName: PLUGIN_NAME });
+    component.load();
+
+    const handle = component.showNoticeAfterDelay({ content: 'My Plugin: Merging 1/10', delayInMilliseconds: DELAY_IN_MILLISECONDS });
+    await vi.advanceTimersByTimeAsync(DELAY_IN_MILLISECONDS);
+
+    const content = castTo<DocumentFragment>(mocks.NoticeMock.mock.calls[0]?.[0]);
+    expect(content.textContent).toBe('My Plugin\nMerging 1/10');
+
+    handle.setContent('My Plugin: Merging 7/10');
+
+    expect(content.textContent).toBe('My Plugin\nMerging 7/10');
   });
 
   it('should update the shown notice content via setContent', async () => {
