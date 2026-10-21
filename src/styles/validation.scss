@@ -5,7 +5,7 @@
 // An input the user has not interacted with yet carries `.untouched` (set by `PromptModal`), so a modal that
 // opens invalid by design does not greet the user in red. Both blocks below must be gated: the input is
 // focused on open, so the focus block alone would keep painting it.
-.obsidian-dev-utils {
+.obsidian-lib {
   :invalid:not(.untouched) {
     @include invalid;
   }

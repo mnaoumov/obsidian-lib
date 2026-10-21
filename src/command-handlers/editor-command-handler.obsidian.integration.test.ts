@@ -62,7 +62,7 @@ describe('EditorCommandHandler viewport menu', () => {
           obsidianModule
         }
       ): Promise<ViewportMenuResult> {
-        const HARNESS_PLUGIN_ID = 'obsidian-dev-utils-integration-test';
+        const HARNESS_PLUGIN_ID = 'obsidian-lib-integration-test';
 
         const harnessPlugin = app.plugins.getPlugin(HARNESS_PLUGIN_ID);
         if (!harnessPlugin) {

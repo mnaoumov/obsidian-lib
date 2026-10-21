@@ -65,12 +65,12 @@ vi.mock('obsidian', async () => {
 });
 
 vi.mock('./i18n/locales/en.ts', () => ({
-  en: { obsidianDevUtils: { test: 'english-value' } }
+  en: { obsidianLib: { test: 'english-value' } }
 }));
 
 vi.mock('./i18n/locales/translations-map.ts', () => ({
   DEFAULT_LANGUAGE: 'en',
-  defaultTranslationsMap: { en: { obsidianDevUtils: { test: 'english-value' } } }
+  defaultTranslationsMap: { en: { obsidianLib: { test: 'english-value' } } }
 }));
 
 async function reloadI18N(): Promise<typeof import('./i18n/i18n.ts')> {
@@ -103,7 +103,7 @@ describe('i18n module', { timeout: HEAVY_IMPORT_TIMEOUT }, () => {
       // The debug module must come from the SAME freshly-reset module registry as the reloaded i18n
       // module, so both share one debug instance and one shared-state bag.
       const { getDebugController } = await import('@mnaoumov/typescript-lib/debug');
-      getDebugController().enable('obsidian-dev-utils:*');
+      getDebugController().enable('obsidian-lib:*');
       const { t: freshT } = await reloadI18N();
 
       freshT(castTo<Parameters<typeof freshT>[0]>((translations: GenericObject) => translations['test']));
@@ -193,7 +193,7 @@ describe('i18n module', { timeout: HEAVY_IMPORT_TIMEOUT }, () => {
       expect(mockAddResourceBundleFunction).toHaveBeenCalledWith(
         'en',
         'translation',
-        { obsidianDevUtils: { test: 'english-value' } },
+        { obsidianLib: { test: 'english-value' } },
         true,
         false
       );

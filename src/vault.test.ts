@@ -74,7 +74,7 @@ vi.mock('./async-with-notice.ts', () => ({
 vi.mock('./i18n/i18n.ts', () => ({
   t: vi.fn(($function: (messages: GenericObject) => unknown) => {
     try {
-      $function({ obsidianDevUtils: { vault: { processFile: 'mock' } } });
+      $function({ obsidianLib: { vault: { processFile: 'mock' } } });
     } catch { /* Ignore */ }
     return 'mock-t';
   })

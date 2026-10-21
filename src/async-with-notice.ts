@@ -167,23 +167,23 @@ function onTimeoutNotice(context: TimeoutContext, pluginNoticeComponent: PluginN
 
   const notice = pluginNoticeComponent.showNotice(createFragment((f) => {
     if (context.operationName) {
-      f.appendText(t(($) => $.obsidianDevUtils.asyncWithNotice.operation));
+      f.appendText(t(($) => $.obsidianLib.asyncWithNotice.operation));
       f.appendText(': ');
       f.appendText(context.operationName);
       f.createEl('br');
     }
-    f.appendText(t(($) => $.obsidianDevUtils.asyncWithNotice.timedOut, { duration: context.duration }));
+    f.appendText(t(($) => $.obsidianLib.asyncWithNotice.timedOut, { duration: context.duration }));
     f.createEl('br');
-    f.appendText(t(($) => $.obsidianDevUtils.asyncWithNotice.runningFor));
+    f.appendText(t(($) => $.obsidianLib.asyncWithNotice.runningFor));
     f.appendText(' ');
     runningTimeEl = f.createSpan();
     f.appendText(' ');
-    f.appendText(t(($) => $.obsidianDevUtils.asyncWithNotice.milliseconds));
+    f.appendText(t(($) => $.obsidianLib.asyncWithNotice.milliseconds));
     f.createEl('br');
-    f.appendText(t(($) => $.obsidianDevUtils.asyncWithNotice.terminateOperation));
+    f.appendText(t(($) => $.obsidianLib.asyncWithNotice.terminateOperation));
     f.createEl('br');
     const button = f.createEl('button', {
-      text: t(($) => $.obsidianDevUtils.buttons.cancel)
+      text: t(($) => $.obsidianLib.buttons.cancel)
     });
     button.addEventListener('click', () => {
       context.terminateOperation();

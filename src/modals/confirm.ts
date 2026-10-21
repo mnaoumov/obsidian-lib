@@ -59,9 +59,9 @@ class ConfirmModal extends ModalBase<boolean> {
   public constructor(params: ConfirmModalConstructorParams) {
     super(params);
     this.addCssClasses(CssClass.ConfirmModal);
-    this.cancelButtonText = params.cancelButtonText ?? t(($) => $.obsidianDevUtils.buttons.cancel);
+    this.cancelButtonText = params.cancelButtonText ?? t(($) => $.obsidianLib.buttons.cancel);
     this.message = params.message;
-    this.okButtonText = params.okButtonText ?? t(($) => $.obsidianDevUtils.buttons.ok);
+    this.okButtonText = params.okButtonText ?? t(($) => $.obsidianLib.buttons.ok);
     this.title = params.title ?? '';
   }
 

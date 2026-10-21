@@ -113,7 +113,7 @@ export function applySpellcheckMode(params: ApplySpellcheckModeParams): void {
  * already in place, delimited:
  *
  * ```ts
- * createFragmentWithCodeBlocks(t(($) => $.obsidianDevUtils.pluginSuggestion.installed, {
+ * createFragmentWithCodeBlocks(t(($) => $.obsidianLib.pluginSuggestion.installed, {
  *   pluginName: asCodeBlock(pluginName)
  * }));
  * ```

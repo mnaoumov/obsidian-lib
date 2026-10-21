@@ -16,7 +16,7 @@ import {
   stringifyYaml
 } from 'obsidian';
 
-import { getObsidianDevUtilsState } from './obsidian-dev-utils-state.ts';
+import { getObsidianLibState } from './obsidian-lib-state.ts';
 
 /**
  * A combined front matter of a document.
@@ -239,7 +239,7 @@ export function parseFrontmatter<CustomFrontmatter = unknown>(content: string): 
 /**
  * Registers the {@link FrontmatterFormattingPreserver} every front-matter write in this library routes through.
  *
- * There is at most one, shared by every plugin loaded in the same realm — like every other registration in this library it lives in the `globalThis.__obsidianDevUtils` bag — so a single call makes every write this library performs formatting-preserving, `processFrontmatter()` and `applyFileChanges()` included. Pass `null` to unregister.
+ * There is at most one, shared by every plugin loaded in the same realm — like every other registration in this library it lives in the `globalThis.__obsidianLib` bag — so a single call makes every write this library performs formatting-preserving, `processFrontmatter()` and `applyFileChanges()` included. Pass `null` to unregister.
  *
  * The preserver is NOT registered by default, and that is a bundle-size decision rather than a doubt about the engine: the one this library ships needs the `yaml` package's CST API, which Obsidian does not hand to plugins and which costs about 100 KB of a plugin's `main.js`. A plugin that wants it calls `enableFrontmatterFormattingPreservation()` from `@mnaoumov/obsidian-lib/frontmatter-formatting`, and pays for it only then.
  *
@@ -296,7 +296,7 @@ export function setFrontmatter(content: string, newFrontmatter: object): string 
 }
 
 function getFrontmatterFormattingPreserverWrapper(): ValueWrapper<FrontmatterFormattingPreserver | null> {
-  return getObsidianDevUtilsState<FrontmatterFormattingPreserver | null>(FRONTMATTER_FORMATTING_PRESERVER_STATE_KEY, null);
+  return getObsidianLibState<FrontmatterFormattingPreserver | null>(FRONTMATTER_FORMATTING_PRESERVER_STATE_KEY, null);
 }
 
 function preserveFormatting(content: string, newFrontmatter: object): null | string {

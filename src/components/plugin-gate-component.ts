@@ -518,28 +518,28 @@ export class PluginGateComponent extends ComponentEx {
       return this.createVersionMismatchMessage(dependency);
     }
 
-    return createFragmentWithCodeBlocks(t(($) => $.obsidianDevUtils.pluginDependency.blockedNotice, {
+    return createFragmentWithCodeBlocks(t(($) => $.obsidianLib.pluginDependency.blockedNotice, {
       dependencyPluginName: asCodeBlock(dependency.pluginName),
       pluginName: asCodeBlock(this.plugin.manifest.name)
     }));
   }
 
   private createConflictAppearedMessage(conflict: PluginConflict): DocumentFragment {
-    return createFragmentWithCodeBlocks(t(($) => $.obsidianDevUtils.pluginConflict.conflictAppearedNotice, {
+    return createFragmentWithCodeBlocks(t(($) => $.obsidianLib.pluginConflict.conflictAppearedNotice, {
       conflictingPluginName: asCodeBlock(conflict.pluginName),
       pluginName: asCodeBlock(this.plugin.manifest.name)
     }));
   }
 
   private createConflictBlockedMessage(conflict: PluginConflict): DocumentFragment {
-    return createFragmentWithCodeBlocks(t(($) => $.obsidianDevUtils.pluginConflict.blockedNotice, {
+    return createFragmentWithCodeBlocks(t(($) => $.obsidianLib.pluginConflict.blockedNotice, {
       conflictingPluginName: asCodeBlock(conflict.pluginName),
       pluginName: asCodeBlock(this.plugin.manifest.name)
     }));
   }
 
   private createConflictWarningMessage(conflict: PluginConflict): DocumentFragment {
-    return createFragmentWithCodeBlocks(t(($) => $.obsidianDevUtils.pluginConflict.warningNotice, {
+    return createFragmentWithCodeBlocks(t(($) => $.obsidianLib.pluginConflict.warningNotice, {
       conflictingPluginName: asCodeBlock(conflict.pluginName),
       pluginName: asCodeBlock(this.plugin.manifest.name)
     }));
@@ -550,14 +550,14 @@ export class PluginGateComponent extends ComponentEx {
       return this.createVersionMismatchMessage(dependency);
     }
 
-    return createFragmentWithCodeBlocks(t(($) => $.obsidianDevUtils.pluginDependency.dependencyLostNotice, {
+    return createFragmentWithCodeBlocks(t(($) => $.obsidianLib.pluginDependency.dependencyLostNotice, {
       dependencyPluginName: asCodeBlock(dependency.pluginName),
       pluginName: asCodeBlock(this.plugin.manifest.name)
     }));
   }
 
   private createVersionMismatchMessage(dependency: PluginDependency): DocumentFragment {
-    return createFragmentWithCodeBlocks(t(($) => $.obsidianDevUtils.pluginDependency.versionMismatchNotice, {
+    return createFragmentWithCodeBlocks(t(($) => $.obsidianLib.pluginDependency.versionMismatchNotice, {
       dependencyPluginName: asCodeBlock(dependency.pluginName),
       pluginName: asCodeBlock(this.plugin.manifest.name)
     }));
@@ -747,12 +747,12 @@ export class PluginGateComponent extends ComponentEx {
     blockingConflicts: readonly PluginConflict[]
   ): void {
     if (unsatisfiedDependencies.length > 0) {
-      containerEl.createEl('h2', { text: t(($) => $.obsidianDevUtils.pluginDependency.settingsHeading) });
+      containerEl.createEl('h2', { text: t(($) => $.obsidianLib.pluginDependency.settingsHeading) });
     }
 
     for (const dependency of unsatisfiedDependencies) {
       const bannerEl = containerEl.createDiv({
-        cls: [CssClass.LibraryName, CssClass.LegacyLibraryName, CssClass.PluginDependencyBanner]
+        cls: [CssClass.LibraryName, CssClass.PluginDependencyBanner]
       });
       bannerEl.append(this.createBlockedMessage(dependency));
       appendTextOrFragmentClone(bannerEl.createDiv(), dependency.reason);
@@ -768,8 +768,8 @@ export class PluginGateComponent extends ComponentEx {
         new ButtonComponent(bannerEl)
           .setButtonText(t(($) =>
             state === InstalledPluginState.InstalledButDisabled
-              ? $.obsidianDevUtils.pluginSuggestion.enable
-              : $.obsidianDevUtils.pluginSuggestion.install
+              ? $.obsidianLib.pluginSuggestion.enable
+              : $.obsidianLib.pluginSuggestion.install
           ))
           .setCta()
           .onClick(convertAsyncToSync(async () => {
@@ -786,7 +786,7 @@ export class PluginGateComponent extends ComponentEx {
       // Obsidian applies the update by reloading the dependency, which republishes its API, so the watch's
       // `change` reopens the gate with no further step here.
       new ButtonComponent(bannerEl)
-        .setButtonText(t(($) => $.obsidianDevUtils.pluginDependency.update, { dependencyPluginName: dependency.pluginName }))
+        .setButtonText(t(($) => $.obsidianLib.pluginDependency.update, { dependencyPluginName: dependency.pluginName }))
         .setCta()
         .onClick(convertAsyncToSync(async () => {
           await updatePlugin({
@@ -808,7 +808,7 @@ export class PluginGateComponent extends ComponentEx {
       return;
     }
 
-    containerEl.createEl('h2', { text: t(($) => $.obsidianDevUtils.pluginConflict.settingsHeading) });
+    containerEl.createEl('h2', { text: t(($) => $.obsidianLib.pluginConflict.settingsHeading) });
 
     for (const conflict of blockingConflicts) {
       this.renderConflictEntry(containerEl, conflict, this.createConflictBlockedMessage(conflict));
@@ -828,13 +828,13 @@ export class PluginGateComponent extends ComponentEx {
    */
   private renderConflictEntry(containerEl: HTMLElement, conflict: PluginConflict, messageFragment: DocumentFragment): void {
     const bannerEl = containerEl.createDiv({
-      cls: [CssClass.LibraryName, CssClass.LegacyLibraryName, CssClass.PluginConflictBanner]
+      cls: [CssClass.LibraryName, CssClass.PluginConflictBanner]
     });
     bannerEl.append(messageFragment);
     appendTextOrFragmentClone(bannerEl.createDiv(), conflict.reason);
 
     new ButtonComponent(bannerEl)
-      .setButtonText(t(($) => $.obsidianDevUtils.pluginConflict.disable, { conflictingPluginName: conflict.pluginName }))
+      .setButtonText(t(($) => $.obsidianLib.pluginConflict.disable, { conflictingPluginName: conflict.pluginName }))
       .setCta()
       .onClick(convertAsyncToSync(async () => {
         await disableCommunityPlugin({
@@ -849,7 +849,7 @@ export class PluginGateComponent extends ComponentEx {
 
   private renderOpenSettingsButton(bannerEl: HTMLElement, pluginId: string, pluginName: string): void {
     new ButtonComponent(bannerEl)
-      .setButtonText(t(($) => $.obsidianDevUtils.pluginDependency.openDependencySettings, {
+      .setButtonText(t(($) => $.obsidianLib.pluginDependency.openDependencySettings, {
         dependencyPluginName: pluginName
       }))
       .onClick(() => {

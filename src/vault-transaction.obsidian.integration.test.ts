@@ -57,7 +57,7 @@ interface TrashRollbackResult {
   readonly restoredContent: null | string;
 }
 
-const STAGING_FOLDER_PATH = '.obsidian-dev-utils-temp';
+const STAGING_FOLDER_PATH = '.obsidian-lib-temp';
 
 describe('VaultTransaction', () => {
   it('should soft-delete a file on trash and restore it with its original content on rollback', async () => {

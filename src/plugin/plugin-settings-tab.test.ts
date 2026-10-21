@@ -46,7 +46,7 @@ import {
 
 vi.mock('../css-class.ts', () => ({
   CssClass: {
-    LibraryName: 'obsidian-dev-utils',
+    LibraryName: 'obsidian-lib',
     PluginSettingsTab: 'plugin-settings-tab',
     Tooltip: 'tooltip',
     TooltipArrow: 'tooltip-arrow',

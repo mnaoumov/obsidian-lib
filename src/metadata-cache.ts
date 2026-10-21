@@ -54,7 +54,7 @@ import {
 } from './frontmatter-link-cache-with-offsets.ts';
 import { parseFrontmatter } from './frontmatter.ts';
 import { t } from './i18n/i18n.ts';
-import { getObsidianDevUtilsState } from './obsidian-dev-utils-state.ts';
+import { getObsidianLibState } from './obsidian-lib-state.ts';
 import {
   parseFrontmatterLinks,
   parseLinks,
@@ -516,7 +516,7 @@ export async function getBacklinksForFileSafe(params: GetBacklinksForFileSafePar
 
       return true;
     },
-    operationName: t(($) => $.obsidianDevUtils.metadataCache.getBacklinksForFilePath, { filePath: getPath(app, pathOrFile) }),
+    operationName: t(($) => $.obsidianLib.metadataCache.getBacklinksForFilePath, { filePath: getPath(app, pathOrFile) }),
     pluginNoticeComponent: null,
     retryOptions: options,
     shouldShowTimeoutNotice: options.shouldShowTimeoutNotice ?? true
@@ -854,7 +854,7 @@ function findAdvancedMetadataCacheBacklinksApi(): AdvancedMetadataCacheBacklinks
 }
 
 function getRegisteredFilesCounts(): Map<string, number> {
-  return getObsidianDevUtilsState('registeredFilesCounts', new Map<string, number>()).value;
+  return getObsidianLibState('registeredFilesCounts', new Map<string, number>()).value;
 }
 
 /**

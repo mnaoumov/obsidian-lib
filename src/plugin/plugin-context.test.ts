@@ -1,10 +1,14 @@
-import type { ValueWrapper } from '@mnaoumov/typescript-lib/value-wrapper';
 import type { Component } from 'obsidian';
 
 import { ResettableAbortController } from '@mnaoumov/typescript-lib/abort-controller';
 import { Library } from '@mnaoumov/typescript-lib/library';
 import { castTo } from '@mnaoumov/typescript-lib/object-utils';
 import { ensureGenericObject } from '@mnaoumov/typescript-lib/type-guards';
+import {
+  getTypescriptLibStateSlot,
+  resetTypescriptLibState,
+  TYPESCRIPT_LIB_STATE_KEY
+} from '@mnaoumov/typescript-lib/typescript-lib-state';
 import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import {
   afterEach,
@@ -22,14 +26,6 @@ import {
   initPluginContext
 } from './plugin-context.ts';
 
-interface GlobalThisWithState {
-  __obsidianDevUtils: ObsidianDevUtilsState;
-}
-
-interface ObsidianDevUtilsState {
-  sharedAbortController: ValueWrapper<ResettableAbortController>;
-}
-
 const mocks = vi.hoisted(() => ({
   getDebugController: vi.fn(() => ({})),
   injectLibraryStyles: vi.fn(),
@@ -43,7 +39,7 @@ vi.mock('../library-styles.ts', () => ({
 vi.mock('@mnaoumov/typescript-lib/debug-controller', () => ({}));
 
 vi.mock('../css-class.ts', () => ({
-  CssClass: { LegacyLibraryName: 'obsidian-dev-utils', LibraryName: 'obsidian-lib' }
+  CssClass: { LibraryName: 'obsidian-lib' }
 }));
 
 vi.mock('@mnaoumov/typescript-lib/debug', () => ({
@@ -66,21 +62,21 @@ describe('addPluginCssClasses', () => {
     const addClass = vi.fn();
     const element = strictProxy<HTMLElement>({ addClass });
     addPluginCssClasses(element, 'custom-class');
-    expect(addClass).toHaveBeenCalledWith('obsidian-lib', 'obsidian-dev-utils', 'test-plugin', 'custom-class');
+    expect(addClass).toHaveBeenCalledWith('obsidian-lib', 'test-plugin', 'custom-class');
   });
 
   it('should add library name, plugin id, and custom css classes array', () => {
     const addClass = vi.fn();
     const element = strictProxy<HTMLElement>({ addClass });
     addPluginCssClasses(element, ['class-a', 'class-b']);
-    expect(addClass).toHaveBeenCalledWith('obsidian-lib', 'obsidian-dev-utils', 'test-plugin', 'class-a', 'class-b');
+    expect(addClass).toHaveBeenCalledWith('obsidian-lib', 'test-plugin', 'class-a', 'class-b');
   });
 
   it('should add only library name and plugin id when no css classes provided', () => {
     const addClass = vi.fn();
     const element = strictProxy<HTMLElement>({ addClass });
     addPluginCssClasses(element);
-    expect(addClass).toHaveBeenCalledWith('obsidian-lib', 'obsidian-dev-utils', 'test-plugin');
+    expect(addClass).toHaveBeenCalledWith('obsidian-lib', 'test-plugin');
   });
 
   it('should omit the scope class when the css class scope is empty', () => {
@@ -88,7 +84,7 @@ describe('addPluginCssClasses', () => {
     const addClass = vi.fn();
     const element = strictProxy<HTMLElement>({ addClass });
     addPluginCssClasses(element, 'custom-class');
-    expect(addClass).toHaveBeenCalledWith('obsidian-lib', 'obsidian-dev-utils', 'custom-class');
+    expect(addClass).toHaveBeenCalledWith('obsidian-lib', 'custom-class');
   });
 });
 
@@ -161,7 +157,7 @@ describe('initPluginContext', () => {
     initPluginContext('my-plugin');
     expect(ObsidianLibrary.cssClassScope).toBe('my-plugin');
     expect(Library.debugNamespace).toBe('obsidian-lib');
-    expect(Library.debugNamespaceAliases).toEqual(['obsidian-dev-utils']);
+    expect(Library.debugNamespaceAliases).toEqual([]);
     expect(Library.debugPrefixNamespace).toBe('my-plugin:');
     expect(Library.shouldPrintStackTrace).toBe(true);
     expect(Library.debugGuideUrl).toBe('https://mnaoumov.dev/obsidian-lib/guides/debugging/');
@@ -177,20 +173,16 @@ describe('initPluginContext', () => {
     });
   });
 
-  // The shared abort controller is documented as callable straight from the devtools console
-  // (`__obsidianDevUtils.sharedAbortController.value.abort()`). Nothing else in the library touches it, so
-  // without this eager call the key would be absent until a consumer plugin happened to start an operation,
-  // and the documented console line would throw instead of aborting. This asserts the console path itself,
-  // reaching the global exactly as the console does. The controller itself lives in the generic shared state, so this
-  // also proves the plugin init links it back under `__obsidianDevUtils`.
+  // The shared abort controller is documented as callable straight from the devtools console, through the generic
+  // shared-state slot. Nothing else in the library touches it, so without this eager call the key would be absent until
+  // a consumer plugin happened to start an operation, and the documented console line would throw instead of aborting.
   it('should create the shared abort controller so the console call always resolves', () => {
-    // eslint-disable-next-line obsidianmd/no-global-this -- The shared state intentionally lives on the realm global, which is what the documented console call reaches.
-    delete castTo<Partial<GlobalThisWithState>>(globalThis).__obsidianDevUtils;
+    resetTypescriptLibState();
 
     initPluginContext('my-plugin');
 
-    // eslint-disable-next-line obsidianmd/no-global-this -- The shared state intentionally lives on the realm global, which is what the documented console call reaches.
-    const state = castTo<GlobalThisWithState>(globalThis).__obsidianDevUtils;
-    expect(state.sharedAbortController.value).toBeInstanceOf(ResettableAbortController);
+    expect(getTypescriptLibStateSlot().values['sharedAbortController']?.value).toBeInstanceOf(ResettableAbortController);
+    // eslint-disable-next-line obsidianmd/no-global-this -- The documented console call reaches the realm global.
+    expect(castTo<Record<symbol, unknown>>(globalThis)[TYPESCRIPT_LIB_STATE_KEY]).toBe(getTypescriptLibStateSlot());
   });
 });

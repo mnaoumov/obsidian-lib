@@ -40,6 +40,6 @@ export class AsyncErrorHandlerComponent extends ComponentEx {
    * @param _asyncError - The async error.
    */
   protected handleAsyncError(_asyncError: unknown): void {
-    this.pluginNoticeComponent.showNotice(t(($) => $.obsidianDevUtils.notices.unhandledError));
+    this.pluginNoticeComponent.showNotice(t(($) => $.obsidianLib.notices.unhandledError));
   }
 }

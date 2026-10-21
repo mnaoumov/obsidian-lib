@@ -22,7 +22,7 @@ const mocks = vi.hoisted(() => ({
   registerAsyncErrorEventHandler: vi.fn<(handler: (error: unknown) => void) => Disposable>(),
   t: vi.fn(($function: (translations: TranslationsArgument) => string) =>
     $function(castTo<TranslationsArgument>({
-      obsidianDevUtils: {
+      obsidianLib: {
         notices: {
           unhandledError: 'An error occurred'
         }

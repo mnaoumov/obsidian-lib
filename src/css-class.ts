@@ -1,13 +1,11 @@
 /**
  * @file
  *
- * CSS classes used by the `@mnaoumov/obsidian-lib` library. {@link CssClass.LegacyLibraryName} keeps the legacy
- * `obsidian-dev-utils` name beside {@link CssClass.LibraryName}, so stylesheets written for older copies still match.
+ * CSS classes used by the `@mnaoumov/obsidian-lib` library.
  */
 
 /**
- * CSS classes used by the `@mnaoumov/obsidian-lib` library. {@link CssClass.LegacyLibraryName} keeps the legacy
- * `obsidian-dev-utils` name beside {@link CssClass.LibraryName}, so stylesheets written for older copies still match.
+ * CSS classes used by the `@mnaoumov/obsidian-lib` library.
  */
 export enum CssClass {
   /**
@@ -77,14 +75,7 @@ export enum CssClass {
   IsPlaceholder = 'is-placeholder',
 
   /**
-   * The legacy CSS class for the library name. Set beside {@link CssClass.LibraryName} on every element, for good,
-   * because stylesheets written for older copies select it, and so do this library's own styles, which also style
-   * the elements an older copy built.
-   */
-  LegacyLibraryName = 'obsidian-dev-utils',
-
-  /**
-   * A CSS class for the library name. Always set together with {@link CssClass.LegacyLibraryName}.
+   * A CSS class for the library name, set on every element the library builds.
    */
   LibraryName = 'obsidian-lib',
 

@@ -41,7 +41,14 @@ import {
   renameSafe
 } from './vault.ts';
 
-const DEFAULT_STAGING_FOLDER_PATH = '.obsidian-dev-utils-temp';
+const DEFAULT_STAGING_FOLDER_PATH = '.obsidian-lib-temp';
+
+/**
+ * The staging folder of the retired `obsidian-dev-utils` package, which this library was published as before
+ * `6.0.0`. A transaction interrupted under that name left it in the vault, so a default-path transaction moves it to
+ * the trash once it settles: what is inside was already deleted by its owner, and the trash keeps it recoverable.
+ */
+const RETIRED_STAGING_FOLDER_PATH = '.obsidian-dev-utils-temp';
 
 /**
  * Parameters for the {@link VaultTransaction} constructor.
@@ -71,7 +78,7 @@ export interface VaultTransactionConstructorParams {
    * committed or rolled back. It must stay `.`-prefixed so Obsidian leaves the staged resources
    * untracked.
    *
-   * @default `'.obsidian-dev-utils-temp'`
+   * @default `'.obsidian-lib-temp'`
    */
   readonly stagingFolderPath?: string;
 }
@@ -379,6 +386,21 @@ export class VaultTransaction {
     const adapter = this.app.vault.adapter;
     if (await adapter.exists(this.stagingFolderPath)) {
       await adapter.rmdir(this.stagingFolderPath, true);
+    }
+    await this.trashRetiredStagingFolder();
+  }
+
+  private async trashRetiredStagingFolder(): Promise<void> {
+    if (this.stagingFolderPath !== DEFAULT_STAGING_FOLDER_PATH) {
+      return;
+    }
+    const adapter = this.app.vault.adapter;
+    if (!await adapter.exists(RETIRED_STAGING_FOLDER_PATH)) {
+      return;
+    }
+    const wasTrashedToSystem = await adapter.trashSystem(RETIRED_STAGING_FOLDER_PATH);
+    if (!wasTrashedToSystem) {
+      await adapter.trashLocal(RETIRED_STAGING_FOLDER_PATH);
     }
   }
 }

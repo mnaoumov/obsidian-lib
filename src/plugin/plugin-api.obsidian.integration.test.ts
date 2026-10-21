@@ -7,7 +7,7 @@
  *
  * This file runs in the dedicated `obsidian-integration-tests:plugin-api` project (see
  * `scripts/vitest-config.ts`), whose global setup seeds two SEPARATELY BUNDLED plugins into one vault. Each
- * therefore holds its own copy of `obsidian-dev-utils` — two module instances, two sets of classes, sharing
+ * therefore holds its own copy of `obsidian-lib` — two module instances, two sets of classes, sharing
  * only the realm-global registry bag.
  *
  * That is the one condition no unit test can reproduce, and the one the design turns on: a registry record is

@@ -373,7 +373,7 @@ class LinkDomEventsHandlers implements DomEventsHandlers {
   public onExternalLinkClick($event: MouseEvent, targetEl: HTMLElement, linkText: string): void {
     $event.preventDefault();
     if (!isUrl(linkText)) {
-      new Notice(t(($) => $.obsidianDevUtils.notices.failedToOpenUrl, { url: linkText }));
+      new Notice(t(($) => $.obsidianLib.notices.failedToOpenUrl, { url: linkText }));
       return;
     }
 
@@ -621,7 +621,7 @@ function addCopyMenuItem(menu: Menu, targetEl: HTMLElement): void {
   menu.addItem((item) => {
     item
       .setSection('clipboard')
-      .setTitle(t(($) => $.obsidianDevUtils.menu.copy))
+      .setTitle(t(($) => $.obsidianLib.menu.copy))
       .setIcon('lucide-copy')
       .onClick(() => {
         invokeAsyncSafely(() => targetEl.win.navigator.clipboard.writeText(targetEl.getText()));

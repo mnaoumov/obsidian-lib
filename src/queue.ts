@@ -24,7 +24,7 @@ import {
 import { runWithTimeoutNotice } from './async-with-notice.ts';
 import { t } from './i18n/i18n.ts';
 import { invokeAsyncAndLog } from './logger.ts';
-import { getObsidianDevUtilsState } from './obsidian-dev-utils-state.ts';
+import { getObsidianLibState } from './obsidian-lib-state.ts';
 
 /**
  * Options for the {@link addToQueueAndWait} function.
@@ -164,12 +164,12 @@ export async function addToQueueAndWait(params: AddToQueueAndWaitParams): Promis
 export async function flushQueue(): Promise<void> {
   await addToQueueAndWait({
     operationFunction: noop,
-    operationName: t(($) => $.obsidianDevUtils.queue.flushQueue)
+    operationName: t(($) => $.obsidianLib.queue.flushQueue)
   });
 }
 
 function getQueue(): ValueWrapper<Queue> {
-  return getObsidianDevUtilsState('queue', { items: [], promise: noopAsync() });
+  return getObsidianLibState('queue', { items: [], promise: noopAsync() });
 }
 
 async function processNextQueueItem(): Promise<void> {

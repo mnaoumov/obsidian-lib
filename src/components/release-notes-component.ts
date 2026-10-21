@@ -198,7 +198,7 @@ export class ReleaseNotesComponent extends ComponentEx {
     await alert({
       app: this.app,
       message,
-      title: createFragmentWithCodeBlocks(t(($) => $.obsidianDevUtils.releaseNotes.title, { pluginName: asCodeBlock(this.pluginName) }))
+      title: createFragmentWithCodeBlocks(t(($) => $.obsidianLib.releaseNotes.title, { pluginName: asCodeBlock(this.pluginName) }))
     });
   }
 }

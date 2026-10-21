@@ -9,7 +9,7 @@ describe('library styles', () => {
   it('should inject the built library styles into the shared Obsidian document', async () => {
     const result = await evalInObsidian({
       callback() {
-        const styleEl = activeDocument.head.querySelector('#obsidian-dev-utils-styles');
+        const styleEl = activeDocument.head.querySelector('#obsidian-lib-styles');
         return {
           hasStyle: styleEl !== null,
           length: styleEl?.textContent.length ?? 0

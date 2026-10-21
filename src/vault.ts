@@ -941,7 +941,7 @@ export async function process(params: ProcessParams): Promise<void> {
         return true;
       }
     },
-    operationName: t(($) => $.obsidianDevUtils.vault.processFile, { filePath: path }),
+    operationName: t(($) => $.obsidianLib.vault.processFile, { filePath: path }),
     pluginNoticeComponent,
     retryOptions: fullOptions,
     shouldShowTimeoutNotice: fullOptions.shouldShowTimeoutNotice

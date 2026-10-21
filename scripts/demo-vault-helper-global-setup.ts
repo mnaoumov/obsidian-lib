@@ -54,7 +54,7 @@ const MANIFEST_INDENT = 2;
 const DEMOED_PLUGIN_MANIFEST = `${
   JSON.stringify(
     {
-      author: 'obsidian-dev-utils',
+      author: 'obsidian-lib',
       description: 'Stands in for the plugin a demo vault demonstrates.',
       id: DEMOED_PLUGIN_ID,
       minAppVersion: '1.0.0',

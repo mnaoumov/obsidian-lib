@@ -32,7 +32,7 @@ beforeAll(async () => {
   const cssContent = await readFile(STYLES_CSS_PATH, 'utf-8');
   await evalInObsidian({
     callback({ css }) {
-      const STYLES_ID = 'obsidian-dev-utils-styles';
+      const STYLES_ID = 'obsidian-lib-styles';
       activeDocument.head.querySelector(`#${STYLES_ID}`)?.remove();
       activeDocument.head.createEl('style', {
         attr: { id: STYLES_ID },

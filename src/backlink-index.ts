@@ -49,7 +49,7 @@ import type {
 import { ensureNonNullable } from '@mnaoumov/typescript-lib/type-guards';
 import { CustomArrayDictImpl } from '@obsidian-typings/obsidian-public-latest/implementations';
 
-import { getObsidianDevUtilsState } from './obsidian-dev-utils-state.ts';
+import { getObsidianLibState } from './obsidian-lib-state.ts';
 
 interface BacklinkIndexData {
   readonly indexedHashes: Map<string, string>;
@@ -102,7 +102,7 @@ export function getIndexedBacklinksForFile(app: App, file: TFile): CustomArrayDi
 }
 
 function getBacklinkIndexData(app: App): BacklinkIndexData {
-  const indexes = getObsidianDevUtilsState('backlinkIndexesByAppV1', new WeakMap<App, BacklinkIndexData>()).value;
+  const indexes = getObsidianLibState('backlinkIndexesByAppV1', new WeakMap<App, BacklinkIndexData>()).value;
   let data = indexes.get(app);
   if (!data) {
     data = {

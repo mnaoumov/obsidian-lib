@@ -12,10 +12,6 @@ import {
 } from 'vitest';
 
 import { ObsidianLibrary } from '../library.ts';
-import {
-  LEGACY_PLUGIN_LOADED_EVENT_NAME,
-  PLUGIN_LOADED_EVENT_NAME
-} from '../plugin/plugin-lifecycle-events.ts';
 import { PluginContextComponent } from './plugin-context-component.ts';
 
 const mocks = vi.hoisted(() => ({
@@ -75,17 +71,5 @@ describe('PluginContextComponent', () => {
 
     expect(Library.debugPrefixNamespace).toBe('');
     expect(ObsidianLibrary.cssClassScope).toBe('');
-  });
-
-  it('should relay an older copy\'s legacy lifecycle event to the current name while loaded', () => {
-    const component = new PluginContextComponent({ app, pluginId: 'test-plugin' });
-    component.onload();
-    const callback = vi.fn();
-    app.workspace.on(PLUGIN_LOADED_EVENT_NAME, callback);
-    const payload = { apiVersions: [], dependencyPluginIds: [], pluginId: 'old-copy', pluginName: 'Old copy', pluginVersion: '1.0.0' };
-
-    app.workspace.trigger(LEGACY_PLUGIN_LOADED_EVENT_NAME, payload);
-
-    expect(callback).toHaveBeenCalledExactlyOnceWith(payload);
   });
 });

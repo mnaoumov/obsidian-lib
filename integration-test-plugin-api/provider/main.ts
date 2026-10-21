@@ -4,7 +4,7 @@
  * The PROVIDER half of the cross-copy plugin-API integration test.
  *
  * It is bundled separately from its consumer, so at runtime the two plugins hold DIFFERENT copies of
- * `obsidian-dev-utils` — different module instances, different classes, sharing only the realm-global
+ * `obsidian-lib` — different module instances, different classes, sharing only the realm-global
  * registry bag. That is the condition the registry's wire format has to survive, and it is what this pair
  * exists to prove.
  *

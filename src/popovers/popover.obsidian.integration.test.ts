@@ -112,7 +112,7 @@ describe('editFieldsInPopover', () => {
         }
 
         function getPopoverEl(): HTMLElement | null {
-          return activeDocument.body.querySelector<HTMLElement>('.obsidian-dev-utils.popover');
+          return activeDocument.body.querySelector<HTMLElement>('.obsidian-lib.popover');
         }
 
         function requirePopoverEl(): HTMLElement {
@@ -191,7 +191,7 @@ describe('editFieldsInPopover', () => {
         }
 
         function getPopoverEl(): HTMLElement | null {
-          return activeDocument.body.querySelector<HTMLElement>('.obsidian-dev-utils.popover');
+          return activeDocument.body.querySelector<HTMLElement>('.obsidian-lib.popover');
         }
       }
     });

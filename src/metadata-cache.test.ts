@@ -70,7 +70,7 @@ import {
   unregisterFileCacheForNonExistingFile,
   unregisterFiles
 } from './metadata-cache.ts';
-import { getObsidianDevUtilsState } from './obsidian-dev-utils-state.ts';
+import { getObsidianLibState } from './obsidian-lib-state.ts';
 import {
   parseLink,
   toParseLinkReference
@@ -85,8 +85,8 @@ interface PathHolder {
   path: string;
 }
 
-vi.mock('./obsidian-dev-utils-state.ts', () => ({
-  getObsidianDevUtilsState: vi.fn((_key: string, defaultValue: unknown) => ({ value: defaultValue }))
+vi.mock('./obsidian-lib-state.ts', () => ({
+  getObsidianLibState: vi.fn((_key: string, defaultValue: unknown) => ({ value: defaultValue }))
 }));
 
 vi.mock('./async-with-notice.ts', () => ({
@@ -113,7 +113,7 @@ vi.mock('./frontmatter.ts', () => ({
 vi.mock('./i18n/i18n.ts', () => ({
   t: vi.fn(($function: (messages: GenericObject) => unknown) => {
     try {
-      return $function({ obsidianDevUtils: { metadataCache: { getBacklinksForFilePath: 'mock' } } });
+      return $function({ obsidianLib: { metadataCache: { getBacklinksForFilePath: 'mock' } } });
     } catch {
       return 'mock-t';
     }
@@ -771,7 +771,7 @@ describe('unregisterFiles', () => {
 
   it('should not remove file from fileMap when count is still positive', () => {
     const sharedMap = new Map<string, number>();
-    const mockedGetState = vi.mocked(getObsidianDevUtilsState);
+    const mockedGetState = vi.mocked(getObsidianLibState);
     mockedGetState.mockReturnValue(ValueWrapper.of(sharedMap));
 
     const file = strictProxy<TAbstractFile>({ deleted: true, name: 'note.md', path: 'folder/note.md' });

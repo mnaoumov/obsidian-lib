@@ -33,7 +33,7 @@ describe('PluginNoticeComponent styling', () => {
         try {
           // Scoped to the notice under test: `activeDocument.querySelector` would return the decoy's
           // name element (and, in the full pooled run, any other plugin's notice still fading out).
-          const nameEl = notice.messageEl.querySelector('.obsidian-dev-utils.plugin-notice-name');
+          const nameEl = notice.messageEl.querySelector('.obsidian-lib.plugin-notice-name');
           if (!nameEl) {
             throw new Error('plugin name element not found in the rendered notice');
           }
@@ -58,7 +58,7 @@ describe('PluginNoticeComponent styling', () => {
             codeFontFamily: codeStyle?.fontFamily ?? null,
             codeText: codeEl?.textContent ?? null,
             defaultColor,
-            hasLibClass: nameEl.classList.contains('obsidian-dev-utils'),
+            hasLibClass: nameEl.classList.contains('obsidian-lib'),
             hasNameClass: nameEl.classList.contains('plugin-notice-name'),
             nameColor: nameStyle.color,
             nameFontFamily: nameStyle.fontFamily,
@@ -103,7 +103,7 @@ describe('PluginNoticeComponent hard-to-close notice', () => {
         const WAIT_TIMEOUT_IN_MILLISECONDS = 5000;
 
         function findLockedContentEl(): HTMLElement | null {
-          const els = [...activeDocument.querySelectorAll<HTMLElement>('.obsidian-dev-utils.plugin-notice-content')];
+          const els = [...activeDocument.querySelectorAll<HTMLElement>('.obsidian-lib.plugin-notice-content')];
           return els.find((element) => element.textContent.includes('Locked action')) ?? null;
         }
 
@@ -129,7 +129,7 @@ describe('PluginNoticeComponent hard-to-close notice', () => {
 
           const contentEl = findLockedContentEl();
           const { containerEl, messageEl } = notice;
-          const closeButtonEl = contentEl?.querySelector<HTMLElement>('.obsidian-dev-utils.plugin-notice-close-button') ?? null;
+          const closeButtonEl = contentEl?.querySelector<HTMLElement>('.obsidian-lib.plugin-notice-close-button') ?? null;
           const hasCloseButton = closeButtonEl !== null;
           const hasRequiresExplicitCloseClass = containerEl.classList.contains('plugin-notice-requires-explicit-close');
 
@@ -162,7 +162,7 @@ describe('PluginNoticeComponent hard-to-close notice', () => {
           // before/after delta rather than read absolutely: a confirm modal another test in this shared
           // instance left up would otherwise fail this for a reason unrelated to the close button.
           function getConfirmModalCount(): number {
-            return activeDocument.querySelectorAll('.obsidian-dev-utils.confirm-modal').length;
+            return activeDocument.querySelectorAll('.obsidian-lib.confirm-modal').length;
           }
 
           const confirmModalCountBeforeClose = getConfirmModalCount();
@@ -222,7 +222,7 @@ describe('PluginNoticeComponent hard-to-close notice', () => {
         const WAIT_TIMEOUT_IN_MILLISECONDS = 5000;
 
         function findActionContentEl(): HTMLElement | null {
-          const els = [...activeDocument.querySelectorAll<HTMLElement>('.obsidian-dev-utils.plugin-notice-content')];
+          const els = [...activeDocument.querySelectorAll<HTMLElement>('.obsidian-lib.plugin-notice-content')];
           return els.find((element) => element.textContent.includes('Action notice')) ?? null;
         }
 
@@ -301,7 +301,7 @@ describe('PluginNoticeComponent.showNoticeAfterDelay', () => {
         // Scope the lookup to this notice by its text, so a previous test's notice still fading out
         // (same class) is never mistaken for ours.
         function findContentEl(textIncludes: string): Element | null {
-          const els = [...activeDocument.querySelectorAll('.obsidian-dev-utils.plugin-notice-content')];
+          const els = [...activeDocument.querySelectorAll('.obsidian-lib.plugin-notice-content')];
           return els.find((element) => element.textContent.includes(textIncludes)) ?? null;
         }
 
@@ -413,7 +413,7 @@ describe('PluginNoticeComponent notice modes', () => {
           const afterAppendEls = getProbeNoticeEls();
           const afterAppend = {
             noticeCount: afterAppendEls.length,
-            pluginNameCount: afterAppendEls[0]?.querySelectorAll('.obsidian-dev-utils.plugin-notice-name').length ?? 0,
+            pluginNameCount: afterAppendEls[0]?.querySelectorAll('.obsidian-lib.plugin-notice-name').length ?? 0,
             text: afterAppendEls.map((noticeEl) => noticeEl.textContent).join('|')
           };
 

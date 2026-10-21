@@ -20,7 +20,7 @@ import type {
 import { compare as compareVersions } from 'compare-versions';
 import { requestUrl } from 'obsidian';
 
-import { getObsidianDevUtilsState } from './obsidian-dev-utils-state.ts';
+import { getObsidianLibState } from './obsidian-lib-state.ts';
 
 /**
  * Selects a community plugin either by its id ({@link CommunityPluginByIdRef}) or by its display name
@@ -556,7 +556,7 @@ async function fetchCommunityPluginEntries(): Promise<CommunityPluginEntry[]> {
 }
 
 async function getCommunityPluginEntries(): Promise<CommunityPluginEntry[]> {
-  const cache = getObsidianDevUtilsState<null | Promise<CommunityPluginEntry[]>>(COMMUNITY_PLUGINS_STATE_KEY, null);
+  const cache = getObsidianLibState<null | Promise<CommunityPluginEntry[]>>(COMMUNITY_PLUGINS_STATE_KEY, null);
   cache.value ??= fetchCommunityPluginEntries();
 
   try {

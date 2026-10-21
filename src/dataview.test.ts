@@ -59,7 +59,7 @@ vi.mock('./i18n/i18n.ts', () => ({
   t: vi.fn(($function: GenericAsyncFunction<unknown[]>, options?: unknown) => {
     try {
       const translations = {
-        obsidianDevUtils: {
+        obsidianLib: {
           dataview: {
             itemsPerPage: 'Items per page:',
             jumpToPage: 'Jump to page:',
