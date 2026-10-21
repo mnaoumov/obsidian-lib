@@ -13,9 +13,28 @@ By default, console debug messages are not shown. To enable them you have to ena
 
 When you enable `Verbose` mode, you will see debug messages in the console sent via `console.debug()` calls.
 
-By default, none of the debug messages are shown. You have to enable the debug namespace explicitly.
+By default, none of the debug messages are shown. You have to enable the debug namespace of the plugin explicitly. Its namespace is the plugin id, which the plugin's README names in its `Debugging` section.
 
-To see debug messages for your plugin `alpha-bravo`, you have to enable them by running the corresponding command in the console:
+### With Advanced Debug Mode
+
+The easiest route for a plugin user is the [`Advanced Debug Mode`](https://community.obsidian.md/plugins/advanced-debug-mode) plugin:
+
+1. Install and enable `Advanced Debug Mode`.
+2. Either run the command **`Advanced Debug Mode`: Open plugin debug messages** and tick the plugin in the view it opens, or run **`Advanced Debug Mode`: Toggle debug messages for a plugin...** and pick the plugin.
+
+`Advanced Debug Mode`'s settings also let you edit the debug namespaces directly.
+
+### From the console
+
+Without `Advanced Debug Mode`, open the `DevTools Console` (`Ctrl+Shift+I`, or `Cmd+Option+I` on macOS) and run:
+
+```javascript
+window.DEBUG.enable('<plugin-id>');
+```
+
+where `<plugin-id>` is the id the plugin's README names.
+
+More namespace patterns, for a plugin `alpha-bravo`:
 
 ```javascript
 window.DEBUG.enable('alpha-bravo'); // show all debug messages from the `alpha-bravo` plugin
@@ -50,13 +69,9 @@ export class AlphaBravoPlugin extends PluginBase {
 
 The member is `protected`, so call it from inside your plugin class.
 
-## Advanced Debug Mode
-
-You can use [Advanced Debug Mode](https://community.obsidian.md/plugins/advanced-debug-mode) plugin to configure debug namespaces via Settings UI.
-
 ## Cancelling a runaway operation
 
-A vault-wide operation that turns out to be slower, or wronger, than expected can be aborted from the console:
+A vault-wide operation that turns out to be slower, or wronger, than expected can be aborted with the **`Advanced Debug Mode`: Abort the running operation** command, or from the console:
 
 ```javascript
 globalThis[Symbol.for('@mnaoumov/typescript-lib/state')].values.sharedAbortController.value.abort();
