@@ -11,11 +11,11 @@ You are in the right place if some plugin you want to depend on is built on this
 
 Three things are a permanent contract: the two **event names**, the **event payload**, and the **registry record**. None of them may ever change incompatibly, and new fields may only ever be added.
 
-That is worth stating plainly because it sounds like a favour, and it is not. Every plugin built on this library bundles **its own copy** of it (or of `obsidian-dev-utils`, the package it replaced), so two plugins in one vault routinely run two different versions of this library, publishing to and reading from the same registry. The wire format is therefore already a compatibility boundary *between the library and itself*, and a breaking change to it would break the library against its own older copies before it ever reached you. The constraint predates you, and it is load-bearing.
+That is worth stating plainly because it sounds like a favour, and it is not. Every plugin built on this library bundles **its own copy** of it, so two plugins in one vault routinely run two different versions of this library, publishing to and reading from the same registry. The wire format is therefore already a compatibility boundary *between the library and itself*, and a breaking change to it would break the library against its own older copies before it ever reached you. The constraint predates you, and it is load-bearing.
 
 The practical consequence: you may hardcode the strings and the shapes below. They are as stable as Obsidian's own API surface, and considerably more stable than most plugins' internals.
 
-This library was published as `obsidian-dev-utils` before it became `@mnaoumov/obsidian-lib`, and the protocol first shipped under that name. Every name on this page has a legacy twin that still works, and always will. [Compatibility](#compatibility) lists them and explains which one to pick.
+The names on this page are those of `@mnaoumov/obsidian-lib` `6.0.0` and later. [Compatibility](#compatibility) says what that means for a provider on an older release.
 
 ## Knowing when a plugin is ready
 
@@ -66,7 +66,7 @@ globalThis.__obsidianLib.pluginApiRegistry.value.records[pluginId]
 
 Every segment of that path is part of the contract:
 
-- `__obsidianLib` is a bag of shared state. It is the same object as its legacy name, `__obsidianDevUtils`, and in a vault whose plugins all predate the rename only the legacy name exists, so read `__obsidianLib ?? __obsidianDevUtils`. **Only `pluginApiRegistry` is public**; the rest of the bag is the library's business and will change without notice. Do not browse it.
+- `__obsidianLib` is a bag of shared state. **Only `pluginApiRegistry` is public**; the rest of the bag is the library's business and will change without notice. Do not browse it.
 - `pluginApiRegistry` is a wrapper object whose `value` holds the registry. The indirection exists for reasons internal to the library; for you it is one extra `.value`.
 - `records` maps a provider's `manifest.id` to an array of everything it currently has published.
 
@@ -115,8 +115,7 @@ So: **look the record up every time you use it, and never cache `record.api` in 
 <!-- snippet-check: context declare function compareApiVersions(a: string, b: string): number; -->
 ```typescript
 function getApi<TApi extends object>(pluginId: string, majorVersion: number): null | TApi {
-  const bag = globalThis.__obsidianLib ?? globalThis.__obsidianDevUtils;
-  const records = bag?.pluginApiRegistry?.value?.records?.[pluginId] ?? [];
+  const records = globalThis.__obsidianLib?.pluginApiRegistry?.value?.records?.[pluginId] ?? [];
 
   const match = records
     .filter((record) => !record.isRevoked)
@@ -163,18 +162,13 @@ export interface SharedStateBag {
 declare global {
   /* eslint-disable no-var -- `declare global` can only add a global through `var`. */
   var __obsidianLib: SharedStateBag | undefined;
-  var __obsidianDevUtils: SharedStateBag | undefined;
   /* eslint-enable no-var -- `declare global` can only add a global through `var`. */
 }
 
 declare module 'obsidian' {
   interface Workspace {
     on(
-      name:
-        | 'obsidian-dev-utils:plugin-loaded'
-        | 'obsidian-dev-utils:plugin-unloaded'
-        | 'obsidian-lib:plugin-loaded'
-        | 'obsidian-lib:plugin-unloaded',
+      name: 'obsidian-lib:plugin-loaded' | 'obsidian-lib:plugin-unloaded',
       callback: (payload: PluginLifecycleEventPayload) => unknown,
       context?: unknown
     ): EventRef;
@@ -260,18 +254,4 @@ What *is* protocol is exactly the four things you need and cannot build for your
 
 ## Compatibility
 
-The protocol first shipped under the library's old name, `obsidian-dev-utils`. Plugins built on that package are already released, they emit and read only the old names, and they will stay in vaults for years. So the old names are not deprecated. They are permanent aliases:
-
-| Current name | Legacy name |
-| --- | --- |
-| `obsidian-lib:plugin-loaded` | `obsidian-dev-utils:plugin-loaded` |
-| `obsidian-lib:plugin-unloaded` | `obsidian-dev-utils:plugin-unloaded` |
-| `globalThis.__obsidianLib` | `globalThis.__obsidianDevUtils` |
-
-The rename is additive, which is how neither side of a vault notices it:
-
-- **A plugin on `@mnaoumov/obsidian-lib` triggers each event under both names.** The current name goes first and the identical payload object follows under the legacy name. A listener on the legacy name hears every plugin, from either package.
-- **It also relays the old ones.** A plugin still on `obsidian-dev-utils` triggers only the legacy name. Every plugin on `@mnaoumov/obsidian-lib` re-triggers that event under the current name, and they coordinate so it is re-triggered once, however many of them are loaded. A listener on the current name therefore hears every plugin whenever at least one plugin on `@mnaoumov/obsidian-lib` is loaded. That is always the case when the provider you depend on is built on it, since the provider triggers the current name itself.
-- **`__obsidianLib` is not a second registry.** It is an accessor onto `__obsidianDevUtils`, so both names are the same object, and publishing through either is visible through both. Only a plugin on `@mnaoumov/obsidian-lib` installs the accessor, which is why the lookup above falls back to the legacy name.
-
-So listen on **one** name per event, never both, or every plugin on `@mnaoumov/obsidian-lib` is announced to you twice. Take the current name, unless you must also hear a provider still on `obsidian-dev-utils` in a vault where nothing built on `@mnaoumov/obsidian-lib` is enabled. In that case take the legacy name, which hears everything, always.
+`6.0.0` keeps the shared-state bag under `globalThis.__obsidianLib` and announces only the `obsidian-lib:` event names above. A release before `6.0.0` kept its bag under another global, so a provider still on one of those releases publishes where the path above does not reach, and stays invisible to it until it updates. Its `obsidian-lib:` events still reach you, since those releases trigger them too.

@@ -27,12 +27,6 @@ window.DEBUG.enable('*'); // show all debug messages
 
 The library's own messages use the namespace `obsidian-lib`, such as `alpha-bravo:obsidian-lib:PluginApi`. So do the messages of the generic helpers that come from `@mnaoumov/typescript-lib`, such as the async and error helpers, because a plugin context sets that namespace for them. So `alpha-bravo:obsidian-lib:*` shows every library message in a plugin.
 
-### Compatibility
-
-The library used to log under `obsidian-dev-utils`, the name of the retired package it replaced, and that namespace still works, for the generic helpers too. A filter such as `alpha-bravo:obsidian-dev-utils:*`, enabled for an older plugin, keeps showing the messages. Each message still prints once. It prints under `obsidian-lib` when a filter enables that, and under `obsidian-dev-utils` only when no filter enables `obsidian-lib`. So `alpha-bravo:*`, which enables both, shows no duplicates.
-
-Messages from plugins still built on `obsidian-dev-utils` print only under the old name.
-
 See full documentation of [`window.DEBUG`](https://github.com/mnaoumov/typescript-lib/blob/main/src/debug-controller.ts).
 
 > [!NOTE]
@@ -69,10 +63,6 @@ globalThis[Symbol.for('@mnaoumov/typescript-lib/state')].values.sharedAbortContr
 ```
 
 This aborts the app-wide shared abort signal, so every operation currently observing it stops. The controller is the one [`getSharedAbortController()`](https://mnaoumov.dev/typescript-lib/api/abort-controller/getSharedAbortController/) returns. Every plugin built on this library shares it, so the call cancels whichever operation is running.
-
-> [!NOTE]
->
-> Older guides used `__obsidianDevUtils.sharedAbortController.value.abort()`. That global is a legacy mirror, kept so that plugins still built on `obsidian-dev-utils` share the same controller. Use the line above instead. <!-- outdated-reference-ok: names the old recipe on purpose -->
 
 The signal is replaced immediately after the abort, which means the next operation starts with a fresh one and the call above works as many times as you press it. A plain `AbortController` would stay aborted forever after the first call.
 
