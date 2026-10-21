@@ -13,4 +13,12 @@
       width: fit-content;
     }
   }
+
+  // A notice lays its buttons out inline with no spacing, so the action button would touch the decline button.
+  &.plugin-suggestion-notice-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--size-4-2);
+    margin-top: var(--size-4-2);
+  }
 }

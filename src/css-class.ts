@@ -236,6 +236,12 @@ export enum CssClass {
   PluginSuggestionBanner = 'plugin-suggestion-banner',
 
   /**
+   * A CSS class for the row of buttons in a plugin-suggestion notice, which spaces the action button apart from
+   * the decline button.
+   */
+  PluginSuggestionNoticeButtons = 'plugin-suggestion-notice-buttons',
+
+  /**
    * A CSS class for the popover.
    */
   Popover = 'popover',
