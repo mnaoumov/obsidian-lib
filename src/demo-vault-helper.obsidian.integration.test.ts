@@ -90,7 +90,7 @@ describe('demo-vault-helper bootstrap', () => {
   // NOTE: `CodeScript Toolkit` is installed FROM THE STORE and bundles its own copy of obsidian-lib, so the
   // `startupRan`/`probeValue`/`activeFilePath` assertions (it runs its startup script when enabled AFTER
   // layout-ready — the `LayoutReadyComponent` load-vs-execute race fixed in this repo) only pass once the
-  // store serves a release of it built against the fixed dev-utils (13.4.1+).
+  // store serves a release of it built against the fixed obsidian-lib.
   it('should install, configure, enable CodeScript Toolkit and run startup with no reload', async () => {
     const vaultPath = getTemporaryVault().path;
 
