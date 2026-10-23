@@ -58,6 +58,7 @@ export interface ApplySpellcheckModeParams {
  */
 export function appendCodeBlock(element: DocumentFragment | HTMLElement, code: string): void {
   element.createEl('strong', { cls: `${CssClass.MarkdownRendered} ${CssClass.Code}` }, (strong) => {
+    // eslint-disable-next-line obsidian-dev-toolkit/no-bare-code-element -- This is the helper the rule points to: the wrapping `strong` carries the classes that give this `code` its chip.
     strong.createEl('code', { text: code });
   });
 }
