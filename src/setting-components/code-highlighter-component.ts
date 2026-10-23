@@ -94,6 +94,7 @@ export class CodeHighlighterComponent extends ValueComponent<string> implements 
         tabIndex: '-1'
       }
     });
+    // eslint-disable-next-line obsidian-dev-toolkit/no-bare-code-element -- The highlighter's `pre > code` overlay is a code block, not inline code, so it must not take the inline-code chip.
     this.codeEl = this.preEl.createEl('code', {
       attr: {
         tabIndex: '-1'
