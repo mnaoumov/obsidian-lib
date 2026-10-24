@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## 6.0.3
+
+- fix(parse-link): read a frontmatter caption with an unbalanced [ as one link, as Obsidian does
+- chore(lint): keep the two deliberate code elements past no-bare-code-element
+- docs: name obsidian-lib where comments said dev-utils
+- test: re-enable the demo-vault-helper reading-view case
+- docs: give the Advanced Debug Mode route in the debugging guide
+
 ## 6.0.2
 
 - fix: close Settings right before each demo-vault plugin enable
