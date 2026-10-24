@@ -33,6 +33,11 @@ package.json
 
 *.orig
 
+# Stryker mutation testing
+/.stryker-tmp
+/reports
+/stryker-setup-*.js
+
 # Astro documentation site
 .astro
 docs/dist
