@@ -1019,6 +1019,74 @@ describe('parseFrontmatterLinks', () => {
     const result = parseFrontmatterLinks(undefined);
     expect(result.frontmatterExternalLinks).toHaveLength(0);
   });
+
+  it.each([
+    '[A [ - B.epub](<files/A [ - B.epub>)',
+    '[A [ B](t.md)',
+    '[a] [b](c.md)',
+    '[a]b](c.md)',
+    '[a [b]](c.md)'
+  ])('should read %s as one internal link, as Obsidian does', (value) => {
+    const result = parseFrontmatterLinks({ book: value });
+    expect(result.frontmatterExternalLinks).toHaveLength(0);
+    expect(result.multiValueFrontmatterExternalLinks).toHaveLength(0);
+    expect(result.multiValueFrontmatterLinks).toHaveLength(0);
+  });
+
+  it('should read an external link with an unbalanced [ in its caption as one link', () => {
+    const result = parseFrontmatterLinks({ url: '[a [ b](https://example.com)' });
+    expect(result.frontmatterExternalLinks).toHaveLength(1);
+    expect(result.frontmatterExternalLinks[0]?.displayText).toBe('a [ b');
+    expect(result.frontmatterExternalLinks[0]?.parseLinkResult.raw).toBe('[a [ b](https://example.com)');
+    expect(result.multiValueFrontmatterExternalLinks).toHaveLength(0);
+  });
+
+  it.each([
+    '[a](b.md) and [c](d.md)',
+    '[a](b.md) [[c]]',
+    'x [a](b.md)',
+    '[a](b.md) x'
+  ])('should keep %s multi-value', (value) => {
+    const result = parseFrontmatterLinks({ notes: value });
+    expect(result.multiValueFrontmatterLinks.length).toBeGreaterThan(0);
+  });
+});
+
+describe('parseLink (a caption with unbalanced brackets, as Obsidian reads a frontmatter value)', () => {
+  it.each([
+    { alias: 'A [ - B.epub', url: 'files/A [ - B.epub', value: '[A [ - B.epub](<files/A [ - B.epub>)' },
+    { alias: 'A [ B', url: 't.md', value: '[A [ B](t.md)' },
+    { alias: 'a] [b', url: 'c.md', value: '[a] [b](c.md)' },
+    { alias: 'a]b', url: 'c.md', value: '[a]b](c.md)' },
+    { alias: 'a [b]', url: 'c.md', value: '[a [b]](c.md)' },
+    { alias: 'a [', url: 't.md', value: '[a [](t.md)' }
+  ])('should read $value as one link captioned $alias', ({ alias, url, value }) => {
+    const result = parseLink(value);
+    assertNonNullable(result);
+    expect(result.alias).toBe(alias);
+    expect(result.url).toBe(url);
+    expect(result.raw).toBe(value);
+    expect(result.startOffset).toBe(0);
+    expect(result.endOffset).toBe(value.length);
+  });
+
+  it('should carry the unescaped alias of the whole caption', () => {
+    expect(parseLink(String.raw`[a [ \*b\*](t.md)`)?.unescapedAlias).toBe('a [ *b*');
+  });
+
+  it.each([
+    '[a](b.md) and [c](d.md)',
+    'x [a](b.md)',
+    '[a](b.md) x',
+    '[x [[a]]',
+    '[a ![b](c.png)',
+    '[a https://example.com',
+    '[a]b',
+    '[a]b](c.md) x',
+    '[a]b](c.md) https://example.com'
+  ])('should not read %s as one link', (value) => {
+    expect(parseLink(value)).toBeNull();
+  });
 });
 
 describe('parseLinks empty-label markdown links', () => {

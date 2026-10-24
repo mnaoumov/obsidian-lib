@@ -1372,6 +1372,16 @@ describe('app-dependent functions', () => {
       expect(updateMultiLink(markdownLink, 'Multi B', 'old-b.md', 'old-b.md', 'a b.md')).toBe('[Multi B](<a b.md>)');
     });
 
+    it('should keep the whole caption of a frontmatter link whose caption holds an unbalanced [', () => {
+      const link = castTo<Reference>({
+        displayText: 'A [ B',
+        key: 'book',
+        link: 't.md',
+        original: '[A [ B](t.md)'
+      });
+      expect(updateLink({ app, link, newSourcePathOrFile: 'note.md', newTargetPathOrFile: 't.md' })).toBe('[A [ B](t.md)');
+    });
+
     it('should return the span of an offset-carrying frontmatter link when newTargetPathOrFile is falsy', () => {
       const value = '[[a]] and [[b]]';
       const link = castTo<Reference>({

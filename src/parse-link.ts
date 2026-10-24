@@ -392,6 +392,26 @@ interface ExtractTextLinksParams {
 }
 
 /**
+ * Params for {@link getWholeValueLink}.
+ */
+interface GetWholeValueLinkParams {
+  /**
+   * The links {@link parseLinks} found in the value.
+   */
+  readonly links: readonly ParseLinkResult[];
+
+  /**
+   * The parse options the links were found with.
+   */
+  readonly options: ParseLinksOptions | undefined;
+
+  /**
+   * The value to read as one link.
+   */
+  readonly value: string;
+}
+
+/**
  * Params for {@link hasAngleBracketsInLink}.
  */
 interface HasAngleBracketsInLinkParams {
@@ -404,6 +424,26 @@ interface HasAngleBracketsInLinkParams {
    * A raw URL of the link.
    */
   readonly rawUrl: string;
+}
+
+/**
+ * Params for {@link widenToWholeValue}.
+ */
+interface WidenToWholeValueParams {
+  /**
+   * The offset of the `](` that ends the caption.
+   */
+  readonly captionEndOffset: number;
+
+  /**
+   * The link found at the end of the value.
+   */
+  readonly link: ParseLinkResult;
+
+  /**
+   * The whole value.
+   */
+  readonly value: string;
 }
 
 interface WikiLinkNode extends Node {
@@ -464,10 +504,16 @@ class FrontmatterLinksParser {
   private parseValue(value: unknown, key: string): void {
     if (typeof value === 'string') {
       // Obsidian links a scheme-less `www.` literal in the body only, never in a frontmatter value.
-      const parseLinkResults = parseLinks(value, { shouldRecognizeWwwAutolinkLiterals: false });
-      const isSingleLink = parseLinkResults[0]?.raw === value;
+      const options: ParseLinksOptions = { shouldRecognizeWwwAutolinkLiterals: false };
+      const parseLinkResults = parseLinks(value, options);
+      const wholeValueLink = getWholeValueLink({ links: parseLinkResults, options, value });
+      if (wholeValueLink) {
+        this.categorize({ isSingleLink: true, key, parseLinkResult: wholeValueLink, value });
+        return;
+      }
+
       for (const parseLinkResult of parseLinkResults) {
-        this.categorize({ isSingleLink, key, parseLinkResult, value });
+        this.categorize({ isSingleLink: false, key, parseLinkResult, value });
       }
       return;
     }
@@ -524,7 +570,8 @@ export function isParseLinkReference(reference: Reference): reference is ParseLi
 /**
  * Parses the links from a note's frontmatter. Each string value is parsed via {@link parseLinks}: a value
  * that is a single link yields an entry without offsets, and a value that holds multiple links yields
- * offset-carrying entries. Internal single-link values are omitted, as Obsidian natively caches them.
+ * offset-carrying entries. A value is a single link the way Obsidian reads it, so `[A [ B](t.md)` is one
+ * link captioned `A [ B` (see {@link parseLink}). Internal single-link values are omitted, as Obsidian natively caches them.
  *
  * @param frontmatter - The frontmatter to parse (a value, object, or array).
  * @returns The parsed frontmatter links.
@@ -536,13 +583,16 @@ export function parseFrontmatterLinks(frontmatter: unknown): ParseFrontmatterLin
 /**
  * Parses a link into its components.
  *
+ * A string that starts with `[` and ends with a markdown link is read as ONE link whose caption runs
+ * from the leading `[` to that link's `](`, the way Obsidian reads a frontmatter value: `[A [ B](t.md)`
+ * has the alias `A [ B`, where CommonMark finds only `[ B](t.md)`.
+ *
  * @param $string - The link to parse.
  * @param options - The parse options.
  * @returns The parsed link.
  */
 export function parseLink($string: string, options?: ParseLinkOptions): null | ParseLinkResult {
-  const links = parseLinks($string, options);
-  return links[0]?.raw === $string ? links[0] : null;
+  return getWholeValueLink({ links: parseLinks($string, options), options, value: $string });
 }
 
 /**
@@ -801,6 +851,54 @@ function getRawLink(node: Node, $string: string): string {
   return $string.slice(pos.start.offset, pos.end.offset);
 }
 
+/**
+ * Reads a whole value as one link, as Obsidian reads a frontmatter value. Obsidian takes a value that
+ * starts with `[` and ends with `](url)` as a single link captioned by everything in between, so a caption
+ * holding an unbalanced bracket (`[A [ B](t.md)`, `[a] [b](c.md)`, `[a]b](c.md)`) is still one link
+ * there, where CommonMark finds a shorter link at the inner `[`, or none at all. A value CommonMark reads
+ * as two or more links stays multi-link, because what Obsidian makes of those is garbage.
+ *
+ * @param params - The value and its links.
+ * @returns The link spanning the whole value, or `null` if the value is not a single link.
+ */
+function getWholeValueLink(params: GetWholeValueLinkParams): null | ParseLinkResult {
+  const { links, options, value } = params;
+  const [firstLink] = links;
+  if (links.length === 1 && firstLink?.raw === value) {
+    return firstLink;
+  }
+
+  if (!value.startsWith('[') || links.length > 1) {
+    return null;
+  }
+
+  if (firstLink) {
+    // Only a markdown link widens: a wikilink, an embed, a bare URL or an autolink does not.
+    if (firstLink.isWikilink || !firstLink.raw.startsWith('[') || firstLink.endOffset !== value.length) {
+      return null;
+    }
+
+    return widenToWholeValue({
+      captionEndOffset: firstLink.startOffset + 1 + (firstLink.alias?.length ?? 0),
+      link: firstLink,
+      value
+    });
+  }
+
+  // No link at all, as in `[a]b](c.md)`: hide the caption's brackets so CommonMark sees one link.
+  const captionEndOffset = value.lastIndexOf('](');
+  if (captionEndOffset === -1) {
+    return null;
+  }
+
+  const maskedValue = `[${value.slice(1, captionEndOffset).replaceAll(/[[\]]/g, '@')}${value.slice(captionEndOffset)}`;
+  const maskedLinks = parseLinks(maskedValue, options);
+  const [maskedLink] = maskedLinks;
+  return maskedLinks.length === 1 && maskedLink?.raw === maskedValue
+    ? widenToWholeValue({ captionEndOffset, link: maskedLink, value })
+    : null;
+}
+
 function hasAngleBracketsInLink(params: HasAngleBracketsInLinkParams): boolean {
   const { raw, rawUrl } = params;
   const OPEN_ANGLE_BRACKET = '<';
@@ -904,4 +1002,18 @@ function trimWwwAutolinkLiteralEnd(literal: string): string {
   return lastCharacter === ')' && countOccurrences(literal, ')') > countOccurrences(literal, '(')
     ? literal.slice(0, -1)
     : literal.replace(TRAILING_ENTITY_REFERENCE_REG_EXP, '');
+}
+
+function widenToWholeValue(params: WidenToWholeValueParams): ParseLinkResult {
+  const { captionEndOffset, link, value } = params;
+  // Never empty: a value whose caption is empty, `[](url)`, is a link CommonMark already spans whole.
+  const alias = value.slice(1, captionEndOffset);
+  return {
+    ...link,
+    alias,
+    endOffset: value.length,
+    raw: value,
+    startOffset: 0,
+    unescapedAlias: unescapeAlias(alias)
+  };
 }
