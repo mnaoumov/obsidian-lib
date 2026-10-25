@@ -142,6 +142,7 @@ let enabledPlugins: Set<string>;
 let fireApiRefChange: () => Promise<void>;
 let lifecycleCallbacks: Map<string, ((payload: PluginLifecycleEventPayload) => unknown)[]>;
 let layoutReadyCallback: (() => void) | undefined;
+let loadedPlugins: Set<string>;
 let manifests: AppOriginal['plugins']['manifests'];
 let openSetting: ReturnType<typeof vi.fn>;
 let openTabById: ReturnType<typeof vi.fn>;
@@ -158,6 +159,7 @@ beforeEach(() => {
   enabledPlugins = new Set<string>();
   layoutReadyCallback = undefined;
   lifecycleCallbacks = new Map();
+  loadedPlugins = new Set<string>();
   manifests = {};
   Object.setPrototypeOf(manifests, null);
   settingTabs = [];
@@ -395,6 +397,7 @@ async function createLoadedComponent(options: CreateComponentOptions = {}): Prom
   const app = strictProxy<AppOriginal>({
     plugins: strictProxy<AppOriginal['plugins']>({
       enabledPlugins,
+      getPlugin: (pluginId: string) => loadedPlugins.has(pluginId) ? castTo<Plugin>({}) : null,
       manifests
     }),
     // Cast rather than typed one member at a time: `openTabById` is overloaded (`'hotkeys'` returns a
@@ -534,9 +537,10 @@ describe('the blocked settings tab', () => {
   it.each([
     PluginApiUnavailabilityReason.NotPublished,
     PluginApiUnavailabilityReason.ShapeMismatch
-  ])('should not ask to install and enable a dependency that is enabled but whose API is unreadable (%s)', async (reason) => {
+  ])('should not ask to install and enable a dependency that is running but whose API is unreadable (%s)', async (reason) => {
     manifests[DEPENDENCY.pluginId] = strictProxy<PluginManifest>({ id: DEPENDENCY.pluginId });
     enabledPlugins.add(DEPENDENCY.pluginId);
+    loadedPlugins.add(DEPENDENCY.pluginId);
     apiRefUnavailabilityReason = reason;
     const { showNotice } = await createLoadedComponent({ isSatisfied: false });
 
@@ -548,9 +552,27 @@ describe('the blocked settings tab', () => {
     );
   });
 
-  it('should say an enabled dependency publishes no readable API when it is lost while running', async () => {
+  it('should say a dependency that is unloaded but still enabled is no longer available', async () => {
+    // Obsidian's plain `disablePlugin` unloads a plugin and leaves it in `enabledPlugins`.
     manifests[DEPENDENCY.pluginId] = strictProxy<PluginManifest>({ id: DEPENDENCY.pluginId });
     enabledPlugins.add(DEPENDENCY.pluginId);
+    const { showNotice } = await createLoadedComponent();
+
+    apiRefValue = null;
+    apiRefUnavailabilityReason = PluginApiUnavailabilityReason.NotPublished;
+    await fireApiRefChange();
+    await waitOutLossGracePeriod();
+
+    expectNoticeText(
+      showNotice,
+      `${DEPENDENCY.pluginName} is no longer available, so ${HOST_PLUGIN_NAME} has stopped working. Bring it back to resume.`
+    );
+  });
+
+  it('should say a running dependency publishes no readable API when it is lost while running', async () => {
+    manifests[DEPENDENCY.pluginId] = strictProxy<PluginManifest>({ id: DEPENDENCY.pluginId });
+    enabledPlugins.add(DEPENDENCY.pluginId);
+    loadedPlugins.add(DEPENDENCY.pluginId);
     const { showNotice } = await createLoadedComponent();
 
     apiRefValue = null;
