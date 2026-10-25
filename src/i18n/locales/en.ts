@@ -92,6 +92,13 @@ export const en = {
       unlockConfirmTitle: 'Unlock note?',
       unlockMenuItem: 'Unlock'
     },
+    validation: {
+      controlCharacter: '{{name}} contains a control character.',
+      emptyName: 'The name is empty.',
+      trailingCharacters: '{{name}} ends with a dot or a space, which Windows removes.',
+      unsafeCharacters: '{{name}} contains characters that are not allowed: {{characters}}',
+      windowsReservedName: '{{name}} is a device name Windows reserves, so the file cannot exist on Windows.'
+    },
     vault: {
       processFile: 'Process file {{filePath}}'
     }
