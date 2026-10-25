@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## 6.0.4
+
+- fix(plugin-gate): announce an unloaded dependency as lost, not as publishing no readable API
+- fix(deps): stop logging the initial debug line while debug messages are disabled
+- fix(plugin-gate): ask to update an enabled dependency that publishes no readable API
+- build(test): add the on-demand Stryker mutation run
+
 ## 6.0.3
 
 - fix(parse-link): read a frontmatter caption with an unbalanced [ as one link, as Obsidian does
