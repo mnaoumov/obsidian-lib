@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 6.1.0
+
+- feat(validation): validate a whole file name or path against every naming rule
+
 ## 6.0.4
 
 - fix(plugin-gate): announce an unloaded dependency as lost, not as publishing no readable API
