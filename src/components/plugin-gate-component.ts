@@ -518,6 +518,10 @@ export class PluginGateComponent extends ComponentEx {
       return this.createVersionMismatchMessage(dependency);
     }
 
+    if (this.isEnabled(dependency)) {
+      return this.createNoReadableApiMessage(dependency);
+    }
+
     return createFragmentWithCodeBlocks(t(($) => $.obsidianLib.pluginDependency.blockedNotice, {
       dependencyPluginName: asCodeBlock(dependency.pluginName),
       pluginName: asCodeBlock(this.plugin.manifest.name)
@@ -550,7 +554,18 @@ export class PluginGateComponent extends ComponentEx {
       return this.createVersionMismatchMessage(dependency);
     }
 
+    if (this.isEnabled(dependency)) {
+      return this.createNoReadableApiMessage(dependency);
+    }
+
     return createFragmentWithCodeBlocks(t(($) => $.obsidianLib.pluginDependency.dependencyLostNotice, {
+      dependencyPluginName: asCodeBlock(dependency.pluginName),
+      pluginName: asCodeBlock(this.plugin.manifest.name)
+    }));
+  }
+
+  private createNoReadableApiMessage(dependency: PluginDependency): DocumentFragment {
+    return createFragmentWithCodeBlocks(t(($) => $.obsidianLib.pluginDependency.noReadableApiNotice, {
       dependencyPluginName: asCodeBlock(dependency.pluginName),
       pluginName: asCodeBlock(this.plugin.manifest.name)
     }));
@@ -642,6 +657,23 @@ export class PluginGateComponent extends ComponentEx {
     } catch {
       return true;
     }
+  }
+
+  /**
+   * Decides whether an unsatisfied dependency is nonetheless installed and enabled.
+   *
+   * Such a dependency is running but publishes no API this plugin can read — none at all, or one whose shape
+   * fails the contract. The usual cause is a release built on a copy of this library that publishes
+   * somewhere this one does not look, so "install and enable it" would be false and "update it" is the fix.
+   *
+   * @param dependency - The declared dependency.
+   * @returns Whether the dependency is enabled.
+   */
+  private isEnabled(dependency: PluginDependency): boolean {
+    return getInstalledPluginState({
+      app: this.app,
+      pluginId: dependency.pluginId
+    }) === InstalledPluginState.Enabled;
   }
 
   /**

@@ -58,6 +58,7 @@ export const en = {
       alreadyUpToDate: '{{dependencyPluginName}} is already at its latest release. {{pluginName}} needs a version that has not been released yet.',
       blockedNotice: '{{pluginName}} does nothing until {{dependencyPluginName}} is installed and enabled.',
       dependencyLostNotice: '{{dependencyPluginName}} is no longer available, so {{pluginName}} has stopped working. Bring it back to resume.',
+      noReadableApiNotice: '{{dependencyPluginName}} is enabled but publishes no API {{pluginName}} can read, so {{pluginName}} does nothing. Update {{dependencyPluginName}} to resume.',
       openDependencySettings: 'Open {{dependencyPluginName}} settings',
       settingsHeading: 'Required plugin missing',
       update: 'Update {{dependencyPluginName}}',

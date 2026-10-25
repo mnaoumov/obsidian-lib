@@ -531,15 +531,37 @@ describe('the blocked settings tab', () => {
     expectNoticeText(showNotice, `${HOST_PLUGIN_NAME} needs a newer version of ${DEPENDENCY.pluginName}. Update it to resume.`);
   });
 
-  it('should keep the ordinary message when the enabled dependency simply has not published yet', async () => {
+  it.each([
+    PluginApiUnavailabilityReason.NotPublished,
+    PluginApiUnavailabilityReason.ShapeMismatch
+  ])('should not ask to install and enable a dependency that is enabled but whose API is unreadable (%s)', async (reason) => {
     manifests[DEPENDENCY.pluginId] = strictProxy<PluginManifest>({ id: DEPENDENCY.pluginId });
     enabledPlugins.add(DEPENDENCY.pluginId);
-    apiRefUnavailabilityReason = PluginApiUnavailabilityReason.NotPublished;
+    apiRefUnavailabilityReason = reason;
     const { showNotice } = await createLoadedComponent({ isSatisfied: false });
 
     await triggerLayoutReady();
 
-    expectNoticeText(showNotice, `${HOST_PLUGIN_NAME} does nothing until ${DEPENDENCY.pluginName} is installed and enabled.`);
+    expectNoticeText(
+      showNotice,
+      `${DEPENDENCY.pluginName} is enabled but publishes no API ${HOST_PLUGIN_NAME} can read, so ${HOST_PLUGIN_NAME} does nothing. Update ${DEPENDENCY.pluginName} to resume.`
+    );
+  });
+
+  it('should say an enabled dependency publishes no readable API when it is lost while running', async () => {
+    manifests[DEPENDENCY.pluginId] = strictProxy<PluginManifest>({ id: DEPENDENCY.pluginId });
+    enabledPlugins.add(DEPENDENCY.pluginId);
+    const { showNotice } = await createLoadedComponent();
+
+    apiRefValue = null;
+    apiRefUnavailabilityReason = PluginApiUnavailabilityReason.NotPublished;
+    await fireApiRefChange();
+    await waitOutLossGracePeriod();
+
+    expectNoticeText(
+      showNotice,
+      `${DEPENDENCY.pluginName} is enabled but publishes no API ${HOST_PLUGIN_NAME} can read, so ${HOST_PLUGIN_NAME} does nothing. Update ${DEPENDENCY.pluginName} to resume.`
+    );
   });
 
   it('should install and enable the dependency when the button is clicked', async () => {
