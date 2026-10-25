@@ -69,6 +69,7 @@ vi.mock('../i18n/i18n.ts', () => ({
         pluginDependency: {
           blockedNotice: 'blocked',
           dependencyLostNotice: 'lost',
+          noReadableApiNotice: 'no readable api',
           openDependencySettings: 'open dependency settings',
           settingsHeading: 'required plugin missing',
           versionMismatchNotice: 'version mismatch'
