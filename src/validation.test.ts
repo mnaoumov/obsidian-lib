@@ -6,8 +6,10 @@ import {
 } from 'vitest';
 
 import {
+  getFileNameValidationMessage,
   getOsAndObsidianUnsafePathCharsRegExp,
   getOsUnsafePathCharsRegExp,
+  getPathValidationMessage,
   hasWindowsTrailingChars,
   isValidationMessageHolder,
   isWindowsReservedName,
@@ -210,5 +212,75 @@ describe('trimWindowsTrailingChars', () => {
     { expected: '', name: '' }
   ])('should trim "$name" to "$expected"', ({ expected, name }) => {
     expect(trimWindowsTrailingChars(name)).toBe(expected);
+  });
+});
+
+describe('getFileNameValidationMessage', () => {
+  it.each(['note.md', 'Meeting notes', 'CONIN$', 'contract.md', '.hidden', 'a.b'])('should accept "%s"', (name) => {
+    expect(getFileNameValidationMessage(name, true)).toBe('');
+  });
+
+  it('should refuse an empty name', () => {
+    expect(getFileNameValidationMessage('', true)).toBe('The name is empty.');
+  });
+
+  it.each(['a\u{1}b', 'tab\there', 'line\nbreak', '\u{1F}'])('should refuse a control character in %j', (name) => {
+    expect(getFileNameValidationMessage(name, true)).toBe(`${name} contains a control character.`);
+  });
+
+  it('should refuse a NUL as a control character on Unix, before the character set reports it', () => {
+    expect(getFileNameValidationMessage('a\0b', false)).toBe('a\0b contains a control character.');
+  });
+
+  it('should list each unsafe character once', () => {
+    expect(getFileNameValidationMessage('a:b:c?#.md', true)).toBe('a:b:c?#.md contains characters that are not allowed: : ? #');
+  });
+
+  it('should apply the Windows character set only on Windows', () => {
+    expect(getFileNameValidationMessage('Meeting: notes', false)).toBe('');
+    expect(getFileNameValidationMessage('Meeting: notes', true)).toBe('Meeting: notes contains characters that are not allowed: :');
+  });
+
+  it('should apply the Obsidian character set on every platform', () => {
+    expect(getFileNameValidationMessage('a|b', false)).toBe('a|b contains characters that are not allowed: |');
+  });
+
+  it.each(['draft.', 'draft ', '.', '..'])('should refuse the trailing dot or space of "%s" on every platform', (name) => {
+    const expected = `${name} ends with a dot or a space, which Windows removes.`;
+    expect(getFileNameValidationMessage(name, false)).toBe(expected);
+    expect(getFileNameValidationMessage(name, true)).toBe(expected);
+  });
+
+  it.each(['CON', 'nul.md', 'Com1.txt', 'LPT9', 'aux.png'])('should refuse the reserved name "%s" on every platform', (name) => {
+    const expected = `${name} is a device name Windows reserves, so the file cannot exist on Windows.`;
+    expect(getFileNameValidationMessage(name, false)).toBe(expected);
+    expect(getFileNameValidationMessage(name, true)).toBe(expected);
+  });
+
+  it('should report the trailing characters of a reserved name before the reservation', () => {
+    expect(getFileNameValidationMessage('CON ', true)).toBe('CON  ends with a dot or a space, which Windows removes.');
+  });
+
+  it('should answer the same on consecutive calls', () => {
+    expect(getFileNameValidationMessage('a:b', true)).not.toBe('');
+    expect(getFileNameValidationMessage('a:b', true)).not.toBe('');
+  });
+});
+
+describe('getPathValidationMessage', () => {
+  it.each(['note.md', 'folder/sub folder/note.md'])('should accept "%s"', (path) => {
+    expect(getPathValidationMessage(path, true)).toBe('');
+  });
+
+  it('should report the first invalid segment', () => {
+    expect(getPathValidationMessage('folder/CON/draft./note.md', true)).toBe('CON is a device name Windows reserves, so the file cannot exist on Windows.');
+  });
+
+  it('should refuse a folder segment ending with a dot', () => {
+    expect(getPathValidationMessage('folder./note.md', false)).toBe('folder. ends with a dot or a space, which Windows removes.');
+  });
+
+  it.each(['', 'folder//note.md', 'folder/'])('should refuse the empty segment in "%s"', (path) => {
+    expect(getPathValidationMessage(path, true)).toBe('The name is empty.');
   });
 });

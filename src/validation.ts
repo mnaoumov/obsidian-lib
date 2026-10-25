@@ -11,6 +11,8 @@ import {
 import { oneOf } from '@mnaoumov/typescript-lib/reg-exp';
 import { Platform } from 'obsidian';
 
+import { t } from './i18n/i18n.ts';
+
 /**
  * Holds a validation message.
  */
@@ -63,6 +65,51 @@ const WINDOWS_RESERVED_NAME_REG_EXP = /^(?:AUX|COM[1-9]|CON|LPT[1-9]|NUL|PRN)$/i
 const WINDOWS_TRAILING_CHARS_REG_EXP = /[ .]+$/;
 
 /**
+ * The first character after the C0 control range, U+0000 to U+001F, which Windows refuses in a name.
+ */
+const FIRST_NON_CONTROL_CHAR = ' ';
+
+/**
+ * Validates a single file or folder name against every naming rule this module owns.
+ *
+ * The rules, checked in this order, and the first one broken names the message:
+ *
+ * 1. The name is not empty.
+ * 2. It holds no control character (U+0000 to U+001F).
+ * 3. It holds none of the characters {@link getOsAndObsidianUnsafePathCharsRegExp} matches.
+ * 4. It does not end with a dot or a space ({@link hasWindowsTrailingChars}).
+ * 5. It is not an MS-DOS device name ({@link isWindowsReservedName}), with or without an extension.
+ *
+ * Only rule 3 depends on `isWindows`. Rules 2, 4 and 5 apply on every platform, because a vault is synced,
+ * and a name created on macOS or Linux that Windows refuses breaks the vault there. The character set stays
+ * platform-dependent, because a name such as `Meeting: notes` is common on macOS, where it works.
+ *
+ * @param name - The name to validate. A single path segment, with or without its extension.
+ * @param isWindows - Whether to include the Windows-specific character set. Defaults to `Platform.isWin`.
+ * @returns A message describing the first broken rule, or an empty string if the name is valid.
+ */
+export function getFileNameValidationMessage(name: string, isWindows?: boolean): string {
+  if (name === '') {
+    return t(($) => $.obsidianLib.validation.emptyName);
+  }
+
+  if (hasControlChars(name)) {
+    return t(($) => $.obsidianLib.validation.controlCharacter, { name });
+  }
+
+  const unsafeChars = new Set(name.match(getOsAndObsidianUnsafePathCharsRegExp(isWindows)));
+  if (unsafeChars.size > 0) {
+    return t(($) => $.obsidianLib.validation.unsafeCharacters, { characters: [...unsafeChars].join(' '), name });
+  }
+
+  if (hasWindowsTrailingChars(name)) {
+    return t(($) => $.obsidianLib.validation.trailingCharacters, { name });
+  }
+
+  return isWindowsReservedName(name) ? t(($) => $.obsidianLib.validation.windowsReservedName, { name }) : '';
+}
+
+/**
  * Returns a regexp matching all unsafe characters in file names/paths.
  *
  * Includes both OS-specific restrictions and Obsidian-specific ones.
@@ -86,6 +133,17 @@ export function getOsAndObsidianUnsafePathCharsRegExp(isWindows?: boolean): RegE
 export function getOsUnsafePathCharsRegExp(isWindows?: boolean): RegExp {
   isWindows ??= Platform.isWin;
   return isWindows ? WINDOWS_UNSAFE_PATH_CHARS : UNIX_UNSAFE_PATH_CHARS;
+}
+
+/**
+ * Validates every segment of a vault path with {@link getFileNameValidationMessage}.
+ *
+ * @param path - The vault-relative path to validate, with `/` as the separator.
+ * @param isWindows - Whether to include the Windows-specific character set. Defaults to `Platform.isWin`.
+ * @returns The message for the first invalid segment, or an empty string if every segment is valid.
+ */
+export function getPathValidationMessage(path: string, isWindows?: boolean): string {
+  return path.split('/').map((segment) => getFileNameValidationMessage(segment, isWindows)).find(Boolean) ?? '';
 }
 
 /**
@@ -133,4 +191,20 @@ export function isWindowsReservedName(name: string): boolean {
  */
 export function trimWindowsTrailingChars(name: string): string {
   return name.replace(WINDOWS_TRAILING_CHARS_REG_EXP, '');
+}
+
+/**
+ * Checks whether a name holds a control character, U+0000 to U+001F.
+ *
+ * @param name - The name to check.
+ * @returns `true` if the name holds a control character, `false` otherwise.
+ */
+function hasControlChars(name: string): boolean {
+  for (const char of name) {
+    if (char < FIRST_NON_CONTROL_CHAR) {
+      return true;
+    }
+  }
+
+  return false;
 }
