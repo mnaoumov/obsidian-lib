@@ -518,7 +518,7 @@ export class PluginGateComponent extends ComponentEx {
       return this.createVersionMismatchMessage(dependency);
     }
 
-    if (this.isEnabled(dependency)) {
+    if (this.isRunning(dependency)) {
       return this.createNoReadableApiMessage(dependency);
     }
 
@@ -554,7 +554,7 @@ export class PluginGateComponent extends ComponentEx {
       return this.createVersionMismatchMessage(dependency);
     }
 
-    if (this.isEnabled(dependency)) {
+    if (this.isRunning(dependency)) {
       return this.createNoReadableApiMessage(dependency);
     }
 
@@ -660,20 +660,24 @@ export class PluginGateComponent extends ComponentEx {
   }
 
   /**
-   * Decides whether an unsatisfied dependency is nonetheless installed and enabled.
+   * Decides whether an unsatisfied dependency is nonetheless enabled and loaded.
    *
    * Such a dependency is running but publishes no API this plugin can read — none at all, or one whose shape
    * fails the contract. The usual cause is a release built on a copy of this library that publishes
    * somewhere this one does not look, so "install and enable it" would be false and "update it" is the fix.
    *
+   * Being in `enabledPlugins` is not enough: Obsidian's plain `disablePlugin` unloads a plugin and leaves it
+   * there (only `disablePluginAndSave` removes it), so a provider that went away would otherwise read as
+   * running with an unreadable API.
+   *
    * @param dependency - The declared dependency.
-   * @returns Whether the dependency is enabled.
+   * @returns Whether the dependency is enabled and loaded.
    */
-  private isEnabled(dependency: PluginDependency): boolean {
+  private isRunning(dependency: PluginDependency): boolean {
     return getInstalledPluginState({
-      app: this.app,
-      pluginId: dependency.pluginId
-    }) === InstalledPluginState.Enabled;
+          app: this.app,
+          pluginId: dependency.pluginId
+        }) === InstalledPluginState.Enabled && this.app.plugins.getPlugin(dependency.pluginId) !== null;
   }
 
   /**
