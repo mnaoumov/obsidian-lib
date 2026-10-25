@@ -334,7 +334,7 @@
   "dependencies": {
     "@lezer/common": "1.5.2",
     "@mnaoumov/obsidian-dataview": "^1.0.0",
-    "@mnaoumov/typescript-lib": "^1.6.0",
+    "@mnaoumov/typescript-lib": "^1.6.2",
     "@standard-schema/spec": "^1.1.0",
     "@types/react": "^19.3.0",
     "compare-versions": "^6.1.1",
