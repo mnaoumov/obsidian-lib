@@ -1,6 +1,7 @@
 import type {
   App as AppOriginal,
   Plugin as PluginOriginal,
+  TFile,
   TFolder
 } from 'obsidian';
 
@@ -15,9 +16,11 @@ import {
 
 import type { FolderNoteConfig } from './folder-note.ts';
 
+import { getFile } from './file-system.ts';
 import {
   FOLDER_NOTES_PLUGIN_ID,
   FolderNoteLocation,
+  getFolderNoteFolder,
   resolveFolderNote,
   resolveFolderNoteConfig
 } from './folder-note.ts';
@@ -297,5 +300,77 @@ describe('resolveFolderNote', () => {
       config: configFor(FolderNoteLocation.ParentFolder),
       folder: app.vault.getRoot()
     })).toBeNull();
+  });
+});
+
+describe('getFolderNoteFolder', () => {
+  function fixedNameConfig(location: FolderNoteConfig['location'], name: string): FolderNoteConfig {
+    return {
+      extensions: ['md'],
+      isHidden: false,
+      location,
+      resolveName: (folder: TFolder): string => name.replaceAll('{{folder_name}}', () => folder.name)
+    };
+  }
+
+  function folderOf(files: Record<string, string>, filePath: string, config?: FolderNoteConfig): null | string {
+    initApp(files);
+    return getFolderNoteFolder({
+      app,
+      file: getFile({ app, pathOrFile: filePath, shouldIncludeNonExisting: true }),
+      ...config && { config }
+    })?.path ?? null;
+  }
+
+  it('should find the folder a fixed-name note sits inside', () => {
+    expect(folderOf({ 'alpha/bravo/charlie/!.md': '' }, 'alpha/bravo/charlie/!.md', fixedNameConfig(FolderNoteLocation.InsideFolder, '!')))
+      .toBe('alpha/bravo/charlie');
+  });
+
+  it('should find the folder a note sits beside', () => {
+    expect(folderOf(
+      { 'alpha/bravo/charlie/delta.md': '', 'alpha/bravo/charlie note.md': '' },
+      'alpha/bravo/charlie note.md',
+      fixedNameConfig(FolderNoteLocation.ParentFolder, '{{folder_name}} note')
+    )).toBe('alpha/bravo/charlie');
+  });
+
+  it('should find a folder beside a note at the vault root', () => {
+    expect(folderOf({ 'charlie.md': '', 'charlie/delta.md': '' }, 'charlie.md', fixedNameConfig(FolderNoteLocation.ParentFolder, '{{folder_name}}')))
+      .toBe('charlie');
+  });
+
+  it('should take the installed plugin\'s setup when no config is given', () => {
+    initApp({ 'alpha/bravo/charlie/!.md': '' }, { folderNoteName: '!', storageLocation: 'insideFolder' });
+    expect(getFolderNoteFolder({ app, file: getFile({ app, pathOrFile: 'alpha/bravo/charlie/!.md' }) })?.path).toBe('alpha/bravo/charlie');
+  });
+
+  it('should not treat a note at the vault root as the root\'s folder note', () => {
+    expect(folderOf({ '!.md': '' }, '!.md', fixedNameConfig(FolderNoteLocation.InsideFolder, '!'))).toBeNull();
+  });
+
+  it('should not treat an ordinary note as a folder note', () => {
+    expect(folderOf({ 'alpha/bravo/charlie/note.md': '' }, 'alpha/bravo/charlie/note.md', fixedNameConfig(FolderNoteLocation.InsideFolder, '!')))
+      .toBeNull();
+    expect(folderOf(
+      { 'alpha/bravo/charlie/delta.md': '', 'alpha/bravo/note.md': '' },
+      'alpha/bravo/note.md',
+      fixedNameConfig(FolderNoteLocation.ParentFolder, '{{folder_name}}')
+    )).toBeNull();
+  });
+
+  it('should answer null when the vault has no folder notes', () => {
+    expect(folderOf({ 'alpha/bravo/charlie/!.md': '' }, 'alpha/bravo/charlie/!.md', fixedNameConfig(FolderNoteLocation.None, '!'))).toBeNull();
+  });
+
+  it('should not treat a non-existing file as a folder note', () => {
+    expect(folderOf({ 'alpha/bravo/charlie/delta.md': '' }, 'alpha/bravo/charlie/!.md', fixedNameConfig(FolderNoteLocation.InsideFolder, '!')))
+      .toBeNull();
+  });
+
+  it('should answer null for a file with no parent', () => {
+    initApp({});
+    const file = castTo<TFile>({ parent: null });
+    expect(getFolderNoteFolder({ app, config: fixedNameConfig(FolderNoteLocation.InsideFolder, '!'), file })).toBeNull();
   });
 });

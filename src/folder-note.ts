@@ -27,7 +27,10 @@ import { join } from '@mnaoumov/typescript-lib/path';
 import { replaceAll } from '@mnaoumov/typescript-lib/string';
 import { normalizePath } from 'obsidian';
 
-import { MARKDOWN_FILE_EXTENSION } from './file-system.ts';
+import {
+  isFolder,
+  MARKDOWN_FILE_EXTENSION
+} from './file-system.ts';
 
 /**
  * Where a folder's folder note lives.
@@ -94,6 +97,28 @@ export interface FolderNoteConfig {
   // A function property rather than a method, because it is a standalone callback, never a method of the
   // config — which is also what lets it be destructured and handed on without tripping `unbound-method`.
   resolveName: (folder: TFolder) => string;
+}
+
+/**
+ * Parameters for {@link getFolderNoteFolder}.
+ */
+export interface GetFolderNoteFolderParams {
+  /**
+   * The Obsidian app instance.
+   */
+  readonly app: App;
+
+  /**
+   * The already-resolved setup to use.
+   *
+   * @default `resolveFolderNoteConfig({ app })`
+   */
+  readonly config?: FolderNoteConfig;
+
+  /**
+   * The file that may be a folder note.
+   */
+  readonly file: TFile;
 }
 
 /**
@@ -197,6 +222,35 @@ const FALLBACK_FOLDER_NOTE_CONFIG: FolderNoteConfig = {
   location: FolderNoteLocation.InsideFolder,
   resolveName: (folder: TFolder): string => folder.name
 };
+
+/**
+ * Finds the folder a file is the folder note of — the inverse of {@link resolveFolderNote}.
+ *
+ * The answer is checked through {@link resolveFolderNote} itself, so the two can never disagree: a file is
+ * a folder's note exactly when resolving that folder's note yields this very file. A file that does not
+ * exist in the vault (one built for a path with nothing at it) is never a folder note.
+ *
+ * @param params - The file, and optionally the setup to resolve it with.
+ * @returns The folder, or `null` when the file is not a folder note.
+ */
+export function getFolderNoteFolder(params: GetFolderNoteFolderParams): null | TFolder {
+  const { app, file } = params;
+  const config = params.config ?? resolveFolderNoteConfig({ app });
+  const parent = file.parent;
+  if (!parent || config.location === FolderNoteLocation.None) {
+    return null;
+  }
+
+  let candidateFolders: TFolder[];
+  if (config.location === FolderNoteLocation.InsideFolder) {
+    // The vault root has no folder note under this layout, since nothing names it.
+    candidateFolders = parent.isRoot() ? [] : [parent];
+  } else {
+    candidateFolders = parent.children.filter(isFolder);
+  }
+
+  return candidateFolders.find((folder) => resolveFolderNote({ app, config, folder }) === file) ?? null;
+}
 
 /**
  * Finds a folder's folder note — the one note whose properties describe the folder itself.
