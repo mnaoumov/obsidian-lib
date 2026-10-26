@@ -39,14 +39,29 @@ export function isValidationMessageHolder(value: unknown): value is ValidationMe
 export const OBSIDIAN_UNSAFE_FILENAME_CHARS = /[#^[\]|]/g;
 
 /**
- * Windows-specific unsafe file name path characters.
+ * The characters Obsidian refuses in a file name on Windows.
+ *
+ * Read from Obsidian 1.15.0's `app.js`, whose name check throws on this set from `app.vault.create`, a
+ * rename and Sync alike.
  */
 export const WINDOWS_UNSAFE_PATH_CHARS = /[*\\/<>:|?"]/g;
 
 /**
- * Unix-specific unsafe file name path characters.
+ * The characters Obsidian refuses in a file name on macOS, Linux and iOS, plus the NUL no file system stores.
+ *
+ * This is Obsidian's refusal set, not the file system's: macOS and Linux store `\` and `:`, but Obsidian
+ * refuses both, so a name holding either cannot be created through the vault there. Read from Obsidian
+ * 1.15.0's `app.js`.
  */
-export const UNIX_UNSAFE_PATH_CHARS = /[\0/]/g;
+export const UNIX_UNSAFE_PATH_CHARS = /[\0\\/:]/g;
+
+/**
+ * The characters Obsidian refuses in a file name on Android, plus the NUL no file system stores.
+ *
+ * Obsidian adds `* ? < > "` to the {@link UNIX_UNSAFE_PATH_CHARS} set there, because Android's shared
+ * storage refuses them. Read from Obsidian 1.15.0's `app.js`.
+ */
+export const ANDROID_UNSAFE_PATH_CHARS = /[\0*\\/<>:?"]/g;
 
 /**
  * The MS-DOS device names Windows still refuses as a file name, with or without an extension.
@@ -80,15 +95,18 @@ const FIRST_NON_CONTROL_CHAR = ' ';
  * 4. It does not end with a dot or a space ({@link hasWindowsTrailingChars}).
  * 5. It is not an MS-DOS device name ({@link isWindowsReservedName}), with or without an extension.
  *
- * Only rule 3 depends on `isWindows`. Rules 2, 4 and 5 apply on every platform, because a vault is synced,
- * and a name created on macOS or Linux that Windows refuses breaks the vault there. The character set stays
- * platform-dependent, because a name such as `Meeting: notes` is common on macOS, where it works.
+ * Only rule 3 depends on the platform. Rules 2, 4 and 5 apply on every platform, because a vault is synced,
+ * and a name created on macOS or Linux that Windows refuses breaks the vault there. The character set follows
+ * the platform because it is Obsidian's own refusal set, which differs per platform: a name such as `a?b` is
+ * accepted on macOS, where Obsidian creates it.
  *
  * @param name - The name to validate. A single path segment, with or without its extension.
- * @param isWindows - Whether to include the Windows-specific character set. Defaults to `Platform.isWin`.
+ * @param isWindows - Whether to use the Windows character set. Defaults to `Platform.isWin`.
+ * @param isAndroid - Whether to use the Android character set when `isWindows` is false. Defaults to
+ * `Platform.isAndroidApp`.
  * @returns A message describing the first broken rule, or an empty string if the name is valid.
  */
-export function getFileNameValidationMessage(name: string, isWindows?: boolean): string {
+export function getFileNameValidationMessage(name: string, isWindows?: boolean, isAndroid?: boolean): string {
   if (name === '') {
     return t(($) => $.obsidianLib.validation.emptyName);
   }
@@ -97,7 +115,7 @@ export function getFileNameValidationMessage(name: string, isWindows?: boolean):
     return t(($) => $.obsidianLib.validation.controlCharacter, { name });
   }
 
-  const unsafeChars = new Set(name.match(getOsAndObsidianUnsafePathCharsRegExp(isWindows)));
+  const unsafeChars = new Set(name.match(getOsAndObsidianUnsafePathCharsRegExp(isWindows, isAndroid)));
   if (unsafeChars.size > 0) {
     return t(($) => $.obsidianLib.validation.unsafeCharacters, { characters: [...unsafeChars].join(' '), name });
   }
@@ -112,38 +130,54 @@ export function getFileNameValidationMessage(name: string, isWindows?: boolean):
 /**
  * Returns a regexp matching all unsafe characters in file names/paths.
  *
- * Includes both OS-specific restrictions and Obsidian-specific ones.
+ * Includes both the platform's refused characters ({@link getOsUnsafePathCharsRegExp}) and the ones that break
+ * links ({@link OBSIDIAN_UNSAFE_FILENAME_CHARS}).
  *
- * @param isWindows - Whether to include Windows-specific restrictions. Defaults to `Platform.isWin`.
+ * @param isWindows - Whether to use the Windows character set. Defaults to `Platform.isWin`.
+ * @param isAndroid - Whether to use the Android character set when `isWindows` is false. Defaults to
+ * `Platform.isAndroidApp`.
  * @returns A regexp matching all unsafe characters in file names/paths.
  */
-export function getOsAndObsidianUnsafePathCharsRegExp(isWindows?: boolean): RegExp {
+export function getOsAndObsidianUnsafePathCharsRegExp(isWindows?: boolean, isAndroid?: boolean): RegExp {
   return oneOf([
-    getOsUnsafePathCharsRegExp(isWindows),
+    getOsUnsafePathCharsRegExp(isWindows, isAndroid),
     OBSIDIAN_UNSAFE_FILENAME_CHARS
   ]);
 }
 
 /**
- * Returns a regexp matching characters that are not safe to use in file names/paths at the OS level.
+ * Returns a regexp matching the characters Obsidian refuses in a file name on the given platform.
  *
- * @param isWindows - Whether to include Windows-specific restrictions. Defaults to `Platform.isWin`.
- * @returns A regexp matching characters that are not safe to use in file names/paths at the OS level.
+ * That is {@link WINDOWS_UNSAFE_PATH_CHARS} on Windows, {@link ANDROID_UNSAFE_PATH_CHARS} on Android and
+ * {@link UNIX_UNSAFE_PATH_CHARS} everywhere else. It is Obsidian's set rather than the file system's, so a
+ * name it accepts can be created through the vault.
+ *
+ * @param isWindows - Whether to use the Windows character set. Defaults to `Platform.isWin`.
+ * @param isAndroid - Whether to use the Android character set when `isWindows` is false. Defaults to
+ * `Platform.isAndroidApp`.
+ * @returns A regexp matching the characters Obsidian refuses in a file name on the given platform.
  */
-export function getOsUnsafePathCharsRegExp(isWindows?: boolean): RegExp {
+export function getOsUnsafePathCharsRegExp(isWindows?: boolean, isAndroid?: boolean): RegExp {
   isWindows ??= Platform.isWin;
-  return isWindows ? WINDOWS_UNSAFE_PATH_CHARS : UNIX_UNSAFE_PATH_CHARS;
+  if (isWindows) {
+    return WINDOWS_UNSAFE_PATH_CHARS;
+  }
+
+  isAndroid ??= Platform.isAndroidApp;
+  return isAndroid ? ANDROID_UNSAFE_PATH_CHARS : UNIX_UNSAFE_PATH_CHARS;
 }
 
 /**
  * Validates every segment of a vault path with {@link getFileNameValidationMessage}.
  *
  * @param path - The vault-relative path to validate, with `/` as the separator.
- * @param isWindows - Whether to include the Windows-specific character set. Defaults to `Platform.isWin`.
+ * @param isWindows - Whether to use the Windows character set. Defaults to `Platform.isWin`.
+ * @param isAndroid - Whether to use the Android character set when `isWindows` is false. Defaults to
+ * `Platform.isAndroidApp`.
  * @returns The message for the first invalid segment, or an empty string if every segment is valid.
  */
-export function getPathValidationMessage(path: string, isWindows?: boolean): string {
-  return path.split('/').map((segment) => getFileNameValidationMessage(segment, isWindows)).find(Boolean) ?? '';
+export function getPathValidationMessage(path: string, isWindows?: boolean, isAndroid?: boolean): string {
+  return path.split('/').map((segment) => getFileNameValidationMessage(segment, isWindows, isAndroid)).find(Boolean) ?? '';
 }
 
 /**
