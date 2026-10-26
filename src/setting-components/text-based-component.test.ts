@@ -1,29 +1,35 @@
 // @vitest-environment jsdom
 
-import type { UndefinedOnPartialDeep } from 'type-fest';
-
 import { noop } from '@mnaoumov/typescript-lib/function';
 import { assertNonNullable } from '@mnaoumov/typescript-lib/type-guards';
-import { TextComponent } from 'obsidian';
+import {
+  TextComponent,
+  ToggleComponent
+} from 'obsidian';
 import {
   describe,
   expect,
   it
 } from 'vitest';
 
-import type { TextBasedComponent } from './text-based-component.ts';
-
 import { getTextBasedComponentValue } from './text-based-component.ts';
-
-// Allow duck-type check in getTextBasedComponentValue to work with strictMock.
-// StrictMock throws on access to unknown properties; setting this to undefined
-// makes `typeof tc.setPlaceholderValue === 'function'` return false instead.
-(TextComponent.prototype as UndefinedOnPartialDeep<Partial<TextBasedComponent<unknown>>>).setPlaceholderValue = undefined;
 
 describe('getTextBasedComponentValue', () => {
   it('should return null for objects without TextBasedComponent interface', () => {
     expect(getTextBasedComponentValue({})).toBeNull();
     expect(getTextBasedComponentValue({ unrelated: true })).toBeNull();
+    expect(getTextBasedComponentValue({ setPlaceholderValue: noop })).toBeNull();
+    expect(getTextBasedComponentValue({ isEmpty: noop, setPlaceholderValue: 'not a function' })).toBeNull();
+  });
+
+  it('should return null for non-objects', () => {
+    expect(getTextBasedComponentValue(null)).toBeNull();
+    expect(getTextBasedComponentValue('text')).toBeNull();
+  });
+
+  it('should return null for a strict-proxy ToggleComponent without reading its unmocked members', () => {
+    const toggle = new ToggleComponent(createDiv());
+    expect(getTextBasedComponentValue(toggle)).toBeNull();
   });
 
   it('should return the object if it already implements TextBasedComponent', () => {
