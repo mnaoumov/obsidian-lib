@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 6.2.0
+
+- feat(debug): own showInitialDebugMessage in obsidian-lib
+- feat(validation): refuse the file name characters Obsidian refuses off Windows
+
 ## 6.1.0
 
 - feat(validation): validate a whole file name or path against every naming rule
