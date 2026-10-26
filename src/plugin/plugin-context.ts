@@ -8,13 +8,11 @@ import type { DebugController } from '@mnaoumov/typescript-lib/debug-controller'
 import type { Component } from 'obsidian';
 
 import { getSharedAbortController } from '@mnaoumov/typescript-lib/abort-controller';
-import {
-  getDebugController,
-  showInitialDebugMessage
-} from '@mnaoumov/typescript-lib/debug';
+import { getDebugController } from '@mnaoumov/typescript-lib/debug';
 import { Library } from '@mnaoumov/typescript-lib/library';
 
 import { CssClass } from '../css-class.ts';
+import { showInitialDebugMessage } from '../debug.ts';
 import {
   LIBRARY_STYLES,
   LIBRARY_VERSION

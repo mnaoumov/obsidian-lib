@@ -79,6 +79,17 @@ const [, , ...cliArguments] = process.argv;
 const INCLUDED_PACKAGES = parseIncludedPackages(cliArguments);
 
 /**
+ * Exports of an included package that one of this package's own modules supersedes while the included package
+ * still ships them, keyed by name, each naming the included module it is skipped from. This package's module takes
+ * the flat name; the included one is skipped instead of being reported as a clash. An entry whose included export
+ * is gone fails the build, so the list cannot outlive the removal it waits for.
+ */
+const SUPERSEDED_INCLUDED_EXPORTS = new Map<string, string>([
+  // Moved here from `@mnaoumov/typescript-lib`, which removes it in its next major.
+  ['showInitialDebugMessage', '@mnaoumov/typescript-lib/debug']
+]);
+
+/**
 The first module to export a given value name, and the symbol it resolves to (for collision detection).
 */
 interface ExportOrigin {
@@ -127,6 +138,19 @@ function assertNoCaseInsensitiveExportCollisions(exportNamesByModule: Map<string
       + 'each other on the documentation site when it is built on a case-insensitive filesystem:\n'
       + `${formatExportNameCollisions(nameCollisions)}\n`
       + 'Rename one side so no two exports in a module differ only by case.'
+  );
+}
+
+function assertSupersededIncludedExportsExist(seenNames: Set<string>): void {
+  const staleEntries = [...SUPERSEDED_INCLUDED_EXPORTS].filter(([name]) => !seenNames.has(name));
+  if (staleEntries.length === 0) {
+    return;
+  }
+
+  throw new Error(
+    'The flat barrel skips included exports that no included module exports any more:\n'
+      + `${staleEntries.map(([name, moduleSpecifier]) => `  \`${name}\` — ${moduleSpecifier}`).join('\n')}\n`
+      + 'Remove them from SUPERSEDED_INCLUDED_EXPORTS in scripts/build-generate-merged.ts.'
   );
 }
 
@@ -200,6 +224,7 @@ async function generateMerged(leafFiles: string[]): Promise<void> {
   // Every module's value exports, superseded ones included — the superset invariant needs what the twins
   // export, which is exactly what does NOT reach `valueExportsByModule`.
   const allValueExportsByModule = new Map<string, string[]>();
+  const seenSupersededIncludedExports = new Set<string>();
 
   for (const file of leafFiles) {
     const sourceFile = program.getSourceFile(file);
@@ -237,6 +262,11 @@ async function generateMerged(leafFiles: string[]): Promise<void> {
         continue;
       }
 
+      if (SUPERSEDED_INCLUDED_EXPORTS.get(name) === moduleSpecifier) {
+        seenSupersededIncludedExports.add(name);
+        continue;
+      }
+
       const existing = originByName.get(name);
       if (existing) {
         if (existing.symbol !== resolved) {
@@ -256,6 +286,7 @@ async function generateMerged(leafFiles: string[]): Promise<void> {
 
   assertNoCaseInsensitiveExportCollisions(exportNamesByModule);
   assertFacadesSupersedeTwinsCompletely(supersessions, allValueExportsByModule);
+  assertSupersededIncludedExportsExist(seenSupersededIncludedExports);
 
   if (collisionMessages.length > 0) {
     throw new Error(
