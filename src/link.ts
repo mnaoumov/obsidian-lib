@@ -54,6 +54,7 @@ import type {
   GetFileParams,
   PathOrFile
 } from './file-system.ts';
+import type { GetFolderNoteFolderParams } from './folder-note.ts';
 import type { LinkUpdateProgressReporter } from './link-update-progress.ts';
 import type { OffsetRange } from './reference.ts';
 import type { ProcessOptions } from './vault.ts';
@@ -72,6 +73,11 @@ import {
   isMarkdownFile,
   MARKDOWN_FILE_EXTENSION
 } from './file-system.ts';
+import {
+  FolderNoteLocation,
+  getFolderNoteFolder,
+  resolveFolderNoteConfig
+} from './folder-note.ts';
 import {
   getBacklinksForFileSafe,
   getCacheSafe,
@@ -1467,6 +1473,36 @@ interface LinkConfig {
 }
 
 /**
+ * Params for {@link refreshFileNameAlias}.
+ */
+interface RefreshFileNameAliasParams {
+  /**
+   * The alias the link carries, if any.
+   */
+  readonly alias: string | undefined;
+
+  /**
+   * The Obsidian app instance.
+   */
+  readonly app: App;
+
+  /**
+   * Whether an alias may be added to a link that has none.
+   */
+  readonly canAddAlias: boolean;
+
+  /**
+   * The target after the rename.
+   */
+  readonly newTargetFile: TFile;
+
+  /**
+   * The target's path before the rename.
+   */
+  readonly oldTargetPath: string;
+}
+
+/**
  * Params for {@link resolveSnapshotLinkIdentityKeyProvider}.
  */
 interface ResolveSnapshotLinkIdentityKeyProviderParams {
@@ -2278,16 +2314,19 @@ export function updateLink(params: UpdateLinkParams): string {
     ? undefined
     : parseLinkResult?.alias;
 
-  // Refresh a file-name alias to the new base name when the flag is set.
+  // Refresh a file-name alias to the new display name when the flag is set.
   // A file-name alias equals the OLD base name (with or without extension); a custom alias is kept.
   // Gating on the flag also refreshes wikilinks that carry an explicit alias.
   // Those previously short-circuited the refresh and kept the stale old base name.
+  // The display name of a folder note is its folder's name, so `charlie.md` becoming `charlie/!.md` keeps `charlie`.
   if (shouldUpdateFileNameAlias) {
-    if (alias === basename(oldTargetPath, extname(oldTargetPath))) {
-      alias = newTargetFile.basename;
-    } else if (alias === basename(oldTargetPath)) {
-      alias = newTargetFile.name;
-    }
+    alias = refreshFileNameAlias({
+      alias,
+      app,
+      canAddAlias: isWikilink && !subpath && !hasEmbedSyntax(originalLinkText),
+      newTargetFile,
+      oldTargetPath
+    });
   }
 
   const newLink = generateMarkdownLink(normalizeOptionalProperties<GenerateMarkdownLinkParams>({
@@ -2513,7 +2552,7 @@ function generateMarkdownStyleLink(params: GenerateMarkdownStyleLinkParams): str
   let shouldEscapeAlias = markdownLinkParams.shouldEscapeAlias ?? false;
   if (!alias && (isMarkdownFile(targetFile) || !markdownLinkParams.isEmptyEmbedAliasAllowed)) {
     alias = !markdownLinkParams.shouldIncludeAttachmentExtensionToEmbedAlias || isMarkdownFile(targetFile)
-      ? targetFile.basename
+      ? getLinkDisplayName({ app: markdownLinkParams.app, file: targetFile })
       : targetFile.name;
     shouldEscapeAlias = true;
   }
@@ -2647,6 +2686,24 @@ function getLinkConfig(params: GenerateMarkdownLinkParams): LinkConfig {
   };
 }
 
+/**
+ * The name a link caption shows for a file: the folder's name for a Markdown folder note, the base name otherwise.
+ *
+ * @param params - The file, and optionally the folder-note setup to judge it by.
+ * @returns The display name.
+ */
+function getLinkDisplayName(params: GetFolderNoteFolderParams): string {
+  const { file } = params;
+  if (isMarkdownFile(file)) {
+    const folder = getFolderNoteFolder(params);
+    if (folder) {
+      return folder.name;
+    }
+  }
+
+  return file.basename;
+}
+
 function getUndefinedPayload(): undefined {
   // A single-target rewrite has nothing to remember per link: the target is implied.
 }
@@ -2671,6 +2728,36 @@ function normalizeFileUrlLink(link: Reference, shouldUseAngleBrackets: boolean):
       url: normalizeFileUrl(parseLinkResult.url)
     }))
     : undefined;
+}
+
+/**
+ * Refreshes a file-name alias to the display name of the renamed target.
+ *
+ * @param params - The current alias, and the target before and after.
+ * @returns The alias to use.
+ */
+function refreshFileNameAlias(params: RefreshFileNameAliasParams): string | undefined {
+  const { alias, app, canAddAlias, newTargetFile, oldTargetPath } = params;
+  const oldBaseName = basename(oldTargetPath, extname(oldTargetPath));
+  const folderNoteConfig = resolveFolderNoteConfig({ app });
+  const displayName = getLinkDisplayName({ app, config: folderNoteConfig, file: newTargetFile });
+  const isFolderNote = displayName !== newTargetFile.basename;
+  // A folder rename leaves the note `charlie/!.md` named as it was, so its old display name was the old folder's name.
+  const oldFolderNoteDisplayName = isFolderNote && folderNoteConfig.location === FolderNoteLocation.InsideFolder
+      && oldBaseName === newTargetFile.basename
+    ? basename(dirname(oldTargetPath))
+    : null;
+
+  if (alias === oldBaseName || alias === oldFolderNoteDisplayName) {
+    return displayName;
+  }
+
+  if (alias === basename(oldTargetPath)) {
+    return isFolderNote ? `${displayName}.${newTargetFile.extension}` : newTargetFile.name;
+  }
+
+  // An alias-less wikilink to `charlie/!` would display `!`, so it takes the folder's name as its alias.
+  return alias === undefined && isFolderNote && canAddAlias ? displayName : alias;
 }
 
 function resolveFinalLinkPathStyleFromObsidianSettings(app: App): FinalLinkPathStyle {
