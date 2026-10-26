@@ -43,7 +43,10 @@ vi.mock('../css-class.ts', () => ({
 }));
 
 vi.mock('@mnaoumov/typescript-lib/debug', () => ({
-  getDebugController: mocks.getDebugController,
+  getDebugController: mocks.getDebugController
+}));
+
+vi.mock('../debug.ts', () => ({
   showInitialDebugMessage: mocks.showInitialDebugMessage
 }));
 

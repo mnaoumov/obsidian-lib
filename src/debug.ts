@@ -4,7 +4,11 @@
  * The debuggers of `@mnaoumov/obsidian-lib`'s own modules.
  */
 
-import { getDebugger } from '@mnaoumov/typescript-lib/debug';
+import {
+  formatDebugGuideReference,
+  getDebugger,
+  isDebugNamespaceEnabled
+} from '@mnaoumov/typescript-lib/debug';
 import { Library } from '@mnaoumov/typescript-lib/library';
 
 import { OBSIDIAN_LIBRARY_NAME } from './library.ts';
@@ -24,4 +28,19 @@ type Debugger = ReturnType<typeof getDebugger>;
  */
 export function getObsidianLibDebugger(namespace: string): Debugger {
   return getDebugger(`${Library.debugPrefixNamespace}${OBSIDIAN_LIBRARY_NAME}:${namespace}`);
+}
+
+/**
+ * Shows an initial debug message, telling the user how to disable the plugin's debug messages.
+ *
+ * Prints nothing while the plugin's debug messages are disabled, so a plugin in its default configuration writes nothing to the console.
+ *
+ * @param pluginId - The plugin ID.
+ */
+export function showInitialDebugMessage(pluginId: string): void {
+  if (!isDebugNamespaceEnabled(pluginId)) {
+    return;
+  }
+
+  getDebugger(pluginId)(`Debug messages for plugin ${pluginId} are enabled.${formatDebugGuideReference(' how to disable them')}`);
 }
