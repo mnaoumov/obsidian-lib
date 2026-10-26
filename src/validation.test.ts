@@ -6,6 +6,7 @@ import {
 } from 'vitest';
 
 import {
+  ANDROID_UNSAFE_PATH_CHARS,
   getFileNameValidationMessage,
   getOsAndObsidianUnsafePathCharsRegExp,
   getOsUnsafePathCharsRegExp,
@@ -72,16 +73,22 @@ describe('WINDOWS_UNSAFE_PATH_CHARS', () => {
 });
 
 describe('UNIX_UNSAFE_PATH_CHARS', () => {
-  it('should match the null character', () => {
-    expect('\0'.match(UNIX_UNSAFE_PATH_CHARS)).not.toBeNull();
+  it.each(['\0', '\\', '/', ':'])('should match the %j character', (char) => {
+    expect(char.match(UNIX_UNSAFE_PATH_CHARS)).not.toBeNull();
   });
 
-  it('should match a forward slash', () => {
-    expect('/'.match(UNIX_UNSAFE_PATH_CHARS)).not.toBeNull();
+  it('should not match the characters only Windows and Android refuse', () => {
+    expect('abcABC123.-_ *?<>"|'.match(UNIX_UNSAFE_PATH_CHARS)).toBeNull();
+  });
+});
+
+describe('ANDROID_UNSAFE_PATH_CHARS', () => {
+  it.each(['\0', '*', '\\', '/', '<', '>', ':', '?', '"'])('should match the %j character', (char) => {
+    expect(char.match(ANDROID_UNSAFE_PATH_CHARS)).not.toBeNull();
   });
 
-  it('should not match safe characters including backslash', () => {
-    expect('abcABC123.-_ \\'.match(UNIX_UNSAFE_PATH_CHARS)).toBeNull();
+  it('should not match safe characters, nor the pipe Obsidian refuses only on Windows', () => {
+    expect('abcABC123.-_ |'.match(ANDROID_UNSAFE_PATH_CHARS)).toBeNull();
   });
 });
 
@@ -89,6 +96,22 @@ describe('getOsUnsafePathCharsRegExp', () => {
   it.each(['*', ':', '"'])('should match "%s" when isWindows is true', (char) => {
     const regex = getOsUnsafePathCharsRegExp(true);
     expect(char.match(regex)).not.toBeNull();
+  });
+
+  it('should return the Windows set even when isAndroid is true', () => {
+    expect(getOsUnsafePathCharsRegExp(true, true)).toBe(WINDOWS_UNSAFE_PATH_CHARS);
+  });
+
+  it('should return the Android set when isWindows is false and isAndroid is true', () => {
+    expect(getOsUnsafePathCharsRegExp(false, true)).toBe(ANDROID_UNSAFE_PATH_CHARS);
+  });
+
+  it('should return the Unix set when neither flag is set', () => {
+    expect(getOsUnsafePathCharsRegExp(false, false)).toBe(UNIX_UNSAFE_PATH_CHARS);
+  });
+
+  it('should default isAndroid to Platform.isAndroidApp', () => {
+    expect(getOsUnsafePathCharsRegExp(false)).toBe(UNIX_UNSAFE_PATH_CHARS);
   });
 
   it('should match "/" when isWindows is false', () => {
@@ -101,9 +124,9 @@ describe('getOsUnsafePathCharsRegExp', () => {
     expect('\0'.match(regex)).not.toBeNull();
   });
 
-  it('should not match backslash when isWindows is false', () => {
+  it('should match backslash when isWindows is false', () => {
     const regex = getOsUnsafePathCharsRegExp(false);
-    expect('\\'.match(regex)).toBeNull();
+    expect('\\'.match(regex)).not.toBeNull();
   });
 
   it('should not match safe filenames on Windows', () => {
@@ -236,9 +259,14 @@ describe('getFileNameValidationMessage', () => {
     expect(getFileNameValidationMessage('a:b:c?#.md', true)).toBe('a:b:c?#.md contains characters that are not allowed: : ? #');
   });
 
-  it('should apply the Windows character set only on Windows', () => {
-    expect(getFileNameValidationMessage('Meeting: notes', false)).toBe('');
-    expect(getFileNameValidationMessage('Meeting: notes', true)).toBe('Meeting: notes contains characters that are not allowed: :');
+  it('should apply the character set of the platform', () => {
+    expect(getFileNameValidationMessage('a?b', false, false)).toBe('');
+    expect(getFileNameValidationMessage('a?b', false, true)).toBe('a?b contains characters that are not allowed: ?');
+    expect(getFileNameValidationMessage('a?b', true)).toBe('a?b contains characters that are not allowed: ?');
+  });
+
+  it('should refuse the colon Obsidian refuses off Windows', () => {
+    expect(getFileNameValidationMessage('Meeting: notes', false, false)).toBe('Meeting: notes contains characters that are not allowed: :');
   });
 
   it('should apply the Obsidian character set on every platform', () => {
@@ -274,6 +302,10 @@ describe('getPathValidationMessage', () => {
 
   it('should report the first invalid segment', () => {
     expect(getPathValidationMessage('folder/CON/draft./note.md', true)).toBe('CON is a device name Windows reserves, so the file cannot exist on Windows.');
+  });
+
+  it('should pass the Android flag to every segment', () => {
+    expect(getPathValidationMessage('folder/a"b.md', false, true)).toBe('a"b.md contains characters that are not allowed: "');
   });
 
   it('should refuse a folder segment ending with a dot', () => {
