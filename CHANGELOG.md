@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 6.2.1
+
+- build(deps): bump @mnaoumov/typescript-lib to 2.0.0
+- fix(link): keep a folder note's folder name as its link caption
+- fix(settings): detect text-based components without reading unmocked members
+
 ## 6.2.0
 
 - feat(debug): own showInitialDebugMessage in obsidian-lib
