@@ -84,10 +84,7 @@ const INCLUDED_PACKAGES = parseIncludedPackages(cliArguments);
  * the flat name; the included one is skipped instead of being reported as a clash. An entry whose included export
  * is gone fails the build, so the list cannot outlive the removal it waits for.
  */
-const SUPERSEDED_INCLUDED_EXPORTS = new Map<string, string>([
-  // Moved here from `@mnaoumov/typescript-lib`, which removes it in its next major.
-  ['showInitialDebugMessage', '@mnaoumov/typescript-lib/debug']
-]);
+const SUPERSEDED_INCLUDED_EXPORTS = new Map<string, string>();
 
 /**
 The first module to export a given value name, and the symbol it resolves to (for collision detection).
