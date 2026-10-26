@@ -67,6 +67,11 @@ export function getTextBasedComponentValue<T>($unknown: unknown): null | TextBas
 }
 
 function isTextBasedComponent<T>(component: unknown): component is TextBasedComponent<T> {
+  // `in` before each read: a strict-proxy test double throws on reading a member it does not have.
+  if (typeof component !== 'object' || component === null || !('setPlaceholderValue' in component) || !('isEmpty' in component)) {
+    return false;
+  }
+
   const textBasedComponent = component as Partial<TextBasedComponent<T>>;
   return typeof textBasedComponent.setPlaceholderValue === 'function' && typeof textBasedComponent.isEmpty === 'function';
 }
