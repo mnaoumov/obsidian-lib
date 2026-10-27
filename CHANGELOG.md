@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 7.1.0
+
+- docs(indexing): link to the published data-store guide route
+- feat(indexing): share incremental file projections and Obsidian word matching
+
 ## 7.0.0
 
 - feat(data-stores): add local and shared plugin persistence
