@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## 8.0.0
+
+- fix: escape angle-bracket Markdown link destinations (<https://github.com/mnaoumov/obsidian-better-markdown-links/issues/43>)
+- fix: preserve active modal toggle colors on hover
+- chore: adopt keyword identifier lint rule
+- refactor!: make interface members readonly by default
+- chore(deps): clear development dependency audit findings
+- refactor: store app-wide state once per renderer realm
+
 ## 7.1.0
 
 - docs(indexing): link to the published data-store guide route
