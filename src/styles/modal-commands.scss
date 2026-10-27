@@ -40,7 +40,8 @@
     white-space: nowrap;
     cursor: pointer;
 
-    &:hover:not(:disabled) {
+    // Touch can leave :hover latched until the next tap. Keep the ON fill in that state too.
+    &:hover:not(:disabled):not(.is-active) {
       background-color: var(--background-modifier-hover);
       color: var(--text-normal);
     }
