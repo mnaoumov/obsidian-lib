@@ -16,12 +16,21 @@
 
 /// <reference types="obsidian-integration-testing/vitest/typings" />
 
+// cspell:ignoreRegExp /%[0-9A-F]{2}/g
+
 import { evalInObsidian } from 'obsidian-integration-testing';
 import {
   describe,
   expect,
   it
 } from 'vitest';
+
+interface AngleDestinationResult {
+  readonly converted: string;
+  readonly convertedAgain: string;
+  readonly renderedDestinations: string[];
+  readonly resolvedHeadings: (string | undefined)[];
+}
 
 /**
  * Result of the `file://` normalization test.
@@ -45,6 +54,63 @@ interface OffsetRangeFromEditorResult {
 interface UpdateLinksInFileResult {
   readonly diskAfterEdit: string;
 }
+
+describe('angle-bracket heading destinations', () => {
+  it('should keep plain and code-span headings linked after repeated conversion', async () => {
+    const result = await evalInObsidian<Record<string, never>, AngleDestinationResult>({
+      async callback({ app, lib: { LinkStyle, updateLinksInContent, waitUntil }, obsidianModule }) {
+        const { Component, MarkdownRenderer, resolveSubpath } = obsidianModule;
+        const headings = ['Angle <note> in a heading', 'Code `<note>` in a heading'];
+        const path = 'angle-destination-headings.md';
+        const content = headings.map((heading) => `## ${heading}\n\n[heading](#${heading.replaceAll(' ', '%20')})\n`).join('\n');
+        const file = await app.vault.create(path, content);
+        const component = new Component();
+        component.load();
+        try {
+          await waitUntil({
+            message: 'index angle-destination headings',
+            predicate: () => app.metadataCache.getFileCache(file)?.headings?.length === headings.length
+          });
+          const converted = await updateLinksInContent({
+            app,
+            content,
+            linkStyle: LinkStyle.Markdown,
+            newSourcePathOrFile: file,
+            shouldUseAngleBrackets: true
+          });
+          const convertedAgain = await updateLinksInContent({
+            app,
+            content: converted,
+            linkStyle: LinkStyle.Markdown,
+            newSourcePathOrFile: file,
+            shouldUseAngleBrackets: true
+          });
+          const container = createDiv();
+          await MarkdownRenderer.render(app, converted, container, path, component);
+          const renderedDestinations = Array.from(container.querySelectorAll<HTMLAnchorElement>('a.internal-link'), (anchor) => anchor.dataset['href'] ?? '');
+          const cache = app.metadataCache.getFileCache(file);
+          if (!cache) {
+            throw new Error('Expected indexed headings');
+          }
+          const resolvedHeadings = renderedDestinations.map((destination) => {
+            const resolved = resolveSubpath(cache, decodeURIComponent(destination.slice(destination.indexOf('#'))));
+            return resolved?.type === 'heading' ? resolved.current.heading : undefined;
+          });
+          return { converted, convertedAgain, renderedDestinations, resolvedHeadings };
+        } finally {
+          component.unload();
+          await app.fileManager.trashFile(file);
+        }
+      }
+    });
+
+    expect(result.converted).toContain('[heading](<#Angle %3Cnote%3E in a heading>)');
+    expect(result.converted).toContain('[heading](<#Code `%3Cnote%3E` in a heading>)');
+    expect(result.convertedAgain).toBe(result.converted);
+    expect(result.renderedDestinations).toHaveLength(2);
+    expect(result.resolvedHeadings).toEqual(['Angle <note> in a heading', 'Code `<note>` in a heading']);
+  });
+});
 
 describe('file:// link normalization', () => {
   it('should normalize file:// links in both frontmatter and body', async () => {
