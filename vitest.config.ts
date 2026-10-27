@@ -12,19 +12,15 @@ const INTEGRATION_TEST_TIMEOUT_IN_MILLISECONDS = 45_000;
 const SHARED_RESOLVE = {
   alias: {
     obsidian: 'obsidian-test-mocks/obsidian'
-  },
-  // The test-support packages still depend on `@mnaoumov/typescript-lib` 1.x and nest their own copy, so without this their
-  // per-test reset reaches a different module instance than the one the sources initialize.
-  dedupe: ['@mnaoumov/typescript-lib']
+  }
 };
 
 const SHARED_SERVER = {
   // eslint-disable-next-line unicorn/name-replacements -- `deps` is a Vitest config key.
   deps: {
     // The test-support package is processed by Vite, so its own imports of this package reach the sources through
-    // `selfSourcePlugin` and its per-test reset touches the module instance the tests use. The generic toolkit it
-    // builds on is processed too, so `resolve.dedupe` reaches its imports of `@mnaoumov/typescript-lib`.
-    inline: ['@obsidian-typings', '@mnaoumov/obsidian-dev-toolkit', '@mnaoumov/typescript-test-toolkit']
+    // `selfSourcePlugin` and its per-test reset touches the module instance the tests use.
+    inline: ['@obsidian-typings', '@mnaoumov/obsidian-dev-toolkit']
   }
 };
 

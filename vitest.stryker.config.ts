@@ -14,8 +14,7 @@ const config: ViteUserConfig = {
   resolve: {
     alias: {
       obsidian: 'obsidian-test-mocks/obsidian'
-    },
-    dedupe: ['@mnaoumov/typescript-lib']
+    }
   },
   test: {
     environment: 'jsdom',
@@ -25,7 +24,7 @@ const config: ViteUserConfig = {
     server: {
       // eslint-disable-next-line unicorn/name-replacements -- `deps` is a Vitest config key.
       deps: {
-        inline: ['@obsidian-typings', '@mnaoumov/obsidian-dev-toolkit', '@mnaoumov/typescript-test-toolkit']
+        inline: ['@obsidian-typings', '@mnaoumov/obsidian-dev-toolkit']
       }
     },
     setupFiles: ['obsidian-test-mocks/vitest-setup', '@mnaoumov/obsidian-dev-toolkit/vitest-setup']
