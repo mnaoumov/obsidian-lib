@@ -796,9 +796,9 @@ describe('PluginNoticeComponent', () => {
     const component = new PluginNoticeComponent({ app, pluginName: PLUGIN_NAME });
     component.load();
     component.showNotice('Locked', {
-      onCloseClick: (event) => {
+      onCloseClick: ($event) => {
         onCloseClickCount += 1;
-        event.cancel();
+        $event.cancel();
       },
       shouldHideOnClick: false
     });

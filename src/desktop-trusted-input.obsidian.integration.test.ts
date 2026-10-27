@@ -50,8 +50,8 @@ describe('trusted click helpers', () => {
         });
 
         const capture: ObservedEventCapture = { value: null };
-        target.addEventListener('click', (event: MouseEvent) => {
-          capture.value = { isTrusted: event.isTrusted, type: event.type };
+        target.addEventListener('click', ($event: MouseEvent) => {
+          capture.value = { isTrusted: $event.isTrusted, type: $event.type };
         });
 
         try {
@@ -94,10 +94,10 @@ describe('trusted click helpers', () => {
         });
 
         const capture: ObservedEventCapture = { value: null };
-        target.addEventListener('contextmenu', (event: MouseEvent) => {
-          capture.value = { isTrusted: event.isTrusted, type: event.type };
+        target.addEventListener('contextmenu', ($event: MouseEvent) => {
+          capture.value = { isTrusted: $event.isTrusted, type: $event.type };
           // A real menu would otherwise open and leak into the next test.
-          event.preventDefault();
+          $event.preventDefault();
         });
 
         try {
@@ -132,8 +132,8 @@ describe('trusted click helpers', () => {
         const target = app.workspace.containerEl.createDiv();
 
         const capture: ObservedEventCapture = { value: null };
-        target.addEventListener('click', (event: MouseEvent) => {
-          capture.value = { isTrusted: event.isTrusted, type: event.type };
+        target.addEventListener('click', ($event: MouseEvent) => {
+          capture.value = { isTrusted: $event.isTrusted, type: $event.type };
         });
 
         try {
@@ -172,11 +172,11 @@ describe('trusted click helpers', () => {
             await waitUntil({ message: 'the popout to load', predicate: () => popoutWindow.document.readyState === 'complete' });
 
             const keys: Record<string, string[]> = { main: [], popout: [] };
-            function recordMain(event: KeyboardEvent): void {
-              keys['main']?.push(`${event.key}:${String(event.isTrusted)}`);
+            function recordMain($event: KeyboardEvent): void {
+              keys['main']?.push(`${$event.key}:${String($event.isTrusted)}`);
             }
-            function recordPopout(event: KeyboardEvent): void {
-              keys['popout']?.push(`${event.key}:${String(event.isTrusted)}`);
+            function recordPopout($event: KeyboardEvent): void {
+              keys['popout']?.push(`${$event.key}:${String($event.isTrusted)}`);
             }
 
             document.addEventListener('keydown', recordMain, { capture: true });
@@ -237,8 +237,8 @@ describe('trusted click helpers', () => {
             const target = popoutDocument.body.createDiv();
             target.setCssStyles({ height: '80px', left: '24px', position: 'fixed', top: '120px', width: '160px', zIndex: '2147483647' });
             const observed: TrustedClickResult[] = [];
-            target.addEventListener('click', (event: MouseEvent) => {
-              observed.push({ isTrusted: event.isTrusted, type: event.type });
+            target.addEventListener('click', ($event: MouseEvent) => {
+              observed.push({ isTrusted: $event.isTrusted, type: $event.type });
             });
 
             await clickElement({ element: target });

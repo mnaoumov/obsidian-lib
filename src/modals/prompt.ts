@@ -182,10 +182,10 @@ class PromptModal extends ModalBase<null | string> {
     textComponent.onChange((newValue) => {
       this.value = newValue;
     });
-    inputEl.addEventListener('keydown', (event: KeyboardEvent) => {
-      if (event.key === 'Enter') {
-        this.handleOk(event, textComponent);
-      } else if (event.key === 'Escape') {
+    inputEl.addEventListener('keydown', ($event: KeyboardEvent) => {
+      if ($event.key === 'Enter') {
+        this.handleOk($event, textComponent);
+      } else if ($event.key === 'Escape') {
         this.close();
       }
     });
@@ -196,8 +196,8 @@ class PromptModal extends ModalBase<null | string> {
     const okButton = new ButtonComponent(this.contentEl);
     okButton.setButtonText(this.okButtonText);
     okButton.setCta();
-    okButton.onClick((event) => {
-      this.handleOk(event, textComponent);
+    okButton.onClick(($event) => {
+      this.handleOk($event, textComponent);
     });
     okButton.setClass(CssClass.OkButton);
     const cancelButton = new ButtonComponent(this.contentEl);
@@ -210,8 +210,8 @@ class PromptModal extends ModalBase<null | string> {
     this.commandBuilder?.build(this, normalizeOptionalProperties<ModalCommandBuilderBuildOptions>({ renderMode: this.commandsRenderMode }));
   }
 
-  private handleOk(event: Event, textComponent: TextComponent): void {
-    event.preventDefault();
+  private handleOk($event: Event, textComponent: TextComponent): void {
+    $event.preventDefault();
     if (!textComponent.inputEl.checkValidity()) {
       this.markTouched(textComponent.inputEl);
       textComponent.inputEl.reportValidity();

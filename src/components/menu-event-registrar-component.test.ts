@@ -36,8 +36,8 @@ function createMocks(): Mocks {
 
   const app = strictProxy<AppOriginal>({
     workspace: {
-      on: vi.fn((event: string) => {
-        registeredEvents.push(event);
+      on: vi.fn(($event: string) => {
+        registeredEvents.push($event);
         return eventRef;
       })
     }
