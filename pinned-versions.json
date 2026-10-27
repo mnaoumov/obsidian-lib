@@ -1,0 +1,68 @@
+{
+  "@codemirror/state": {
+    "section": "devDependencies",
+    "why": "Must match Obsidian's exact peer dependency so consumers use one CodeMirror instance.",
+    "check": "node -p \"require('obsidian/package.json').peerDependencies['@codemirror/state']\"",
+    "expect": "6.7.6"
+  },
+  "@codemirror/view": {
+    "section": "devDependencies",
+    "why": "Must match Obsidian's exact peer dependency so consumers use one CodeMirror instance.",
+    "check": "node -p \"require('obsidian/package.json').peerDependencies['@codemirror/view']\"",
+    "expect": "6.43.13"
+  },
+  "@lezer/common": {
+    "section": "dependencies",
+    "why": "Types must match the version bundled in Obsidian; see AGENTS.md for the distinguishing bundle markers.",
+    "check": "npm view @lezer/common version",
+    "expect": "1.5.3"
+  },
+  "@puppeteer/browsers": {
+    "section": "overrides",
+    "why": "Keep the integration tooling's browser downloader on the patched 3.x line.",
+    "check": null,
+    "manualCheck": "Re-evaluate the inherited override against npm audit and the browser downloader ranges in obsidian-integration-testing. Remove when all parents admit the patched version."
+  },
+  "deepmerge-ts": {
+    "section": "overrides",
+    "why": "Keep the Webdriver integration tooling on the patched 8.x line.",
+    "check": null,
+    "manualCheck": "Re-evaluate the inherited override against npm audit and Webdriver's dependency ranges. Remove when all parents admit the patched version."
+  },
+  "js-yaml": {
+    "section": "overrides",
+    "why": "The inherited exact override keeps YAML parsing on the existing pinned 4.3.2 release.",
+    "check": null,
+    "manualCheck": "Compare upstream changes and npm audit before moving this inherited pin; remove it when parent ranges resolve safely without it."
+  },
+  "katex": {
+    "section": "overrides",
+    "why": "https://github.com/advisories/GHSA-238p-pmpm-9mq7 is fixed in 0.18.2; micromark-extension-math still requests the vulnerable ^0.16.0 line. Used by development markdown linting.",
+    "check": "npm view micromark-extension-math@latest dependencies.katex",
+    "expect": "^0.16.0"
+  },
+  "markdown-it@>=15.0.0": {
+    "section": "overrides",
+    "why": "markdownlint-cli2 0.23.3 pins 15.0.1, affected by https://github.com/advisories/GHSA-r7fv-28h4-cvq7, https://github.com/advisories/GHSA-vfgh-jcmw-g37q and https://github.com/advisories/GHSA-gfr2-rv44-r23c. Force the patched 15.x release while preserving TypeDoc's 14.x dependency.",
+    "check": "node -p \"require('./node_modules/markdownlint-cli2/package.json').dependencies['markdown-it']\"",
+    "expect": "15.0.1"
+  },
+  "moment": {
+    "section": "overrides",
+    "why": "https://github.com/advisories/GHSA-4p3w-j4w9-5jqw is fixed in 2.31.0; eslint-plugin-obsidianmd's nested obsidian 1.12.3 pins a vulnerable Moment release. Obsidian's runtime Moment is supplied by the host.",
+    "check": "npm view eslint-plugin-obsidianmd@latest dependencies.obsidian",
+    "expect": "1.12.3"
+  },
+  "smol-toml": {
+    "section": "overrides",
+    "why": "Keep transitive TOML parsers on a patched release; https://github.com/advisories/GHSA-r4xh-jqrq-34v2 affects versions through 1.8.0.",
+    "check": null,
+    "manualCheck": "Check all parent TOML parser ranges against npm audit; remove the override when every parent admits a patched release."
+  },
+  "typescript": {
+    "section": "devDependencies",
+    "why": "The compiler is deliberately held at the version this strict library toolchain builds and tests against.",
+    "check": null,
+    "manualCheck": "Upgrade the compiler together with its tooling compatibility checks and run the complete branch gate."
+  }
+}
