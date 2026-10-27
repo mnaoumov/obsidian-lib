@@ -10,7 +10,7 @@ In order for modals to look properly, their styles have to be initialized. See [
 ## Alert
 
 ```ts
-import { alert } from '@mnaoumov/obsidian-lib/ui/dialogs/alert';
+import { alert } from '@mnaoumov/obsidian-lib/modals/alert';
 
 await alert({
   app,
@@ -24,7 +24,7 @@ await alert({
 ## Confirm
 
 ```ts
-import { confirm } from '@mnaoumov/obsidian-lib/ui/dialogs/confirm';
+import { confirm } from '@mnaoumov/obsidian-lib/modals/confirm';
 
 await confirm({
   app,
@@ -38,7 +38,7 @@ await confirm({
 ## Prompt
 
 ```ts
-import { prompt } from '@mnaoumov/obsidian-lib/ui/dialogs/prompt';
+import { prompt } from '@mnaoumov/obsidian-lib/modals/prompt';
 import type { MaybeReturn } from '@mnaoumov/typescript-lib/type';
 
 await prompt({
@@ -58,7 +58,7 @@ await prompt({
 ## Select Item
 
 ```ts
-import { selectItem } from '@mnaoumov/obsidian-lib/ui/dialogs/select-item';
+import { selectItem } from '@mnaoumov/obsidian-lib/modals/select-item';
 
 await selectItem({
   app,
@@ -77,7 +77,7 @@ await selectItem({
 Unlike [Select Item](#select-item) (a fuzzy-search picker over an arbitrary list), `selectOption` renders one button per option — useful for a small, fixed set of mutually-exclusive choices where each choice has its own label and resolved value. One option can be marked as the call-to-action (primary) button. It resolves with the chosen value, or `null` if the modal is dismissed without a choice.
 
 ```ts
-import { selectOption } from '@mnaoumov/obsidian-lib/ui/dialogs/select-option';
+import { selectOption } from '@mnaoumov/obsidian-lib/modals/select-option';
 
 const chosen = await selectOption({
   app,

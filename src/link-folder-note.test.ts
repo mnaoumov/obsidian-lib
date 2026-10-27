@@ -13,13 +13,13 @@ import {
   it
 } from 'vitest';
 
+import { FOLDER_NOTES_PLUGIN_ID } from './folder-note.ts';
 import {
   generateMarkdownLink,
   LinkPathStyle,
   LinkStyle,
   updateLink
-} from './links/link.ts';
-import { FOLDER_NOTES_PLUGIN_ID } from './vault/attachments/folder-note.ts';
+} from './link.ts';
 
 /**
  * Builds an app whose vault holds the given files and whose `folder-notes` is configured as given.

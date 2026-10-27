@@ -3,7 +3,7 @@ import type { ViteUserConfig } from 'vitest/config';
 import { getStrykerTestInclude } from '@mnaoumov/typescript-dev-toolkit/test-runners/stryker-config';
 import { DEFAULT_VITEST_TEST_EXCLUDE } from '@mnaoumov/typescript-dev-toolkit/test-runners/vitest-config';
 
-import { selfSourcePlugin } from './scripts/testing/vitest-self-source.ts';
+import { selfSourcePlugin } from './scripts/vitest-self-source.ts';
 
 // The mutation run's vitest configuration: the `unit-tests` and `unit-tests:global-stubs` projects flattened into one,
 // since Stryker's vitest runner forces its own pool anyway. It keeps everything those projects need to load a

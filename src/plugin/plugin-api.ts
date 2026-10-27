@@ -110,7 +110,7 @@ import {
   satisfies as satisfiesVersion
 } from 'compare-versions';
 
-import { getObsidianLibDebugger } from '../diagnostics/debug.ts';
+import { getObsidianLibDebugger } from '../debug.ts';
 import { getObsidianLibState } from '../obsidian-lib-state.ts';
 
 const PLUGIN_API_DEBUGGER_NAMESPACE = 'PluginApi';

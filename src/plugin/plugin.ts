@@ -18,11 +18,11 @@ import { noopAsync } from '@mnaoumov/typescript-lib/function';
 import { ensureNonNullable } from '@mnaoumov/typescript-lib/type-guards';
 import { Plugin } from 'obsidian';
 
-import type { TranslationsMap } from '../i18n/i18n.ts';
 import type {
   PluginConflict,
   PluginDependency
-} from './lifecycle/plugin-gate-component.ts';
+} from '../components/plugin-gate-component.ts';
+import type { TranslationsMap } from '../i18n/i18n.ts';
 import type { PluginApiDeclaration } from './plugin-api.ts';
 import type {
   PluginEventMap,
@@ -30,24 +30,24 @@ import type {
 } from './plugin-event-source.ts';
 import type { PluginLifecycleEventPayload } from './plugin-lifecycle-events.ts';
 
-import { CommandHandlerComponent } from '../commands/command-handler-component.ts';
-import { UnlockActiveNoteCommandHandler } from '../commands/plugin/unlock-active-note-command-handler.ts';
+import { AppActiveFileProvider } from '../active-file-provider.ts';
+import { CommandHandlerComponent } from '../command-handlers/command-handler-component.ts';
+import { UnlockActiveNoteCommandHandler } from '../command-handlers/unlock-active-note-command-handler.ts';
+import { PluginCommandRegistrar } from '../command-registrar.ts';
 import { AbortSignalComponent } from '../components/abort-signal-component.ts';
 import { AsyncErrorHandlerComponent } from '../components/async-error-handler-component.ts';
 import { ComponentEx } from '../components/component-ex.ts';
+import { ConsoleDebugComponent } from '../components/console-debug-component.ts';
+import { MenuEventRegistrarComponent } from '../components/menu-event-registrar-component.ts';
+import { NotebookNavigatorMenuEventRegistrarComponent } from '../components/notebook-navigator-menu-event-registrar-component.ts';
+import { PluginContextComponent } from '../components/plugin-context-component.ts';
+import { PluginGateComponent } from '../components/plugin-gate-component.ts';
+import { PluginNoticeComponent } from '../components/plugin-notice-component.ts';
+import { PluginSettingsComponentBase } from '../components/plugin-settings-component.ts';
 import { PluginDataHandler } from '../data-handler.ts';
-import { ConsoleDebugComponent } from '../diagnostics/console-debug-component.ts';
 import { initI18N } from '../i18n/i18n.ts';
 import { defaultTranslationsMap } from '../i18n/locales/translations-map.ts';
-import { PluginCommandRegistrar } from '../registrars/command-registrar.ts';
-import { PluginSettingsComponentBase } from '../settings/plugin-settings-component.ts';
-import { MenuEventRegistrarComponent } from '../ui/menus/menu-event-registrar-component.ts';
-import { NotebookNavigatorMenuEventRegistrarComponent } from '../ui/menus/notebook-navigator-menu-event-registrar-component.ts';
-import { ResourceLockComponent } from '../vault/resource-lock.ts';
-import { AppActiveFileProvider } from '../workspace/active-file-provider.ts';
-import { PluginContextComponent } from './lifecycle/plugin-context-component.ts';
-import { PluginGateComponent } from './lifecycle/plugin-gate-component.ts';
-import { PluginNoticeComponent } from './lifecycle/plugin-notice-component.ts';
+import { ResourceLockComponent } from '../resource-lock.ts';
 import { publishPluginApi } from './plugin-api.ts';
 import { PluginEventSourceImpl } from './plugin-event-source.ts';
 import {
@@ -177,7 +177,7 @@ export abstract class PluginBase extends mixinAsyncEvents<PluginEventMap>()(Plug
    * Gets the gate holding the plugin's feature surface up or down.
    *
    * Reach for it from a settings tab to render the overlap banner for a
-   * {@link plugin/lifecycle/plugin-gate-component!PluginConflictSeverity.Warn} conflict — the one
+   * {@link components/plugin-gate-component!PluginConflictSeverity.Warn} conflict — the one
    * banner the library cannot place itself, because a running plugin builds its own settings tab.
    *
    * Readable throughout {@link onloadImpl}, including its synchronous prefix, which is where a settings

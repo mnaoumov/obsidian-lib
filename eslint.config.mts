@@ -1,1 +1,1 @@
-export { configs as default } from './scripts/quality/eslint-config.ts';
+export { configs as default } from './scripts/eslint-config.ts';

@@ -46,7 +46,7 @@ import type {
   WatchPluginApiParams
 } from './plugin-api.ts';
 
-import { getObsidianLibDebugger } from '../diagnostics/debug.ts';
+import { getObsidianLibDebugger } from '../debug.ts';
 import { getObsidianLibState } from '../obsidian-lib-state.ts';
 import {
   findPluginApi,
