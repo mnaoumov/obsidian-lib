@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 6.3.0
+
+- feat(components): share the File Explorer vault-root menu across plugins
+
 ## 6.2.1
 
 - build(deps): bump @mnaoumov/typescript-lib to 2.0.0
