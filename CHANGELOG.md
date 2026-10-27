@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## 7.0.0
+
+- feat(data-stores): add local and shared plugin persistence
+- chore(test): remove the typescript-lib dedupe workaround
+- revert: restore the previous library module layout
+- refactor!: organize library modules by subject
+
 ## 6.3.0
 
 - feat(components): share the File Explorer vault-root menu across plugins
