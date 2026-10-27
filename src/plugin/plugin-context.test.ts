@@ -38,7 +38,7 @@ vi.mock('../library-styles.ts', () => ({
 
 vi.mock('@mnaoumov/typescript-lib/debug-controller', () => ({}));
 
-vi.mock('../css-class.ts', () => ({
+vi.mock('../ui/css-class.ts', () => ({
   CssClass: { LibraryName: 'obsidian-lib' }
 }));
 
@@ -46,7 +46,7 @@ vi.mock('@mnaoumov/typescript-lib/debug', () => ({
   getDebugController: mocks.getDebugController
 }));
 
-vi.mock('../debug.ts', () => ({
+vi.mock('../diagnostics/debug.ts', () => ({
   showInitialDebugMessage: mocks.showInitialDebugMessage
 }));
 

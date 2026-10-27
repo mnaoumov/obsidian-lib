@@ -31,7 +31,7 @@ description: The `PluginBase` family - notices, settings components, settings ta
 
 The links below contains the full documentation. Here in the docs we mention only the most important ones.
 
-## [FileExplorerRootMenuComponent](https://github.com/mnaoumov/obsidian-lib/blob/main/src/components/file-explorer-root-menu-component.ts)
+## [FileExplorerRootMenuComponent](https://github.com/mnaoumov/obsidian-lib/blob/main/src/ui/menus/file-explorer-root-menu-component.ts)
 
 The core File Explorer has two spots that stand for the vault root: the vault name at the top of the left sidebar, and the empty area below the file list. `FileExplorerRootMenuComponent` hands your handler the context menu of either spot just before it is shown, and tells you which spot it was.
 
@@ -39,7 +39,7 @@ The core File Explorer has two spots that stand for the vault root: the vault na
 import {
   FileExplorerRootMenuComponent,
   FileExplorerRootMenuSpot
-} from '@mnaoumov/obsidian-lib/components/file-explorer-root-menu-component';
+} from '@mnaoumov/obsidian-lib/ui/menus/file-explorer-root-menu-component';
 import { PluginBase } from '@mnaoumov/obsidian-lib/plugin/plugin';
 
 export class FooPlugin extends PluginBase {
@@ -79,7 +79,7 @@ The most important methods to override:
 
 Three are public Obsidian methods that `PluginBase` already implements, so you rarely override them: `onload()`, `onExternalSettingsChange()` and `onunload()`. Settings are loaded and saved by the plugin's settings component, whose `onLoadSettings()` and `onSaveSettings()` hooks you override there; see the `PluginSettingsComponentBase` section below.
 
-## [PluginNoticeComponent](https://github.com/mnaoumov/obsidian-lib/blob/main/src/components/plugin-notice-component.ts)
+## [PluginNoticeComponent](https://github.com/mnaoumov/obsidian-lib/blob/main/src/plugin/lifecycle/plugin-notice-component.ts)
 
 `this.pluginNoticeComponent` shows notices prefixed with the plugin name and tied to the plugin lifecycle. Prefer it over constructing an Obsidian `Notice` directly. It is a `protected` member of `PluginBase`, so reach it from inside your plugin class, or pass it to the components that need it.
 
@@ -105,10 +105,10 @@ The implication rules are enforced — a contradictory combination throws:
 - A permanent notice must be reusable, so `isPermanent: true` together with `isReusable: false` throws.
 - A hard-to-close notice is standalone, so `requiresCloseConfirmation: true` together with `isReusable: true` throws.
 
-## [PluginSettingsComponentBase](https://github.com/mnaoumov/obsidian-lib/blob/main/src/components/plugin-settings-component.ts)
+## [PluginSettingsComponentBase](https://github.com/mnaoumov/obsidian-lib/blob/main/src/settings/plugin-settings-component.ts)
 
 ```ts
-import { PluginSettingsComponentBase } from '@mnaoumov/obsidian-lib/components/plugin-settings-component';
+import { PluginSettingsComponentBase } from '@mnaoumov/obsidian-lib/settings/plugin-settings-component';
 
 export class FooPluginSettings {
   public invalidCharacterAction: 'Remove' | 'Replace' = 'Remove';
@@ -127,11 +127,11 @@ The most important methods in the execution order:
 - `onLoadRecord()`
 - `onSavingRecord()`
 
-## [PluginSettingsTabBase](https://github.com/mnaoumov/obsidian-lib/blob/main/src/plugin/plugin-settings-tab.ts)
+## [PluginSettingsTabBase](https://github.com/mnaoumov/obsidian-lib/blob/main/src/settings/plugin-settings-tab.ts)
 
 <!-- snippet-check: context declare class FooPluginSettings { invalidCharacterAction: 'Remove' | 'Replace'; replacementCharacter: string; } -->
 ```ts
-import { PluginSettingsTabBase } from '@mnaoumov/obsidian-lib/plugin/plugin-settings-tab';
+import { PluginSettingsTabBase } from '@mnaoumov/obsidian-lib/settings/plugin-settings-tab';
 
 export class FooPluginSettingsTab extends PluginSettingsTabBase<FooPluginSettings> {
 }
@@ -143,7 +143,7 @@ Obsidian 1.13 renders a settings tab from the definitions it returns, so a tab d
 ```ts
 import type { SettingDefinitionItem } from 'obsidian';
 
-import { PluginSettingsTabBase } from '@mnaoumov/obsidian-lib/plugin/plugin-settings-tab';
+import { PluginSettingsTabBase } from '@mnaoumov/obsidian-lib/settings/plugin-settings-tab';
 
 export class FooPluginSettingsTab extends PluginSettingsTabBase<FooPluginSettings> {
   protected override getSettingDefinitionItems(): SettingDefinitionItem[] {
@@ -197,7 +197,7 @@ The most important methods in the execution order:
 - `settingGroupEx()` / `settingEx()`
 - `bind()`
 
-## [RmdirGuardComponent](https://github.com/mnaoumov/obsidian-lib/blob/main/src/components/rmdir-guard-component.ts)
+## [RmdirGuardComponent](https://github.com/mnaoumov/obsidian-lib/blob/main/src/vault/files/rmdir-guard-component.ts)
 
 `app.vault.adapter.rmdir(path, recursive)` does not honor `recursive: false`, and the two adapters get it wrong in opposite directions:
 
@@ -211,7 +211,7 @@ Emptiness is decided from the adapter, not from the vault file tree - the tree o
 It is deliberately opt-in. `app.vault.adapter` is shared by the whole app, so a library that installed this patch on its own would change `rmdir` semantics for every other plugin, including the ones that never asked for it. A plugin that deletes folders opts in for itself:
 
 ```ts
-import { RmdirGuardComponent } from '@mnaoumov/obsidian-lib/components/rmdir-guard-component';
+import { RmdirGuardComponent } from '@mnaoumov/obsidian-lib/vault/files/rmdir-guard-component';
 import { PluginBase } from '@mnaoumov/obsidian-lib/plugin/plugin';
 
 export class FooPlugin extends PluginBase {
@@ -223,7 +223,7 @@ export class FooPlugin extends PluginBase {
 
 Check `error.code === 'ENOTEMPTY'` rather than `instanceof` - every plugin bundles its own copy of the library, so the error may cross a copy boundary.
 
-## [SyntaxHighlightingComponent](https://github.com/mnaoumov/obsidian-lib/blob/main/src/components/syntax-highlighting-component.ts)
+## [SyntaxHighlightingComponent](https://github.com/mnaoumov/obsidian-lib/blob/main/src/markdown/syntax-highlighting-component.ts)
 
 `SyntaxHighlightingComponent` registers your own syntax highlighting languages and unregisters them when it is unloaded. Add it as a child of your plugin: `const syntaxHighlightingComponent = this.addChild(new SyntaxHighlightingComponent());`, as in the example below.
 
@@ -241,7 +241,7 @@ Obsidian highlights code through two independent registries, so there are two me
 A missing language always throws - both when aliasing a language that is not registered and from `requirePrismLanguage()` - so a typo fails loudly instead of silently leaving your code without highlighting.
 
 ```ts
-import { SyntaxHighlightingComponent } from '@mnaoumov/obsidian-lib/components/syntax-highlighting-component';
+import { SyntaxHighlightingComponent } from '@mnaoumov/obsidian-lib/markdown/syntax-highlighting-component';
 import { PluginBase } from '@mnaoumov/obsidian-lib/plugin/plugin';
 
 export class FooPlugin extends PluginBase {

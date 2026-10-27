@@ -174,7 +174,7 @@ Some Obsidian callbacks cannot `await` — `checkCallback(isChecking): boolean`,
 ```typescript
 import type { PluginApiRef } from '@mnaoumov/obsidian-lib/plugin/plugin-api';
 
-import { GlobalCommandHandler } from '@mnaoumov/obsidian-lib/command-handlers/global-command-handler';
+import { GlobalCommandHandler } from '@mnaoumov/obsidian-lib/commands/global-command-handler';
 
 export class SearchCommandHandler extends GlobalCommandHandler {
   private readonly searchApiRef: PluginApiRef<SearchApi>;
@@ -269,13 +269,13 @@ When a feature moves from one plugin to another, the settings the user configure
 The envelope is generic, so both ends compile against one declaration:
 
 <!-- snippet-check: context interface MyMigratableSettings { shouldHandleRenames: boolean; } -->
-<!-- snippet-check: context declare const settingsMigrationApi: import('@mnaoumov/obsidian-lib/plugin/settings-migration-api').SettingsMigrationApi<MyMigratableSettings>; -->
+<!-- snippet-check: context declare const settingsMigrationApi: import('@mnaoumov/obsidian-lib/settings/settings-migration-api').SettingsMigrationApi<MyMigratableSettings>; -->
 ```typescript
 import type { PluginApiDeclaration } from '@mnaoumov/obsidian-lib/plugin/plugin-api';
-import type { SettingsMigrationApi } from '@mnaoumov/obsidian-lib/plugin/settings-migration-api';
+import type { SettingsMigrationApi } from '@mnaoumov/obsidian-lib/settings/settings-migration-api';
 
 import { PluginBase } from '@mnaoumov/obsidian-lib/plugin/plugin';
-import { getSettingsMigrationApiContract } from '@mnaoumov/obsidian-lib/plugin/settings-migration-api';
+import { getSettingsMigrationApiContract } from '@mnaoumov/obsidian-lib/settings/settings-migration-api';
 
 export class Plugin extends PluginBase {
   protected override getPluginApis(): PluginApiDeclaration[] {
@@ -294,9 +294,9 @@ The consumer parks the values it no longer acts on in its own settings, and lets
 
 <!-- snippet-check: context interface MyMigratableSettings { shouldHandleRenames: boolean; } -->
 <!-- snippet-check: context interface MyPluginSettings { proposedShouldHandleRenames: boolean | null; } -->
-<!-- snippet-check: context declare const settingsComponent: import('@mnaoumov/obsidian-lib/components/plugin-settings-component').PluginSettingsComponentBase<MyPluginSettings>; -->
+<!-- snippet-check: context declare const settingsComponent: import('@mnaoumov/obsidian-lib/settings/plugin-settings-component').PluginSettingsComponentBase<MyPluginSettings>; -->
 ```typescript
-import { SettingsMigrationComponent } from '@mnaoumov/obsidian-lib/components/settings-migration-component';
+import { SettingsMigrationComponent } from '@mnaoumov/obsidian-lib/settings/settings-migration-component';
 import { PluginBase } from '@mnaoumov/obsidian-lib/plugin/plugin';
 
 export class Plugin extends PluginBase {
@@ -344,7 +344,7 @@ Everything above assumes your plugin keeps working when the other one is absent.
 Declare the dependency instead:
 
 ```typescript
-import type { PluginDependency } from '@mnaoumov/obsidian-lib/components/plugin-gate-component';
+import type { PluginDependency } from '@mnaoumov/obsidian-lib/plugin/lifecycle/plugin-gate-component';
 
 import { PluginBase } from '@mnaoumov/obsidian-lib/plugin/plugin';
 
@@ -383,9 +383,9 @@ The mirror image of a dependency. Two plugins that took over the same behavior �
 Declare the overlap:
 
 ```typescript
-import type { PluginConflict } from '@mnaoumov/obsidian-lib/components/plugin-gate-component';
+import type { PluginConflict } from '@mnaoumov/obsidian-lib/plugin/lifecycle/plugin-gate-component';
 
-import { PluginConflictSeverity } from '@mnaoumov/obsidian-lib/components/plugin-gate-component';
+import { PluginConflictSeverity } from '@mnaoumov/obsidian-lib/plugin/lifecycle/plugin-gate-component';
 import { PluginBase } from '@mnaoumov/obsidian-lib/plugin/plugin';
 
 export class Plugin extends PluginBase {
@@ -404,7 +404,7 @@ export class Plugin extends PluginBase {
 `Block` behaves exactly like an unsatisfied dependency: `onloadImpl` does not run, and the user gets a notice plus a stand-in settings tab carrying your `reason`, a button that disables the other plugin, and a link into its settings. `Warn` is for an overlap that is annoying rather than destructive — a duplicated command, work done twice — where refusing to load would cost the user more than the overlap does. Both plugins keep running, the user is told once, and you can place the same explanation in your own settings tab:
 
 ```typescript
-import type { PluginGateComponent } from '@mnaoumov/obsidian-lib/components/plugin-gate-component';
+import type { PluginGateComponent } from '@mnaoumov/obsidian-lib/plugin/lifecycle/plugin-gate-component';
 import type { App } from 'obsidian';
 
 import { PluginBase } from '@mnaoumov/obsidian-lib/plugin/plugin';

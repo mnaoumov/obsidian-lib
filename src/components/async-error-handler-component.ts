@@ -8,8 +8,8 @@ import { dispose } from '@mnaoumov/typescript-lib/disposable';
 import { registerAsyncErrorEventHandler } from '@mnaoumov/typescript-lib/error';
 
 import { t } from '../i18n/i18n.ts';
+import { PluginNoticeComponent } from '../plugin/lifecycle/plugin-notice-component.ts';
 import { ComponentEx } from './component-ex.ts';
-import { PluginNoticeComponent } from './plugin-notice-component.ts';
 
 /**
  * Registers a global async error handler that shows a notice to the user.

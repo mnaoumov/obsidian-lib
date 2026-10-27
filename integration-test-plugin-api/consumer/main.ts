@@ -14,12 +14,12 @@ import type { Notice } from 'obsidian';
 
 import { Plugin } from 'obsidian';
 
-import type { PluginNoticeComponentShowNoticeOptions } from '@mnaoumov/obsidian-lib/components/plugin-notice-component';
+import type { PluginNoticeComponentShowNoticeOptions } from '@mnaoumov/obsidian-lib/plugin/lifecycle/plugin-notice-component';
 import type { PluginApiRef } from '@mnaoumov/obsidian-lib/plugin/plugin-api';
 import type { GreeterApi } from '../shared.ts';
 
-import { PluginGateComponent } from '@mnaoumov/obsidian-lib/components/plugin-gate-component';
-import { PluginNoticeComponent } from '@mnaoumov/obsidian-lib/components/plugin-notice-component';
+import { PluginGateComponent } from '@mnaoumov/obsidian-lib/plugin/lifecycle/plugin-gate-component';
+import { PluginNoticeComponent } from '@mnaoumov/obsidian-lib/plugin/lifecycle/plugin-notice-component';
 import {
   getValidatePluginApiPayloadsDebugSwitch,
   watchPluginApi

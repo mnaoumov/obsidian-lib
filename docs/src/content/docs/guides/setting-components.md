@@ -10,14 +10,14 @@ In order for components to look properly, their styles has to be initialized. Se
 ## CheckboxComponent
 
 ```ts
-import { CheckboxComponent } from '@mnaoumov/obsidian-lib/setting-components/checkbox-component';
+import { CheckboxComponent } from '@mnaoumov/obsidian-lib/settings/inputs/choices/checkbox-component';
 
 const checkbox = new CheckboxComponent(containerEl);
 checkbox.setValue(false);
 
 // or
 
-import { SettingEx } from '@mnaoumov/obsidian-lib/setting-ex';
+import { SettingEx } from '@mnaoumov/obsidian-lib/settings/setting-ex';
 
 new SettingEx(containerEl)
   .addCheckbox((checkbox) => {
@@ -30,7 +30,7 @@ new SettingEx(containerEl)
 ## CodeHighlighterComponent
 
 ```ts
-import { CodeHighlighterComponent } from '@mnaoumov/obsidian-lib/setting-components/code-highlighter-component';
+import { CodeHighlighterComponent } from '@mnaoumov/obsidian-lib/settings/inputs/code-highlighter-component';
 
 const codeHighlighter = new CodeHighlighterComponent(containerEl);
 codeHighlighter
@@ -41,7 +41,7 @@ codeHighlighter
 
 // or
 
-import { SettingEx } from '@mnaoumov/obsidian-lib/setting-ex';
+import { SettingEx } from '@mnaoumov/obsidian-lib/settings/setting-ex';
 
 new SettingEx(containerEl)
   .addCodeHighlighter((codeHighlighter) => {
@@ -58,14 +58,14 @@ new SettingEx(containerEl)
 ## DateComponent
 
 ```ts
-import { DateComponent } from '@mnaoumov/obsidian-lib/setting-components/date-component';
+import { DateComponent } from '@mnaoumov/obsidian-lib/settings/inputs/date-time/date-component';
 
 const date = new DateComponent(containerEl);
 date.setValue(new Date());
 
 // or
 
-import { SettingEx } from '@mnaoumov/obsidian-lib/setting-ex';
+import { SettingEx } from '@mnaoumov/obsidian-lib/settings/setting-ex';
 
 new SettingEx(containerEl)
   .addDate((date) => {
@@ -78,14 +78,14 @@ new SettingEx(containerEl)
 ## DateTimeComponent
 
 ```ts
-import { DateTimeComponent } from '@mnaoumov/obsidian-lib/setting-components/date-time-component';
+import { DateTimeComponent } from '@mnaoumov/obsidian-lib/settings/inputs/date-time/date-time-component';
 
 const dateTime = new DateTimeComponent(containerEl);
 dateTime.setValue(new Date());
 
 // or
 
-import { SettingEx } from '@mnaoumov/obsidian-lib/setting-ex';
+import { SettingEx } from '@mnaoumov/obsidian-lib/settings/setting-ex';
 
 new SettingEx(containerEl)
   .addDateTime((dateTime) => {
@@ -98,14 +98,14 @@ new SettingEx(containerEl)
 ## EmailComponent
 
 ```ts
-import { EmailComponent } from '@mnaoumov/obsidian-lib/setting-components/email-component';
+import { EmailComponent } from '@mnaoumov/obsidian-lib/settings/inputs/text/email-component';
 
 const email = new EmailComponent(containerEl);
 email.setValue('alpha@bravo.com');
 
 // or
 
-import { SettingEx } from '@mnaoumov/obsidian-lib/setting-ex';
+import { SettingEx } from '@mnaoumov/obsidian-lib/settings/setting-ex';
 
 new SettingEx(containerEl)
   .addEmail((email) => {
@@ -118,14 +118,14 @@ new SettingEx(containerEl)
 ## FileComponent
 
 ```ts
-import { FileComponent } from '@mnaoumov/obsidian-lib/setting-components/file-component';
+import { FileComponent } from '@mnaoumov/obsidian-lib/settings/inputs/file-component';
 
 const file = new FileComponent(containerEl);
 file.onChange((value) => console.log(value));
 
 // or
 
-import { SettingEx } from '@mnaoumov/obsidian-lib/setting-ex';
+import { SettingEx } from '@mnaoumov/obsidian-lib/settings/setting-ex';
 
 new SettingEx(containerEl)
   .addFile((file) => {
@@ -138,7 +138,7 @@ new SettingEx(containerEl)
 ## MonthComponent
 
 ```ts
-import { MonthComponent } from '@mnaoumov/obsidian-lib/setting-components/month-component';
+import { MonthComponent } from '@mnaoumov/obsidian-lib/settings/inputs/date-time/month-component';
 
 const month = new MonthComponent(containerEl);
 month.setValue({
@@ -148,7 +148,7 @@ month.setValue({
 
 // or
 
-import { SettingEx } from '@mnaoumov/obsidian-lib/setting-ex';
+import { SettingEx } from '@mnaoumov/obsidian-lib/settings/setting-ex';
 
 new SettingEx(containerEl)
   .addMonth((month) => {
@@ -164,7 +164,7 @@ new SettingEx(containerEl)
 ## MultipleDropdownComponent
 
 ```ts
-import { MultipleDropdownComponent } from '@mnaoumov/obsidian-lib/setting-components/multiple-dropdown-component';
+import { MultipleDropdownComponent } from '@mnaoumov/obsidian-lib/settings/inputs/multiple/multiple-dropdown-component';
 
 const multipleDropdown = new MultipleDropdownComponent(containerEl);
 multipleDropdown.addOptions({
@@ -178,7 +178,7 @@ multipleDropdown.setValue(['Value2', 'Value3']);
 
 // or
 
-import { SettingEx } from '@mnaoumov/obsidian-lib/setting-ex';
+import { SettingEx } from '@mnaoumov/obsidian-lib/settings/setting-ex';
 
 new SettingEx(containerEl)
   .addMultipleDropdown((multipleDropdown) => {
@@ -198,14 +198,14 @@ new SettingEx(containerEl)
 ## MultipleEmailComponent
 
 ```ts
-import { MultipleEmailComponent } from '@mnaoumov/obsidian-lib/setting-components/multiple-email-component';
+import { MultipleEmailComponent } from '@mnaoumov/obsidian-lib/settings/inputs/multiple/multiple-email-component';
 
 const multipleEmail = new MultipleEmailComponent(containerEl);
 multipleEmail.setValue(['alpha@bravo.com', 'charlie@delta.com']);
 
 // or
 
-import { SettingEx } from '@mnaoumov/obsidian-lib/setting-ex';
+import { SettingEx } from '@mnaoumov/obsidian-lib/settings/setting-ex';
 
 new SettingEx(containerEl)
   .addMultipleEmail((multipleEmail) => {
@@ -218,14 +218,14 @@ new SettingEx(containerEl)
 ## MultipleFileComponent
 
 ```ts
-import { MultipleFileComponent } from '@mnaoumov/obsidian-lib/setting-components/multiple-file-component';
+import { MultipleFileComponent } from '@mnaoumov/obsidian-lib/settings/inputs/multiple/multiple-file-component';
 
 const multipleFile = new MultipleFileComponent(containerEl);
 multipleFile.onChange((value) => console.log(value));
 
 // or
 
-import { SettingEx } from '@mnaoumov/obsidian-lib/setting-ex';
+import { SettingEx } from '@mnaoumov/obsidian-lib/settings/setting-ex';
 
 new SettingEx(containerEl)
   .addMultipleFile((multipleFile) => {
@@ -238,14 +238,14 @@ new SettingEx(containerEl)
 ## MultipleTextComponent
 
 ```ts
-import { MultipleTextComponent } from '@mnaoumov/obsidian-lib/setting-components/multiple-text-component';
+import { MultipleTextComponent } from '@mnaoumov/obsidian-lib/settings/inputs/multiple/multiple-text-component';
 
 const multipleText = new MultipleTextComponent(containerEl);
 multipleText.setValue(['alpha', 'bravo']);
 
 // or
 
-import { SettingEx } from '@mnaoumov/obsidian-lib/setting-ex';
+import { SettingEx } from '@mnaoumov/obsidian-lib/settings/setting-ex';
 
 new SettingEx(containerEl)
   .addMultipleText((multipleText) => {
@@ -258,14 +258,14 @@ new SettingEx(containerEl)
 ## NumberComponent
 
 ```ts
-import { NumberComponent } from '@mnaoumov/obsidian-lib/setting-components/number-component';
+import { NumberComponent } from '@mnaoumov/obsidian-lib/settings/inputs/number-component';
 
 const number = new NumberComponent(containerEl);
 number.setValue(42);
 
 // or
 
-import { SettingEx } from '@mnaoumov/obsidian-lib/setting-ex';
+import { SettingEx } from '@mnaoumov/obsidian-lib/settings/setting-ex';
 
 new SettingEx(containerEl)
   .addNumber((number) => {
@@ -278,14 +278,14 @@ new SettingEx(containerEl)
 ## PasswordComponent
 
 ```ts
-import { PasswordComponent } from '@mnaoumov/obsidian-lib/setting-components/password-component';
+import { PasswordComponent } from '@mnaoumov/obsidian-lib/settings/inputs/text/password-component';
 
 const password = new PasswordComponent(containerEl);
 password.setValue('alpha');
 
 // or
 
-import { SettingEx } from '@mnaoumov/obsidian-lib/setting-ex';
+import { SettingEx } from '@mnaoumov/obsidian-lib/settings/setting-ex';
 
 new SettingEx(containerEl)
   .addPassword((password) => {
@@ -298,14 +298,14 @@ new SettingEx(containerEl)
 ## TelephoneComponent
 
 ```ts
-import { TelephoneComponent } from '@mnaoumov/obsidian-lib/setting-components/telephone-component';
+import { TelephoneComponent } from '@mnaoumov/obsidian-lib/settings/inputs/text/telephone-component';
 
 const telephone = new TelephoneComponent(containerEl);
 telephone.setValue('+123 456 78 90');
 
 // or
 
-import { SettingEx } from '@mnaoumov/obsidian-lib/setting-ex';
+import { SettingEx } from '@mnaoumov/obsidian-lib/settings/setting-ex';
 
 new SettingEx(containerEl)
   .addTelephone((telephone) => {
@@ -323,14 +323,14 @@ On mobile the keyboard for this component changes.
 
 ```ts
 import { moment } from 'obsidian';
-import { TimeComponent } from '@mnaoumov/obsidian-lib/setting-components/time-component';
+import { TimeComponent } from '@mnaoumov/obsidian-lib/settings/inputs/date-time/time-component';
 
 const time = new TimeComponent(containerEl);
 time.setValue(moment.duration({ hours: 12, minutes: 34 }));
 
 // or
 
-import { SettingEx } from '@mnaoumov/obsidian-lib/setting-ex';
+import { SettingEx } from '@mnaoumov/obsidian-lib/settings/setting-ex';
 
 new SettingEx(containerEl)
   .addTime((time) => {
@@ -343,14 +343,14 @@ new SettingEx(containerEl)
 ## TriStateCheckboxComponent
 
 ```ts
-import { TriStateCheckboxComponent } from '@mnaoumov/obsidian-lib/setting-components/tri-state-checkbox-component';
+import { TriStateCheckboxComponent } from '@mnaoumov/obsidian-lib/settings/inputs/choices/tri-state-checkbox-component';
 
 const triStateCheckbox = new TriStateCheckboxComponent(containerEl);
 triStateCheckbox.setValue(null);
 
 // or
 
-import { SettingEx } from '@mnaoumov/obsidian-lib/setting-ex';
+import { SettingEx } from '@mnaoumov/obsidian-lib/settings/setting-ex';
 
 new SettingEx(containerEl)
   .addTriStateCheckbox((triStateCheckbox) => {
@@ -363,7 +363,7 @@ new SettingEx(containerEl)
 ## TypedDropdownComponent
 
 ```ts
-import { TypedDropdownComponent } from '@mnaoumov/obsidian-lib/setting-components/typed-dropdown-component';
+import { TypedDropdownComponent } from '@mnaoumov/obsidian-lib/settings/inputs/choices/typed-dropdown-component';
 
 export class TypedItem {
   public static readonly Bravo = new TypedItem('Bravo');
@@ -383,7 +383,7 @@ typedDropdown.setValue(TypedItem.Bravo);
 
 // or
 
-import { SettingEx } from '@mnaoumov/obsidian-lib/setting-ex';
+import { SettingEx } from '@mnaoumov/obsidian-lib/settings/setting-ex';
 
 new SettingEx(containerEl)
   .addTypedDropdown((typedDropdown) => {
@@ -401,7 +401,7 @@ new SettingEx(containerEl)
 ## TypedMultipleDropdownComponent
 
 ```ts
-import { TypedMultipleDropdownComponent } from '@mnaoumov/obsidian-lib/setting-components/typed-multiple-dropdown-component';
+import { TypedMultipleDropdownComponent } from '@mnaoumov/obsidian-lib/settings/inputs/choices/typed-multiple-dropdown-component';
 
 export class TypedItem {
   public static readonly Bravo = new TypedItem('Bravo');
@@ -421,7 +421,7 @@ typedMultipleDropdown.setValue([TypedItem.Bravo, TypedItem.Baz]);
 
 // or
 
-import { SettingEx } from '@mnaoumov/obsidian-lib/setting-ex';
+import { SettingEx } from '@mnaoumov/obsidian-lib/settings/setting-ex';
 
 new SettingEx(containerEl)
   .addTypedMultipleDropdown((typedMultipleDropdown) => {
@@ -439,14 +439,14 @@ new SettingEx(containerEl)
 ## UrlComponent
 
 ```ts
-import { UrlComponent } from '@mnaoumov/obsidian-lib/setting-components/url-component';
+import { UrlComponent } from '@mnaoumov/obsidian-lib/settings/inputs/text/url-component';
 
 const url = new UrlComponent(containerEl);
 url.setValue('https://alpha.com/');
 
 // or
 
-import { SettingEx } from '@mnaoumov/obsidian-lib/setting-ex';
+import { SettingEx } from '@mnaoumov/obsidian-lib/settings/setting-ex';
 
 new SettingEx(containerEl)
   .addUrl((url) => {
@@ -459,7 +459,7 @@ new SettingEx(containerEl)
 ## WeekComponent
 
 ```ts
-import { WeekComponent } from '@mnaoumov/obsidian-lib/setting-components/week-component';
+import { WeekComponent } from '@mnaoumov/obsidian-lib/settings/inputs/date-time/week-component';
 
 const week = new WeekComponent(containerEl);
 week.setValue({
@@ -469,7 +469,7 @@ week.setValue({
 
 // or
 
-import { SettingEx } from '@mnaoumov/obsidian-lib/setting-ex';
+import { SettingEx } from '@mnaoumov/obsidian-lib/settings/setting-ex';
 
 new SettingEx(containerEl)
   .addWeek((week) => {
