@@ -11,8 +11,8 @@ import {
   vi
 } from 'vitest';
 
+import { PluginNoticeComponent } from '../plugin/lifecycle/plugin-notice-component.ts';
 import { AsyncErrorHandlerComponent } from './async-error-handler-component.ts';
-import { PluginNoticeComponent } from './plugin-notice-component.ts';
 
 type TranslationsArgument = Parameters<Parameters<typeof import('../i18n/i18n.ts')['t']>[0]>[0];
 

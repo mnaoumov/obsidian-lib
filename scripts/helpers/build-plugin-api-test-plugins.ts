@@ -5,12 +5,12 @@
  * `obsidian-lib`.
  *
  * The separate esbuild runs are the point, not an implementation detail: two bundles mean two module
- * instances of `src/obsidian/plugin/plugin-api.ts` in one renderer, sharing nothing but the realm-global
+ * instances of `src/plugin/plugin-api.ts` in one renderer, sharing nothing but the realm-global
  * registry bag — which is exactly the situation every real pair of plugins is in, since each bundles its own
  * copy of the library. A single bundle would prove nothing.
  *
  * The output is written under `dist/`, never shipped, and only read by
- * `scripts/integration-test-plugin-api-global-setup.ts`.
+ * `scripts/testing/integration-test-plugin-api-global-setup.ts`.
  */
 
 import { ObsidianPluginRepoPaths } from '@mnaoumov/obsidian-dev-toolkit/obsidian-plugin-repo-paths';

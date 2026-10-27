@@ -9,7 +9,7 @@ import {
 } from 'vitest';
 
 import { addPluginCssClasses } from '../plugin/plugin-context.ts';
-import { MultipleDropdownComponent } from '../setting-components/multiple-dropdown-component.ts';
+import { MultipleDropdownComponent } from '../settings/inputs/multiple/multiple-dropdown-component.ts';
 
 function getCompiledSelectors(): string[] {
   const { css } = compile(join(import.meta.dirname, 'main.scss'));

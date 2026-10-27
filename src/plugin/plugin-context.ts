@@ -11,8 +11,7 @@ import { getSharedAbortController } from '@mnaoumov/typescript-lib/abort-control
 import { getDebugController } from '@mnaoumov/typescript-lib/debug';
 import { Library } from '@mnaoumov/typescript-lib/library';
 
-import { CssClass } from '../css-class.ts';
-import { showInitialDebugMessage } from '../debug.ts';
+import { showInitialDebugMessage } from '../diagnostics/debug.ts';
 import {
   LIBRARY_STYLES,
   LIBRARY_VERSION
@@ -22,6 +21,7 @@ import {
   OBSIDIAN_LIBRARY_NAME,
   ObsidianLibrary
 } from '../library.ts';
+import { CssClass } from '../ui/css-class.ts';
 
 interface PluginContextWindow {
   DEBUG: DebugController | undefined;

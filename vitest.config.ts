@@ -3,7 +3,7 @@ import {
   defineLibraryVitestConfig
 } from '@mnaoumov/typescript-dev-toolkit/test-runners/vitest-config';
 
-import { selfSourcePlugin } from './scripts/vitest-self-source.ts';
+import { selfSourcePlugin } from './scripts/testing/vitest-self-source.ts';
 
 // The same budget `defineObsidianPluginVitestConfig` gives every plugin's Obsidian projects: it clears the
 // transports' per-eval cap, so an over-long closure fails with the harness's own diagnosis. See AGENTS.md.
@@ -30,7 +30,7 @@ const SHARED_SERVER = {
 
 const INTEGRATION_TEST_FILES = 'src/**/*.integration.test.ts';
 const OBSIDIAN_INTEGRATION_TEST_FILES = 'src/**/*.obsidian.integration.test.ts';
-const DEMO_VAULT_HELPER_INTEGRATION_TEST_FILE = 'src/demo-vault-helper.obsidian.integration.test.ts';
+const DEMO_VAULT_HELPER_INTEGRATION_TEST_FILE = 'src/demo-vault/demo-vault-helper.obsidian.integration.test.ts';
 const CONSUMER_LIB_INTEGRATION_TEST_FILE = 'src/integration-test-lib.obsidian.integration.test.ts';
 const PLUGIN_API_INTEGRATION_TEST_FILE = 'src/plugin/plugin-api.obsidian.integration.test.ts';
 
@@ -110,14 +110,14 @@ export default defineLibraryVitestConfig({
           PLUGIN_API_INTEGRATION_TEST_FILE
         ],
         fileParallelism: false,
-        globalSetup: ['./scripts/integration-test-obsidian-global-setup.ts'],
+        globalSetup: ['./scripts/testing/integration-test-obsidian-global-setup.ts'],
         include: [OBSIDIAN_INTEGRATION_TEST_FILES],
         maxWorkers: 1,
         name: 'obsidian-integration-tests',
         sequence: { groupOrder: OBSIDIAN_SHARED_INSTANCE_GROUP_ORDER },
         setupFiles: [
           'obsidian-integration-testing/vitest-setup',
-          './scripts/integration-test-obsidian-setup.ts'
+          './scripts/testing/integration-test-obsidian-setup.ts'
         ],
         testTimeout: INTEGRATION_TEST_TIMEOUT_IN_MILLISECONDS
       }
@@ -127,7 +127,7 @@ export default defineLibraryVitestConfig({
         environment: 'node',
         // Its OWN Obsidian instance and vault, so the bootstrap does not pollute the shared one.
         fileParallelism: false,
-        globalSetup: ['./scripts/demo-vault-helper-global-setup.ts'],
+        globalSetup: ['./scripts/testing/demo-vault-helper-global-setup.ts'],
         include: [DEMO_VAULT_HELPER_INTEGRATION_TEST_FILE],
         maxWorkers: 1,
         name: 'obsidian-integration-tests:demo-vault-helper',
@@ -142,7 +142,7 @@ export default defineLibraryVitestConfig({
         // Proves the CONSUMER wiring: a vault with NO plugin-under-test, the harness seeded as a consumer's
         // would be, and `setupFiles` naming the PUBLISHED setup endpoint on purpose.
         fileParallelism: false,
-        globalSetup: ['./scripts/integration-test-consumer-lib-global-setup.ts'],
+        globalSetup: ['./scripts/testing/integration-test-consumer-lib-global-setup.ts'],
         include: [CONSUMER_LIB_INTEGRATION_TEST_FILE],
         maxWorkers: 1,
         name: 'obsidian-integration-tests:consumer-lib',
@@ -159,7 +159,7 @@ export default defineLibraryVitestConfig({
         environment: 'node',
         // Two separately bundled plugins in one vault: two copies of the library share one renderer.
         fileParallelism: false,
-        globalSetup: ['./scripts/integration-test-plugin-api-global-setup.ts'],
+        globalSetup: ['./scripts/testing/integration-test-plugin-api-global-setup.ts'],
         include: [PLUGIN_API_INTEGRATION_TEST_FILE],
         maxWorkers: 1,
         name: 'obsidian-integration-tests:plugin-api',

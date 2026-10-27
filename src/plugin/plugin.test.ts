@@ -17,22 +17,22 @@ import {
   vi
 } from 'vitest';
 
+import type { TranslationsMap } from '../i18n/i18n.ts';
 import type {
   PluginConflict,
   PluginDependency,
   PluginGateComponent
-} from '../components/plugin-gate-component.ts';
-import type { TranslationsMap } from '../i18n/i18n.ts';
+} from './lifecycle/plugin-gate-component.ts';
 import type { PluginApiDeclaration } from './plugin-api.ts';
 import type { PluginLifecycleEventPayload } from './plugin-lifecycle-events.ts';
 
-import { FileCommandHandler } from '../command-handlers/file-command-handler.ts';
+import { FileCommandHandler } from '../commands/files/file-command-handler.ts';
 import { ComponentEx } from '../components/component-ex.ts';
-import { PluginConflictSeverity } from '../components/plugin-gate-component.ts';
-import { PluginNoticeComponent } from '../components/plugin-notice-component.ts';
-import { PluginSettingsComponentBase } from '../components/plugin-settings-component.ts';
 import { PluginDataHandler } from '../data-handler.ts';
 import { initI18N } from '../i18n/i18n.ts';
+import { PluginSettingsComponentBase } from '../settings/plugin-settings-component.ts';
+import { PluginConflictSeverity } from './lifecycle/plugin-gate-component.ts';
+import { PluginNoticeComponent } from './lifecycle/plugin-notice-component.ts';
 import { PluginEventSourceImpl } from './plugin-event-source.ts';
 import {
   PLUGIN_LOADED_EVENT_NAME,
@@ -83,7 +83,7 @@ vi.mock('../i18n/locales/translations-map.ts', () => ({
   defaultTranslationsMap: {}
 }));
 
-vi.mock('../debug.ts', () => ({
+vi.mock('../diagnostics/debug.ts', () => ({
   getDebugController: vi.fn(() => ({})),
   getDebugger: vi.fn(() => vi.fn()),
   getObsidianLibDebugger: vi.fn(() => vi.fn()),
@@ -117,7 +117,7 @@ vi.mock('../obsidian-lib-state.ts', () => {
   };
 });
 
-vi.mock('../css-class.ts', () => ({
+vi.mock('../ui/css-class.ts', () => ({
   CssClass: {
     LibraryName: 'obsidian-lib',
     PluginSettingsTab: 'plugin-settings-tab',

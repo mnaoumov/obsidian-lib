@@ -20,7 +20,7 @@ import { getLanguage } from 'obsidian';
 
 import type { DefaultTranslationsBase } from './default-translations.ts';
 
-import { getObsidianLibDebugger } from '../debug.ts';
+import { getObsidianLibDebugger } from '../diagnostics/debug.ts';
 import { en } from './locales/en.ts';
 import {
   DEFAULT_LANGUAGE,
