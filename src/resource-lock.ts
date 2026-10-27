@@ -205,6 +205,7 @@ interface LockEntry {
    * registry, and release must find the entry at its CURRENT path — a release that captured the path
    * at lock time would silently no-op after the resource moved, leaking the lock forever.
    */
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Renames rebase this entry so releasing it uses its current registry path.
   path: string;
   readonly pluginId: string;
   readonly shouldReleaseOnAbort: boolean;
@@ -212,7 +213,7 @@ interface LockEntry {
 
 interface LockIndicators {
   readonly actionIconEl: HTMLElement;
-  disposeTypeListener: () => void;
+  readonly disposeTypeListener: () => void;
   readonly tabIconEl: HTMLElement | null;
 }
 

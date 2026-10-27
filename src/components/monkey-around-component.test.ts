@@ -30,7 +30,7 @@ import {
 } from './monkey-around-component.ts';
 
 interface MarkedGreet {
-  marker: string;
+  readonly marker: string;
 }
 
 interface RegisterDeferringPatchParams {
@@ -41,9 +41,9 @@ interface RegisterDeferringPatchParams {
 }
 
 interface TestObject {
-  greet: (name: string) => string;
-  sum: (a: number, b: number) => number;
-  value: number;
+  readonly greet: (name: string) => string;
+  readonly sum: (a: number, b: number) => number;
+  readonly value: number;
 }
 
 type TestObjectGreet = TestObject['greet'];
@@ -381,7 +381,7 @@ describe('MonkeyAroundComponent', () => {
 
   describe('Debouncer members', () => {
     interface WithDebouncer {
-      save: Debouncer<[string], void>;
+      readonly save: Debouncer<[string], void>;
     }
 
     function createWithDebouncer(saved: string[]): WithDebouncer {
@@ -759,14 +759,14 @@ describe('MonkeyAroundComponent', () => {
 
   describe('FunctionKeys / MethodKeys', () => {
     interface Mixed {
-      greet: (name: string) => string;
-      save: Debouncer<[string], void>;
-      sum: (a: number, b: number) => number;
-      value: number;
+      readonly greet: (name: string) => string;
+      readonly save: Debouncer<[string], void>;
+      readonly sum: (a: number, b: number) => number;
+      readonly value: number;
     }
 
     interface OnlyDebouncer {
-      save: Debouncer<[string], void>;
+      readonly save: Debouncer<[string], void>;
     }
 
     it('FunctionKeys includes methods and callable objects (Debouncer), excluding non-callables', () => {

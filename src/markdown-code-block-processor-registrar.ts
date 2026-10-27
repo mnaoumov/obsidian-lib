@@ -23,7 +23,7 @@ export interface MarkdownCodeBlockProcessorRegistrar {
    * @param params - The parameters for the markdown code block processor.
    * @returns The markdown post processor.
    */
-  registerMarkdownCodeBlockProcessor: (params: MarkdownCodeBlockProcessorRegistrarRegisterMarkdownCodeBlockProcessorParams) => MarkdownPostProcessor;
+  readonly registerMarkdownCodeBlockProcessor: (params: MarkdownCodeBlockProcessorRegistrarRegisterMarkdownCodeBlockProcessorParams) => MarkdownPostProcessor;
 }
 
 interface MarkdownCodeBlockProcessorRegistrarRegisterMarkdownCodeBlockProcessorParams {

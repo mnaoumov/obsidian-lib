@@ -74,26 +74,30 @@ vi.mock('./modals/confirm.ts', () => ({
  * locking plugin in a tooltip, so the assignment stays until the mock grows one.
  */
 interface MockAppPlugins {
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Tests install plugin manifests to exercise lock owner labels.
   plugins: MockPlugins;
 }
 
 interface MockLeafTabStatus {
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Tests change the tab status container to exercise missing indicators.
   tabHeaderStatusContainerEl: HTMLElement | null;
 }
 
 interface MockManifest {
-  name: string;
+  readonly name: string;
 }
 
 interface MockPlugins {
-  manifests: Record<string, MockManifest>;
+  readonly manifests: Record<string, MockManifest>;
 }
 
 interface MockWorkspaceActiveView {
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Tests replace the active-view lookup to exercise lock indicators.
   getActiveViewOfType: () => unknown;
 }
 
 interface MutableViewFile {
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Tests clear the view file to exercise an empty view.
   file: null | TFileOriginal;
 }
 

@@ -33,8 +33,8 @@ import { TemplatesLanguageComponent } from './templates-language-component.ts';
  * (TS2411). The tests only ever read these two entries, so naming just them is both sufficient and honest.
  */
 interface PlaceholderEntries {
-  expression: PrismTokenObject;
-  expressionWithFormat: PrismTokenObject;
+  readonly expression: PrismTokenObject;
+  readonly expressionWithFormat: PrismTokenObject;
 }
 
 const { loadPrismMock } = vi.hoisted(() => ({

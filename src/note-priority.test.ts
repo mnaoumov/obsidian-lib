@@ -14,8 +14,8 @@ import {
 } from './note-priority.ts';
 
 interface NonWinningCase {
-  notePaths: string[];
-  ranks: Record<string, number>;
+  readonly notePaths: string[];
+  readonly ranks: Record<string, number>;
 }
 
 function rankOf(notePath: string, entries: string[], frontmatter: null | Record<string, unknown> = null): number {

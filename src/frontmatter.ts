@@ -46,17 +46,18 @@ export interface ObsidianFrontmatter {
   /**
    * An array of aliases for the note.
    */
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Alias updates replace or delete this frontmatter property.
   aliases?: string[];
 
   /**
    * An array of CSS classes to apply to the note.
    */
-  cssclasses?: string[];
+  readonly cssclasses?: string[];
 
   /**
    * An array of tags for the note.
    */
-  tags?: string[];
+  readonly tags?: string[];
 }
 
 /**
@@ -68,27 +69,27 @@ export interface ObsidianPublishFrontmatter {
   /**
    * A cover image for the note.
    */
-  cover?: string;
+  readonly cover?: string;
 
   /**
    * A description for the note.
    */
-  description?: string;
+  readonly description?: string;
 
   /**
    * An image for the note.
    */
-  image?: string;
+  readonly image?: string;
 
   /**
    * A permanent link for the note.
    */
-  permalink?: string;
+  readonly permalink?: string;
 
   /**
    * Whether the note is published.
    */
-  publish?: boolean;
+  readonly publish?: boolean;
 }
 
 /**

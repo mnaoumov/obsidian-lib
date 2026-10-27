@@ -49,6 +49,7 @@ interface LoadParams {
 }
 
 interface VaultMenuRecord {
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The menu probe records when showing the menu is requested.
   isShowRequested: boolean;
   readonly menu: Menu;
   readonly show: Mock<() => Menu>;

@@ -26,12 +26,12 @@ export interface IsoMonth {
   /**
    * A month (1-12).
    */
-  month: number;
+  readonly month: number;
 
   /**
    * A year (1-9999).
    */
-  year: number;
+  readonly year: number;
 }
 
 /**

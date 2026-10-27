@@ -16,6 +16,7 @@ import type { GenericObject } from '@mnaoumov/typescript-lib/type-guards';
 import { ValueWrapper } from '@mnaoumov/typescript-lib/value-wrapper';
 
 interface ObsidianLibWrapper {
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Initialization and test isolation replace the realm shared-state bag.
   __obsidianLib: GenericObject;
 }
 

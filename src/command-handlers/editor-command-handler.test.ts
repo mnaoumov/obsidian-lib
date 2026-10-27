@@ -31,9 +31,9 @@ import type { EditorCommandHandlerConstructorParams } from './editor-command-han
 import { EditorCommandHandler } from './editor-command-handler.ts';
 
 interface MockContext {
-  context: CommandHandlerRegistrationContext;
-  editorMenuHandlers: EditorMenuEventHandler[];
-  viewportMenuHandlers: MarkdownViewportMenuEventHandler[];
+  readonly context: CommandHandlerRegistrationContext;
+  readonly editorMenuHandlers: EditorMenuEventHandler[];
+  readonly viewportMenuHandlers: MarkdownViewportMenuEventHandler[];
 }
 
 class TestEditorHandler extends EditorCommandHandler {

@@ -19,6 +19,7 @@ export interface ValueComponentWithChangeTracking<T> extends ValueComponent<T> {
    *
    * @param callback - A callback function that is called when the value of the component changes.
    */
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Change tracking wraps and replaces the component callback registration method.
   onChange: (callback: (newValue: T) => void) => this;
 }
 

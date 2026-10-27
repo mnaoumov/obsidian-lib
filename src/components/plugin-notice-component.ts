@@ -79,7 +79,7 @@ export interface PluginNoticeCloseClickEvent {
   /**
    * Cancels the close, leaving the notice open.
    */
-  cancel: () => void;
+  readonly cancel: () => void;
 }
 
 /**
@@ -99,7 +99,7 @@ export interface PluginNoticeComponentDelayedNotice extends Disposable {
    *
    * @param content - The new notice content.
    */
-  setContent: (content: DocumentFragment | string) => void;
+  readonly setContent: (content: DocumentFragment | string) => void;
 }
 
 /**

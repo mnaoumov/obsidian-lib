@@ -44,7 +44,7 @@ import { parseFrontmatter } from './frontmatter.ts';
 import { process } from './vault.ts';
 
 interface PathHolder {
-  path: string;
+  readonly path: string;
 }
 
 vi.mock('./debug.ts', () => ({

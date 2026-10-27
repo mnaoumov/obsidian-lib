@@ -90,8 +90,8 @@ const SUPERSEDED_INCLUDED_EXPORTS = new Map<string, string>();
 The first module to export a given value name, and the symbol it resolves to (for collision detection).
 */
 interface ExportOrigin {
-  moduleSpecifier: string;
-  symbol: TsSymbol;
+  readonly moduleSpecifier: string;
+  readonly symbol: TsSymbol;
 }
 
 await wrapCliTask(async () => {

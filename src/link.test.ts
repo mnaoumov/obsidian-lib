@@ -685,8 +685,8 @@ const SHAPING_PARAMS_CASES: ShapingParamsCase[] = [
 ];
 
 interface CanvasFileNodeReferenceEx extends CanvasReference {
-  endOffset?: undefined;
-  startOffset?: undefined;
+  readonly endOffset?: undefined;
+  readonly startOffset?: undefined;
 }
 
 function createShapingParamsCaseLink(shapingParamsCase: ShapingParamsCase): Reference {

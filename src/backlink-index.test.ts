@@ -19,6 +19,7 @@ import { getIndexedBacklinksForFile } from './backlink-index.ts';
 import { resetObsidianLibState } from './obsidian-lib-state.ts';
 
 interface CallCounter {
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The backlink lookup probe increments and resets this counter.
   count: number;
 }
 
@@ -36,7 +37,7 @@ interface FakeVault {
   readonly canvasReferences: FakeCanvasReference[];
   readonly files: Map<string, TFile>;
   readonly resolveCalls: CallCounter;
-  setNote: (path: string, cache: CachedMetadata | undefined, hash?: string) => void;
+  readonly setNote: (path: string, cache: CachedMetadata | undefined, hash?: string) => void;
 }
 
 let currentVault: FakeVault;

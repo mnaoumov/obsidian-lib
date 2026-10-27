@@ -34,7 +34,7 @@ import {
 import { getFile } from './file-system.ts';
 
 interface PathHolder {
-  path: string;
+  readonly path: string;
 }
 
 vi.mock('@mnaoumov/typescript-lib/error', () => ({

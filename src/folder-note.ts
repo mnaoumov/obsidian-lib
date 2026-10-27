@@ -96,7 +96,7 @@ export interface FolderNoteConfig {
    */
   // A function property rather than a method, because it is a standalone callback, never a method of the
   // config — which is also what lets it be destructured and handed on without tripping `unbound-method`.
-  resolveName: (folder: TFolder) => string;
+  readonly resolveName: (folder: TFolder) => string;
 }
 
 /**

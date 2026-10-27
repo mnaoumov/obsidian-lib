@@ -28,17 +28,17 @@ export interface IncompleteFacade {
   /**
    * The facade's module specifier.
    */
-  facade: string;
+  readonly facade: string;
 
   /**
    * The value export names the superseded module has that the facade does not, sorted.
    */
-  missingNames: string[];
+  readonly missingNames: string[];
 
   /**
    * The superseded module's specifier.
    */
-  supersededModule: string;
+  readonly supersededModule: string;
 }
 
 /**
@@ -48,12 +48,12 @@ export interface ModuleSupersession {
   /**
    * The unprefixed facade's module specifier.
    */
-  facade: string;
+  readonly facade: string;
 
   /**
    * The specifiers of the `desktop-` / `mobile-` prefixed siblings it supersedes, sorted.
    */
-  superseded: string[];
+  readonly superseded: string[];
 }
 
 /**

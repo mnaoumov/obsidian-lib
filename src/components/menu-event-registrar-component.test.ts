@@ -21,10 +21,10 @@ import {
 import { MenuEventRegistrarComponent } from './menu-event-registrar-component.ts';
 
 interface Mocks {
-  app: AppOriginal;
-  eventRef: EventReferenceOriginal;
-  offref: ReturnType<typeof vi.fn>;
-  registeredEvents: string[];
+  readonly app: AppOriginal;
+  readonly eventRef: EventReferenceOriginal;
+  readonly offref: ReturnType<typeof vi.fn>;
+  readonly registeredEvents: string[];
 }
 
 function createMocks(): Mocks {

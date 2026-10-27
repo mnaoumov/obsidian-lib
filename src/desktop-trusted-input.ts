@@ -212,7 +212,7 @@ type ElectronMouseInputEvent = Extract<Parameters<CurrentWebContents['sendInputE
 
 // The shape that discriminates a pointer `sendInputEvent` payload from a keyboard one.
 interface PointerCoordinates {
-  x: number;
+  readonly x: number;
 }
 
 /**

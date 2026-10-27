@@ -21,7 +21,7 @@ export interface ObsidianProtocolHandlerRegistrar {
    *
    * @param params - The parameters for the Obsidian protocol handler registration.
    */
-  registerObsidianProtocolHandler: (params: ObsidianProtocolHandlerRegistrarRegisterObsidianProtocolHandlerParams) => void;
+  readonly registerObsidianProtocolHandler: (params: ObsidianProtocolHandlerRegistrarRegisterObsidianProtocolHandlerParams) => void;
 }
 
 interface ObsidianProtocolHandlerRegistrarRegisterObsidianProtocolHandlerParams {

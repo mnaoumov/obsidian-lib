@@ -82,7 +82,7 @@ import {
 } from './vault.ts';
 
 interface PathHolder {
-  path: string;
+  readonly path: string;
 }
 
 vi.mock('./obsidian-lib-state.ts', () => ({
@@ -189,12 +189,12 @@ const mockedReadSafe = vi.mocked(readSafe);
 const mockedParseFrontmatter = vi.mocked(parseFrontmatter);
 
 interface FrontmatterLinkCacheEx extends FrontmatterLinkCache {
-  position?: undefined;
-  startOffset?: undefined;
+  readonly position?: undefined;
+  readonly startOffset?: undefined;
 }
 
 interface FrontmatterLinkCacheWithOffsetsEx extends FrontmatterLinkCacheWithOffsets {
-  position?: undefined;
+  readonly position?: undefined;
 }
 
 function createMockApp(): App {

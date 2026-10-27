@@ -13,8 +13,8 @@ import {
 import { createCodeBlockRegExp } from './code-block-reg-exp.ts';
 
 interface ParsedCodeBlock {
-  content: null | string;
-  language: string;
+  readonly content: null | string;
+  readonly language: string;
 }
 
 function parseCodeBlocks(text: string): ParsedCodeBlock[] {

@@ -21,6 +21,7 @@ import {
 import { CorePluginToggleComponent } from './core-plugin-toggle-component.ts';
 
 interface CorePluginStub {
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Tests toggle the core plugin state between checks.
   enabled: boolean;
 }
 
@@ -28,8 +29,8 @@ interface MockApp {
   readonly app: App;
   readonly corePlugin: CorePluginStub;
   readonly offref: ReturnType<typeof vi.fn>;
-  toggle: (isEnabled: boolean) => void;
-  triggerChange: () => void;
+  readonly toggle: (isEnabled: boolean) => void;
+  readonly triggerChange: () => void;
 }
 
 function createMockApp(isEnabled: boolean, hasCorePlugin = true): MockApp {

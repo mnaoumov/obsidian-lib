@@ -144,7 +144,7 @@ interface CustomAttachmentLocationAttachmentPathApi {
    *   plugin declares field for field.
    * @returns A {@link Promise} that resolves to the attachment's path from the vault root.
    */
-  getAvailablePathForAttachments: (params: GetAvailablePathForAttachmentsExtendedFunctionParams) => Promise<string>;
+  readonly getAvailablePathForAttachments: (params: GetAvailablePathForAttachmentsExtendedFunctionParams) => Promise<string>;
 
   /**
    * Whether the user designated a folder an attachment unit folder. Synchronous on purpose.
@@ -152,7 +152,7 @@ interface CustomAttachmentLocationAttachmentPathApi {
    * @param params - The folder.
    * @returns Whether the folder is designated.
    */
-  isAttachmentUnitFolder: (params: CustomAttachmentLocationIsAttachmentUnitFolderParams) => boolean;
+  readonly isAttachmentUnitFolder: (params: CustomAttachmentLocationIsAttachmentUnitFolderParams) => boolean;
 }
 
 /**

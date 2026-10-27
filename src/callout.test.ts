@@ -111,9 +111,9 @@ vi.mock('./queue.ts', () => ({
 }));
 
 interface MockDv {
-  app: GenericObject;
-  container: HTMLDivElement;
-  paragraph: ReturnType<typeof vi.fn>;
+  readonly app: GenericObject;
+  readonly container: HTMLDivElement;
+  readonly paragraph: ReturnType<typeof vi.fn>;
 }
 
 interface ParagraphOptions {

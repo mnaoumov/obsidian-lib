@@ -104,17 +104,17 @@ export interface TemplaterApi {
    * @param runMode - Which {@link TemplaterRunMode} the render is.
    * @returns The running config.
    */
-  create_running_config: (templateFile: TFile | undefined, targetFile: TFile, runMode: TemplaterRunMode) => TemplaterRunningConfig;
+  readonly create_running_config: (templateFile: TFile | undefined, targetFile: TFile, runMode: TemplaterRunMode) => TemplaterRunningConfig;
 
   /**
    * The functions object (`tp`) of the render currently in flight, when there is one.
    */
-  current_functions_object?: object | undefined;
+  readonly current_functions_object?: object | undefined;
 
   /**
    * Builds the functions object (`tp`) a template is evaluated against.
    */
-  functions_generator: TemplaterFunctionsGenerator;
+  readonly functions_generator: TemplaterFunctionsGenerator;
 
   /**
    * Reads the config's `template_file` and renders it, returning the resulting text.
@@ -123,7 +123,7 @@ export interface TemplaterApi {
    * `template_file` is not a `TFile`.
    * @returns A {@link Promise} resolving to the rendered text.
    */
-  read_and_parse_template: (config: TemplaterRunningConfig) => Promise<string>;
+  readonly read_and_parse_template: (config: TemplaterRunningConfig) => Promise<string>;
 }
 
 /**
@@ -136,7 +136,7 @@ export interface TemplaterFunctionsGenerator {
    * @param config - The {@link TemplaterRunningConfig} to build for.
    * @returns A {@link Promise} resolving to the functions object.
    */
-  generate_object: (config: TemplaterRunningConfig) => Promise<object>;
+  readonly generate_object: (config: TemplaterRunningConfig) => Promise<object>;
 }
 
 /**
@@ -150,22 +150,22 @@ export interface TemplaterRunningConfig {
    * `workspace.activeEditor?.file ?? workspace.getActiveFile()`; it is optional here because a
    * hand-built config may omit it.
    */
-  active_file?: null | TFile | undefined;
+  readonly active_file?: null | TFile | undefined;
 
   /**
    * Which {@link TemplaterRunMode} the render is.
    */
-  run_mode: TemplaterRunMode;
+  readonly run_mode: TemplaterRunMode;
 
   /**
    * The file the render is for — what `tp.file.*` resolves to.
    */
-  target_file: TFile;
+  readonly target_file: TFile;
 
   /**
    * The template being rendered, when there is one.
    */
-  template_file?: TFile | undefined;
+  readonly template_file?: TFile | undefined;
 }
 
 /**

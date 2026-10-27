@@ -95,7 +95,7 @@ export interface NotebookNavigatorMenuContext {
    *
    * @param callback - Receives the created item, to be configured in place.
    */
-  addItem: (callback: (item: MenuItem) => void) => void;
+  readonly addItem: (callback: (item: MenuItem) => void) => void;
 }
 
 /**
@@ -117,7 +117,7 @@ export interface NotebookNavigatorMenus {
    * @param callback - Invoked while the menu is being built.
    * @returns A function that unregisters the contributor.
    */
-  registerFileMenu: (callback: (context: NotebookNavigatorFileMenuContext) => void) => NotebookNavigatorMenuDispose;
+  readonly registerFileMenu: (callback: (context: NotebookNavigatorFileMenuContext) => void) => NotebookNavigatorMenuDispose;
 
   /**
    * Registers a contributor to the folder context menu.
@@ -125,7 +125,7 @@ export interface NotebookNavigatorMenus {
    * @param callback - Invoked while the menu is being built.
    * @returns A function that unregisters the contributor.
    */
-  registerFolderMenu: (callback: (context: NotebookNavigatorFolderMenuContext) => void) => NotebookNavigatorMenuDispose;
+  readonly registerFolderMenu: (callback: (context: NotebookNavigatorFolderMenuContext) => void) => NotebookNavigatorMenuDispose;
 }
 
 /**

@@ -42,7 +42,7 @@ interface InvalidSourceResult {
 }
 
 interface PathMatcher {
-  isMatch: (path: string, isFolder: boolean) => boolean;
+  readonly isMatch: (path: string, isFolder: boolean) => boolean;
 }
 
 interface ValidCharacterClassSourceResult extends ValidGlobSourceResult {

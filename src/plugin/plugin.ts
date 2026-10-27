@@ -62,15 +62,15 @@ import {
  * has created it.
  */
 interface PluginBaseComponents {
-  abortSignalComponent?: AbortSignalComponent;
-  asyncErrorHandlerComponent?: AsyncErrorHandlerComponent;
-  commandHandlerComponent?: CommandHandlerComponent;
-  consoleDebugComponent?: ConsoleDebugComponent;
-  pluginContextComponent?: PluginContextComponent;
-  pluginGateComponent?: PluginGateComponent;
-  pluginNoticeComponent?: PluginNoticeComponent;
-  pluginSettingsComponent?: PluginSettingsComponentBase<object>;
-  resourceLockComponent?: ResourceLockComponent;
+  readonly abortSignalComponent?: AbortSignalComponent;
+  readonly asyncErrorHandlerComponent?: AsyncErrorHandlerComponent;
+  readonly commandHandlerComponent?: CommandHandlerComponent;
+  readonly consoleDebugComponent?: ConsoleDebugComponent;
+  readonly pluginContextComponent?: PluginContextComponent;
+  readonly pluginGateComponent?: PluginGateComponent;
+  readonly pluginNoticeComponent?: PluginNoticeComponent;
+  readonly pluginSettingsComponent?: PluginSettingsComponentBase<object>;
+  readonly resourceLockComponent?: ResourceLockComponent;
 }
 
 /**

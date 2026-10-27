@@ -17,12 +17,12 @@ export interface ExportNameCollision {
   /**
    * The distinct colliding export names, sorted.
    */
-  names: string[];
+  readonly names: string[];
 
   /**
    * The namespace (module specifier) the colliding names share.
    */
-  namespace: string;
+  readonly namespace: string;
 }
 
 /**

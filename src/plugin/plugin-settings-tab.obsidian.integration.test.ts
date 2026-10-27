@@ -43,7 +43,7 @@ interface DependentDisabledResult {
 }
 
 interface DisabledProbe {
-  disabled: boolean;
+  readonly disabled: boolean;
 }
 
 interface GroupResult {
@@ -69,15 +69,15 @@ describe('PluginSettingsTabBase declarative rendering', () => {
         } = lib;
 
         interface AsyncEventSourceStub {
-          offref: () => void;
+          readonly offref: () => void;
         }
 
         interface EventReferenceStub {
-          asyncEventSource: AsyncEventSourceStub;
+          readonly asyncEventSource: AsyncEventSourceStub;
         }
 
         interface ProbeSettings {
-          enabled: boolean;
+          readonly enabled: boolean;
         }
 
         const plugin = Object.values(app.plugins.plugins)[0];
@@ -192,15 +192,15 @@ describe('PluginSettingsTabBase declarative rendering', () => {
         } = lib;
 
         interface AsyncEventSourceStub {
-          offref: () => void;
+          readonly offref: () => void;
         }
 
         interface EventReferenceStub {
-          asyncEventSource: AsyncEventSourceStub;
+          readonly asyncEventSource: AsyncEventSourceStub;
         }
 
         interface ProbeSettings {
-          enabled: boolean;
+          readonly enabled: boolean;
         }
 
         const plugin = Object.values(app.plugins.plugins)[0];
@@ -300,15 +300,15 @@ describe('PluginSettingsTabBase declarative rendering', () => {
         } = lib;
 
         interface AsyncEventSourceStub {
-          offref: () => void;
+          readonly offref: () => void;
         }
 
         interface EventReferenceStub {
-          asyncEventSource: AsyncEventSourceStub;
+          readonly asyncEventSource: AsyncEventSourceStub;
         }
 
         interface ProbeSettings {
-          count: number;
+          readonly count: number;
         }
 
         const PROBE_COUNT = 42;
@@ -397,15 +397,15 @@ describe('PluginSettingsTabBase declarative rendering', () => {
         const LEGACY_CLASS = 'probe-legacy-content';
 
         interface AsyncEventSourceStub {
-          offref: () => void;
+          readonly offref: () => void;
         }
 
         interface EventReferenceStub {
-          asyncEventSource: AsyncEventSourceStub;
+          readonly asyncEventSource: AsyncEventSourceStub;
         }
 
         interface ProbeSettings {
-          enabled: boolean;
+          readonly enabled: boolean;
         }
 
         const plugin = Object.values(app.plugins.plugins)[0];

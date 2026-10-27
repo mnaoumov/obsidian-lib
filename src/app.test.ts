@@ -11,6 +11,7 @@ import {
 } from './app.ts';
 
 interface GlobalThisWithApp {
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Tests install and remove the app global between cases.
   app: unknown;
 }
 

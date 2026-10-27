@@ -136,17 +136,18 @@ export interface FileChange {
   /**
    * A new content to replace the old content.
    */
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Link rewriting updates the replacement content while composing file changes.
   newContent: string;
 
   /**
    * An old content that will be replaced.
    */
-  oldContent: string;
+  readonly oldContent: string;
 
   /**
    * A reference that caused the change.
    */
-  reference: Reference;
+  readonly reference: Reference;
 }
 interface ApplyCanvasChangesParams {
   /**
@@ -289,7 +290,7 @@ interface ValidateChangesParams {
 }
 
 interface WithReference<R extends Reference> {
-  reference: R;
+  readonly reference: R;
 }
 
 /**

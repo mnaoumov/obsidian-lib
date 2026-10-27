@@ -68,8 +68,9 @@ interface CreateComponentOptions {
 }
 
 interface DisplayableSettingTab {
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Tests install the UI container on the mock instance.
   containerEl: HTMLElement;
-  display: () => void;
+  readonly display: () => void;
 }
 
 const DEPENDENCY: PluginDependency = {

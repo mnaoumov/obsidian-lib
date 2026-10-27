@@ -284,7 +284,7 @@ export interface PluginApiRef<TApi extends object> extends AsyncEventSource<Plug
    * @throws A {@link PluginApiUnavailableError} whose {@link PluginApiUnavailableError.reason} says which of
    * the five failures occurred, if the API does not become available before the timeout elapses.
    */
-  whenAvailable: (options?: WhenAvailablePluginApiOptions) => Promise<TApi>;
+  readonly whenAvailable: (options?: WhenAvailablePluginApiOptions) => Promise<TApi>;
 }
 
 /**
@@ -295,7 +295,7 @@ export interface PluginApiRefEventMap {
    * Fired whenever {@link PluginApiRef.value} changes — including when it becomes `null` because the provider
    * unloaded.
    */
-  change: [];
+  readonly change: [];
 }
 
 /**
@@ -442,7 +442,9 @@ interface CreateMethodWrapperParams {
  * The realm-global registry shared by every copy of this library in the renderer.
  */
 interface PluginApiRegistry {
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Registry initialization repairs a missing records collection.
   records: Record<string, PublishedPluginApiRecord[]>;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Registry initialization repairs a missing subscribers collection.
   subscribers: (() => void)[];
 }
 
@@ -460,11 +462,12 @@ interface PluginApiRegistry {
  * audience that does not import the package. Renaming a field here is a breaking change to the guide.
  */
 interface PublishedPluginApiRecord {
-  api: object;
-  apiVersion: string;
-  contract: ApiContract;
+  readonly api: object;
+  readonly apiVersion: string;
+  readonly contract: ApiContract;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Removing a published API marks its existing shared record as revoked.
   isRevoked: boolean;
-  pluginId: string;
+  readonly pluginId: string;
 }
 
 /**

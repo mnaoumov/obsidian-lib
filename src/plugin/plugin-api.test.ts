@@ -87,12 +87,12 @@ const GREET_CONTRACT: ApiContract<GreetOnlyApi> = {
 };
 
 interface FarewellApi {
-  farewell: () => string;
+  readonly farewell: () => string;
 }
 
 interface GreeterApi {
-  greet: (name: string) => string;
-  greeting: string;
+  readonly greet: (name: string) => string;
+  readonly greeting: string;
 }
 
 type GreetOnlyApi = Pick<GreeterApi, 'greet'>;
@@ -105,12 +105,13 @@ interface PublishOptions {
 }
 
 interface RegistryShape {
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Tests replace registry records to exercise shared-state recovery.
   records: Record<string, unknown[]>;
-  subscribers: (() => void)[];
+  readonly subscribers: (() => void)[];
 }
 
 interface SymbolKeyedApi {
-  [SYMBOL_KEY]: () => string;
+  readonly [SYMBOL_KEY]: () => string;
 }
 
 interface TestHarness {
@@ -118,11 +119,11 @@ interface TestHarness {
   /**
    * Publishes an API on behalf of a plugin and returns the function that unloads that plugin.
    */
-  publish: (options?: PublishOptions) => () => void;
+  readonly publish: (options?: PublishOptions) => () => void;
   /**
    * Starts a watch and returns the ref plus the function that unloads the consuming component.
    */
-  watch: <TApi extends object>(options?: WatchOptions) => WatchResult<TApi>;
+  readonly watch: <TApi extends object>(options?: WatchOptions) => WatchResult<TApi>;
 }
 
 interface WatchOptions {
@@ -707,7 +708,7 @@ describe('plugin-api', () => {
 });
 
 interface CounterApi {
-  count: (text: string, isCaseSensitive?: boolean) => Promise<number>;
+  readonly count: (text: string, isCaseSensitive?: boolean) => Promise<number>;
   readonly name: string;
 }
 

@@ -109,17 +109,18 @@ export interface AddToQueueParams {
 }
 
 interface Queue {
-  items: QueueItem[];
+  readonly items: QueueItem[];
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Enqueuing work replaces the promise for the current queue drain.
   promise: Promise<void>;
 }
 
 interface QueueItem {
-  abortSignal: AbortSignal;
-  operationFunction: (abortSignal: AbortSignal) => Promisable<void>;
-  operationName: string;
-  shouldShowTimeoutNotice: boolean;
-  stackTrace: string;
-  timeoutInMilliseconds: number;
+  readonly abortSignal: AbortSignal;
+  readonly operationFunction: (abortSignal: AbortSignal) => Promisable<void>;
+  readonly operationName: string;
+  readonly shouldShowTimeoutNotice: boolean;
+  readonly stackTrace: string;
+  readonly timeoutInMilliseconds: number;
 }
 
 /**

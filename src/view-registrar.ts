@@ -20,7 +20,7 @@ export interface ViewRegistrar {
    *
    * @param params - The parameters for the view registration.
    */
-  registerView: (params: PluginViewRegistrarRegisterViewParams) => void;
+  readonly registerView: (params: PluginViewRegistrarRegisterViewParams) => void;
 }
 
 type PluginViewRegistrarRegisterViewParams = ViewRegistrarRegisterViewParams;

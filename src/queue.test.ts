@@ -84,8 +84,9 @@ vi.mock('./logger.ts', () => ({
 }));
 
 interface MockQueue {
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Tests replace the queue items to exercise pending work.
   items: unknown[];
-  promise: Promise<void>;
+  readonly promise: Promise<void>;
 }
 
 function createMockQueue(): MockQueue {

@@ -26,12 +26,12 @@ export interface IsoWeek {
   /**
    * An ISO 8601 week number (1-53).
    */
-  weekNumber: number;
+  readonly weekNumber: number;
 
   /**
    * A year (1-9999).
    */
-  year: number;
+  readonly year: number;
 }
 
 /**

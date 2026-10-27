@@ -231,14 +231,14 @@ export interface BacklinksLike {
    * @param key - The path of the backlink-holding note.
    * @returns The links, or a nullish value.
    */
-  get: (key: string) => null | readonly Reference[] | undefined;
+  readonly get: (key: string) => null | readonly Reference[] | undefined;
 
   /**
    * Returns the paths of the backlink-holding notes.
    *
    * @returns The paths.
    */
-  keys: () => Iterable<string>;
+  readonly keys: () => Iterable<string>;
 }
 
 /**
@@ -1543,8 +1543,8 @@ interface ShouldUseWikilinkStyleParams {
 }
 
 interface TablePosition {
-  end: number;
-  start: number;
+  readonly end: number;
+  readonly start: number;
 }
 
 /**

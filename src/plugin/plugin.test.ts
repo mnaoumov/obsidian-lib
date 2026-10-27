@@ -99,7 +99,7 @@ vi.mock('../generated-during-build.ts', () => ({
  * A shared-state wrapper, as the mocked bag below hands it out.
  */
 interface StateWrapper {
-  value: unknown;
+  readonly value: unknown;
 }
 
 vi.mock('../obsidian-lib-state.ts', () => {
@@ -182,6 +182,7 @@ vi.mock('@mnaoumov/typescript-lib/async', async (importOriginal) => {
 });
 
 interface AppSettingHolder {
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Tests install the settings manager on the app mock.
   setting: unknown;
 }
 

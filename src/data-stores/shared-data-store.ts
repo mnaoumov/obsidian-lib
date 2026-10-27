@@ -81,12 +81,12 @@ interface Change {
 }
 
 interface Checkpoint {
-  counter: number;
-  format: 1;
-  kind: DataStoreMergeKind;
-  operations: DataStoreOperation[];
-  time: number;
-  vector: VersionVector;
+  readonly counter: number;
+  readonly format: 1;
+  readonly kind: DataStoreMergeKind;
+  readonly operations: DataStoreOperation[];
+  readonly time: number;
+  readonly vector: VersionVector;
 }
 
 type VersionVector = [string, number][];

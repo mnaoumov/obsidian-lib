@@ -32,9 +32,9 @@ import {
 } from './modal-command-builder.ts';
 
 interface RegisterCall {
-  $function: KeymapEventListener;
-  key: string;
-  modifiers: Modifier[];
+  readonly $function: KeymapEventListener;
+  readonly key: string;
+  readonly modifiers: Modifier[];
 }
 
 function captureRegisterCalls(scope: Scope): RegisterCall[] {

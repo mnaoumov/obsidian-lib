@@ -44,12 +44,13 @@ import { FolderCommandHandler } from './folder-command-handler.ts';
 let app: AppOriginal;
 
 interface MockContext {
-  context: CommandHandlerRegistrationContext;
-  fileMenuHandlers: FileMenuEventHandler[];
-  filesMenuHandlers: FilesMenuEventHandler[];
+  readonly context: CommandHandlerRegistrationContext;
+  readonly fileMenuHandlers: FileMenuEventHandler[];
+  readonly filesMenuHandlers: FilesMenuEventHandler[];
 }
 
 interface MutableParent {
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Tests change file parents to exercise folder command availability.
   parent: null | TFolderOriginal;
 }
 
