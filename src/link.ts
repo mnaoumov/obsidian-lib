@@ -2035,7 +2035,7 @@ export function generateRawMarkdownLink(params: GenerateRawMarkdownLinkParams): 
   const escapedAlias = shouldEscapeAlias ? escapeAlias(alias) : alias;
 
   const url = params.shouldUseAngleBrackets
-    ? `<${params.url}>`
+    ? `<${params.url.replaceAll(/[<>\\\r\n]/g, (character) => encodeURIComponent(character))}>`
     : encodeUrl(params.url);
 
   const titlePart = params.title ? ` ${JSON.stringify(params.title)}` : '';

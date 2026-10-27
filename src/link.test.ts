@@ -1,3 +1,6 @@
+// Percent-encoded fixture bytes are not words.
+// cspell:ignoreRegExp /%[0-9A-F]{2}/g
+
 import type { InternalPlugins } from '@obsidian-typings/obsidian-public-latest';
 import type {
   App as AppOriginal,
@@ -284,6 +287,26 @@ describe('generateRawMarkdownLink', () => {
         url: 'path with spaces.md'
       });
       expect(result).toBe('[link](<path with spaces.md>)');
+    });
+
+    it.each([
+      { encoded: '#Angle %3Cnote%3E in a heading', url: '#Angle <note> in a heading' },
+      { encoded: '#Code `%3Cnote%3E` in a heading', url: '#Code `<note>` in a heading' },
+      { encoded: '#Only %3C', url: '#Only <' },
+      { encoded: '#Only %3E', url: '#Only >' },
+      { encoded: 'note%5C.md', url: String.raw`note\.md` },
+      { encoded: 'note%5C%3E.md', url: String.raw`note\>.md` },
+      { encoded: 'line%0Abreak%0D%0A.md', url: 'line\nbreak\r\n.md' },
+      { encoded: '#Already%20%3Cencoded%3E', url: '#Already%20%3Cencoded%3E' },
+      { encoded: 'ordinary space (and parentheses).md', url: 'ordinary space (and parentheses).md' }
+    ])('should preserve the destination in angle brackets: $url', ({ encoded, url }) => {
+      const result = generateRawMarkdownLink({ alias: 'link', isWikilink: false, shouldUseAngleBrackets: true, url });
+      expect(result).toBe(`[link](<${encoded}>)`);
+      expect(generateRawMarkdownLink({ alias: 'link', isWikilink: false, shouldUseAngleBrackets: true, url: encoded })).toBe(result);
+    });
+
+    it('should preserve literal angle brackets in wikilinks', () => {
+      expect(generateRawMarkdownLink({ isWikilink: true, shouldUseAngleBrackets: true, url: '#Angle <note>' })).toBe('[[#Angle <note>]]');
     });
 
     it('should escape alias when shouldEscapeAlias is true', () => {
