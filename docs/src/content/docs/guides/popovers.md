@@ -84,7 +84,7 @@ Both entry points accept `okButtonText`, `cancelButtonText` and extra `cssClasse
 Obsidian's `file-menu` and `url-menu` events carry the target file or url but no event and no DOM element, and by the time a menu item's callback runs the menu is closing — so there is nothing left to measure. `PointerPositionComponent` records the right-click (or long-press) that raised the menu, which is exactly where the user is looking.
 
 ```ts
-import { PointerPositionComponent } from '@mnaoumov/obsidian-lib/ui/pointer-position-component';
+import { PointerPositionComponent } from '@mnaoumov/obsidian-lib/components/pointer-position-component';
 import { editFieldsInPopover } from '@mnaoumov/obsidian-lib/popovers/field-popover';
 import { createAnchorFromDocumentCenter } from '@mnaoumov/obsidian-lib/popovers/popover-anchor';
 import { Plugin } from 'obsidian';

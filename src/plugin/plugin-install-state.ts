@@ -11,7 +11,7 @@
 
 import type { App } from 'obsidian';
 
-import type { PluginNoticeComponent } from './lifecycle/plugin-notice-component.ts';
+import type { PluginNoticeComponent } from '../components/plugin-notice-component.ts';
 
 import {
   enableCommunityPlugin,
@@ -19,11 +19,11 @@ import {
   updateCommunityPlugin,
   UpdateCommunityPluginResult
 } from '../community-plugins.ts';
-import { t } from '../i18n/i18n.ts';
 import {
   asCodeBlock,
   createFragmentWithCodeBlocks
-} from '../ui/html-element.ts';
+} from '../html-element.ts';
+import { t } from '../i18n/i18n.ts';
 
 /**
  * How another plugin is currently present in the vault.

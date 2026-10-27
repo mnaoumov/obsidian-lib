@@ -66,64 +66,24 @@
         "default": "./dist/lib/cjs/codemirror/*.cjs"
       }
     },
-    "./commands": {
+    "./command-handlers": {
       "import": {
-        "types": "./dist/lib/esm/commands/index.d.mts",
-        "default": "./dist/lib/esm/commands/index.mjs"
+        "types": "./dist/lib/esm/command-handlers/index.d.mts",
+        "default": "./dist/lib/esm/command-handlers/index.mjs"
       },
       "require": {
-        "types": "./dist/lib/cjs/commands/index.d.cts",
-        "default": "./dist/lib/cjs/commands/index.cjs"
+        "types": "./dist/lib/cjs/command-handlers/index.d.cts",
+        "default": "./dist/lib/cjs/command-handlers/index.cjs"
       }
     },
-    "./commands/*": {
+    "./command-handlers/*": {
       "import": {
-        "types": "./dist/lib/esm/commands/*.d.mts",
-        "default": "./dist/lib/esm/commands/*.mjs"
+        "types": "./dist/lib/esm/command-handlers/*.d.mts",
+        "default": "./dist/lib/esm/command-handlers/*.mjs"
       },
       "require": {
-        "types": "./dist/lib/cjs/commands/*.d.cts",
-        "default": "./dist/lib/cjs/commands/*.cjs"
-      }
-    },
-    "./commands/files": {
-      "import": {
-        "types": "./dist/lib/esm/commands/files/index.d.mts",
-        "default": "./dist/lib/esm/commands/files/index.mjs"
-      },
-      "require": {
-        "types": "./dist/lib/cjs/commands/files/index.d.cts",
-        "default": "./dist/lib/cjs/commands/files/index.cjs"
-      }
-    },
-    "./commands/files/*": {
-      "import": {
-        "types": "./dist/lib/esm/commands/files/*.d.mts",
-        "default": "./dist/lib/esm/commands/files/*.mjs"
-      },
-      "require": {
-        "types": "./dist/lib/cjs/commands/files/*.d.cts",
-        "default": "./dist/lib/cjs/commands/files/*.cjs"
-      }
-    },
-    "./commands/plugin": {
-      "import": {
-        "types": "./dist/lib/esm/commands/plugin/index.d.mts",
-        "default": "./dist/lib/esm/commands/plugin/index.mjs"
-      },
-      "require": {
-        "types": "./dist/lib/cjs/commands/plugin/index.d.cts",
-        "default": "./dist/lib/cjs/commands/plugin/index.cjs"
-      }
-    },
-    "./commands/plugin/*": {
-      "import": {
-        "types": "./dist/lib/esm/commands/plugin/*.d.mts",
-        "default": "./dist/lib/esm/commands/plugin/*.mjs"
-      },
-      "require": {
-        "types": "./dist/lib/cjs/commands/plugin/*.d.cts",
-        "default": "./dist/lib/cjs/commands/plugin/*.cjs"
+        "types": "./dist/lib/cjs/command-handlers/*.d.cts",
+        "default": "./dist/lib/cjs/command-handlers/*.cjs"
       }
     },
     "./components": {
@@ -166,66 +126,6 @@
         "default": "./dist/lib/cjs/constructors/*.cjs"
       }
     },
-    "./demo-vault": {
-      "import": {
-        "types": "./dist/lib/esm/demo-vault/index.d.mts",
-        "default": "./dist/lib/esm/demo-vault/index.mjs"
-      },
-      "require": {
-        "types": "./dist/lib/cjs/demo-vault/index.d.cts",
-        "default": "./dist/lib/cjs/demo-vault/index.cjs"
-      }
-    },
-    "./demo-vault/*": {
-      "import": {
-        "types": "./dist/lib/esm/demo-vault/*.d.mts",
-        "default": "./dist/lib/esm/demo-vault/*.mjs"
-      },
-      "require": {
-        "types": "./dist/lib/cjs/demo-vault/*.d.cts",
-        "default": "./dist/lib/cjs/demo-vault/*.cjs"
-      }
-    },
-    "./diagnostics": {
-      "import": {
-        "types": "./dist/lib/esm/diagnostics/index.d.mts",
-        "default": "./dist/lib/esm/diagnostics/index.mjs"
-      },
-      "require": {
-        "types": "./dist/lib/cjs/diagnostics/index.d.cts",
-        "default": "./dist/lib/cjs/diagnostics/index.cjs"
-      }
-    },
-    "./diagnostics/*": {
-      "import": {
-        "types": "./dist/lib/esm/diagnostics/*.d.mts",
-        "default": "./dist/lib/esm/diagnostics/*.mjs"
-      },
-      "require": {
-        "types": "./dist/lib/cjs/diagnostics/*.d.cts",
-        "default": "./dist/lib/cjs/diagnostics/*.cjs"
-      }
-    },
-    "./editor": {
-      "import": {
-        "types": "./dist/lib/esm/editor/index.d.mts",
-        "default": "./dist/lib/esm/editor/index.mjs"
-      },
-      "require": {
-        "types": "./dist/lib/cjs/editor/index.d.cts",
-        "default": "./dist/lib/cjs/editor/index.cjs"
-      }
-    },
-    "./editor/*": {
-      "import": {
-        "types": "./dist/lib/esm/editor/*.d.mts",
-        "default": "./dist/lib/esm/editor/*.mjs"
-      },
-      "require": {
-        "types": "./dist/lib/cjs/editor/*.d.cts",
-        "default": "./dist/lib/cjs/editor/*.cjs"
-      }
-    },
     "./i18n": {
       "import": {
         "types": "./dist/lib/esm/i18n/index.d.mts",
@@ -266,124 +166,24 @@
         "default": "./dist/lib/cjs/i18n/locales/*.cjs"
       }
     },
-    "./input": {
+    "./modals": {
       "import": {
-        "types": "./dist/lib/esm/input/index.d.mts",
-        "default": "./dist/lib/esm/input/index.mjs"
+        "types": "./dist/lib/esm/modals/index.d.mts",
+        "default": "./dist/lib/esm/modals/index.mjs"
       },
       "require": {
-        "types": "./dist/lib/cjs/input/index.d.cts",
-        "default": "./dist/lib/cjs/input/index.cjs"
+        "types": "./dist/lib/cjs/modals/index.d.cts",
+        "default": "./dist/lib/cjs/modals/index.cjs"
       }
     },
-    "./input/*": {
+    "./modals/*": {
       "import": {
-        "types": "./dist/lib/esm/input/*.d.mts",
-        "default": "./dist/lib/esm/input/*.mjs"
+        "types": "./dist/lib/esm/modals/*.d.mts",
+        "default": "./dist/lib/esm/modals/*.mjs"
       },
       "require": {
-        "types": "./dist/lib/cjs/input/*.d.cts",
-        "default": "./dist/lib/cjs/input/*.cjs"
-      }
-    },
-    "./integrations": {
-      "import": {
-        "types": "./dist/lib/esm/integrations/index.d.mts",
-        "default": "./dist/lib/esm/integrations/index.mjs"
-      },
-      "require": {
-        "types": "./dist/lib/cjs/integrations/index.d.cts",
-        "default": "./dist/lib/cjs/integrations/index.cjs"
-      }
-    },
-    "./integrations/*": {
-      "import": {
-        "types": "./dist/lib/esm/integrations/*.d.mts",
-        "default": "./dist/lib/esm/integrations/*.mjs"
-      },
-      "require": {
-        "types": "./dist/lib/cjs/integrations/*.d.cts",
-        "default": "./dist/lib/cjs/integrations/*.cjs"
-      }
-    },
-    "./links": {
-      "import": {
-        "types": "./dist/lib/esm/links/index.d.mts",
-        "default": "./dist/lib/esm/links/index.mjs"
-      },
-      "require": {
-        "types": "./dist/lib/cjs/links/index.d.cts",
-        "default": "./dist/lib/cjs/links/index.cjs"
-      }
-    },
-    "./links/*": {
-      "import": {
-        "types": "./dist/lib/esm/links/*.d.mts",
-        "default": "./dist/lib/esm/links/*.mjs"
-      },
-      "require": {
-        "types": "./dist/lib/cjs/links/*.d.cts",
-        "default": "./dist/lib/cjs/links/*.cjs"
-      }
-    },
-    "./markdown": {
-      "import": {
-        "types": "./dist/lib/esm/markdown/index.d.mts",
-        "default": "./dist/lib/esm/markdown/index.mjs"
-      },
-      "require": {
-        "types": "./dist/lib/cjs/markdown/index.d.cts",
-        "default": "./dist/lib/cjs/markdown/index.cjs"
-      }
-    },
-    "./markdown/*": {
-      "import": {
-        "types": "./dist/lib/esm/markdown/*.d.mts",
-        "default": "./dist/lib/esm/markdown/*.mjs"
-      },
-      "require": {
-        "types": "./dist/lib/cjs/markdown/*.d.cts",
-        "default": "./dist/lib/cjs/markdown/*.cjs"
-      }
-    },
-    "./markdown/code-blocks": {
-      "import": {
-        "types": "./dist/lib/esm/markdown/code-blocks/index.d.mts",
-        "default": "./dist/lib/esm/markdown/code-blocks/index.mjs"
-      },
-      "require": {
-        "types": "./dist/lib/cjs/markdown/code-blocks/index.d.cts",
-        "default": "./dist/lib/cjs/markdown/code-blocks/index.cjs"
-      }
-    },
-    "./markdown/code-blocks/*": {
-      "import": {
-        "types": "./dist/lib/esm/markdown/code-blocks/*.d.mts",
-        "default": "./dist/lib/esm/markdown/code-blocks/*.mjs"
-      },
-      "require": {
-        "types": "./dist/lib/cjs/markdown/code-blocks/*.d.cts",
-        "default": "./dist/lib/cjs/markdown/code-blocks/*.cjs"
-      }
-    },
-    "./metadata": {
-      "import": {
-        "types": "./dist/lib/esm/metadata/index.d.mts",
-        "default": "./dist/lib/esm/metadata/index.mjs"
-      },
-      "require": {
-        "types": "./dist/lib/cjs/metadata/index.d.cts",
-        "default": "./dist/lib/cjs/metadata/index.cjs"
-      }
-    },
-    "./metadata/*": {
-      "import": {
-        "types": "./dist/lib/esm/metadata/*.d.mts",
-        "default": "./dist/lib/esm/metadata/*.mjs"
-      },
-      "require": {
-        "types": "./dist/lib/cjs/metadata/*.d.cts",
-        "default": "./dist/lib/cjs/metadata/*.cjs"
+        "types": "./dist/lib/cjs/modals/*.d.cts",
+        "default": "./dist/lib/cjs/modals/*.cjs"
       }
     },
     "./plugin": {
@@ -404,26 +204,6 @@
       "require": {
         "types": "./dist/lib/cjs/plugin/*.d.cts",
         "default": "./dist/lib/cjs/plugin/*.cjs"
-      }
-    },
-    "./plugin/lifecycle": {
-      "import": {
-        "types": "./dist/lib/esm/plugin/lifecycle/index.d.mts",
-        "default": "./dist/lib/esm/plugin/lifecycle/index.mjs"
-      },
-      "require": {
-        "types": "./dist/lib/cjs/plugin/lifecycle/index.d.cts",
-        "default": "./dist/lib/cjs/plugin/lifecycle/index.cjs"
-      }
-    },
-    "./plugin/lifecycle/*": {
-      "import": {
-        "types": "./dist/lib/esm/plugin/lifecycle/*.d.mts",
-        "default": "./dist/lib/esm/plugin/lifecycle/*.mjs"
-      },
-      "require": {
-        "types": "./dist/lib/cjs/plugin/lifecycle/*.d.cts",
-        "default": "./dist/lib/cjs/plugin/lifecycle/*.cjs"
       }
     },
     "./popovers": {
@@ -466,144 +246,24 @@
         "default": "./dist/lib/cjs/react/*.cjs"
       }
     },
-    "./registrars": {
+    "./setting-components": {
       "import": {
-        "types": "./dist/lib/esm/registrars/index.d.mts",
-        "default": "./dist/lib/esm/registrars/index.mjs"
+        "types": "./dist/lib/esm/setting-components/index.d.mts",
+        "default": "./dist/lib/esm/setting-components/index.mjs"
       },
       "require": {
-        "types": "./dist/lib/cjs/registrars/index.d.cts",
-        "default": "./dist/lib/cjs/registrars/index.cjs"
+        "types": "./dist/lib/cjs/setting-components/index.d.cts",
+        "default": "./dist/lib/cjs/setting-components/index.cjs"
       }
     },
-    "./registrars/*": {
+    "./setting-components/*": {
       "import": {
-        "types": "./dist/lib/esm/registrars/*.d.mts",
-        "default": "./dist/lib/esm/registrars/*.mjs"
+        "types": "./dist/lib/esm/setting-components/*.d.mts",
+        "default": "./dist/lib/esm/setting-components/*.mjs"
       },
       "require": {
-        "types": "./dist/lib/cjs/registrars/*.d.cts",
-        "default": "./dist/lib/cjs/registrars/*.cjs"
-      }
-    },
-    "./settings": {
-      "import": {
-        "types": "./dist/lib/esm/settings/index.d.mts",
-        "default": "./dist/lib/esm/settings/index.mjs"
-      },
-      "require": {
-        "types": "./dist/lib/cjs/settings/index.d.cts",
-        "default": "./dist/lib/cjs/settings/index.cjs"
-      }
-    },
-    "./settings/*": {
-      "import": {
-        "types": "./dist/lib/esm/settings/*.d.mts",
-        "default": "./dist/lib/esm/settings/*.mjs"
-      },
-      "require": {
-        "types": "./dist/lib/cjs/settings/*.d.cts",
-        "default": "./dist/lib/cjs/settings/*.cjs"
-      }
-    },
-    "./settings/inputs": {
-      "import": {
-        "types": "./dist/lib/esm/settings/inputs/index.d.mts",
-        "default": "./dist/lib/esm/settings/inputs/index.mjs"
-      },
-      "require": {
-        "types": "./dist/lib/cjs/settings/inputs/index.d.cts",
-        "default": "./dist/lib/cjs/settings/inputs/index.cjs"
-      }
-    },
-    "./settings/inputs/*": {
-      "import": {
-        "types": "./dist/lib/esm/settings/inputs/*.d.mts",
-        "default": "./dist/lib/esm/settings/inputs/*.mjs"
-      },
-      "require": {
-        "types": "./dist/lib/cjs/settings/inputs/*.d.cts",
-        "default": "./dist/lib/cjs/settings/inputs/*.cjs"
-      }
-    },
-    "./settings/inputs/choices": {
-      "import": {
-        "types": "./dist/lib/esm/settings/inputs/choices/index.d.mts",
-        "default": "./dist/lib/esm/settings/inputs/choices/index.mjs"
-      },
-      "require": {
-        "types": "./dist/lib/cjs/settings/inputs/choices/index.d.cts",
-        "default": "./dist/lib/cjs/settings/inputs/choices/index.cjs"
-      }
-    },
-    "./settings/inputs/choices/*": {
-      "import": {
-        "types": "./dist/lib/esm/settings/inputs/choices/*.d.mts",
-        "default": "./dist/lib/esm/settings/inputs/choices/*.mjs"
-      },
-      "require": {
-        "types": "./dist/lib/cjs/settings/inputs/choices/*.d.cts",
-        "default": "./dist/lib/cjs/settings/inputs/choices/*.cjs"
-      }
-    },
-    "./settings/inputs/date-time": {
-      "import": {
-        "types": "./dist/lib/esm/settings/inputs/date-time/index.d.mts",
-        "default": "./dist/lib/esm/settings/inputs/date-time/index.mjs"
-      },
-      "require": {
-        "types": "./dist/lib/cjs/settings/inputs/date-time/index.d.cts",
-        "default": "./dist/lib/cjs/settings/inputs/date-time/index.cjs"
-      }
-    },
-    "./settings/inputs/date-time/*": {
-      "import": {
-        "types": "./dist/lib/esm/settings/inputs/date-time/*.d.mts",
-        "default": "./dist/lib/esm/settings/inputs/date-time/*.mjs"
-      },
-      "require": {
-        "types": "./dist/lib/cjs/settings/inputs/date-time/*.d.cts",
-        "default": "./dist/lib/cjs/settings/inputs/date-time/*.cjs"
-      }
-    },
-    "./settings/inputs/multiple": {
-      "import": {
-        "types": "./dist/lib/esm/settings/inputs/multiple/index.d.mts",
-        "default": "./dist/lib/esm/settings/inputs/multiple/index.mjs"
-      },
-      "require": {
-        "types": "./dist/lib/cjs/settings/inputs/multiple/index.d.cts",
-        "default": "./dist/lib/cjs/settings/inputs/multiple/index.cjs"
-      }
-    },
-    "./settings/inputs/multiple/*": {
-      "import": {
-        "types": "./dist/lib/esm/settings/inputs/multiple/*.d.mts",
-        "default": "./dist/lib/esm/settings/inputs/multiple/*.mjs"
-      },
-      "require": {
-        "types": "./dist/lib/cjs/settings/inputs/multiple/*.d.cts",
-        "default": "./dist/lib/cjs/settings/inputs/multiple/*.cjs"
-      }
-    },
-    "./settings/inputs/text": {
-      "import": {
-        "types": "./dist/lib/esm/settings/inputs/text/index.d.mts",
-        "default": "./dist/lib/esm/settings/inputs/text/index.mjs"
-      },
-      "require": {
-        "types": "./dist/lib/cjs/settings/inputs/text/index.d.cts",
-        "default": "./dist/lib/cjs/settings/inputs/text/index.cjs"
-      }
-    },
-    "./settings/inputs/text/*": {
-      "import": {
-        "types": "./dist/lib/esm/settings/inputs/text/*.d.mts",
-        "default": "./dist/lib/esm/settings/inputs/text/*.mjs"
-      },
-      "require": {
-        "types": "./dist/lib/cjs/settings/inputs/text/*.d.cts",
-        "default": "./dist/lib/cjs/settings/inputs/text/*.cjs"
+        "types": "./dist/lib/cjs/setting-components/*.d.cts",
+        "default": "./dist/lib/cjs/setting-components/*.cjs"
       }
     },
     "./transformers": {
@@ -625,146 +285,6 @@
         "types": "./dist/lib/cjs/transformers/*.d.cts",
         "default": "./dist/lib/cjs/transformers/*.cjs"
       }
-    },
-    "./ui": {
-      "import": {
-        "types": "./dist/lib/esm/ui/index.d.mts",
-        "default": "./dist/lib/esm/ui/index.mjs"
-      },
-      "require": {
-        "types": "./dist/lib/cjs/ui/index.d.cts",
-        "default": "./dist/lib/cjs/ui/index.cjs"
-      }
-    },
-    "./ui/*": {
-      "import": {
-        "types": "./dist/lib/esm/ui/*.d.mts",
-        "default": "./dist/lib/esm/ui/*.mjs"
-      },
-      "require": {
-        "types": "./dist/lib/cjs/ui/*.d.cts",
-        "default": "./dist/lib/cjs/ui/*.cjs"
-      }
-    },
-    "./ui/dialogs": {
-      "import": {
-        "types": "./dist/lib/esm/ui/dialogs/index.d.mts",
-        "default": "./dist/lib/esm/ui/dialogs/index.mjs"
-      },
-      "require": {
-        "types": "./dist/lib/cjs/ui/dialogs/index.d.cts",
-        "default": "./dist/lib/cjs/ui/dialogs/index.cjs"
-      }
-    },
-    "./ui/dialogs/*": {
-      "import": {
-        "types": "./dist/lib/esm/ui/dialogs/*.d.mts",
-        "default": "./dist/lib/esm/ui/dialogs/*.mjs"
-      },
-      "require": {
-        "types": "./dist/lib/cjs/ui/dialogs/*.d.cts",
-        "default": "./dist/lib/cjs/ui/dialogs/*.cjs"
-      }
-    },
-    "./ui/menus": {
-      "import": {
-        "types": "./dist/lib/esm/ui/menus/index.d.mts",
-        "default": "./dist/lib/esm/ui/menus/index.mjs"
-      },
-      "require": {
-        "types": "./dist/lib/cjs/ui/menus/index.d.cts",
-        "default": "./dist/lib/cjs/ui/menus/index.cjs"
-      }
-    },
-    "./ui/menus/*": {
-      "import": {
-        "types": "./dist/lib/esm/ui/menus/*.d.mts",
-        "default": "./dist/lib/esm/ui/menus/*.mjs"
-      },
-      "require": {
-        "types": "./dist/lib/cjs/ui/menus/*.d.cts",
-        "default": "./dist/lib/cjs/ui/menus/*.cjs"
-      }
-    },
-    "./vault": {
-      "import": {
-        "types": "./dist/lib/esm/vault/index.d.mts",
-        "default": "./dist/lib/esm/vault/index.mjs"
-      },
-      "require": {
-        "types": "./dist/lib/cjs/vault/index.d.cts",
-        "default": "./dist/lib/cjs/vault/index.cjs"
-      }
-    },
-    "./vault/*": {
-      "import": {
-        "types": "./dist/lib/esm/vault/*.d.mts",
-        "default": "./dist/lib/esm/vault/*.mjs"
-      },
-      "require": {
-        "types": "./dist/lib/cjs/vault/*.d.cts",
-        "default": "./dist/lib/cjs/vault/*.cjs"
-      }
-    },
-    "./vault/attachments": {
-      "import": {
-        "types": "./dist/lib/esm/vault/attachments/index.d.mts",
-        "default": "./dist/lib/esm/vault/attachments/index.mjs"
-      },
-      "require": {
-        "types": "./dist/lib/cjs/vault/attachments/index.d.cts",
-        "default": "./dist/lib/cjs/vault/attachments/index.cjs"
-      }
-    },
-    "./vault/attachments/*": {
-      "import": {
-        "types": "./dist/lib/esm/vault/attachments/*.d.mts",
-        "default": "./dist/lib/esm/vault/attachments/*.mjs"
-      },
-      "require": {
-        "types": "./dist/lib/cjs/vault/attachments/*.d.cts",
-        "default": "./dist/lib/cjs/vault/attachments/*.cjs"
-      }
-    },
-    "./vault/files": {
-      "import": {
-        "types": "./dist/lib/esm/vault/files/index.d.mts",
-        "default": "./dist/lib/esm/vault/files/index.mjs"
-      },
-      "require": {
-        "types": "./dist/lib/cjs/vault/files/index.d.cts",
-        "default": "./dist/lib/cjs/vault/files/index.cjs"
-      }
-    },
-    "./vault/files/*": {
-      "import": {
-        "types": "./dist/lib/esm/vault/files/*.d.mts",
-        "default": "./dist/lib/esm/vault/files/*.mjs"
-      },
-      "require": {
-        "types": "./dist/lib/cjs/vault/files/*.d.cts",
-        "default": "./dist/lib/cjs/vault/files/*.cjs"
-      }
-    },
-    "./workspace": {
-      "import": {
-        "types": "./dist/lib/esm/workspace/index.d.mts",
-        "default": "./dist/lib/esm/workspace/index.mjs"
-      },
-      "require": {
-        "types": "./dist/lib/cjs/workspace/index.d.cts",
-        "default": "./dist/lib/cjs/workspace/index.cjs"
-      }
-    },
-    "./workspace/*": {
-      "import": {
-        "types": "./dist/lib/esm/workspace/*.d.mts",
-        "default": "./dist/lib/esm/workspace/*.mjs"
-      },
-      "require": {
-        "types": "./dist/lib/cjs/workspace/*.d.cts",
-        "default": "./dist/lib/cjs/workspace/*.cjs"
-      }
     }
   },
   "files": [
@@ -776,40 +296,40 @@
   ],
   "scripts": {
     "build": "jiti scripts/build.ts",
-    "build:clean": "jiti scripts/build/build-clean.ts",
-    "build:compile": "jiti scripts/build/build-compile.ts",
-    "build:generate-exports": "jiti scripts/build/build-generate-exports.ts",
-    "build:generate-index": "jiti scripts/build/build-generate-index.ts",
-    "build:generate-merged": "jiti scripts/build/build-generate-merged.ts --include typescript-lib",
-    "build:lib": "jiti scripts/build/build-lib.ts",
-    "build:stamp-generated": "jiti scripts/build/build-stamp-generated.ts",
-    "build:styles": "jiti scripts/build/build-styles.ts",
-    "build:types": "jiti scripts/build/build-types.ts",
-    "build:validate-declarations": "jiti scripts/build/build-validate-declarations.ts",
-    "build:validate-dependencies": "jiti scripts/build/build-validate-dependencies.ts",
-    "commit": "jiti scripts/release/commit.ts",
-    "docs:build": "jiti scripts/docs/docs-build.ts",
-    "docs:check-snippets": "jiti scripts/docs/docs-check-snippets.ts",
-    "docs:dev": "jiti scripts/docs/docs-dev.ts",
-    "docs:preview": "jiti scripts/docs/docs-preview.ts",
-    "find-overexposed": "jiti scripts/quality/find-overexposed.ts",
-    "find-overexposed:fix": "jiti scripts/quality/find-overexposed-fix.ts",
-    "format": "jiti scripts/quality/format.ts",
-    "format:check": "jiti scripts/quality/format-check.ts",
+    "build:clean": "jiti scripts/build-clean.ts",
+    "build:compile": "jiti scripts/build-compile.ts",
+    "build:generate-exports": "jiti scripts/build-generate-exports.ts",
+    "build:generate-index": "jiti scripts/build-generate-index.ts",
+    "build:generate-merged": "jiti scripts/build-generate-merged.ts --include typescript-lib",
+    "build:lib": "jiti scripts/build-lib.ts",
+    "build:stamp-generated": "jiti scripts/build-stamp-generated.ts",
+    "build:styles": "jiti scripts/build-styles.ts",
+    "build:types": "jiti scripts/build-types.ts",
+    "build:validate-declarations": "jiti scripts/build-validate-declarations.ts",
+    "build:validate-dependencies": "jiti scripts/build-validate-dependencies.ts",
+    "commit": "jiti scripts/commit.ts",
+    "docs:build": "jiti scripts/docs-build.ts",
+    "docs:check-snippets": "jiti scripts/docs-check-snippets.ts",
+    "docs:dev": "jiti scripts/docs-dev.ts",
+    "docs:preview": "jiti scripts/docs-preview.ts",
+    "find-overexposed": "jiti scripts/find-overexposed.ts",
+    "find-overexposed:fix": "jiti scripts/find-overexposed-fix.ts",
+    "format": "jiti scripts/format.ts",
+    "format:check": "jiti scripts/format-check.ts",
     "gate": "jiti scripts/gate.ts",
-    "lint": "jiti scripts/quality/lint.ts",
-    "lint:fix": "jiti scripts/quality/lint-fix.ts",
-    "lint:md": "jiti scripts/quality/lint-md.ts",
-    "lint:md:fix": "jiti scripts/quality/lint-md-fix.ts",
+    "lint": "jiti scripts/lint.ts",
+    "lint:fix": "jiti scripts/lint-fix.ts",
+    "lint:md": "jiti scripts/lint-md.ts",
+    "lint:md:fix": "jiti scripts/lint-md-fix.ts",
     "prepare": "jiti scripts/prepare.ts",
-    "publish:npm": "jiti scripts/release/publish-npm.ts",
-    "spellcheck": "jiti scripts/quality/spellcheck.ts",
-    "test": "jiti scripts/testing/test.ts",
-    "test:coverage": "jiti scripts/testing/test-coverage.ts",
-    "test:integration": "jiti scripts/testing/test-integration.ts integration-tests obsidian-integration-tests",
-    "test:mutation": "jiti scripts/testing/test-mutation.ts",
-    "test:watch": "jiti scripts/testing/test-watch.ts",
-    "version": "jiti scripts/release/version.ts"
+    "publish:npm": "jiti scripts/publish-npm.ts",
+    "spellcheck": "jiti scripts/spellcheck.ts",
+    "test": "jiti scripts/test.ts",
+    "test:coverage": "jiti scripts/test-coverage.ts",
+    "test:integration": "jiti scripts/test-integration.ts integration-tests obsidian-integration-tests",
+    "test:mutation": "jiti scripts/test-mutation.ts",
+    "test:watch": "jiti scripts/test-watch.ts",
+    "version": "jiti scripts/version.ts"
   },
   "dependencies": {
     "@lezer/common": "1.5.2",

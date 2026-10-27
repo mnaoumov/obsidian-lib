@@ -28,7 +28,7 @@ export class MyPlugin extends Plugin {
 
 Default styles are defined in [main.scss](https://github.com/mnaoumov/obsidian-lib/blob/main/src/styles/main.scss).
 
-The list of css classes is defined in [css-class.ts](https://github.com/mnaoumov/obsidian-lib/blob/main/src/ui/css-class.ts).
+The list of css classes is defined in [css-class.ts](https://github.com/mnaoumov/obsidian-lib/blob/main/src/css-class.ts).
 
 You can override those styles in your plugin's `styles.css` file via adding your plugin's id to the selector, e.g. for plugin `alpha-bravo`:
 

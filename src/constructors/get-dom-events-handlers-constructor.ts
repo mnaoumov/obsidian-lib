@@ -19,7 +19,7 @@ import { assertNonNullable } from '@mnaoumov/typescript-lib/type-guards';
 import { MarkdownPreviewRenderer } from 'obsidian';
 
 import { MonkeyAroundComponent } from '../components/monkey-around-component.ts';
-import { trashSafe } from '../vault/vault.ts';
+import { trashSafe } from '../vault.ts';
 
 type DomEventsHandlersConstructor = ExtractConstructor<DomEventsHandlers>;
 

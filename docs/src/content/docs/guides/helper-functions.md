@@ -10,7 +10,7 @@ The functions are grouped by files and folders and you have multiple ways to imp
 From the module's own subpath:
 
 ```typescript
-import { prompt } from '@mnaoumov/obsidian-lib/ui/dialogs/prompt';
+import { prompt } from '@mnaoumov/obsidian-lib/modals/prompt';
 await prompt({
   app,
   title: 'Enter your name'
@@ -20,7 +20,7 @@ await prompt({
 From the folder's subpath, where each module is a namespace:
 
 ```typescript
-import { prompt } from '@mnaoumov/obsidian-lib/ui/dialogs';
+import { prompt } from '@mnaoumov/obsidian-lib/modals';
 await prompt.prompt({
   app,
   title: 'Enter your name'
@@ -30,8 +30,8 @@ await prompt.prompt({
 From the main entry, where each folder is a namespace:
 
 ```typescript
-import { ui } from '@mnaoumov/obsidian-lib';
-await ui.dialogs.prompt.prompt({
+import { modals } from '@mnaoumov/obsidian-lib';
+await modals.prompt.prompt({
   app,
   title: 'Enter your name'
 });
@@ -41,7 +41,7 @@ As a namespace import of the main entry:
 
 ```typescript
 import * as obsidianLib from '@mnaoumov/obsidian-lib';
-await obsidianLib.ui.dialogs.prompt.prompt({
+await obsidianLib.modals.prompt.prompt({
   app,
   title: 'Enter your name'
 });
@@ -51,7 +51,7 @@ For files/folders that use `kebab-case` names, namespace-style imports require b
 
 ```typescript
 import * as obsidianLib from '@mnaoumov/obsidian-lib';
-await obsidianLib.vault.files['file-manager'].addAlias({
+await obsidianLib['file-manager'].addAlias({
   alias: 'new-alias',
   app,
   pathOrFile: file,

@@ -87,7 +87,7 @@ For this to cancel anything, the operation has to be observing that signal in th
 
 ```typescript
 import { getSharedAbortSignal } from '@mnaoumov/typescript-lib/abort-controller';
-import { loop } from '@mnaoumov/obsidian-lib/components/loop';
+import { loop } from '@mnaoumov/obsidian-lib/loop';
 import { PluginBase } from '@mnaoumov/obsidian-lib/plugin/plugin';
 
 export class AlphaBravoPlugin extends PluginBase {

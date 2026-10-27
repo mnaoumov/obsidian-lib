@@ -18,7 +18,7 @@ import {
 import type { PopoverAnchor } from './popover-anchor.ts';
 import type { ShowPopoverParams } from './popover.ts';
 
-import { CssClass } from '../ui/css-class.ts';
+import { CssClass } from '../css-class.ts';
 import { showPopover } from './popover.ts';
 
 /**

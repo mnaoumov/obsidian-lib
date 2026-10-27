@@ -21,7 +21,7 @@ import {
   vi
 } from 'vitest';
 
-import type { PluginNoticeComponent } from './lifecycle/plugin-notice-component.ts';
+import type { PluginNoticeComponent } from '../components/plugin-notice-component.ts';
 
 import { UpdateCommunityPluginResult } from '../community-plugins.ts';
 import {

@@ -17,9 +17,9 @@ import { Setting } from 'obsidian';
 
 import type { PopoverAnchor } from './popover-anchor.ts';
 
+import { CssClass } from '../css-class.ts';
 import { t } from '../i18n/i18n.ts';
 import { addPluginCssClasses } from '../plugin/plugin-context.ts';
-import { CssClass } from '../ui/css-class.ts';
 
 /**
  * The gap in pixels between the anchor and the popover.
