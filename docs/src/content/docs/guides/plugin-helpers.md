@@ -1,6 +1,6 @@
 ---
 title: Plugin Helpers
-description: The `PluginBase` family - notices, settings components, settings tabs, syntax highlighting, and an `rmdir` guard - that a plugin builds on.
+description: The `PluginBase` family - notices, settings components, settings tabs, the File Explorer root menu, syntax highlighting, and an `rmdir` guard - that a plugin builds on.
 ---
 
 `@mnaoumov/obsidian-lib` provides some helpers to simplify your own Obsidian plugin.
@@ -30,6 +30,35 @@ description: The `PluginBase` family - notices, settings components, settings ta
 > Better add `super` calls every time and remove them only when you are sure it is not needed, or the compiler does not let you (e.g., for abstract methods).
 
 The links below contains the full documentation. Here in the docs we mention only the most important ones.
+
+## [FileExplorerRootMenuComponent](https://github.com/mnaoumov/obsidian-lib/blob/main/src/components/file-explorer-root-menu-component.ts)
+
+The core File Explorer has two spots that stand for the vault root: the vault name at the top of the left sidebar, and the empty area below the file list. `FileExplorerRootMenuComponent` hands your handler the context menu of either spot just before it is shown, and tells you which spot it was.
+
+```ts
+import {
+  FileExplorerRootMenuComponent,
+  FileExplorerRootMenuSpot
+} from '@mnaoumov/obsidian-lib/components/file-explorer-root-menu-component';
+import { PluginBase } from '@mnaoumov/obsidian-lib/plugin/plugin';
+
+export class FooPlugin extends PluginBase {
+  protected override async onloadImpl(): Promise<void> {
+    await super.onloadImpl();
+    this.addChild(new FileExplorerRootMenuComponent({
+      app: this.app,
+      handler: ({ menu, spot }) => {
+        menu.addItem((item) => item.setTitle(spot === FileExplorerRootMenuSpot.VaultName ? 'From the vault name' : 'From the empty area'));
+      }
+    }));
+  }
+}
+```
+
+- On the empty area, the menu is the root folder menu Obsidian opens there, after every `file-menu` handler has run.
+- On the vault name, the menu is the one Obsidian opens there itself (`Show in system explorer`, `Copy path` on desktop), so no second menu appears. A menu that is still empty after every handler is not shown.
+- `shouldPresentRootAsFolder: true` presents the root as an ordinary folder while its menu is built, so Obsidian and other plugins add the items they add to any folder. The items that must not act on the root (rename, delete, move, make a copy, search in folder) are removed again, and on the vault name the root folder menu replaces Obsidian's vault menu.
+- Any number of these components, in any number of plugins, share one installation per app: one prototype patch and one listener, so every handler sees the same menu once.
 
 ## [PluginBase](https://github.com/mnaoumov/obsidian-lib/blob/main/src/plugin/plugin.ts)
 
