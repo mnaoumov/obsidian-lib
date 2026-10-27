@@ -16,6 +16,7 @@ import {
 } from 'vitest';
 
 import { getIndexedBacklinksForFile } from './backlink-index.ts';
+import { resetObsidianLibState } from './obsidian-lib-state.ts';
 
 interface CallCounter {
   count: number;
@@ -282,16 +283,12 @@ describe('getIndexedBacklinksForFile', () => {
     expect(getIndexedBacklinksForFile(vault.app, target).keys()).toEqual(['holder.md']);
   });
 
-  it('keeps one index per app and reuses it across queries', () => {
+  it('reuses the realm index across queries', () => {
     const vault = currentVault;
     vault.setNote('target.md', {});
     vault.setNote('holder.md', { links: [link('target')] });
     const target = getTestFile('target.md');
     expect(getIndexedBacklinksForFile(vault.app, target).keys()).toEqual(['holder.md']);
-
-    const otherVault = createVault();
-    otherVault.setNote('target.md', {});
-    expect(getIndexedBacklinksForFile(otherVault.app, otherVault.files.get('target.md') ?? target).keys()).toEqual([]);
 
     /*
      * Swap the holder's metadata under the SAME hash. A rebuilt index would drop the holder as a candidate; the
@@ -302,5 +299,10 @@ describe('getIndexedBacklinksForFile', () => {
     vault.resolveCalls.count = 0;
     expect(getIndexedBacklinksForFile(vault.app, target).keys()).toEqual([]);
     expect(vault.resolveCalls.count).toBe(1);
+
+    resetObsidianLibState();
+    vault.resolveCalls.count = 0;
+    expect(getIndexedBacklinksForFile(vault.app, target).keys()).toEqual([]);
+    expect(vault.resolveCalls.count).toBe(0);
   });
 });

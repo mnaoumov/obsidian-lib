@@ -27,7 +27,7 @@
  * (`updateRelatedLinks`). Depending on no event also means depending on no event ORDER, which matters because
  * rename handlers query from inside the vault `rename` event.
  *
- * There is one index per `App`, held in the realm-global shared-state bag, so every plugin bundling this library
+ * There is one index per renderer realm, held in the realm-global shared-state bag, so every plugin bundling this library
  * shares it rather than each building its own. What is stored there is plain data read structurally (maps and
  * sets, never a class instance), because the bag crosses copies of this library at different versions. The key
  * carries a version: a change to what a key MEANS (how a name key is derived) must move to a new key, so an older
@@ -68,7 +68,7 @@ const MARKDOWN_SUFFIX = '.md';
  * @returns The references that resolve to `file`, keyed by the path of the note or canvas holding them.
  */
 export function getIndexedBacklinksForFile(app: App, file: TFile): CustomArrayDict<Reference> {
-  const data = getBacklinkIndexData(app);
+  const data = getBacklinkIndexData();
   refresh(app, data);
 
   const metadataCache = app.metadataCache;
@@ -101,20 +101,13 @@ export function getIndexedBacklinksForFile(app: App, file: TFile): CustomArrayDi
   }
 }
 
-function getBacklinkIndexData(app: App): BacklinkIndexData {
-  const indexes = getObsidianLibState('backlinkIndexesByAppV1', new WeakMap<App, BacklinkIndexData>()).value;
-  let data = indexes.get(app);
-  if (!data) {
-    data = {
-      indexedHashes: new Map<string, string>(),
-      nameKeySourcePaths: new Map<string, Set<string>>(),
-      sourcePathNameKeys: new Map<string, Set<string>>()
-    };
-    indexes.set(app, data);
-  }
-  return data;
+function getBacklinkIndexData(): BacklinkIndexData {
+  return getObsidianLibState<BacklinkIndexData>('backlinkIndexV1', {
+    indexedHashes: new Map<string, string>(),
+    nameKeySourcePaths: new Map<string, Set<string>>(),
+    sourcePathNameKeys: new Map<string, Set<string>>()
+  }).value;
 }
-
 function getCachedMetadata(app: App, sourcePath: string): CachedMetadata | undefined {
   const hash = app.metadataCache.fileCache[sourcePath]?.hash;
   return hash === undefined ? undefined : app.metadataCache.metadataCache[hash];
