@@ -66,7 +66,7 @@ const ROOT_UNSAFE_ITEM_TITLE_KEYS = [
   'plugins.search.menu-opt-search-in-folder'
 ] as const;
 
-const SHARED_STATE_KEY = 'fileExplorerRootMenuByAppV1';
+const SHARED_STATE_KEY = 'fileExplorerRootMenuV1';
 
 /**
  * Which spot of the File Explorer the vault-root menu was opened from.
@@ -209,7 +209,7 @@ export class FileExplorerRootMenuComponent extends ComponentEx {
   public override onload(): void {
     super.onload();
 
-    const state = getSharedState(this.app);
+    const state = getSharedState();
     const subscription: FileExplorerRootMenuSubscription = {
       handler: this.handler,
       install: () => installRootMenu(this.app, state),
@@ -262,16 +262,12 @@ function getFileExplorerLeaf(app: App): null | WorkspaceLeaf {
   return app.workspace.getLeavesOfType(ViewType.FileExplorer)[0] ?? null;
 }
 
-function getSharedState(app: App): FileExplorerRootMenuSharedState {
-  const statesByApp = getObsidianLibState(SHARED_STATE_KEY, new WeakMap<App, FileExplorerRootMenuSharedState>()).value;
-  let state = statesByApp.get(app);
-  if (!state) {
-    state = { installation: null, subscriptions: [] };
-    statesByApp.set(app, state);
-  }
-  return state;
+function getSharedState(): FileExplorerRootMenuSharedState {
+  return getObsidianLibState<FileExplorerRootMenuSharedState>(SHARED_STATE_KEY, {
+    installation: null,
+    subscriptions: []
+  }).value;
 }
-
 function installRootMenu(app: App, state: FileExplorerRootMenuSharedState): () => void {
   let isUninstalled = false;
   let pendingSpot: FileExplorerRootMenuSpot | null = null;
