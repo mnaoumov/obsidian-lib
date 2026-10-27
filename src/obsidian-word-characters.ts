@@ -55,6 +55,7 @@ interface CharacterTables {
 }
 
 interface CharacterTablesHolder {
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The character tables are cached here on first use.
   value: CharacterTables | null;
 }
 

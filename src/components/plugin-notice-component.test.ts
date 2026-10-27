@@ -25,15 +25,20 @@ import {
 } from './plugin-notice-component.ts';
 
 interface NoticeInstance {
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Tests install the UI container on the mock instance.
   containerEl: HTMLElement;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Tests install the notice method on the mock instance.
   hide: ReturnType<typeof vi.fn>;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Tests install the notice message element on the mock instance.
   messageEl: HTMLElement;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Tests install the notice method on the mock instance.
   setAutoHide: ReturnType<typeof vi.fn>;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Tests install the notice method on the mock instance.
   setMessage: ReturnType<typeof vi.fn>;
 }
 
 interface StateWrapper {
-  value: unknown;
+  readonly value: unknown;
 }
 
 const PERMANENT_NOTICES_STATE_KEY = 'plugin-notice-component:permanent-notices';

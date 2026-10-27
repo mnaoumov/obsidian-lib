@@ -145,22 +145,23 @@ export interface FileExplorerRootMenuHandlerParams {
 
 interface FileExplorerRootMenuInstallation {
   readonly owner: FileExplorerRootMenuSubscription;
-  uninstall: () => void;
+  readonly uninstall: () => void;
 }
 
 interface FileExplorerRootMenuSharedState {
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Subscriber changes replace or clear the shared menu installation.
   installation: FileExplorerRootMenuInstallation | null;
   readonly subscriptions: FileExplorerRootMenuSubscription[];
 }
 
 interface FileExplorerRootMenuSubscription {
-  handler: (params: FileExplorerRootMenuHandlerParams) => void;
-  install: () => () => void;
+  readonly handler: (params: FileExplorerRootMenuHandlerParams) => void;
+  readonly install: () => () => void;
   readonly shouldPresentRootAsFolder: boolean;
 }
 
 interface FileExplorerViewWithContextMenu extends FileExplorerView {
-  onFileContextMenu: (mouseEvent: MouseEvent, file: TAbstractFile) => void;
+  readonly onFileContextMenu: (mouseEvent: MouseEvent, file: TAbstractFile) => void;
 }
 
 interface OpenRootMenuParams {

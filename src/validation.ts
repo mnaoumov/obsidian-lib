@@ -20,7 +20,7 @@ export interface ValidationMessageHolder {
   /**
    * A validation message.
    */
-  validationMessage: string;
+  readonly validationMessage: string;
 }
 
 /**

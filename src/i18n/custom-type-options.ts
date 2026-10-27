@@ -19,17 +19,17 @@ export interface CustomTypeOptionsBase<DefaultTranslations extends DefaultTransl
   /**
    * The default namespace.
    */
-  defaultNS: typeof DEFAULT_NS;
+  readonly defaultNS: typeof DEFAULT_NS;
 
   /**
    * Whether to enable the selector.
    */
-  enableSelector: true;
+  readonly enableSelector: true;
 
   /**
    * The resources.
    */
-  resources: CustomTypeOptionsResources<DefaultTranslations>;
+  readonly resources: CustomTypeOptionsResources<DefaultTranslations>;
 }
 
 /**
@@ -41,7 +41,7 @@ export interface CustomTypeOptionsResources<DefaultTranslations extends DefaultT
   /**
    * The default namespace.
    */
-  [DEFAULT_NS]: DefaultTranslations;
+  readonly [DEFAULT_NS]: DefaultTranslations;
 }
 
 /* v8 ignore stop */

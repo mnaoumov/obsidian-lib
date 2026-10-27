@@ -39,9 +39,11 @@ import { NotebookNavigatorMenuEventRegistrarComponent } from './notebook-navigat
  * What a fake `Notebook Navigator` records about the registrations it receives.
  */
 interface FakeNotebookNavigator {
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The registrar probe increments this counter on disposal.
   disposeCount: number;
   readonly fileMenuCallbacks: FileMenuCallback[];
   readonly folderMenuCallbacks: FolderMenuCallback[];
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Tests replace the loaded plugin instance to exercise lifecycle changes.
   plugin: unknown;
 }
 

@@ -98,9 +98,9 @@ export interface ValidateDataStoreSeedParams {
 }
 
 interface Seed {
-  entries: DataStoreSeedEntry[];
-  format: 1;
-  time: number;
+  readonly entries: DataStoreSeedEntry[];
+  readonly format: 1;
+  readonly time: number;
 }
 
 /**

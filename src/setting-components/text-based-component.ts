@@ -15,14 +15,14 @@ export interface TextBasedComponent<T> {
   /**
    * Empties the component.
    */
-  empty: () => void;
+  readonly empty: () => void;
 
   /**
    * Checks if the component is empty.
    *
    * @returns `true` if the component is empty, `false` otherwise.
    */
-  isEmpty: () => boolean;
+  readonly isEmpty: () => boolean;
 
   /**
    * Sets the placeholder value of the component.
@@ -30,7 +30,7 @@ export interface TextBasedComponent<T> {
    * @param placeholderValue - The placeholder value to set.
    * @returns The component.
    */
-  setPlaceholderValue: (placeholderValue: T) => this;
+  readonly setPlaceholderValue: (placeholderValue: T) => this;
 }
 
 class AbstractTextComponentWrapper<T> implements TextBasedComponent<T> {

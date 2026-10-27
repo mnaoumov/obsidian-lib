@@ -35,9 +35,9 @@ import type { CommandHandlerRegistrationContext } from './command-handler.ts';
 import { AbstractFileCommandHandler } from './abstract-file-command-handler.ts';
 
 interface MockContext {
-  context: CommandHandlerRegistrationContext;
-  fileMenuHandlers: FileMenuEventHandler[];
-  filesMenuHandlers: FilesMenuEventHandler[];
+  readonly context: CommandHandlerRegistrationContext;
+  readonly fileMenuHandlers: FileMenuEventHandler[];
+  readonly filesMenuHandlers: FilesMenuEventHandler[];
 }
 
 class TestAbstractFileHandler extends AbstractFileCommandHandler {

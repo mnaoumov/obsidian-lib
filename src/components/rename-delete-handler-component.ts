@@ -127,7 +127,7 @@ export interface RenameDeleteHandlerSettings {
   /**
    * A behavior of the rename/delete handler when deleting empty folders.
    */
-  emptyFolderBehavior: EmptyFolderBehavior;
+  readonly emptyFolderBehavior: EmptyFolderBehavior;
 
   /**
    * Where to move an attachment that a deletion would otherwise strand — one that survives because another
@@ -137,57 +137,57 @@ export interface RenameDeleteHandlerSettings {
    * than guesses. Returning `null` — or not implementing this at all — keeps the attachment where it is,
    * which is the behavior every consumer had before this member existed.
    */
-  getRescuePath?: (params: GetRescuePathParams) => Promise<null | string>;
+  readonly getRescuePath?: (params: GetRescuePathParams) => Promise<null | string>;
 
   /**
    * Whether the path is a note.
    */
-  isNote: (path: string) => boolean;
+  readonly isNote: (path: string) => boolean;
 
   /**
    * Whether to ignore the path.
    */
-  isPathIgnored: (path: string) => boolean;
+  readonly isPathIgnored: (path: string) => boolean;
 
   /**
    * Whether to delete conflicting attachments.
    */
-  shouldDeleteConflictingAttachments: boolean;
+  readonly shouldDeleteConflictingAttachments: boolean;
 
   /**
    * Whether to handle deletions.
    */
-  shouldHandleDeletions: boolean;
+  readonly shouldHandleDeletions: boolean;
 
   /**
    * Whether to handle renames.
    */
-  shouldHandleRenames: boolean;
+  readonly shouldHandleRenames: boolean;
 
   /**
    * Whether to rename attachment files when a note is renamed.
    */
-  shouldRenameAttachmentFiles: boolean;
+  readonly shouldRenameAttachmentFiles: boolean;
 
   /**
    * Whether to rename attachment folder when a note is renamed.
    */
-  shouldRenameAttachmentFolder: boolean;
+  readonly shouldRenameAttachmentFolder: boolean;
 
   /**
    * Whether to update file name aliases when a note is renamed.
    */
-  shouldUpdateFileNameAliases: boolean;
+  readonly shouldUpdateFileNameAliases: boolean;
 }
 
 interface HandledRenameKey {
-  newPath: string;
-  oldPath: string;
+  readonly newPath: string;
+  readonly oldPath: string;
 }
 
 interface InterruptedRename {
-  combinedBacklinksMap: Map<string, Map<string, string>>;
-  oldPath: string;
+  readonly combinedBacklinksMap: Map<string, Map<string, string>>;
+  readonly oldPath: string;
 }
 
 interface RenameHandlerConstructorParams {

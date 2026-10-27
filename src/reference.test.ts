@@ -24,18 +24,18 @@ import {
 } from './reference.ts';
 
 interface CanvasReferenceEx extends CanvasReference {
-  position?: undefined;
+  readonly position?: undefined;
 }
 
 interface FrontmatterLinkCacheEx extends FrontmatterLinkCache {
-  endOffset?: undefined;
-  isCanvas?: undefined;
-  position?: undefined;
-  startOffset?: undefined;
+  readonly endOffset?: undefined;
+  readonly isCanvas?: undefined;
+  readonly position?: undefined;
+  readonly startOffset?: undefined;
 }
 
 interface FrontmatterLinkCacheWithOffsetsEx extends FrontmatterLinkCacheWithOffsets {
-  position?: undefined;
+  readonly position?: undefined;
 }
 
 function makeCanvasReference(type: 'file' | 'text', key: string): Reference {

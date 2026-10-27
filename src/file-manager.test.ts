@@ -40,7 +40,7 @@ import {
 import { process } from './vault.ts';
 
 interface PathHolder {
-  path: string;
+  readonly path: string;
 }
 
 vi.mock('@mnaoumov/typescript-lib/object-utils', async (importOriginal) => {
@@ -149,6 +149,7 @@ describe('addAlias', () => {
 
 describe('waitForPendingLinkUpdates', () => {
   interface InProgressUpdatesHolder {
+    // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Tests clear the pending update list to signal completion.
     inProgressUpdates: LinkUpdatesHandler[] | null;
   }
 

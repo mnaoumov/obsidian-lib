@@ -24,12 +24,12 @@ import { referenceToFileChange } from './reference.ts';
 import { readSafe } from './vault.ts';
 
 interface ParsedCanvas {
-  nodes: ParsedCanvasNode[];
+  readonly nodes: ParsedCanvasNode[];
 }
 
 interface ParsedCanvasNode {
-  file?: string;
-  text?: string;
+  readonly file?: string;
+  readonly text?: string;
 }
 
 const CANVAS_PATH = 'drawing.canvas';

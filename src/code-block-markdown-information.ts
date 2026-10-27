@@ -18,47 +18,47 @@ export interface CodeBlockMarkdownInformation {
   /**
    * Arguments of the code block.
    */
-  $arguments: string[];
+  readonly $arguments: string[];
 
   /**
    * An end delimiter of the code block.
    */
-  endDelimiter: string;
+  readonly endDelimiter: string;
 
   /**
    * A language of the code block.
    */
-  language: string;
+  readonly language: string;
 
   /**
    * A line prefix of each line of the code block.
    */
-  linePrefix: string;
+  readonly linePrefix: string;
 
   /**
    * A content of the note.
    */
-  noteContent: string;
+  readonly noteContent: string;
 
   /**
    * A position of the code block in the note.
    */
-  positionInNote: Pos;
+  readonly positionInNote: Pos;
 
   /**
    * Raw arguments string of the code block.
    */
-  rawArgumentsString: string;
+  readonly rawArgumentsString: string;
 
   /**
    * A section information of the code block.
    */
-  sectionInfo: MarkdownSectionInformation;
+  readonly sectionInfo: MarkdownSectionInformation;
 
   /**
    * A start delimiter of the code block.
    */
-  startDelimiter: string;
+  readonly startDelimiter: string;
 }
 
 /* v8 ignore stop */

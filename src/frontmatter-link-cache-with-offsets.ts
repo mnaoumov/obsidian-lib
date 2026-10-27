@@ -18,12 +18,12 @@ export interface FrontmatterLinkCacheWithOffsets extends FrontmatterLinkCache {
   /**
    * An end offset of the link in the property value.
    */
-  endOffset: number;
+  readonly endOffset: number;
 
   /**
    * A start offset of the link in the property value.
    */
-  startOffset: number;
+  readonly startOffset: number;
 }
 
 /**

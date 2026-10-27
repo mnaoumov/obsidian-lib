@@ -45,7 +45,7 @@ import type {
  * The global the harness bootstraps its namespace onto.
  */
 interface ObsidianIntegrationTestingHolder {
-  __obsidianIntegrationTesting: ObsidianIntegrationTestingNamespace;
+  readonly __obsidianIntegrationTesting: ObsidianIntegrationTestingNamespace;
 }
 
 /**
@@ -53,7 +53,7 @@ interface ObsidianIntegrationTestingHolder {
  * business.
  */
 interface ObsidianIntegrationTestingNamespace {
-  trustedInput?: Partial<TrustedInputSeam>;
+  readonly trustedInput?: Partial<TrustedInputSeam>;
 }
 
 /**
@@ -64,13 +64,13 @@ interface ObsidianIntegrationTestingNamespace {
  * behavioral-sync obligation the desktop twin carries.
  */
 interface TrustedInputSeam {
-  clickElement: (params: ClickElementParams) => Promise<void>;
-  clickMouse: (params: ClickMouseParams) => Promise<void>;
-  hoverElement: (params: HoverElementParams) => Promise<void>;
-  moveMouse: (params: MoveMouseParams) => Promise<void>;
-  pressKey: (params: PressKeyParams) => Promise<void>;
-  typeIntoEditor: (params: TypeIntoEditorParams) => Promise<void>;
-  unhoverElement: (params: UnhoverElementParams) => Promise<void>;
+  readonly clickElement: (params: ClickElementParams) => Promise<void>;
+  readonly clickMouse: (params: ClickMouseParams) => Promise<void>;
+  readonly hoverElement: (params: HoverElementParams) => Promise<void>;
+  readonly moveMouse: (params: MoveMouseParams) => Promise<void>;
+  readonly pressKey: (params: PressKeyParams) => Promise<void>;
+  readonly typeIntoEditor: (params: TypeIntoEditorParams) => Promise<void>;
+  readonly unhoverElement: (params: UnhoverElementParams) => Promise<void>;
 }
 
 /**

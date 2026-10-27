@@ -63,16 +63,20 @@ interface MobileSandbox {
   readonly console: Console;
   readonly document: unknown;
   readonly exports: object;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Sandbox initialization points this global back to the completed sandbox.
   global: unknown;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Sandbox initialization points this global back to the completed sandbox.
   globalThis: unknown;
   readonly module: MobileSandboxModule;
   readonly navigator: unknown;
   readonly process: MobileProcess;
   readonly queueMicrotask: typeof queueMicrotask;
-  require: (moduleId: string) => unknown;
+  readonly require: (moduleId: string) => unknown;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Sandbox initialization points this global back to the completed sandbox.
   self: unknown;
   readonly setInterval: typeof setInterval;
   readonly setTimeout: typeof setTimeout;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Sandbox initialization points this global back to the completed sandbox.
   window: unknown;
 }
 
@@ -80,7 +84,7 @@ interface MobileSandbox {
  * The CommonJS `module` object a bundle assigns its exports to.
  */
 interface MobileSandboxModule {
-  exports: object;
+  readonly exports: object;
 }
 
 const NODE_BUILTIN_MODULE_IDS = new Set([

@@ -116,7 +116,7 @@ vi.mock('./modals/select-option.ts', () => ({
 }));
 
 interface MockGitHubResponse {
-  json: unknown;
+  readonly json: unknown;
 }
 
 const PLUGIN_ID = 'my-plugin';

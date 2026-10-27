@@ -19,6 +19,7 @@ import { CssClass } from '../css-class.ts';
 import { MinimizableModal } from './minimizable-modal.ts';
 
 interface AppWithSettingsModal {
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Tests install the settings manager on the app mock.
   setting: SettingsPopoutModalDouble;
 }
 

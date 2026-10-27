@@ -25,16 +25,16 @@ import {
 } from './events.ts';
 
 interface Mocks {
-  eventRef: EventReferenceOriginal;
-  offref: ReturnType<typeof vi.fn>;
-  on: ReturnType<typeof vi.fn>;
-  source: TestEventSource;
+  readonly eventRef: EventReferenceOriginal;
+  readonly offref: ReturnType<typeof vi.fn>;
+  readonly on: ReturnType<typeof vi.fn>;
+  readonly source: TestEventSource;
 }
 
 // A minimal typed event source: extends the base `Events` (one `on` overload) plus one concrete overload — small
 // enough to avoid the deep-instantiation limit that the real `Workspace` (27 overloads) would hit.
 interface TestEventSource extends EventsOriginal {
-  on: (name: 'my-event', callback: (value: number) => void) => EventReferenceOriginal;
+  readonly on: (name: 'my-event', callback: (value: number) => void) => EventReferenceOriginal;
 }
 
 function createMocks(): Mocks {

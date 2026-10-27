@@ -93,10 +93,10 @@ const INVOCABLE_SCRIPTS_FOLDER_PATH = `${CODE_SCRIPT_TOOLKIT_SETTINGS.modulesRoo
 const FOLDER_NOTES_DATA_PATH = `${PLUGINS_FOLDER_PATH}/${FOLDER_NOTES_PLUGIN_ID}/data.json`;
 
 interface AdapterMembers {
-  exists: DataAdapter['exists'];
-  mkdir: DataAdapter['mkdir'];
-  read: DataAdapter['read'];
-  write: DataAdapter['write'];
+  readonly exists: DataAdapter['exists'];
+  readonly mkdir: DataAdapter['mkdir'];
+  readonly read: DataAdapter['read'];
+  readonly write: DataAdapter['write'];
 }
 
 interface AppMock {

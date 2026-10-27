@@ -70,23 +70,23 @@ interface MutationBlockerResult {
 }
 
 interface ReadableCodeMirror {
-  state: ReadableCodeMirrorState;
+  readonly state: ReadableCodeMirrorState;
 }
 
 interface ReadableCodeMirrorState {
-  readOnly: boolean;
+  readonly readOnly: boolean;
 }
 
 interface ReadableEditor {
-  cm: ReadableCodeMirror;
+  readonly cm: ReadableCodeMirror;
 }
 
 interface ReadableLeaf {
-  view: ReadableView;
+  readonly view: ReadableView;
 }
 
 interface ReadableView {
-  editor?: ReadableEditor;
+  readonly editor?: ReadableEditor;
 }
 
 interface ShiftEnterResult {
@@ -108,11 +108,11 @@ interface SwapStep {
 }
 
 interface TypableLeaf {
-  view: TypableView;
+  readonly view: TypableView;
 }
 
 interface TypableView {
-  editor?: Editor;
+  readonly editor?: Editor;
 }
 
 interface TypingResult {

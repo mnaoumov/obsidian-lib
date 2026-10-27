@@ -113,17 +113,17 @@ export interface PluginSettingsState<PluginSettings extends object> {
   /**
    * The effective settings values used by the plugin. Invalid properties are replaced with defaults.
    */
-  effectiveValues: PluginSettings;
+  readonly effectiveValues: PluginSettings;
 
   /**
    * The raw input values as entered by the user. May contain invalid values.
    */
-  inputValues: PluginSettings;
+  readonly inputValues: PluginSettings;
 
   /**
    * Per-property validation messages. Empty string means valid.
    */
-  validationMessages: Record<StringKeys<PluginSettings>, string>;
+  readonly validationMessages: Record<StringKeys<PluginSettings>, string>;
 }
 
 /**
@@ -152,11 +152,11 @@ export type SettingsValidator<PluginSettings extends object, PropertyName extend
 ) => Promisable<MaybeReturn<string>>;
 
 interface PluginSettingsComponentBaseEventMap<PluginSettings extends object> {
-  loadSettings: [
+  readonly loadSettings: [
     loadedState: ReadonlyPluginSettingsState<PluginSettings>,
     isInitialLoad: boolean
   ];
-  saveSettings: [
+  readonly saveSettings: [
     newState: ReadonlyPluginSettingsState<PluginSettings>,
     oldState: ReadonlyPluginSettingsState<PluginSettings>,
     context: unknown

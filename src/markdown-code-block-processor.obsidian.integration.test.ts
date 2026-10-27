@@ -33,7 +33,7 @@ interface DuplicateCodeBlockResult {
 }
 
 interface ReadNoteContent {
-  content: string;
+  readonly content: string;
 }
 type ReadNoteContentArguments = GenericObject<ReadNoteContent>;
 

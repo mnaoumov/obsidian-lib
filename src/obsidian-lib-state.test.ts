@@ -12,6 +12,7 @@ import {
 } from './obsidian-lib-state.ts';
 
 interface GlobalThisWithState {
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Test cleanup removes the realm shared-state bag.
   __obsidianLib: unknown;
 }
 

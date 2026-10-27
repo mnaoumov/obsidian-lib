@@ -45,7 +45,7 @@ declare global {
     /**
      * The global {@link DataviewApi} object `Dataview` installs on every window.
      */
-    DataviewAPI?: DataviewApi;
+    readonly DataviewAPI?: DataviewApi;
   }
 }
 
@@ -67,7 +67,7 @@ export interface DataviewInlineApi extends DataviewInlineApiOriginal {
    * @param array - The array of items to wrap.
    * @returns A {@link DataArray} containing the items.
    */
-  array: <T>(array: T[]) => DataArray<T>;
+  readonly array: <T>(array: T[]) => DataArray<T>;
 
   /**
    * Retrieves the current page, with an optional custom page type.
@@ -75,7 +75,7 @@ export interface DataviewInlineApi extends DataviewInlineApiOriginal {
    * @typeParam CustomPage - The type of the custom page. Defaults to `SMarkdownPage`.
    * @returns The current page.
    */
-  current: <CustomFrontmatter = unknown>() => CombinedPage<CustomFrontmatter>;
+  readonly current: <CustomFrontmatter = unknown>() => CombinedPage<CustomFrontmatter>;
 
   /**
    * Retrieves pages based on an optional query, with an optional custom page type.
@@ -84,7 +84,7 @@ export interface DataviewInlineApi extends DataviewInlineApiOriginal {
    * @param query - An optional string query to filter the pages.
    * @returns A {@link DataArray} of pages matching the query.
    */
-  pages: <CustomFrontmatter = unknown>(query?: string) => DataArray<CombinedPage<CustomFrontmatter>>;
+  readonly pages: <CustomFrontmatter = unknown>(query?: string) => DataArray<CombinedPage<CustomFrontmatter>>;
 
   /**
    * Creates a paragraph HTML element with the provided text and optional DOM element options.
@@ -93,7 +93,7 @@ export interface DataviewInlineApi extends DataviewInlineApiOriginal {
    * @param options - Optional DOM element options, including an optional container.
    * @returns The created HTML paragraph element.
    */
-  paragraph: (
+  readonly paragraph: (
     text: unknown,
     options?: DomElementInfoWithContainer
   ) => HTMLParagraphElement;
@@ -115,7 +115,7 @@ export type PageFile = SMarkdownPage['file'];
 export type PageFiles = ArrayOrDataArray<PageFile>;
 
 interface ContainerInfo {
-  container?: HTMLElement;
+  readonly container?: HTMLElement;
 }
 
 /**

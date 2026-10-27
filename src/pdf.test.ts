@@ -19,8 +19,8 @@ vi.mock('@mnaoumov/typescript-lib/html-element', () => ({
 }));
 
 interface MockIpcRenderer {
-  once: ReturnType<typeof vi.fn>;
-  send: ReturnType<typeof vi.fn>;
+  readonly once: ReturnType<typeof vi.fn>;
+  readonly send: ReturnType<typeof vi.fn>;
 }
 
 let mockIpcRenderer: MockIpcRenderer;

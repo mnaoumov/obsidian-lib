@@ -18,7 +18,7 @@ export interface RibbonIconRegistrar {
    * @param params - The parameters for the ribbon icon registration.
    * @returns The HTML element representing the registered ribbon icon.
    */
-  addRibbonIcon: (params: RibbonIconRegistrarAddRibbonIconParams) => HTMLElement;
+  readonly addRibbonIcon: (params: RibbonIconRegistrarAddRibbonIconParams) => HTMLElement;
 }
 
 /**

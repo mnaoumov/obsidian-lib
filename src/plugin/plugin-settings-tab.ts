@@ -120,7 +120,7 @@ export interface BindOptionsExtended<
    * @param uiValue - The value of the UI component.
    * @returns The value to set on the plugin settings.
    */
-  componentToPluginSettingsValueConverter: (uiValue: UIValue) => PluginSettings[PropertyName] | ValidationMessageHolder;
+  readonly componentToPluginSettingsValueConverter: (uiValue: UIValue) => PluginSettings[PropertyName] | ValidationMessageHolder;
 
   /**
    * Converts the plugin settings value to the value used by the UI component.
@@ -128,7 +128,7 @@ export interface BindOptionsExtended<
    * @param pluginSettingsValue - The value of the property in the plugin settings.
    * @returns The value to set on the UI component.
    */
-  pluginSettingsToComponentValueConverter: (pluginSettingsValue: ReadonlyDeep<PluginSettings[PropertyName]>) => UIValue;
+  readonly pluginSettingsToComponentValueConverter: (pluginSettingsValue: ReadonlyDeep<PluginSettings[PropertyName]>) => UIValue;
 }
 
 /**
@@ -285,7 +285,7 @@ interface PluginSettingsTabBaseBindImplParams<
 }
 
 interface PluginSettingsTabBaseEventMap {
-  validationMessageChanged: [propertyName: string, validationMessage: string];
+  readonly validationMessageChanged: [propertyName: string, validationMessage: string];
 }
 
 /**

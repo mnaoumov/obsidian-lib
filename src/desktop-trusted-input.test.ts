@@ -32,7 +32,7 @@ const INPUT_POLL_INTERVAL_IN_MILLISECONDS = 50;
 const INPUT_TIMEOUT_IN_MILLISECONDS = 5000;
 
 interface StubbedWebContents {
-  sendInputEvent: ReturnType<typeof vi.fn>;
+  readonly sendInputEvent: ReturnType<typeof vi.fn>;
 }
 
 let sendInputEvent: ReturnType<typeof vi.fn>;

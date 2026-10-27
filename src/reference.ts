@@ -25,7 +25,7 @@ export interface CanvasFileNodeReference extends CanvasReference {
   /**
    * A type of reference.
    */
-  type: 'file';
+  readonly type: 'file';
 }
 
 /**
@@ -35,17 +35,17 @@ export interface CanvasReference extends FrontmatterLinkCache {
   /**
    * Whether the reference is a canvas reference.
    */
-  isCanvas: true;
+  readonly isCanvas: true;
 
   /**
    * An index of the node in the canvas.
    */
-  nodeIndex: number;
+  readonly nodeIndex: number;
 
   /**
    * A type of reference.
    */
-  type: 'file' | 'text';
+  readonly type: 'file' | 'text';
 }
 
 /**
@@ -55,12 +55,12 @@ export interface CanvasTextNodeReference extends CanvasReference {
   /**
    * An original reference.
    */
-  originalReference: Reference;
+  readonly originalReference: Reference;
 
   /**
    * A type of reference.
    */
-  type: 'text';
+  readonly type: 'text';
 }
 
 /**

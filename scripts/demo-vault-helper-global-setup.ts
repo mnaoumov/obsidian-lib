@@ -87,6 +87,7 @@ export async function invoke(app) {
 Module-level mutable state, held in one object so each mutation names it explicitly.
 */
 interface ModuleState {
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Setup assigns the temporary vault path after creating the vault.
   demoVaultPath: string | undefined;
 }
 

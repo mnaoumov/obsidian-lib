@@ -86,7 +86,7 @@ export interface VaultTransactionConstructorParams {
 type TransactionState = 'committed' | 'open' | 'rolledBack';
 
 interface UndoStep {
-  undo: () => Promise<void>;
+  readonly undo: () => Promise<void>;
 }
 
 /**

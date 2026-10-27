@@ -24,6 +24,7 @@ import {
 } from '../library.ts';
 
 interface PluginContextWindow {
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Plugin context setup installs or replaces the debug controller.
   DEBUG: DebugController | undefined;
 }
 

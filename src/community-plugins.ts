@@ -193,7 +193,7 @@ interface CommunityPluginToggleInstallState {
  * any version of it -- or on its own equivalent -- is configurable without a shared nominal type.
  */
 interface EditableSettingsComponent {
-  editAndSave: (settingsEditor: (settings: object) => void) => Promise<void>;
+  readonly editAndSave: (settingsEditor: (settings: object) => void) => Promise<void>;
 }
 
 /**

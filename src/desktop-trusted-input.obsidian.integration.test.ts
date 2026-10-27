@@ -21,6 +21,7 @@ import {
  * Holds the observed event across the listener callback, so the closure can report it back.
  */
 interface ObservedEventCapture {
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The event listener stores the observed click result in this capture.
   value: null | TrustedClickResult;
 }
 

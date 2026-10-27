@@ -19,7 +19,7 @@ export interface MarkdownPostProcessorRegistrar {
    *
    * @param params - The parameters for the markdown post processor registration.
    */
-  registerMarkdownPostProcessor: (params: MarkdownPostProcessorRegistrarRegisterMarkdownPostProcessorParams) => void;
+  readonly registerMarkdownPostProcessor: (params: MarkdownPostProcessorRegistrarRegisterMarkdownPostProcessorParams) => void;
 }
 
 /**

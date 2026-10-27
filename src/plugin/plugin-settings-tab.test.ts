@@ -59,28 +59,32 @@ vi.mock('./plugin-context.ts', () => ({
 }));
 
 interface EventListenerEntry {
-  0: string;
-  1: GenericFunction;
+  readonly 0: string;
+  readonly 1: GenericFunction;
 }
 
 interface MockValueComponentBase {
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Change tracking wraps and replaces the component callback registration method.
   onChange: ReturnType<typeof vi.fn>;
-  setValue: ReturnType<typeof vi.fn>;
+  readonly setValue: ReturnType<typeof vi.fn>;
 }
 
 interface MockValueComponentWithValidator extends MockValueComponentBase {
-  validatorEl: HTMLElement;
+  readonly validatorEl: HTMLElement;
 }
 
 interface TestSettings {
-  enabled: boolean;
+  readonly enabled: boolean;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Tests change the setting value before rendering settings.
   name: string;
 }
 
 interface TextBasedMockComponentShape extends MockValueComponentBase {
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Tests replace the component clearing method for settings updates.
   empty: ReturnType<typeof vi.fn>;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Tests replace the component emptiness check for each settings scenario.
   isEmpty: ReturnType<typeof vi.fn>;
-  setPlaceholderValue: ReturnType<typeof vi.fn>;
+  readonly setPlaceholderValue: ReturnType<typeof vi.fn>;
 }
 
 class DeclarativeSettingsTab extends PluginSettingsTabBase<TestSettings> {

@@ -34,10 +34,10 @@ interface ComponentContext {
    * Completes the host's pending settings load, optionally with the shown versions the file turned out to
    * hold. Only meaningful when the component was created with `isSettingsLoadPending`.
    */
-  finishSettingsLoad: (shownVersions?: readonly string[]) => void;
+  readonly finishSettingsLoad: (shownVersions?: readonly string[]) => void;
   readonly getShownVersions: () => readonly string[];
   readonly setShownReleaseNoteVersions: ReturnType<typeof vi.fn>;
-  triggerLayoutReady: () => void;
+  readonly triggerLayoutReady: () => void;
 }
 
 interface CreateComponentOptions {

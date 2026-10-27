@@ -15,9 +15,9 @@ import {
 } from 'vitest';
 
 interface ConstructorProbe {
-  isFunction: boolean;
-  isHtmlElementSubclass: boolean;
-  prototypeMethodNames: string[];
+  readonly isFunction: boolean;
+  readonly isHtmlElementSubclass: boolean;
+  readonly prototypeMethodNames: string[];
 }
 
 /*

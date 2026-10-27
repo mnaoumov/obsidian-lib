@@ -113,12 +113,12 @@ export interface ParseLinkFrontmatterReferenceWithOffsets extends ParseLinkFront
   /**
    * An end offset of the link in the frontmatter value.
    */
-  endOffset: number;
+  readonly endOffset: number;
 
   /**
    * A start offset of the link in the frontmatter value.
    */
-  startOffset: number;
+  readonly startOffset: number;
 }
 
 /**
@@ -447,12 +447,12 @@ interface WidenToWholeValueParams {
 }
 
 interface WikiLinkNode extends Node {
-  data: WikiLinkNodeData;
-  value: string;
+  readonly data: WikiLinkNodeData;
+  readonly value: string;
 }
 
 interface WikiLinkNodeData extends Record<string, unknown> {
-  alias: string;
+  readonly alias: string;
 }
 
 class FrontmatterLinksParser {

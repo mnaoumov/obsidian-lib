@@ -10,7 +10,7 @@ import {
 import { DurationTransformer } from './duration-transformer.ts';
 
 interface WrappedDuration {
-  time: moment.Duration;
+  readonly time: moment.Duration;
 }
 
 describe('DurationTransformer', () => {

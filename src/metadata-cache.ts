@@ -110,6 +110,7 @@ export interface CachedMetadataEx extends CachedMetadata {
    * The external links parsed from the note content body. Populated only when
    * {@link CachedMetadataExFeature.ExternalLinks} is applied.
    */
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Metadata parsing populates this optional cache feature after reading the note.
   externalLinks?: ParseLinkReference[];
 
   /**
@@ -121,18 +122,21 @@ export interface CachedMetadataEx extends CachedMetadata {
    * The external links parsed from single-link (single-value) note frontmatter values. Populated only
    * when {@link CachedMetadataExFeature.FrontmatterExternalLinks} is applied.
    */
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Metadata parsing populates this optional cache feature after reading the note.
   frontmatterExternalLinks?: ParseLinkFrontmatterReference[];
 
   /**
    * The external links parsed from multi-link (multi-value) note frontmatter values. Populated only when
    * {@link CachedMetadataExFeature.MultiValueFrontmatterExternalLinks} is applied.
    */
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Metadata parsing populates this optional cache feature after reading the note.
   multiValueFrontmatterExternalLinks?: ParseLinkFrontmatterReferenceWithOffsets[];
 
   /**
    * The internal links parsed from multi-link (multi-value) note frontmatter values. Populated only when
    * {@link CachedMetadataExFeature.MultiValueFrontmatterLinks} is applied.
    */
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Metadata parsing populates this optional cache feature after reading the note.
   multiValueFrontmatterLinks?: ParseLinkFrontmatterReferenceWithOffsets[];
 }
 
@@ -303,7 +307,7 @@ interface AdvancedMetadataCacheBacklinksApi {
    * @param pathOrFile - The path or file object.
    * @returns The backlinks, or `null` while the plugin's `Backlinks` module is off.
    */
-  getBacklinksForFile: (pathOrFile: PathOrFile) => CustomArrayDict<Reference> | null;
+  readonly getBacklinksForFile: (pathOrFile: PathOrFile) => CustomArrayDict<Reference> | null;
 
   /**
    * Answers from the plugin's backlink cache once the pending file changes have been processed.
@@ -312,7 +316,7 @@ interface AdvancedMetadataCacheBacklinksApi {
    * @returns A {@link Promise} that resolves to the backlinks, or to `null` while the plugin's `Backlinks`
    *   module is off.
    */
-  getBacklinksForFileSafe: (pathOrFile: PathOrFile) => Promise<CustomArrayDict<Reference> | null>;
+  readonly getBacklinksForFileSafe: (pathOrFile: PathOrFile) => Promise<CustomArrayDict<Reference> | null>;
 }
 
 /**
@@ -332,7 +336,7 @@ interface FeatureLinkSelector {
   /**
    * Selects the links for this category from the cache.
    */
-  select: (cache: CachedMetadataEx) => Reference[] | undefined;
+  readonly select: (cache: CachedMetadataEx) => Reference[] | undefined;
 
   /**
    * Whether to include this category.

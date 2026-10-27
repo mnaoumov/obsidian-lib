@@ -20,7 +20,7 @@ export interface PluginEventMap {
   /**
   Fired when plugin settings are changed externally (e.g. sync, manual file edit).
    */
-  externalSettingsChange: [];
+  readonly externalSettingsChange: [];
 }
 
 /**

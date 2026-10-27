@@ -18,9 +18,9 @@ import {
 import { EmbedExtensionsComponent } from './embed-extensions-component.ts';
 
 interface Mocks {
-  app: AppOriginal;
-  registerExtensions: ReturnType<typeof vi.fn>;
-  unregisterExtensions: ReturnType<typeof vi.fn>;
+  readonly app: AppOriginal;
+  readonly registerExtensions: ReturnType<typeof vi.fn>;
+  readonly unregisterExtensions: ReturnType<typeof vi.fn>;
 }
 
 describe('EmbedExtensionsComponent', () => {

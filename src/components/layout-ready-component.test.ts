@@ -23,8 +23,8 @@ import {
 } from './layout-ready-component.ts';
 
 interface MockApp {
-  app: AppOriginal;
-  triggerLayoutReady: () => void;
+  readonly app: AppOriginal;
+  readonly triggerLayoutReady: () => void;
 }
 
 function createMockApp(): MockApp {

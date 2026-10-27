@@ -43,9 +43,9 @@ import { FileCommandHandler } from './file-command-handler.ts';
 let app: AppOriginal;
 
 interface MockContext {
-  context: CommandHandlerRegistrationContext;
-  fileMenuHandlers: FileMenuEventHandler[];
-  filesMenuHandlers: FilesMenuEventHandler[];
+  readonly context: CommandHandlerRegistrationContext;
+  readonly fileMenuHandlers: FileMenuEventHandler[];
+  readonly filesMenuHandlers: FilesMenuEventHandler[];
 }
 
 class TestFileHandler extends FileCommandHandler {

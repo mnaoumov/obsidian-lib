@@ -591,8 +591,8 @@ describe('ComponentEx', () => {
 
   describe('getInFlightAncestryLoadPromise', () => {
     interface Gate {
-      open: () => void;
-      promise: Promise<void>;
+      readonly open: () => void;
+      readonly promise: Promise<void>;
     }
 
     function createGate(): Gate {

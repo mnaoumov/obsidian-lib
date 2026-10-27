@@ -43,8 +43,8 @@ interface CreateComponentOwnedByParams {
 }
 
 interface TrackedMenuEventRegistrar {
-  menuDisposeSpies: ReturnType<typeof vi.fn>[];
-  registrar: MenuEventRegistrar;
+  readonly menuDisposeSpies: ReturnType<typeof vi.fn>[];
+  readonly registrar: MenuEventRegistrar;
 }
 
 class AllMenusRegisteringHandler extends CommandHandler {

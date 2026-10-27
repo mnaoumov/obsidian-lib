@@ -22,7 +22,7 @@ export interface CliHandlerRegistrar {
    *
    * @param params - The parameters for the CLI handler registration.
    */
-  registerCliHandler: (params: CliHandlerRegistrarRegisterCliHandlerParams) => void;
+  readonly registerCliHandler: (params: CliHandlerRegistrarRegisterCliHandlerParams) => void;
 }
 
 /**
