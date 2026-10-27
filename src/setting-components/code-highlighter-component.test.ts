@@ -119,9 +119,9 @@ describe('CodeHighlighterComponent', () => {
     comp.setValue('hello');
     comp.inputEl.selectionStart = 5;
     comp.inputEl.selectionEnd = 5;
-    const event = new KeyboardEvent('keydown', { key: 'Tab' });
-    Object.defineProperty(event, 'preventDefault', { value: vi.fn() });
-    comp.inputEl.dispatchEvent(event);
+    const $event = new KeyboardEvent('keydown', { key: 'Tab' });
+    Object.defineProperty($event, 'preventDefault', { value: vi.fn() });
+    comp.inputEl.dispatchEvent($event);
     expect(comp.getValue()).toBe('hello  ');
   });
 
@@ -130,9 +130,9 @@ describe('CodeHighlighterComponent', () => {
     comp.setValue('  hello');
     comp.inputEl.selectionStart = 2;
     comp.inputEl.selectionEnd = 2;
-    const event = new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true });
-    Object.defineProperty(event, 'preventDefault', { value: vi.fn() });
-    comp.inputEl.dispatchEvent(event);
+    const $event = new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true });
+    Object.defineProperty($event, 'preventDefault', { value: vi.fn() });
+    comp.inputEl.dispatchEvent($event);
     expect(comp.getValue()).toBe('hello');
   });
 
@@ -141,17 +141,17 @@ describe('CodeHighlighterComponent', () => {
     comp.setValue('hello');
     comp.inputEl.selectionStart = 0;
     comp.inputEl.selectionEnd = 0;
-    const event = new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true });
-    Object.defineProperty(event, 'preventDefault', { value: vi.fn() });
-    comp.inputEl.dispatchEvent(event);
+    const $event = new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true });
+    Object.defineProperty($event, 'preventDefault', { value: vi.fn() });
+    comp.inputEl.dispatchEvent($event);
     expect(comp.getValue()).toBe('hello');
   });
 
   it('should ignore non-Tab keys in handleKeyDown', () => {
     const comp = createComponent();
     comp.setValue('hello');
-    const event = new KeyboardEvent('keydown', { key: 'Enter' });
-    comp.inputEl.dispatchEvent(event);
+    const $event = new KeyboardEvent('keydown', { key: 'Enter' });
+    comp.inputEl.dispatchEvent($event);
     expect(comp.getValue()).toBe('hello');
   });
 
@@ -163,17 +163,17 @@ describe('CodeHighlighterComponent', () => {
   it('should handle Ctrl+Tab to focus next control', () => {
     const comp = createComponent();
     comp.setValue('hello');
-    const event = new KeyboardEvent('keydown', { ctrlKey: true, key: 'Tab' });
-    Object.defineProperty(event, 'preventDefault', { value: vi.fn() });
-    comp.inputEl.dispatchEvent(event);
+    const $event = new KeyboardEvent('keydown', { ctrlKey: true, key: 'Tab' });
+    Object.defineProperty($event, 'preventDefault', { value: vi.fn() });
+    comp.inputEl.dispatchEvent($event);
   });
 
   it('should handle Ctrl+Shift+Tab to focus previous control', () => {
     const comp = createComponent();
     comp.setValue('hello');
-    const event = new KeyboardEvent('keydown', { ctrlKey: true, key: 'Tab', shiftKey: true });
-    Object.defineProperty(event, 'preventDefault', { value: vi.fn() });
-    comp.inputEl.dispatchEvent(event);
+    const $event = new KeyboardEvent('keydown', { ctrlKey: true, key: 'Tab', shiftKey: true });
+    Object.defineProperty($event, 'preventDefault', { value: vi.fn() });
+    comp.inputEl.dispatchEvent($event);
   });
 
   it('should remove existing language class and skip non-language classes', () => {

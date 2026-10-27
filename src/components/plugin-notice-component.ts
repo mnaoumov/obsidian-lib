@@ -185,7 +185,7 @@ export interface PluginNoticeComponentShowNoticeOptions {
    * {@link PluginNoticeComponentShowNoticeOptions.shouldHideOnClick} `= false` and
    * {@link PluginNoticeComponentShowNoticeOptions.shouldShowCloseButton} are set).
    */
-  readonly onCloseClick?: (event: PluginNoticeCloseClickEvent) => Promisable<void>;
+  readonly onCloseClick?: ($event: PluginNoticeCloseClickEvent) => Promisable<void>;
 
   /**
    * A callback invoked when the notice is hidden — whether by the user closing it, by a later reusable
@@ -244,7 +244,7 @@ export interface PluginNoticeHideInfo {
 interface PluginNoticeComponentAppendCloseButtonParams {
   readonly contentEl: HTMLElement;
   readonly getNotice: () => Notice | null;
-  readonly onCloseClick?: (event: PluginNoticeCloseClickEvent) => Promisable<void>;
+  readonly onCloseClick?: ($event: PluginNoticeCloseClickEvent) => Promisable<void>;
 }
 
 interface PluginNoticeComponentAppendToCurrentNoticeParams {
@@ -277,7 +277,7 @@ interface PluginNoticeComponentBuildNoticeContentParams {
    * Invoked when the close button is clicked; may cancel the close. See
    * {@link PluginNoticeComponentShowNoticeOptions.onCloseClick}.
    */
-  readonly onCloseClick?: (event: PluginNoticeCloseClickEvent) => Promisable<void>;
+  readonly onCloseClick?: ($event: PluginNoticeCloseClickEvent) => Promisable<void>;
 
   /**
    * Whether the notice is hard to close: stops every click from dismissing it and, unless suppressed by
@@ -355,7 +355,7 @@ interface PluginNoticeComponentShowNoticeWithDurationParams {
   readonly durationInMilliseconds: null | number;
   readonly message: DocumentFragment | string;
   readonly mode: PluginNoticeMode;
-  readonly onCloseClick: ((event: PluginNoticeCloseClickEvent) => Promisable<void>) | undefined;
+  readonly onCloseClick: (($event: PluginNoticeCloseClickEvent) => Promisable<void>) | undefined;
   readonly onHide: ((info: PluginNoticeHideInfo) => Promisable<void>) | undefined;
   readonly requiresExplicitClose: boolean;
   readonly shouldRegisterAsPermanent: boolean;

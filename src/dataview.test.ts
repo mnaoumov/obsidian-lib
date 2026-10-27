@@ -617,8 +617,8 @@ describe('renderPaginated page navigation', () => {
     // Click the Next link
 
     vi.mocked(dv.list).mockClear();
-    const event = new PointerEvent('click', { bubbles: true, cancelable: true });
-    nextLink?.dispatchEvent(event);
+    const $event = new PointerEvent('click', { bubbles: true, cancelable: true });
+    nextLink?.dispatchEvent($event);
 
     // The real convertAsyncToSync schedules the click handler as a tracked fire-and-forget
     // operation, so drain it before asserting.
@@ -674,10 +674,10 @@ describe('renderPaginated page navigation', () => {
     );
     expect(firstLink).not.toBeNull();
 
-    const event = new PointerEvent('click', { bubbles: true, cancelable: true });
-    vi.spyOn(event, 'preventDefault');
-    (firstLink as HTMLAnchorElement | null)?.onclick?.(event);
-    expect(vi.mocked(event.preventDefault)).toHaveBeenCalled();
+    const $event = new PointerEvent('click', { bubbles: true, cancelable: true });
+    vi.spyOn($event, 'preventDefault');
+    (firstLink as HTMLAnchorElement | null)?.onclick?.($event);
+    expect(vi.mocked($event.preventDefault)).toHaveBeenCalled();
   });
 
   it('should restore dv.container after rendering page content', async () => {

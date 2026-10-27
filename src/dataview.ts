@@ -524,8 +524,8 @@ async function renderPaginated<T>(params: RenderPaginatedParams<T>): Promise<voi
     const jumpToPageInput = paginationRow2Div.createEl('input', { attr: { max: totalPages, min: 1 }, type: 'number' });
     jumpToPageInput.addEventListener(
       'keydown',
-      convertAsyncToSync(async (event: KeyboardEvent): Promise<void> => {
-        if (event.key !== 'Enter') {
+      convertAsyncToSync(async ($event: KeyboardEvent): Promise<void> => {
+        if ($event.key !== 'Enter') {
           return;
         }
 
@@ -548,13 +548,13 @@ async function renderPaginated<T>(params: RenderPaginatedParams<T>): Promise<voi
       if (disabled) {
         link.addClass('disabled');
         // eslint-disable-next-line unicorn/prefer-add-event-listener -- The handler is assigned to `onclick` so it stays readable back off the element, which is how it is invoked in tests and how a later assignment can replace it.
-        link.onclick = (event: MouseEvent): void => {
-          event.preventDefault();
+        link.onclick = ($event: MouseEvent): void => {
+          $event.preventDefault();
         };
       } else {
         // eslint-disable-next-line unicorn/prefer-add-event-listener -- The handler is assigned to `onclick` so it stays readable back off the element, which is how it is invoked in tests and how a later assignment can replace it.
-        link.onclick = convertAsyncToSync(async (event: MouseEvent): Promise<void> => {
-          event.preventDefault();
+        link.onclick = convertAsyncToSync(async ($event: MouseEvent): Promise<void> => {
+          $event.preventDefault();
           await renderPage(currentPageNumber);
         });
       }
