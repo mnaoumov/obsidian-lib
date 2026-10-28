@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## 8.1.0
+
+- test(integration): keep VITEST_MAX_WORKERS from running shared-instance files at once
+- test(integration): keep a leaked minimized modal from failing unrelated suites
+- feat(components): let an incremental file index await metadata changes and move records on rename
+- feat(data-stores): clear and reseed a local store in one commit
+- docs: re-derive the bundled @lezer/common against Obsidian 1.15.0 and 1.5.4
+- feat(link): leave links inside headings unchanged on request (<https://github.com/mnaoumov/obsidian-better-markdown-links/issues/44>)
+- fix: run each integration project in its own vitest invocation
+
 ## 8.0.0
 
 - fix: escape angle-bracket Markdown link destinations (<https://github.com/mnaoumov/obsidian-better-markdown-links/issues/43>)
