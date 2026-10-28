@@ -5,7 +5,9 @@
  */
 
 import type {
+  CachedMetadata,
   FrontmatterLinkCache,
+  Pos,
   Reference
 } from 'obsidian';
 
@@ -124,6 +126,38 @@ export function isCanvasReference(reference: Reference): reference is CanvasRefe
  */
 export function isCanvasTextNodeReference(reference: Reference): reference is CanvasTextNodeReference {
   return isCanvasReference(reference) && reference.type === 'text';
+}
+
+/**
+ * Checks if a reference sits inside a heading.
+ *
+ * The answer comes from the parsed heading positions of the file's metadata, never from a pattern over its
+ * text: a reference is inside a heading when it is fully contained in a `headings` entry or in a `heading`
+ * section. The section covers a Setext heading's underline as well, so both heading syntaxes count.
+ *
+ * Only a reference that carries a position within the file's content can be inside a heading. A
+ * {@link FrontmatterLinkCache} — a frontmatter link, a multi-link frontmatter value entry, or any canvas
+ * reference — never is.
+ *
+ * A link in a heading is part of that heading's text, and so of every `#heading` subpath pointing at it.
+ * Rewriting such a link changes the heading text and breaks those subpaths, which is why a link converter
+ * may want to leave it alone.
+ *
+ * @param reference - The reference to check.
+ * @param cache - The metadata of the file the reference belongs to.
+ * @returns Whether the reference is fully contained in a heading.
+ */
+export function isReferenceInHeading(reference: Reference, cache: CachedMetadata | null): boolean {
+  if (!cache || !isReferenceCache(reference)) {
+    return false;
+  }
+
+  const headingPositions: Pos[] = [
+    ...(cache.headings ?? []).map((heading) => heading.position),
+    ...(cache.sections ?? []).filter((section) => section.type === 'heading').map((section) => section.position)
+  ];
+
+  return headingPositions.some((position) => position.start.offset <= reference.position.start.offset && reference.position.end.offset <= position.end.offset);
 }
 
 /**

@@ -5,6 +5,7 @@ import type { InternalPlugins } from '@obsidian-typings/obsidian-public-latest';
 import type {
   App as AppOriginal,
   FrontmatterLinkCache,
+  Pos,
   Reference,
   TFile as TFileOriginal
 } from 'obsidian';
@@ -2379,6 +2380,218 @@ describe('app-dependent functions', () => {
           pluginNoticeComponent: null,
           resourceLockComponent
         })).rejects.toThrow('must not be less than the start offset');
+      });
+    });
+
+    /*
+     * `[[a]] [[b]] [[c]]` again: `a` sits in a `headings` entry, `b` in a `heading` section (the shape that
+     * also covers a Setext underline) and `c` in a paragraph section, so only `c` is outside every heading.
+     */
+    describe('heading skipping', () => {
+      function createPosition(startOffset: number, endOffset: number): Pos {
+        return {
+          end: { col: endOffset, line: 0, offset: endOffset },
+          start: { col: startOffset, line: 0, offset: startOffset }
+        };
+      }
+
+      function createHeadingCache(): CachedMetadataEx {
+        return castTo<CachedMetadataEx>({
+          ...createThreeLinkCache(),
+          headings: [{ heading: 'a', level: 1, position: createPosition(0, 5) }],
+          sections: [
+            { position: createPosition(6, 11), type: 'heading' },
+            { position: createPosition(12, 17), type: 'paragraph' }
+          ]
+        });
+      }
+
+      it('should not call the converter for a link inside a heading in editLinksInContent', async () => {
+        vi.mocked(parseMetadata).mockResolvedValue(createHeadingCache());
+        const linkConverter = createLinkConverter();
+
+        await editLinksInContent({
+          app,
+          content: CONTENT,
+          linkConverter,
+          shouldSkipLinksInHeadings: true
+        });
+
+        expect(linkConverter.mock.calls.map((call) => call[0].link)).toEqual(['c']);
+      });
+
+      it('should still visit links inside headings by default', async () => {
+        vi.mocked(parseMetadata).mockResolvedValue(createHeadingCache());
+        const linkConverter = createLinkConverter();
+
+        await editLinksInContent({
+          app,
+          content: CONTENT,
+          linkConverter
+        });
+
+        expect(linkConverter.mock.calls.map((call) => call[0].link)).toEqual(['a', 'b', 'c']);
+      });
+
+      it('should not call the converter for a link inside a heading in editLinks', async () => {
+        mockApplyFileChangesToInvokeProvider();
+        vi.mocked(getCacheSafe).mockResolvedValue(createHeadingCache());
+        const linkConverter = createLinkConverter();
+
+        await editLinks({
+          app,
+          linkConverter,
+          pathOrFile: 'note.md',
+          pluginNoticeComponent: null,
+          resourceLockComponent,
+          shouldSkipLinksInHeadings: true
+        });
+
+        expect(linkConverter.mock.calls.map((call) => call[0].link)).toEqual(['c']);
+      });
+
+      it('should combine with the offset range', async () => {
+        vi.mocked(parseMetadata).mockResolvedValue(createHeadingCache());
+        const linkConverter = createLinkConverter();
+
+        await editLinksInContent({
+          app,
+          content: CONTENT,
+          linkConverter,
+          offsetRange: { endOffset: 11, startOffset: 0 },
+          shouldSkipLinksInHeadings: true
+        });
+
+        expect(linkConverter).not.toHaveBeenCalled();
+      });
+
+      it('should forward the option from updateLinksInFile', async () => {
+        vi.mocked(getCacheSafe).mockResolvedValue(createHeadingCache());
+        const changes: FileChange[] = [];
+        vi.mocked(applyFileChanges).mockImplementation(
+          async ({ changesProvider }) => {
+            if (typeof changesProvider !== 'function') {
+              return;
+            }
+
+            const abortSignal = strictProxy<AbortSignal>({ throwIfAborted: vi.fn() });
+            changes.push(...await resolveValue(changesProvider, { abortSignal, content: CONTENT }) ?? []);
+          }
+        );
+
+        await updateLinksInFile({
+          app,
+          newSourcePathOrFile: 'note.md',
+          pluginNoticeComponent: null,
+          resourceLockComponent,
+          shouldSkipLinksInHeadings: true
+        });
+
+        expect(changes.map((change) => change.oldContent)).toEqual(['[[c]]']);
+      });
+
+      it('should forward the option from updateLinksInContent', async () => {
+        vi.mocked(parseMetadata).mockResolvedValue(createHeadingCache());
+        const changes: FileChange[] = [];
+        vi.mocked(applyContentChanges).mockImplementation(
+          async ({ changesProvider, content }) => {
+            if (typeof changesProvider === 'function') {
+              changes.push(...await (changesProvider as () => Promise<FileChange[] | null>)() ?? []);
+            }
+            return content;
+          }
+        );
+
+        await updateLinksInContent({
+          app,
+          content: CONTENT,
+          newSourcePathOrFile: 'note.md',
+          shouldSkipLinksInHeadings: true
+        });
+
+        expect(changes.map((change) => change.oldContent)).toEqual(['[[c]]']);
+      });
+
+      it('should forward the option from updateFileUrlLinksInContent', async () => {
+        const content = '[a](file:///F:%5Cx.txt) [b](file:///F:%5Cy.txt)';
+        const externalLinks = parseLinks(content)
+          .filter((parseLinkResult) => parseLinkResult.isExternal)
+          .map((parseLinkResult) => toParseLinkReference({ content, parseLinkResult }));
+        const firstLink = ensureNonNullable(externalLinks[0]);
+        vi.mocked(parseMetadata).mockResolvedValue(castTo<CachedMetadataEx>({
+          externalLinks,
+          features: [
+            CachedMetadataExFeature.Native,
+            CachedMetadataExFeature.ExternalLinks,
+            CachedMetadataExFeature.FrontmatterExternalLinks,
+            CachedMetadataExFeature.MultiValueFrontmatterExternalLinks
+          ],
+          frontmatterExternalLinks: [],
+          headings: [{ heading: 'a', level: 1, position: firstLink.position }],
+          links: undefined,
+          multiValueFrontmatterExternalLinks: [],
+          sections: undefined
+        }));
+        const changes: FileChange[] = [];
+        vi.mocked(applyContentChanges).mockImplementation(
+          async ({ changesProvider, content: currentContent }) => {
+            if (typeof changesProvider === 'function') {
+              changes.push(...await (changesProvider as () => Promise<FileChange[] | null>)() ?? []);
+            }
+            return currentContent;
+          }
+        );
+
+        await updateFileUrlLinksInContent({
+          app,
+          content,
+          shouldSkipLinksInHeadings: true
+        });
+
+        expect(changes.map((change) => change.oldContent)).toEqual(['[b](file:///F:%5Cy.txt)']);
+      });
+
+      it('should forward the option from updateFileUrlLinksInFile', async () => {
+        const content = '[a](file:///F:%5Cx.txt) [b](file:///F:%5Cy.txt)';
+        const externalLinks = parseLinks(content)
+          .filter((parseLinkResult) => parseLinkResult.isExternal)
+          .map((parseLinkResult) => toParseLinkReference({ content, parseLinkResult }));
+        const secondLink = ensureNonNullable(externalLinks[1]);
+        vi.mocked(getCacheSafe).mockResolvedValue(castTo<CachedMetadataEx>({
+          externalLinks,
+          features: [
+            CachedMetadataExFeature.Native,
+            CachedMetadataExFeature.ExternalLinks,
+            CachedMetadataExFeature.FrontmatterExternalLinks,
+            CachedMetadataExFeature.MultiValueFrontmatterExternalLinks
+          ],
+          frontmatterExternalLinks: [],
+          headings: undefined,
+          links: undefined,
+          multiValueFrontmatterExternalLinks: [],
+          sections: [{ position: secondLink.position, type: 'heading' }]
+        }));
+        const changes: FileChange[] = [];
+        vi.mocked(applyFileChanges).mockImplementation(
+          async ({ changesProvider }) => {
+            if (typeof changesProvider !== 'function') {
+              return;
+            }
+
+            const abortSignal = strictProxy<AbortSignal>({ throwIfAborted: vi.fn() });
+            changes.push(...await resolveValue(changesProvider, { abortSignal, content: CONTENT }) ?? []);
+          }
+        );
+
+        await updateFileUrlLinksInFile({
+          app,
+          pathOrFile: 'note.md',
+          pluginNoticeComponent: null,
+          resourceLockComponent,
+          shouldSkipLinksInHeadings: true
+        });
+
+        expect(changes.map((change) => change.oldContent)).toEqual(['[a](file:///F:%5Cx.txt)']);
       });
     });
   });

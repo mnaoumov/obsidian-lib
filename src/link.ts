@@ -99,6 +99,7 @@ import {
 import {
   getReferenceLinkText,
   isCanvasFileNodeReference,
+  isReferenceInHeading,
   isReferenceInOffsetRange,
   referenceToFileChange
 } from './reference.ts';
@@ -583,6 +584,15 @@ export interface EditLinksInContentParams {
    * @default `false`
    */
   readonly shouldEditMultiValueFrontmatterExternalLinks?: boolean;
+
+  /**
+   * Whether to leave every link inside a heading unchanged: the converter is not called for it, so it stays
+   * byte-for-byte as written. A link in a heading is part of the heading's text, so rewriting it changes
+   * that text and breaks every `#heading` subpath pointing at the heading. See {@link isReferenceInHeading}.
+   *
+   * @default `false`
+   */
+  readonly shouldSkipLinksInHeadings?: boolean;
 }
 
 /**
@@ -654,6 +664,15 @@ export interface EditLinksParams extends EditLinksOptions {
    * @default `false`
    */
   readonly shouldEditMultiValueFrontmatterExternalLinks?: boolean;
+
+  /**
+   * Whether to leave every link inside a heading unchanged: the converter is not called for it, so it stays
+   * byte-for-byte as written. A link in a heading is part of the heading's text, so rewriting it changes
+   * that text and breaks every `#heading` subpath pointing at the heading. See {@link isReferenceInHeading}.
+   *
+   * @default `false`
+   */
+  readonly shouldSkipLinksInHeadings?: boolean;
 }
 
 /**
@@ -1000,6 +1019,14 @@ export interface UpdateFileUrlLinksInContentParams {
   readonly offsetRange?: OffsetRange;
 
   /**
+   * Whether to leave every link inside a heading unchanged. See
+   * {@link EditLinksInContentParams.shouldSkipLinksInHeadings}.
+   *
+   * @default `false`
+   */
+  readonly shouldSkipLinksInHeadings?: boolean;
+
+  /**
    * Whether to emit the normalized links with angle brackets and raw spaces instead of `%20`-encoding.
    *
    * @default `false`
@@ -1041,6 +1068,13 @@ export interface UpdateFileUrlLinksInFileParams extends ProcessOptions {
    * The path or file to normalize the `file://` links in.
    */
   readonly pathOrFile: PathOrFile;
+
+  /**
+   * Whether to leave every link inside a heading unchanged. See {@link EditLinksParams.shouldSkipLinksInHeadings}.
+   *
+   * @default `false`
+   */
+  readonly shouldSkipLinksInHeadings?: boolean;
 
   /**
    * Whether to emit the normalized links with angle brackets and raw spaces instead of `%20`-encoding.
@@ -1282,6 +1316,16 @@ export interface UpdateLinksInFileParams extends ProcessOptions {
   readonly shouldIncludeAttachmentExtensionToEmbedAlias?: boolean;
 
   /**
+   * Whether to leave every link inside a heading unchanged: it is neither converted nor restyled, so it
+   * stays byte-for-byte as written. A link in a heading is part of the heading's text, so rewriting it
+   * changes that text and breaks every `#heading` subpath pointing at the heading. See
+   * {@link isReferenceInHeading}.
+   *
+   * @default `false`
+   */
+  readonly shouldSkipLinksInHeadings?: boolean;
+
+  /**
    * Whether to update only embedded links.
    */
   readonly shouldUpdateEmbedOnlyLinks?: boolean;
@@ -1460,6 +1504,13 @@ interface GetFileChangesParams {
    * @default `false`
    */
   readonly shouldIncludeMultiValueFrontmatterExternalLinks?: boolean;
+
+  /**
+   * Whether to leave every link inside a heading unchanged, without calling the converter for it.
+   *
+   * @default `false`
+   */
+  readonly shouldSkipLinksInHeadings?: boolean;
 }
 
 interface LinkConfig {
@@ -1646,6 +1697,16 @@ interface UpdateLinksInContentParams {
    * @default `false`
    */
   readonly shouldIncludeAttachmentExtensionToEmbedAlias?: boolean;
+
+  /**
+   * Whether to leave every link inside a heading unchanged: it is neither converted nor restyled, so it
+   * stays byte-for-byte as written. A link in a heading is part of the heading's text, so rewriting it
+   * changes that text and breaks every `#heading` subpath pointing at the heading. See
+   * {@link isReferenceInHeading}.
+   *
+   * @default `false`
+   */
+  readonly shouldSkipLinksInHeadings?: boolean;
 
   /**
    * Whether to update only embedded links.
@@ -1873,6 +1934,7 @@ export async function editLinks(params: EditLinksParams): Promise<void> {
     shouldEditExternalLinks = false,
     shouldEditFrontmatterExternalLinks = false,
     shouldEditMultiValueFrontmatterExternalLinks = false,
+    shouldSkipLinksInHeadings = false,
     ...options
   } = params;
 
@@ -1901,7 +1963,8 @@ export async function editLinks(params: EditLinksParams): Promise<void> {
           offsetRange,
           shouldIncludeExternalLinks: shouldEditExternalLinks,
           shouldIncludeFrontmatterExternalLinks: shouldEditFrontmatterExternalLinks,
-          shouldIncludeMultiValueFrontmatterExternalLinks: shouldEditMultiValueFrontmatterExternalLinks
+          shouldIncludeMultiValueFrontmatterExternalLinks: shouldEditMultiValueFrontmatterExternalLinks,
+          shouldSkipLinksInHeadings
         })))
         : null;
     },
@@ -1917,7 +1980,16 @@ export async function editLinks(params: EditLinksParams): Promise<void> {
  * @returns The promise that resolves to the updated content.
  */
 export async function editLinksInContent(params: EditLinksInContentParams): Promise<string> {
-  const { app, content, linkConverter, offsetRange, shouldEditExternalLinks = false, shouldEditFrontmatterExternalLinks = false, shouldEditMultiValueFrontmatterExternalLinks = false } = params;
+  const {
+    app,
+    content,
+    linkConverter,
+    offsetRange,
+    shouldEditExternalLinks = false,
+    shouldEditFrontmatterExternalLinks = false,
+    shouldEditMultiValueFrontmatterExternalLinks = false,
+    shouldSkipLinksInHeadings = false
+  } = params;
   let { abortSignal } = params;
   abortSignal ??= abortSignalNever();
   abortSignal.throwIfAborted();
@@ -1943,7 +2015,8 @@ export async function editLinksInContent(params: EditLinksInContentParams): Prom
         offsetRange,
         shouldIncludeExternalLinks: shouldEditExternalLinks,
         shouldIncludeFrontmatterExternalLinks: shouldEditFrontmatterExternalLinks,
-        shouldIncludeMultiValueFrontmatterExternalLinks: shouldEditMultiValueFrontmatterExternalLinks
+        shouldIncludeMultiValueFrontmatterExternalLinks: shouldEditMultiValueFrontmatterExternalLinks,
+        shouldSkipLinksInHeadings
       }));
       abortSignal.throwIfAborted();
       return changes;
@@ -2208,7 +2281,7 @@ export function splitSubpath(link: string): SplitSubpathResult {
  * @returns A {@link Promise} that resolves to the content with normalized `file://` links.
  */
 export async function updateFileUrlLinksInContent(params: UpdateFileUrlLinksInContentParams): Promise<string> {
-  const { app, content, offsetRange, shouldUseAngleBrackets = false } = params;
+  const { app, content, offsetRange, shouldSkipLinksInHeadings, shouldUseAngleBrackets = false } = params;
   return await editLinksInContent(normalizeOptionalProperties<EditLinksInContentParams>({
     abortSignal: params.abortSignal,
     app,
@@ -2217,7 +2290,8 @@ export async function updateFileUrlLinksInContent(params: UpdateFileUrlLinksInCo
     offsetRange,
     shouldEditExternalLinks: true,
     shouldEditFrontmatterExternalLinks: true,
-    shouldEditMultiValueFrontmatterExternalLinks: true
+    shouldEditMultiValueFrontmatterExternalLinks: true,
+    shouldSkipLinksInHeadings
   }));
 }
 
@@ -2233,6 +2307,7 @@ export async function updateFileUrlLinksInFile(params: UpdateFileUrlLinksInFileP
     app,
     offsetRange,
     pathOrFile,
+    shouldSkipLinksInHeadings,
     shouldUseAngleBrackets = false,
     ...options
   } = params;
@@ -2245,6 +2320,7 @@ export async function updateFileUrlLinksInFile(params: UpdateFileUrlLinksInFileP
     shouldEditExternalLinks: true,
     shouldEditFrontmatterExternalLinks: true,
     shouldEditMultiValueFrontmatterExternalLinks: true,
+    shouldSkipLinksInHeadings,
     ...options
   }));
 }
@@ -2368,6 +2444,7 @@ export async function updateLinksInContent(params: UpdateLinksInContentParams): 
     oldSourcePathOrFile,
     shouldEscapeAlias,
     shouldIncludeAttachmentExtensionToEmbedAlias,
+    shouldSkipLinksInHeadings,
     shouldUpdateEmbedOnlyLinks,
     shouldUpdateFileNameAlias,
     shouldUseAngleBrackets,
@@ -2398,7 +2475,8 @@ export async function updateLinksInContent(params: UpdateLinksInContentParams): 
           shouldUseLeadingSlashForAbsolutePaths
         }));
     },
-    offsetRange
+    offsetRange,
+    shouldSkipLinksInHeadings
   }));
 }
 
@@ -2420,6 +2498,7 @@ export async function updateLinksInFile(params: UpdateLinksInFileParams): Promis
     oldSourcePathOrFile,
     shouldEscapeAlias,
     shouldIncludeAttachmentExtensionToEmbedAlias,
+    shouldSkipLinksInHeadings,
     shouldUpdateEmbedOnlyLinks,
     shouldUpdateFileNameAlias,
     shouldUseAngleBrackets,
@@ -2455,7 +2534,8 @@ export async function updateLinksInFile(params: UpdateLinksInFileParams): Promis
     },
     // Named beside the `...params` spread, so a later refactor to explicit forwarding cannot drop it silently.
     offsetRange,
-    pathOrFile: newSourcePathOrFile
+    pathOrFile: newSourcePathOrFile,
+    shouldSkipLinksInHeadings
   }));
 }
 
@@ -2589,7 +2669,8 @@ async function getFileChanges(params: GetFileChangesParams): Promise<FileChange[
     offsetRange,
     shouldIncludeExternalLinks = false,
     shouldIncludeFrontmatterExternalLinks = false,
-    shouldIncludeMultiValueFrontmatterExternalLinks = false
+    shouldIncludeMultiValueFrontmatterExternalLinks = false,
+    shouldSkipLinksInHeadings = false
   } = params;
   let { abortSignal } = params;
   abortSignal ??= abortSignalNever();
@@ -2618,6 +2699,11 @@ async function getFileChanges(params: GetFileChangesParams): Promise<FileChange[
           : 'Skipping a link that carries no position within the content, so it can never be in the offset range',
         { link: link.original, offsetRange }
       );
+      continue;
+    }
+
+    if (shouldSkipLinksInHeadings && isReferenceInHeading(link, cache)) {
+      getFileChangesDebugger('Skipping a link inside a heading', { link: link.original });
       continue;
     }
 
