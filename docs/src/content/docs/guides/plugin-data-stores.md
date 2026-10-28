@@ -26,7 +26,20 @@ try {
 }
 ```
 
-Values use IndexedDB's structured-clone contract. Reads return `unknown` so consumers validate their own schema. `commit({ entries, removedKeys })` updates several records atomically. Writes resolve after transaction completion, including disk/quota failures, rather than after the individual request succeeds. `getOrCreate` initializes a value atomically across connections.
+Values use IndexedDB's structured-clone contract. Reads return `unknown` so consumers validate their own schema. `commit({ entries, removedKeys })` updates several records atomically. Writes resolve after transaction completion, including disk/quota failures, rather than after the individual request succeeds. `getOrCreate` initializes a value atomically across connections. `entries()` reads every record in key order from one consistent snapshot.
+
+To replace a whole store, pass `shouldClear: true`: the store is cleared and `entries` are written in the same transaction, so a marker or metadata record written with them can never land without the clear, and a failed commit keeps every previous record. Prefer it over listing every existing key in `removedKeys`, which deletes record by record: at 90,000 records in Obsidian a per-key reset took 7 to 16 s, a clearing commit about 1 s.
+
+```typescript
+import { LocalDataStore } from '@mnaoumov/obsidian-lib/data-stores/local-data-store';
+
+declare const local: LocalDataStore;
+
+await local.commit({
+  entries: [['schema-marker', 2], ['metadata', { resetAt: Date.now() }]],
+  shouldClear: true
+});
+```
 
 ## Shared authoritative state
 

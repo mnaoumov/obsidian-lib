@@ -19,6 +19,14 @@ export interface LocalDataStoreCommitParams {
    * @default `[]`
    */
   readonly removedKeys?: readonly string[];
+  /**
+   * Deletes every record of this store first, in the same transaction as the writes.
+   *
+   * Either the store is replaced by `entries` as a whole, or, when the transaction fails, every previous record survives.
+   *
+   * @default `false`
+   */
+  readonly shouldClear?: boolean;
 }
 
 /**
@@ -94,11 +102,14 @@ export class LocalDataStore {
   /**
    * Commits several record changes atomically without serializing the rest of the database.
    *
-   * @param params - Writes and deletions in one transaction.
+   * @param params - Writes and deletions in one transaction, optionally after clearing the store.
    * @returns A promise that resolves only after all changes commit.
    */
   public async commit(params: LocalDataStoreCommitParams): Promise<void> {
     await this.run('readwrite', (store) => {
+      if (params.shouldClear) {
+        store.clear();
+      }
       for (const key of params.removedKeys ?? []) {
         store.delete(key);
       }
@@ -126,21 +137,22 @@ export class LocalDataStore {
    */
   public async entries(): Promise<[string, unknown][]> {
     const records: [string, unknown][] = [];
+    // Two bulk reads in one transaction see the same snapshot in the same key order, so they pair up by index.
+    // A cursor dispatches one event per record instead; at 90,000 records in Obsidian it took 1.5 to 2 times as long.
     await this.run('readonly', (store) => {
-      const request = store.openCursor();
-      request.onsuccess = (): void => {
-        const cursor = request.result;
-        if (!cursor) {
-          return;
+      const keysRequest = store.getAllKeys();
+      const valuesRequest = store.getAll();
+      valuesRequest.onsuccess = (): void => {
+        const keys = keysRequest.result;
+        const values = valuesRequest.result;
+        for (const [index, key] of keys.entries()) {
+          if (typeof key !== 'string') {
+            throw new TypeError('Local data-store key is not a string');
+          }
+          records.push([key, values[index]]);
         }
-
-        if (typeof cursor.key !== 'string') {
-          throw new TypeError('Local data-store key is not a string');
-        }
-        records.push([cursor.key, cursor.value]);
-        cursor.continue();
       };
-      return request;
+      return valuesRequest;
     });
     return records;
   }
