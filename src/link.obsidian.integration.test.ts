@@ -49,6 +49,23 @@ interface OffsetRangeFromEditorResult {
 }
 
 /**
+ * Input of the heading-skipping test.
+ */
+// A type alias rather than an interface, because the harness input must satisfy an index-signature constraint.
+type SkipLinksInHeadingsInput = Readonly<Record<'shouldSkipLinksInHeadings', boolean>>;
+
+/**
+ * Result of the heading-skipping test.
+ */
+interface SkipLinksInHeadingsResult {
+  readonly diskAfterEdit: string;
+  readonly headingsAfter: string[];
+  readonly headingsBefore: string[];
+  readonly inboundResolvedHeading: string | undefined;
+  readonly localResolvedHeading: string | undefined;
+}
+
+/**
  * Result of the `updateLinksInFile` selection-scope test.
  */
 interface UpdateLinksInFileResult {
@@ -109,6 +126,120 @@ describe('angle-bracket heading destinations', () => {
     expect(result.convertedAgain).toBe(result.converted);
     expect(result.renderedDestinations).toHaveLength(2);
     expect(result.resolvedHeadings).toEqual(['Angle <note> in a heading', 'Code `<note>` in a heading']);
+  });
+});
+
+/*
+ * Issue mnaoumov/obsidian-better-markdown-links#44: a link inside a heading is part of that heading's text, so
+ * converting it renames the heading and breaks every `#heading` subpath pointing at it, in the note itself
+ * and in other notes. With `shouldSkipLinksInHeadings` the heading links stay byte-for-byte as written, and
+ * Obsidian's own parser still reports the same heading text and resolves both subpaths afterwards.
+ */
+describe('links inside headings', () => {
+  async function convertNote(shouldSkipLinksInHeadings: boolean): Promise<SkipLinksInHeadingsResult> {
+    return await evalInObsidian<SkipLinksInHeadingsInput, SkipLinksInHeadingsResult>({
+      async callback({ app, lib: { LinkStyle, updateLinksInFile, waitUntil }, obsidianModule, shouldSkipLinksInHeadings: shouldSkip }) {
+        const { resolveSubpath } = obsidianModule;
+        const notePath = 'heading-links.md';
+        const inboundPath = 'heading-links-inbound.md';
+        const targetPath = 'Target.md';
+        const content = [
+          '## [[Target]] wikilink heading',
+          '',
+          '[to heading](#Target%20wikilink%20heading)',
+          '',
+          'Setext [[Target|alias]] heading',
+          '===',
+          '',
+          '![[Target]]',
+          '',
+          'Body [[Target]]',
+          ''
+        ].join('\n');
+
+        const targetFile = await app.vault.create(targetPath, '# Target\n');
+        const noteFile = await app.vault.create(notePath, content);
+        const inboundFile = await app.vault.create(inboundPath, '[[heading-links#Target wikilink heading]]\n');
+        try {
+          await waitUntil({
+            message: 'index the headings of the note',
+            predicate: () => app.metadataCache.getFileCache(noteFile)?.headings?.length === 2
+          });
+          const headingsBefore = (app.metadataCache.getFileCache(noteFile)?.headings ?? []).map((heading) => heading.heading);
+
+          await updateLinksInFile({
+            app,
+            linkStyle: LinkStyle.Markdown,
+            newSourcePathOrFile: noteFile,
+            pluginNoticeComponent: null,
+            resourceLockComponent: null,
+            shouldSkipLinksInHeadings: shouldSkip,
+            timeoutInMilliseconds: 10_000
+          });
+
+          await waitUntil({
+            message: 'reindex the converted note',
+            predicate: () => (app.metadataCache.getFileCache(noteFile)?.embeds ?? []).every((embed) => embed.original !== '![[Target]]')
+          });
+          const cache = app.metadataCache.getFileCache(noteFile);
+          if (!cache) {
+            throw new Error('Expected the converted note to be indexed');
+          }
+
+          const localResolved = resolveSubpath(cache, '#Target wikilink heading');
+          const inboundLink = app.metadataCache.getFileCache(inboundFile)?.links?.[0];
+          const inboundDestination = app.metadataCache.getFirstLinkpathDest('heading-links', inboundPath);
+          const inboundCache = inboundDestination ? app.metadataCache.getFileCache(inboundDestination) : null;
+          const inboundResolved = inboundLink && inboundCache
+            ? resolveSubpath(inboundCache, inboundLink.link.slice(inboundLink.link.indexOf('#')))
+            : null;
+
+          return {
+            diskAfterEdit: await app.vault.adapter.read(notePath),
+            headingsAfter: (cache.headings ?? []).map((heading) => heading.heading),
+            headingsBefore,
+            inboundResolvedHeading: inboundResolved?.type === 'heading' ? inboundResolved.current.heading : undefined,
+            localResolvedHeading: localResolved?.type === 'heading' ? localResolved.current.heading : undefined
+          };
+        } finally {
+          await app.fileManager.trashFile(inboundFile);
+          await app.fileManager.trashFile(noteFile);
+          await app.fileManager.trashFile(targetFile);
+        }
+      },
+      input: { shouldSkipLinksInHeadings }
+    });
+  }
+
+  it('should leave ATX and Setext heading links unchanged and keep both subpaths resolving', async () => {
+    const result = await convertNote(true);
+
+    expect(result.diskAfterEdit).toBe([
+      '## [[Target]] wikilink heading',
+      '',
+      '[to heading](#Target%20wikilink%20heading)',
+      '',
+      'Setext [[Target|alias]] heading',
+      '===',
+      '',
+      '![Target](Target.md)',
+      '',
+      'Body [Target](Target.md)',
+      ''
+    ].join('\n'));
+    expect(result.headingsAfter).toEqual(result.headingsBefore);
+    // The metadata keeps the heading's raw text, link markup included; only the subpath match strips it.
+    expect(result.localResolvedHeading).toBe('[[Target]] wikilink heading');
+    expect(result.inboundResolvedHeading).toBe('[[Target]] wikilink heading');
+  });
+
+  it('should rewrite heading links by default, which renames the heading', async () => {
+    const result = await convertNote(false);
+
+    expect(result.diskAfterEdit).not.toContain('## [[Target]] wikilink heading');
+    expect(result.headingsAfter).not.toEqual(result.headingsBefore);
+    expect(result.localResolvedHeading).toBeUndefined();
+    expect(result.inboundResolvedHeading).toBeUndefined();
   });
 });
 

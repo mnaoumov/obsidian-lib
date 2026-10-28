@@ -1,6 +1,9 @@
 import type {
+  CachedMetadata,
   FrontmatterLinkCache,
-  Reference
+  Pos,
+  Reference,
+  SectionCache
 } from 'obsidian';
 
 import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
@@ -18,6 +21,7 @@ import {
   isCanvasFileNodeReference,
   isCanvasReference,
   isCanvasTextNodeReference,
+  isReferenceInHeading,
   isReferenceInOffsetRange,
   referenceToFileChange,
   sortReferences
@@ -135,6 +139,67 @@ describe('isCanvasTextNodeReference', () => {
   it('should return false for a regular reference', () => {
     const reference = makeReferenceCache('[[link]]', 0);
     expect(isCanvasTextNodeReference(reference)).toBe(false);
+  });
+});
+
+describe('isReferenceInHeading', () => {
+  function makePosition(startOffset: number, endOffset: number): Pos {
+    return {
+      end: { col: 0, line: 0, offset: endOffset },
+      start: { col: 0, line: 0, offset: startOffset }
+    };
+  }
+
+  function makeCache(headingPositions: Pos[], sections: SectionCache[] = []): CachedMetadata {
+    return {
+      headings: headingPositions.map((position) => ({ heading: 'heading', level: 1, position })),
+      sections
+    };
+  }
+
+  it('should return true for a reference inside a headings entry', () => {
+    const reference = makeReferenceCache('[[link]]', 3);
+    expect(isReferenceInHeading(reference, makeCache([makePosition(0, 20)]))).toBe(true);
+  });
+
+  it('should return true for a reference whose bounds coincide with the heading', () => {
+    const reference = makeReferenceCache('[[link]]', 3);
+    expect(isReferenceInHeading(reference, makeCache([makePosition(3, 11)]))).toBe(true);
+  });
+
+  it('should return true for a reference inside a heading section, as a Setext heading is', () => {
+    const reference = makeReferenceCache('[[link]]', 0);
+    expect(isReferenceInHeading(reference, makeCache([], [{ position: makePosition(0, 12), type: 'heading' }]))).toBe(true);
+  });
+
+  it('should return false for a reference inside a section of another type', () => {
+    const reference = makeReferenceCache('[[link]]', 0);
+    expect(isReferenceInHeading(reference, makeCache([], [{ position: makePosition(0, 12), type: 'paragraph' }]))).toBe(false);
+  });
+
+  it('should return false for a reference straddling the end of a heading', () => {
+    const reference = makeReferenceCache('[[link]]', 3);
+    expect(isReferenceInHeading(reference, makeCache([makePosition(0, 10)]))).toBe(false);
+  });
+
+  it('should return false for a reference after every heading', () => {
+    const reference = makeReferenceCache('[[link]]', 30);
+    expect(isReferenceInHeading(reference, makeCache([makePosition(0, 10)]))).toBe(false);
+  });
+
+  it('should return false for a cache with neither headings nor sections', () => {
+    const reference = makeReferenceCache('[[link]]', 3);
+    expect(isReferenceInHeading(reference, {})).toBe(false);
+  });
+
+  it('should return false for a missing cache', () => {
+    const reference = makeReferenceCache('[[link]]', 3);
+    expect(isReferenceInHeading(reference, null)).toBe(false);
+  });
+
+  it('should return false for a frontmatter link, which carries no file position', () => {
+    const reference = makeFrontmatterLink('link', 'aliases');
+    expect(isReferenceInHeading(reference, makeCache([makePosition(0, 1000)]))).toBe(false);
   });
 });
 
