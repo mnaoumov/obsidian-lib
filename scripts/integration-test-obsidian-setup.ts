@@ -68,3 +68,27 @@ afterEach(async () => {
     }
   });
 });
+
+/*
+ * A `MinimizableModal` left minimized keeps the app in its peek-only lock, which blocks EVERY later modal open
+ * and every keystroke. One `minimizable-modal` case that threw mid-test did exactly that, and the alert, confirm,
+ * prompt, select-item and select-option suites behind it then failed on flat 12 s waits for modals that were
+ * never allowed to open, a different set each run depending on the file order. A test that minimizes is expected
+ * to restore and close in a `finally`; this net closes whatever one leaks, so the leak fails only its own file.
+ *
+ * The clicks are dispatched rather than trusted on purpose: this is teardown, not the behavior under test, and it
+ * must work even when the leaked lock is swallowing input.
+ */
+afterEach(async () => {
+  await evalInObsidian({
+    callback(): void {
+      for (const restoreButtonEl of document.querySelectorAll<HTMLElement>('.minimized-modal-bar .restore-button')) {
+        restoreButtonEl.click();
+      }
+
+      for (const closeButtonEl of document.querySelectorAll<HTMLElement>('.minimizable-modal .modal-header-button')) {
+        closeButtonEl.click();
+      }
+    }
+  });
+});
