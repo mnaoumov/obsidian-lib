@@ -15,7 +15,7 @@
     "section": "dependencies",
     "why": "Types must match the version bundled in Obsidian; see AGENTS.md for the distinguishing bundle markers.",
     "check": "npm view @lezer/common version",
-    "expect": "1.5.3"
+    "expect": "1.5.4"
   },
   "@puppeteer/browsers": {
     "section": "overrides",
