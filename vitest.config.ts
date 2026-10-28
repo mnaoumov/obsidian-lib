@@ -40,8 +40,9 @@ const UNIT_TEST_SETUP_FILES = [
 
 const BIG_TIMEOUT_IN_MILLISECONDS = 30_000;
 
-// Each Obsidian project below owns a SEPARATE Obsidian instance; distinct ascending group orders run them one
-// after another, so only one instance is ever busy. See AGENTS.md.
+// Each Obsidian project below owns a SEPARATE Obsidian instance; distinct ascending group orders run their tests one
+// after another, so only one instance is ever busy. Vitest still runs every selected project's global setup up front,
+// so `test:integration` invokes each project on its own to keep only one instance alive. See AGENTS.md.
 const OBSIDIAN_SHARED_INSTANCE_GROUP_ORDER = 2;
 const OBSIDIAN_DEMO_VAULT_HELPER_GROUP_ORDER = 3;
 const OBSIDIAN_CONSUMER_LIB_GROUP_ORDER = 4;
