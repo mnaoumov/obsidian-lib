@@ -60,6 +60,53 @@ describe('LocalDataStore', () => {
     store.close();
   });
 
+  it('clears and reseeds a store in one transaction, durably and only for that store', async () => {
+    const factory = new IDBFactory();
+    const params = { factory, pluginId: 'plugin', storeId: 'cache', vaultId: 'vault' };
+    const empty = await LocalDataStore.open(params);
+    await empty.commit({ entries: [['marker', 1]], shouldClear: true });
+    expect(await empty.entries()).toEqual([['marker', 1]]);
+    await empty.commit({ entries: [['legacy', 'a'], ['marker', 1], ['other', 'b']] });
+    const sibling = await LocalDataStore.open({ ...params, storeId: 'sibling' });
+    await sibling.set('kept', true);
+    await empty.commit({ entries: [['marker', 2], ['metadata', { reset: true }]], removedKeys: ['absent'], shouldClear: true });
+    empty.close();
+    const restarted = await LocalDataStore.open(params);
+    expect(await restarted.entries()).toEqual([['marker', 2], ['metadata', { reset: true }]]);
+    expect(await sibling.entries()).toEqual([['kept', true]]);
+    await restarted.commit({ entries: [], shouldClear: true });
+    expect(await restarted.entries()).toEqual([]);
+    restarted.close();
+    sibling.close();
+  });
+
+  it('keeps every previous record when a clearing commit fails', async () => {
+    const factory = new IDBFactory();
+    const params = { factory, pluginId: 'plugin', storeId: 'cache', vaultId: 'vault' };
+    const store = await LocalDataStore.open(params);
+    const previous = [['legacy', 'a'], ['marker', 1]] as [string, unknown][];
+    await store.commit({ entries: previous });
+    await expect(store.commit({ entries: [['marker', 2], ['bad', (): number => 1]], shouldClear: true })).rejects.toThrow();
+    expect(await store.entries()).toEqual(previous);
+
+    const originalPut = IDBObjectStore.prototype.put;
+    const putSpy = vi.spyOn(IDBObjectStore.prototype, 'put').mockImplementation(function abortAfterLastPut(this: IDBObjectStore, ...arguments_) {
+      const request = originalPut.apply(this, arguments_);
+      if (arguments_[1] === 'metadata') {
+        request.addEventListener('success', () => {
+          this.transaction.abort();
+        });
+      }
+      return request;
+    });
+    await expect(store.commit({ entries: [['marker', 2], ['metadata', true]], shouldClear: true })).rejects.toThrow('transaction aborted');
+    putSpy.mockRestore();
+    store.close();
+    const restarted = await LocalDataStore.open(params);
+    expect(await restarted.entries()).toEqual(previous);
+    restarted.close();
+  });
+
   it('closes on a schema upgrade and reports opening an incompatible newer database', async () => {
     const factory = new IDBFactory();
     vi.stubGlobal('indexedDB', factory);
