@@ -6,6 +6,7 @@ import {
 
 import {
   buildIntegrationTestVitestArguments,
+  buildIntegrationTestVitestEnv,
   getBulkCores,
   getProjectNames,
   selectIntegrationTestProjects
@@ -56,9 +57,20 @@ describe('buildIntegrationTestVitestArguments', () => {
       .toEqual(['run', '--project=p', '--passWithNoTests', '--maxWorkers=2']);
   });
 
-  it('leaves the workers to VITEST_MAX_WORKERS when that is set', () => {
-    expect(buildIntegrationTestVitestArguments({ env: { BULK_CORES: '2', VITEST_MAX_WORKERS: '1' }, projectName: 'p' }))
-      .toEqual(['run', '--project=p', '--passWithNoTests']);
+  it('passes VITEST_MAX_WORKERS as the flag, ahead of the bulk budget', () => {
+    expect(buildIntegrationTestVitestArguments({ env: { BULK_CORES: '2', VITEST_MAX_WORKERS: '3' }, projectName: 'p' }))
+      .toEqual(['run', '--project=p', '--passWithNoTests', '--maxWorkers=3']);
+  });
+
+  it('falls back to the bulk budget when VITEST_MAX_WORKERS is not a positive integer', () => {
+    expect(buildIntegrationTestVitestArguments({ env: { BULK_CORES: '2', VITEST_MAX_WORKERS: '50%' }, projectName: 'p' }))
+      .toEqual(['run', '--project=p', '--passWithNoTests', '--maxWorkers=2']);
+  });
+});
+
+describe('buildIntegrationTestVitestEnv', () => {
+  it('blanks VITEST_MAX_WORKERS so it cannot override a project\'s single worker', () => {
+    expect(buildIntegrationTestVitestEnv()).toEqual({ VITEST_MAX_WORKERS: '' });
   });
 });
 

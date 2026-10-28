@@ -15,6 +15,7 @@ import process from 'node:process';
 import vitestConfig from '../vitest.config.ts';
 import {
   buildIntegrationTestVitestArguments,
+  buildIntegrationTestVitestEnv,
   getProjectNames,
   selectIntegrationTestProjects
 } from './helpers/integration-test-runs.ts';
@@ -28,6 +29,8 @@ await wrapCliTask(async () => {
   });
 
   for (const projectName of projectNames) {
-    await execFromRoot(['vitest', ...buildIntegrationTestVitestArguments({ env: process.env, projectName })]);
+    await execFromRoot(['vitest', ...buildIntegrationTestVitestArguments({ env: process.env, projectName })], {
+      env: buildIntegrationTestVitestEnv()
+    });
   }
 });
