@@ -9,8 +9,13 @@ import {
 } from 'vitest';
 
 const PLUGIN_ID = 'obsidian-lib-test';
-const RECORD_COUNT = 90_000;
-// Two seedings, two reads and two resets of 90,000 records took 36 s on an idle machine.
+/*
+ * The per-key reset is ONE commit, so it runs in one closure under the transport's ~30 s per-eval cap. At 90,000
+ * records it took 13 to 21 s on a quiet machine and went over the cap under load, which failed the release
+ * preflight (the guide's 90,000-record figures were measured then). At a third of that the comparison below still
+ * holds by an order of magnitude, with room left for a loaded machine.
+ */
+const RECORD_COUNT = 30_000;
 const LARGE_STORE_TEST_TIMEOUT_IN_MILLISECONDS = 180_000;
 
 interface ReadMeasurement {

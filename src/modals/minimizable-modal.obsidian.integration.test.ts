@@ -77,7 +77,7 @@ describe('MinimizableModal', () => {
   describe('minimize', () => {
     it('should block the keyboard while minimized and allow typing again after restore', async () => {
       const result = await evalInObsidian({
-        async callback({ app, lib: { MinimizableModal, typeIntoEditor }, obsidianModule }): Promise<TypingWhileMinimizedResult> {
+        async callback({ app, lib: { MinimizableModal, typeIntoEditor, waitUntil }, obsidianModule }): Promise<TypingWhileMinimizedResult> {
           // This file shares its live Obsidian instance with the other integration suites.
           // Start from a clean workspace so only the view this test opens is around.
           app.workspace.detachLeavesOfType('markdown');
@@ -86,8 +86,14 @@ describe('MinimizableModal', () => {
           const file = await app.vault.create('minimizable-modal-typing.md', 'hello world');
           const leaf = app.workspace.getLeaf();
           await leaf.openFile(file);
-          // The CodeMirror instance is not fully wired up the instant `openFile` resolves.
-          await settle();
+          // `openFile` does not make the leaf active, and under load the CodeMirror instance is not wired up the
+          // instant it resolves, so wait for the note to be the active editor rather than sleeping a fixed time.
+          app.workspace.setActiveLeaf(leaf, { focus: true });
+          await waitUntil({
+            message: 'the opened note becomes the active editor',
+            predicate: () => app.workspace.activeEditor?.file === file && Boolean(app.workspace.activeEditor.editor),
+            timeoutInMilliseconds: 5000
+          });
 
           // Open a plain blocking modal and wrap it so it can be minimized.
           const modal = new obsidianModule.Modal(app);
@@ -96,22 +102,28 @@ describe('MinimizableModal', () => {
           minimizable.modal.open();
           await settle();
 
-          // Minimize it: the backdrop is hidden, but the app is peek-only — the keyboard is blocked.
-          minimizable.minimize();
-          await settle();
-          const isMinimized = minimizable.isMinimized;
+          let didAcceptTypingWhileMinimized: boolean;
+          let isMinimized: boolean;
 
-          // Typing into the editor while the modal is minimized must NOT reach the document.
-          // A suppressed trusted keystroke leaves the editor value unchanged.
-          const beforeMinimized = readValue();
-          await typeIntoEditor({ editor: getEditor(), text: 'X' });
-          const didAcceptTypingWhileMinimized = readValue() !== beforeMinimized;
+          try {
+            // Minimize it: the backdrop is hidden, but the app is peek-only — the keyboard is blocked.
+            minimizable.minimize();
+            await settle();
+            isMinimized = minimizable.isMinimized;
 
-          // Restoring then closing the modal must leave the editor typable again.
-          minimizable.restore();
-          await settle();
-          minimizable.modal.close();
-          await settle();
+            // Typing into the editor while the modal is minimized must NOT reach the document.
+            // A suppressed trusted keystroke leaves the editor value unchanged.
+            const beforeMinimized = readValue();
+            await typeIntoEditor({ editor: getEditor(), text: 'X' });
+            didAcceptTypingWhileMinimized = readValue() !== beforeMinimized;
+          } finally {
+            // A throw above must not leave the modal minimized: the peek-only lock would then block every modal
+            // the later files open, which is how one failure here failed the prompt, modal and select suites.
+            minimizable.restore();
+            await settle();
+            minimizable.modal.close();
+            await settle();
+          }
           const beforeRestore = readValue();
           await typeIntoEditor({ editor: getEditor(), text: 'Y' });
           const didAcceptTypingAfterRestore = readValue() !== beforeRestore;

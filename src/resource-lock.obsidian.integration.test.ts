@@ -133,7 +133,7 @@ describe('resource-lock', () => {
   describe('lockResourceForPath', () => {
     it('should lock the current tab, auto-lock a future split and popout of the same note, and leave other notes editable', async () => {
       const result = await evalInObsidian<Record<string, never>, LockForPathResult>({
-        async callback({ app, lib: { lockResourceForPath } }) {
+        async callback({ app, lib: { lockResourceForPath, waitUntil } }) {
           // This file shares its live Obsidian instance with the other integration suites.
           // Those suites leave their own leaves and popouts open.
           // Start from a clean workspace so the reconcile below sees only the views this test opens.
@@ -147,7 +147,7 @@ describe('resource-lock', () => {
           // The current editor is already settled, so the lock reconcile makes it read-only straight away.
           const currentTabLeaf = app.workspace.getLeaf();
           await currentTabLeaf.openFile(lockedFile);
-          await settle();
+          await waitForEditor(currentTabLeaf);
           const disposable = lockResourceForPath({ app, operationName: 'Integration test', pathOrFile: lockedFile, pluginId: 'integration-test' });
           await settle();
           const isCurrentTabLocked = isLeafReadOnly(currentTabLeaf);
@@ -157,21 +157,21 @@ describe('resource-lock', () => {
           // Settle and trigger a reconcile so the manager re-applies the lock to the now-ready editor.
           const separateTabLeaf = app.workspace.getLeaf('split');
           await separateTabLeaf.openFile(lockedFile);
-          await settle();
+          await waitForEditor(separateTabLeaf);
           await reconcile();
           const isSeparateTabLocked = isLeafReadOnly(separateTabLeaf);
 
           // Open the same note a third time in a popout window — another future editor.
           const popoutLeaf = app.workspace.openPopoutLeaf();
           await popoutLeaf.openFile(lockedFile);
-          await settle();
+          await waitForEditor(popoutLeaf);
           await reconcile();
           const isPopoutLocked = isLeafReadOnly(popoutLeaf);
 
           // Open a different note, which must stay editable.
           const otherNoteLeaf = app.workspace.getLeaf('split');
           await otherNoteLeaf.openFile(otherFile);
-          await settle();
+          await waitForEditor(otherNoteLeaf);
           await reconcile();
           const isOtherNoteLocked = isLeafReadOnly(otherNoteLeaf);
 
@@ -209,6 +209,15 @@ describe('resource-lock', () => {
               window.setTimeout(resolve, SETTLE_DELAY_MILLISECONDS);
             });
           }
+          async function waitForEditor(openedLeaf: unknown): Promise<void> {
+            // The view is not wired up the instant `openFile` resolves, so wait for its editor rather than sleeping
+            // a fixed time: under load a fixed sleep read `view.editor` before it existed.
+            await waitUntil({
+              message: 'the opened leaf has an editor',
+              predicate: () => Boolean((openedLeaf as ReadableLeaf).view.editor),
+              timeoutInMilliseconds: 5000
+            });
+          }
         }
       });
 
@@ -224,7 +233,7 @@ describe('resource-lock', () => {
 
     it('should prevent the user from typing in a locked note while allowing it in an unlocked one', async () => {
       const result = await evalInObsidian({
-        async callback({ app, lib: { lockResourceForPath, typeIntoEditor } }): Promise<TypingResult> {
+        async callback({ app, lib: { lockResourceForPath, typeIntoEditor, waitUntil } }): Promise<TypingResult> {
           // Start from a clean workspace so the reconcile sees only the views this test opens.
           app.workspace.detachLeavesOfType('markdown');
           await settle();
@@ -235,10 +244,10 @@ describe('resource-lock', () => {
           // Open the to-be-locked note in the current tab and a second note in a split.
           const lockedLeaf = app.workspace.getLeaf();
           await lockedLeaf.openFile(lockedFile);
-          await settle();
+          await waitForEditor(lockedLeaf);
           const otherLeaf = app.workspace.getLeaf('split');
           await otherLeaf.openFile(otherFile);
-          await settle();
+          await waitForEditor(otherLeaf);
 
           const disposable = lockResourceForPath({ app, operationName: 'Integration test', pathOrFile: lockedFile, pluginId: 'integration-test' });
           await settle();
@@ -290,6 +299,15 @@ describe('resource-lock', () => {
               window.setTimeout(resolve, SETTLE_DELAY_MILLISECONDS);
             });
           }
+          async function waitForEditor(openedLeaf: unknown): Promise<void> {
+            // The view is not wired up the instant `openFile` resolves, so wait for its editor rather than sleeping
+            // a fixed time: under load a fixed sleep read `view.editor` before it existed.
+            await waitUntil({
+              message: 'the opened leaf has an editor',
+              predicate: () => Boolean((openedLeaf as ReadableLeaf).view.editor),
+              timeoutInMilliseconds: 5000
+            });
+          }
         }
       });
 
@@ -311,7 +329,7 @@ describe('resource-lock', () => {
           const lockedFile = await app.vault.create('resource-lock-shift-enter.md', 'hello');
           const lockedLeaf = app.workspace.getLeaf();
           await lockedLeaf.openFile(lockedFile);
-          await settle();
+          await waitForEditor(lockedLeaf);
 
           const disposable = lockResourceForPath({ app, operationName: 'Integration test', pathOrFile: lockedFile, pluginId: 'integration-test' });
           await settle();
@@ -370,6 +388,15 @@ describe('resource-lock', () => {
               window.setTimeout(resolve, SETTLE_DELAY_MILLISECONDS);
             });
           }
+          async function waitForEditor(openedLeaf: unknown): Promise<void> {
+            // The view is not wired up the instant `openFile` resolves, so wait for its editor rather than sleeping
+            // a fixed time: under load a fixed sleep read `view.editor` before it existed.
+            await waitUntil({
+              message: 'the opened leaf has an editor',
+              predicate: () => Boolean((openedLeaf as ReadableLeaf).view.editor),
+              timeoutInMilliseconds: 5000
+            });
+          }
         }
       });
 
@@ -383,7 +410,7 @@ describe('resource-lock', () => {
   describe('ResourceLockComponent subtree lock', () => {
     it('should make a note inside a subtree-locked folder read-only and editable again on unlock', async () => {
       const result = await evalInObsidian({
-        async callback({ app, lib: { ResourceLockComponent } }): Promise<SubtreeLockResult> {
+        async callback({ app, lib: { ResourceLockComponent, waitUntil } }): Promise<SubtreeLockResult> {
           app.workspace.detachLeavesOfType('markdown');
           await settle();
 
@@ -395,7 +422,7 @@ describe('resource-lock', () => {
 
           const leaf = app.workspace.getLeaf();
           await leaf.openFile(childFile);
-          await settle();
+          await waitForEditor(leaf);
 
           // Lock the whole folder subtree; the note inside it must become read-only.
           const component = new ResourceLockComponent(app, 'integration-test-subtree');
@@ -430,6 +457,15 @@ describe('resource-lock', () => {
             const SETTLE_DELAY_MILLISECONDS = 300;
             await new Promise<void>((resolve) => {
               window.setTimeout(resolve, SETTLE_DELAY_MILLISECONDS);
+            });
+          }
+          async function waitForEditor(openedLeaf: unknown): Promise<void> {
+            // The view is not wired up the instant `openFile` resolves, so wait for its editor rather than sleeping
+            // a fixed time: under load a fixed sleep read `view.editor` before it existed.
+            await waitUntil({
+              message: 'the opened leaf has an editor',
+              predicate: () => Boolean((openedLeaf as ReadableLeaf).view.editor),
+              timeoutInMilliseconds: 5000
             });
           }
         }
@@ -551,7 +587,7 @@ describe('resource-lock', () => {
   describe('ResourceLockComponent force unlock', () => {
     it('should abort the operation and make a locked note editable again via requestUnlockForPath', async () => {
       const result = await evalInObsidian({
-        async callback({ app, lib: { ResourceLockComponent } }): Promise<ForceUnlockResult> {
+        async callback({ app, lib: { ResourceLockComponent, waitUntil } }): Promise<ForceUnlockResult> {
           const SETTLE_DELAY_MILLISECONDS = 300;
 
           app.workspace.detachLeavesOfType('markdown');
@@ -560,7 +596,7 @@ describe('resource-lock', () => {
           const lockedFile = await app.vault.create('resource-lock-force-unlock.md', 'locked note');
           const leaf = app.workspace.getLeaf();
           await leaf.openFile(lockedFile);
-          await sleep(SETTLE_DELAY_MILLISECONDS);
+          await waitForEditor(leaf);
 
           const component = new ResourceLockComponent(app, 'integration-force-unlock');
           const abortController = new AbortController();
@@ -589,6 +625,15 @@ describe('resource-lock', () => {
               throw new Error('no editor on leaf');
             }
             return editor.cm.state.readOnly;
+          }
+          async function waitForEditor(openedLeaf: unknown): Promise<void> {
+            // The view is not wired up the instant `openFile` resolves, so wait for its editor rather than sleeping
+            // a fixed time: under load a fixed sleep read `view.editor` before it existed.
+            await waitUntil({
+              message: 'the opened leaf has an editor',
+              predicate: () => Boolean((openedLeaf as ReadableLeaf).view.editor),
+              timeoutInMilliseconds: 5000
+            });
           }
         }
       });
