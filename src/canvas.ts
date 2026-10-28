@@ -18,7 +18,7 @@ import type {
 } from './reference.ts';
 
 import {
-  getLinks,
+  getReferences,
   parseMetadata
 } from './metadata-cache.ts';
 import { readSafe } from './vault.ts';
@@ -83,7 +83,7 @@ export async function getCanvasReferences(app: App, pathOrFile: PathOrFile): Pro
         if (hasFrontmatterMarkdownLinksPlugin) {
           contributeMultiValueFrontmatterLinks(metadata);
         }
-        const links = getLinks({ cache: metadata });
+        const links = getReferences({ cache: metadata });
         for (const [linkIndex, link] of links.entries()) {
           const canvasTextNodeReference: CanvasTextNodeReference = {
             isCanvas: true,

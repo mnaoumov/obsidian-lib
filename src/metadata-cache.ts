@@ -173,11 +173,11 @@ export interface GetBacklinksForFileSafeParams extends GetBacklinksForFileSafeOp
 export type GetCacheSafeOptions = ParseCacheOptions;
 
 /**
- * Params for {@link getLinks}.
+ * Params for {@link getReferences}.
  */
-export interface GetLinksParams {
+export interface GetReferencesParams {
   /**
-   * The cached metadata to retrieve the links from.
+   * The cached metadata to retrieve the references from.
    */
   readonly cache: CachedMetadata;
 
@@ -212,6 +212,13 @@ export interface GetLinksParams {
   readonly shouldIncludeFrontmatterLinks?: boolean;
 
   /**
+   * Whether to include the body links (`cache.links`).
+   *
+   * @default `true`
+   */
+  readonly shouldIncludeLinks?: boolean;
+
+  /**
    * Whether to include the external links parsed from multi-link (multi-value) note frontmatter values,
    * i.e. the offset-carrying frontmatter external links (narrowed via
    * {@link isFrontmatterLinkCacheWithOffsets}). Requires the cache to be a {@link CachedMetadataEx}.
@@ -227,13 +234,6 @@ export interface GetLinksParams {
    * @default `false`
    */
   readonly shouldIncludeMultiValueFrontmatterLinks?: boolean;
-
-  /**
-   * Whether to include the reference links (`cache.links`).
-   *
-   * @default `true`
-   */
-  readonly shouldIncludeReferences?: boolean;
 }
 
 /**
@@ -320,7 +320,7 @@ interface AdvancedMetadataCacheBacklinksApi {
 }
 
 /**
- * A selector for a feature-gated link category in {@link getLinks}.
+ * A selector for a feature-gated link category in {@link getReferences}.
  */
 interface FeatureLinkSelector {
   /**
@@ -608,25 +608,26 @@ export async function getFrontmatterSafe<CustomFrontmatter = unknown>(app: App, 
 }
 
 /**
- * Retrieves the selected links from the provided cache.
+ * Retrieves the selected references (links, embeds, frontmatter links and the opted-in extras) from the
+ * provided cache.
  *
- * @param params - The parameters for retrieving the links.
- * @returns An array of references representing the selected links.
+ * @param params - The parameters for retrieving the references.
+ * @returns The selected references.
  */
-export function getLinks(params: GetLinksParams): Reference[] {
+export function getReferences(params: GetReferencesParams): Reference[] {
   const {
     cache,
     shouldIncludeEmbeds = true,
     shouldIncludeExternalLinks = false,
     shouldIncludeFrontmatterExternalLinks = false,
     shouldIncludeFrontmatterLinks = true,
+    shouldIncludeLinks = true,
     shouldIncludeMultiValueFrontmatterExternalLinks = false,
-    shouldIncludeMultiValueFrontmatterLinks = false,
-    shouldIncludeReferences = true
+    shouldIncludeMultiValueFrontmatterLinks = false
   } = params;
 
   let links: Reference[] = [
-    ...(shouldIncludeReferences ? cache.links ?? [] : []),
+    ...(shouldIncludeLinks ? cache.links ?? [] : []),
     ...(shouldIncludeEmbeds ? cache.embeds ?? [] : []),
     ...(shouldIncludeFrontmatterLinks ? cache.frontmatterLinks ?? [] : [])
   ];

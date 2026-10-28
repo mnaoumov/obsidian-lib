@@ -37,7 +37,7 @@ import type {
   ConvertLinkParams,
   GenerateMarkdownLinkParams,
   UpdateLinkParams,
-  UpdateLinksInFileParams
+  UpdateReferencesInFileParams
 } from './link.ts';
 import type { CachedMetadataEx } from './metadata-cache.ts';
 import type {
@@ -56,9 +56,9 @@ import {
   convertLink,
   editBacklinks,
   editBacklinksSnapshot,
-  editLinks,
-  editLinksInContent,
-  extractLinkFile,
+  editReferences,
+  editReferencesInContent,
+  extractReferenceFile,
   generateMarkdownLink,
   generateRawMarkdownLink,
   hasAngleBrackets,
@@ -73,8 +73,8 @@ import {
   updateFileUrlLinksInContent,
   updateFileUrlLinksInFile,
   updateLink,
-  updateLinksInContent,
-  updateLinksInFile
+  updateReferencesInContent,
+  updateReferencesInFile
 } from './link.ts';
 import {
   CachedMetadataExFeature,
@@ -560,10 +560,10 @@ interface FileUrlLinkCaseFixture {
 }
 
 /**
- * The subset of {@link UpdateLinksInFileParams} that shapes the emitted link, as opposed to naming what is linked.
+ * The subset of {@link UpdateReferencesInFileParams} that shapes the emitted link, as opposed to naming what is linked.
  */
 type ShapingParams = Pick<
-  UpdateLinksInFileParams,
+  UpdateReferencesInFileParams,
   | 'isEmptyEmbedAliasAllowed'
   | 'linkPathStyle'
   | 'shouldEscapeAlias'
@@ -781,17 +781,17 @@ describe('app-dependent functions', () => {
     vi.mocked(applyFileChanges).mockResolvedValue(undefined);
   });
 
-  describe('extractLinkFile', () => {
+  describe('extractReferenceFile', () => {
     it('should return the file when found by getFirstLinkpathDest', () => {
       const link = { link: 'target', original: '[[target]]' } as Reference;
-      const result = extractLinkFile({ app, link, sourcePathOrFile: 'note.md' });
+      const result = extractReferenceFile({ app, reference: link, sourcePathOrFile: 'note.md' });
       assertNonNullable(result);
       expect(result.path).toBe('target.md');
     });
 
     it('should return null when file not found and shouldAllowNonExistingFile is false', () => {
       const link = { link: 'nonexistent', original: '[[nonexistent]]' } as Reference;
-      const result = extractLinkFile({ app, link, sourcePathOrFile: 'note.md' });
+      const result = extractReferenceFile({ app, reference: link, sourcePathOrFile: 'note.md' });
       expect(result).toBeNull();
     });
 
@@ -799,7 +799,7 @@ describe('app-dependent functions', () => {
       const link = { link: '/target.md', original: '[[/target.md]]' } as Reference;
       // eslint-disable-next-line unicorn/name-replacements -- The member belongs to a dependency and cannot be renamed here.
       app.metadataCache.getFirstLinkpathDest = (): null | TFileOriginal => null;
-      const result = extractLinkFile({ app, link, shouldAllowNonExistingFile: true, sourcePathOrFile: 'note.md' });
+      const result = extractReferenceFile({ app, reference: link, shouldAllowNonExistingFile: true, sourcePathOrFile: 'note.md' });
       assertNonNullable(result);
       expect(result.path).toBe('target.md');
     });
@@ -808,7 +808,7 @@ describe('app-dependent functions', () => {
       const link = { link: 'other.md', original: '[[other.md]]' } as Reference;
       // eslint-disable-next-line unicorn/name-replacements -- The member belongs to a dependency and cannot be renamed here.
       app.metadataCache.getFirstLinkpathDest = (): null | TFileOriginal => null;
-      const result = extractLinkFile({ app, link, shouldAllowNonExistingFile: true, sourcePathOrFile: 'folder/source.md' });
+      const result = extractReferenceFile({ app, reference: link, shouldAllowNonExistingFile: true, sourcePathOrFile: 'folder/source.md' });
       assertNonNullable(result);
       expect(result.path).toBe('folder/other.md');
     });
@@ -817,7 +817,7 @@ describe('app-dependent functions', () => {
       const link = { link: '../../outside', original: '[[../../outside]]' } as Reference;
       // eslint-disable-next-line unicorn/name-replacements -- The member belongs to a dependency and cannot be renamed here.
       app.metadataCache.getFirstLinkpathDest = (): null | TFileOriginal => null;
-      const result = extractLinkFile({ app, link, shouldAllowNonExistingFile: true, sourcePathOrFile: 'note.md' });
+      const result = extractReferenceFile({ app, reference: link, shouldAllowNonExistingFile: true, sourcePathOrFile: 'note.md' });
       expect(result).toBeNull();
     });
   });
@@ -1248,7 +1248,7 @@ describe('app-dependent functions', () => {
   });
 
   describe('convertLink', () => {
-    it('should return original when extractLinkFile returns null', () => {
+    it('should return original when extractReferenceFile returns null', () => {
       const link = {
         displayText: 'nonexistent',
         link: 'nonexistent',
@@ -1256,8 +1256,8 @@ describe('app-dependent functions', () => {
       } as Reference;
       const result = convertLink({
         app,
-        link,
-        newSourcePathOrFile: 'note.md'
+        newSourcePathOrFile: 'note.md',
+        reference: link
       });
       expect(result).toBe('[[nonexistent]]');
     });
@@ -1270,8 +1270,8 @@ describe('app-dependent functions', () => {
       } as Reference;
       const result = convertLink({
         app,
-        link,
-        newSourcePathOrFile: 'note.md'
+        newSourcePathOrFile: 'note.md',
+        reference: link
       });
       expect(result).toContain('target');
     });
@@ -1284,8 +1284,8 @@ describe('app-dependent functions', () => {
       } as Reference;
       const params: ConvertLinkParams = {
         app,
-        link,
-        newSourcePathOrFile: 'folder/other.md'
+        newSourcePathOrFile: 'folder/other.md',
+        reference: link
       };
 
       expect(convertLink(params)).toBe('[[target]]');
@@ -1295,8 +1295,8 @@ describe('app-dependent functions', () => {
     it.each(SHAPING_PARAMS_CASES)('should forward $title to updateLink', (shapingParamsCase) => {
       const params: ConvertLinkParams = {
         app,
-        link: createShapingParamsCaseLink(shapingParamsCase),
         newSourcePathOrFile: shapingParamsCase.sourcePath,
+        reference: createShapingParamsCaseLink(shapingParamsCase),
         ...shapingParamsCase.baseParams
       };
 
@@ -1314,9 +1314,9 @@ describe('app-dependent functions', () => {
       } as Reference;
       const result = updateLink({
         app,
-        link,
         newSourcePathOrFile: 'note.md',
-        newTargetPathOrFile: ''
+        newTargetPathOrFile: '',
+        reference: link
       });
       expect(result).toBe('[[target]]');
     });
@@ -1345,9 +1345,9 @@ describe('app-dependent functions', () => {
       });
       const result = updateLink({
         app: canvasApp,
-        link,
         newSourcePathOrFile: canvasFile,
-        newTargetPathOrFile: 'target.md'
+        newTargetPathOrFile: 'target.md',
+        reference: link
       });
       expect(result).toBe('target.md');
     });
@@ -1360,9 +1360,9 @@ describe('app-dependent functions', () => {
       } as Reference;
       const result = updateLink({
         app,
-        link,
         newSourcePathOrFile: 'note.md',
-        newTargetPathOrFile: 'target.md'
+        newTargetPathOrFile: 'target.md',
+        reference: link
       });
       expect(result).toBe('[[target|my alias]]');
     });
@@ -1384,10 +1384,10 @@ describe('app-dependent functions', () => {
         });
         return updateLink({
           app,
-          link,
           newSourcePathOrFile: 'note.md',
           newTargetPathOrFile: newTargetPath,
-          oldTargetPathOrFile: oldTargetPath
+          oldTargetPathOrFile: oldTargetPath,
+          reference: link
         });
       }
 
@@ -1403,7 +1403,7 @@ describe('app-dependent functions', () => {
         link: 't.md',
         original: '[A [ B](t.md)'
       });
-      expect(updateLink({ app, link, newSourcePathOrFile: 'note.md', newTargetPathOrFile: 't.md' })).toBe('[A [ B](t.md)');
+      expect(updateLink({ app, newSourcePathOrFile: 'note.md', newTargetPathOrFile: 't.md', reference: link })).toBe('[A [ B](t.md)');
     });
 
     it('should return the span of an offset-carrying frontmatter link when newTargetPathOrFile is falsy', () => {
@@ -1416,7 +1416,7 @@ describe('app-dependent functions', () => {
         original: value,
         startOffset: value.indexOf('[[b]]')
       });
-      expect(updateLink({ app, link, newSourcePathOrFile: 'note.md', newTargetPathOrFile: '' })).toBe('[[b]]');
+      expect(updateLink({ app, newSourcePathOrFile: 'note.md', newTargetPathOrFile: '', reference: link })).toBe('[[b]]');
     });
 
     it('should refresh a wikilink alias equal to the old base name when shouldUpdateFileNameAlias is true', () => {
@@ -1427,10 +1427,10 @@ describe('app-dependent functions', () => {
       } as Reference;
       const result = updateLink({
         app,
-        link,
         newSourcePathOrFile: 'note.md',
         newTargetPathOrFile: 'folder/222.md',
         oldTargetPathOrFile: 'folder/2.md',
+        reference: link,
         shouldUpdateFileNameAlias: true
       });
       // Previously the explicit wikilink alias short-circuited the refresh, leaving the stale
@@ -1446,10 +1446,10 @@ describe('app-dependent functions', () => {
       } as Reference;
       const result = updateLink({
         app,
-        link,
         newSourcePathOrFile: 'note.md',
         newTargetPathOrFile: 'folder/other.md',
-        oldTargetPathOrFile: 'target.md'
+        oldTargetPathOrFile: 'target.md',
+        reference: link
       });
       expect(result).toContain('other');
     });
@@ -1462,10 +1462,10 @@ describe('app-dependent functions', () => {
       } as Reference;
       const result = updateLink({
         app,
-        link,
         newSourcePathOrFile: 'note.md',
         newTargetPathOrFile: 'folder/other.md',
-        oldTargetPathOrFile: 'target.md'
+        oldTargetPathOrFile: 'target.md',
+        reference: link
       });
       expect(result).toContain('other');
     });
@@ -1478,9 +1478,9 @@ describe('app-dependent functions', () => {
       } as Reference;
       const result = updateLink({
         app,
-        link,
         newSourcePathOrFile: 'note.md',
         newTargetPathOrFile: 'target.md',
+        reference: link,
         shouldUpdateFileNameAlias: false
       });
       expect(result).toContain('custom alias');
@@ -1494,10 +1494,10 @@ describe('app-dependent functions', () => {
       } as Reference;
       const result = updateLink({
         app,
-        link,
         linkStyle: LinkStyle.Markdown,
         newSourcePathOrFile: 'note.md',
-        newTargetPathOrFile: 'target.md'
+        newTargetPathOrFile: 'target.md',
+        reference: link
       });
       expect(result).toContain('(target.md)');
     });
@@ -1510,9 +1510,9 @@ describe('app-dependent functions', () => {
       } as Reference;
       const result = updateLink({
         app,
-        link,
         newSourcePathOrFile: 'note.md',
-        newTargetPathOrFile: 'target.md'
+        newTargetPathOrFile: 'target.md',
+        reference: link
       });
       expect(result).toContain('#heading');
     });
@@ -1525,11 +1525,11 @@ describe('app-dependent functions', () => {
       } as Reference;
       const result = updateLink({
         app,
-        link,
         linkStyle: LinkStyle.Markdown,
         newSourcePathOrFile: 'note.md',
         newTargetPathOrFile: 'folder/other.md',
         oldTargetPathOrFile: 'target.md',
+        reference: link,
         shouldUpdateFileNameAlias: true
       });
       expect(result).toContain('[other]');
@@ -1543,11 +1543,11 @@ describe('app-dependent functions', () => {
       } as Reference;
       const result = updateLink({
         app,
-        link,
         linkStyle: LinkStyle.Markdown,
         newSourcePathOrFile: 'note.md',
         newTargetPathOrFile: 'folder/other.md',
         oldTargetPathOrFile: 'target.md',
+        reference: link,
         shouldUpdateFileNameAlias: true
       });
       expect(result).toContain('[other.md]');
@@ -1561,10 +1561,10 @@ describe('app-dependent functions', () => {
       } as Reference;
       const result = updateLink({
         app,
-        link,
         newSourcePathOrFile: 'note.md',
         newTargetPathOrFile: 'note.md',
-        oldTargetPathOrFile: 'note.md'
+        oldTargetPathOrFile: 'note.md',
+        reference: link
       });
       expect(result).toContain('#heading');
     });
@@ -1577,9 +1577,9 @@ describe('app-dependent functions', () => {
       } as Reference;
       const params: UpdateLinkParams = {
         app,
-        link,
         newSourcePathOrFile: 'note.md',
-        newTargetPathOrFile: 'folder/same.md'
+        newTargetPathOrFile: 'folder/same.md',
+        reference: link
       };
 
       expect(updateLink(params)).toBe('[[same]]');
@@ -1589,9 +1589,9 @@ describe('app-dependent functions', () => {
     it.each(SHAPING_PARAMS_CASES)('should forward $title to generateMarkdownLink', (shapingParamsCase) => {
       const params: UpdateLinkParams = {
         app,
-        link: createShapingParamsCaseLink(shapingParamsCase),
         newSourcePathOrFile: shapingParamsCase.sourcePath,
         newTargetPathOrFile: shapingParamsCase.targetPath,
+        reference: createShapingParamsCaseLink(shapingParamsCase),
         ...shapingParamsCase.baseParams
       };
 
@@ -1718,7 +1718,7 @@ describe('app-dependent functions', () => {
   });
 
   describe('updateFileUrlLinksInFile', () => {
-    it('should edit external links via editLinks', async () => {
+    it('should edit external links via editReferences', async () => {
       vi.mocked(applyFileChanges).mockImplementation(
         async ({ changesProvider }) => {
           if (typeof changesProvider !== 'function') {
@@ -1751,7 +1751,7 @@ describe('app-dependent functions', () => {
     });
   });
 
-  describe('editLinksInContent', () => {
+  describe('editReferencesInContent', () => {
     it('should process links in content', async () => {
       vi.mocked(parseMetadata).mockResolvedValue(castTo<CachedMetadataEx>({
         embeds: undefined,
@@ -1765,16 +1765,16 @@ describe('app-dependent functions', () => {
         sections: undefined
       }));
 
-      const result = await editLinksInContent({
+      const result = await editReferencesInContent({
         app,
         content: '# Note\n[[target]]',
-        linkConverter: () => '[[new-target]]'
+        referenceConverter: () => '[[new-target]]'
       });
 
       expect(result).toBeDefined();
     });
 
-    it('should handle linkConverter returning undefined (skip)', async () => {
+    it('should handle referenceConverter returning undefined (skip)', async () => {
       vi.mocked(parseMetadata).mockResolvedValue(castTo<CachedMetadataEx>({
         embeds: undefined,
         frontmatterLinks: undefined,
@@ -1787,10 +1787,10 @@ describe('app-dependent functions', () => {
         sections: undefined
       }));
 
-      const result = await editLinksInContent({
+      const result = await editReferencesInContent({
         app,
         content: '[[target]]',
-        linkConverter: () => undefined
+        referenceConverter: () => undefined
       });
 
       expect(result).toBeDefined();
@@ -1824,10 +1824,10 @@ describe('app-dependent functions', () => {
         return content;
       });
 
-      await editLinksInContent({
+      await editReferencesInContent({
         app,
         content: '| [[target]] |',
-        linkConverter: () => convertedLink
+        referenceConverter: () => convertedLink
       });
 
       expect(capturedChanges.map((change) => change.newContent)).toEqual([expectedNewContent]);
@@ -1836,23 +1836,23 @@ describe('app-dependent functions', () => {
     it('should handle null cache', async () => {
       vi.mocked(parseMetadata).mockResolvedValue(castTo<CachedMetadataEx>(null));
 
-      const result = await editLinksInContent({
+      const result = await editReferencesInContent({
         app,
         content: 'no links',
-        linkConverter: () => '[[new]]'
+        referenceConverter: () => '[[new]]'
       });
 
       expect(result).toBeDefined();
     });
   });
 
-  describe('editLinks', () => {
+  describe('editReferences', () => {
     it('should call applyFileChanges', async () => {
-      await editLinks({
+      await editReferences({
         app,
-        linkConverter: () => '[[updated]]',
         pathOrFile: 'note.md',
         pluginNoticeComponent: null,
+        referenceConverter: () => '[[updated]]',
         resourceLockComponent
       });
 
@@ -1883,11 +1883,11 @@ describe('app-dependent functions', () => {
         sections: undefined
       }));
 
-      await editLinks({
+      await editReferences({
         app,
-        linkConverter: () => '[[updated]]',
         pathOrFile: 'note.md',
         pluginNoticeComponent: null,
+        referenceConverter: () => '[[updated]]',
         resourceLockComponent
       });
 
@@ -1908,11 +1908,11 @@ describe('app-dependent functions', () => {
 
       vi.mocked(getCacheSafe).mockResolvedValue(castTo<CachedMetadataEx>({}));
 
-      await editLinks({
+      await editReferences({
         app,
-        linkConverter: () => '[[updated]]',
         pathOrFile: 'note.md',
         pluginNoticeComponent: null,
+        referenceConverter: () => '[[updated]]',
         resourceLockComponent
       });
 
@@ -1971,88 +1971,88 @@ describe('app-dependent functions', () => {
       );
     }
 
-    describe('editLinksInContent', () => {
+    describe('editReferencesInContent', () => {
       it('should visit every link when the offset range is omitted', async () => {
         vi.mocked(parseMetadata).mockResolvedValue(createThreeLinkCache());
-        const linkConverter = createLinkConverter();
+        const referenceConverter = createLinkConverter();
 
-        await editLinksInContent({
+        await editReferencesInContent({
           app,
           content: CONTENT,
-          linkConverter
+          referenceConverter
         });
 
-        expect(linkConverter.mock.calls.map((call) => call[0].link)).toEqual(['a', 'b', 'c']);
+        expect(referenceConverter.mock.calls.map((call) => call[0].link)).toEqual(['a', 'b', 'c']);
       });
 
       it('should visit a link whose bounds coincide with the offset range', async () => {
         vi.mocked(parseMetadata).mockResolvedValue(createThreeLinkCache());
-        const linkConverter = createLinkConverter();
+        const referenceConverter = createLinkConverter();
 
-        await editLinksInContent({
+        await editReferencesInContent({
           app,
           content: CONTENT,
-          linkConverter,
-          offsetRange: { endOffset: 11, startOffset: 6 }
+          offsetRange: { endOffset: 11, startOffset: 6 },
+          referenceConverter
         });
 
-        expect(linkConverter.mock.calls.map((call) => call[0].link)).toEqual(['b']);
+        expect(referenceConverter.mock.calls.map((call) => call[0].link)).toEqual(['b']);
       });
 
       it('should visit only the link fully contained in the offset range', async () => {
         vi.mocked(parseMetadata).mockResolvedValue(createThreeLinkCache());
-        const linkConverter = createLinkConverter();
+        const referenceConverter = createLinkConverter();
 
-        await editLinksInContent({
+        await editReferencesInContent({
           app,
           content: CONTENT,
-          linkConverter,
-          offsetRange: { endOffset: 12, startOffset: 5 }
+          offsetRange: { endOffset: 12, startOffset: 5 },
+          referenceConverter
         });
 
-        expect(linkConverter.mock.calls.map((call) => call[0].link)).toEqual(['b']);
+        expect(referenceConverter.mock.calls.map((call) => call[0].link)).toEqual(['b']);
       });
 
       it('should skip a link straddling the offset range start', async () => {
         vi.mocked(parseMetadata).mockResolvedValue(createThreeLinkCache());
-        const linkConverter = createLinkConverter();
+        const referenceConverter = createLinkConverter();
 
-        await editLinksInContent({
+        await editReferencesInContent({
           app,
           content: CONTENT,
-          linkConverter,
-          offsetRange: { endOffset: 17, startOffset: 7 }
+          offsetRange: { endOffset: 17, startOffset: 7 },
+          referenceConverter
         });
 
-        expect(linkConverter.mock.calls.map((call) => call[0].link)).toEqual(['c']);
+        expect(referenceConverter.mock.calls.map((call) => call[0].link)).toEqual(['c']);
       });
 
       it('should skip a link straddling the offset range end', async () => {
         vi.mocked(parseMetadata).mockResolvedValue(createThreeLinkCache());
-        const linkConverter = createLinkConverter();
+        const referenceConverter = createLinkConverter();
 
-        await editLinksInContent({
+        await editReferencesInContent({
           app,
           content: CONTENT,
-          linkConverter,
-          offsetRange: { endOffset: 10, startOffset: 0 }
+          offsetRange: { endOffset: 10, startOffset: 0 },
+          referenceConverter
         });
 
-        expect(linkConverter.mock.calls.map((call) => call[0].link)).toEqual(['a']);
+        expect(referenceConverter.mock.calls.map((call) => call[0].link)).toEqual(['a']);
       });
 
       it('should visit no link when the offset range is empty', async () => {
         vi.mocked(parseMetadata).mockResolvedValue(createThreeLinkCache());
-        const linkConverter = createLinkConverter();
+        const referenceConverter = createLinkConverter();
 
-        await editLinksInContent({
+        await editReferencesInContent({
           app,
           content: CONTENT,
-          linkConverter,
-          offsetRange: { endOffset: 6, startOffset: 6 }
+          offsetRange: { endOffset: 6, startOffset: 6 },
+          referenceConverter
         });
 
-        expect(linkConverter).not.toHaveBeenCalled();
+        expect(referenceConverter).not.toHaveBeenCalled();
       });
 
       it('should skip a frontmatter link, which carries no file position', async () => {
@@ -2066,16 +2066,16 @@ describe('app-dependent functions', () => {
           links: [createBodyLink('a', 0)],
           sections: undefined
         }));
-        const linkConverter = createLinkConverter();
+        const referenceConverter = createLinkConverter();
 
-        await editLinksInContent({
+        await editReferencesInContent({
           app,
           content: CONTENT,
-          linkConverter,
-          offsetRange: { endOffset: 1000, startOffset: 0 }
+          offsetRange: { endOffset: 1000, startOffset: 0 },
+          referenceConverter
         });
 
-        expect(linkConverter.mock.calls.map((call) => call[0].link)).toEqual(['a']);
+        expect(referenceConverter.mock.calls.map((call) => call[0].link)).toEqual(['a']);
       });
 
       it('should skip a frontmatter link whose value-relative offsets fall inside the offset range', async () => {
@@ -2091,81 +2091,81 @@ describe('app-dependent functions', () => {
           links: undefined,
           sections: undefined
         }));
-        const linkConverter = createLinkConverter();
+        const referenceConverter = createLinkConverter();
 
-        await editLinksInContent({
+        await editReferencesInContent({
           app,
           content: CONTENT,
-          linkConverter,
-          offsetRange: { endOffset: 20, startOffset: 0 }
+          offsetRange: { endOffset: 20, startOffset: 0 },
+          referenceConverter
         });
 
-        expect(linkConverter).not.toHaveBeenCalled();
+        expect(referenceConverter).not.toHaveBeenCalled();
       });
 
       it('should reject a negative start offset', async () => {
-        await expect(editLinksInContent({
+        await expect(editReferencesInContent({
           app,
           content: CONTENT,
-          linkConverter: createLinkConverter(),
-          offsetRange: { endOffset: 10, startOffset: -1 }
+          offsetRange: { endOffset: 10, startOffset: -1 },
+          referenceConverter: createLinkConverter()
         })).rejects.toThrow('must not be negative');
       });
 
       it('should reject an end offset below the start offset', async () => {
-        await expect(editLinksInContent({
+        await expect(editReferencesInContent({
           app,
           content: CONTENT,
-          linkConverter: createLinkConverter(),
-          offsetRange: { endOffset: 5, startOffset: 10 }
+          offsetRange: { endOffset: 5, startOffset: 10 },
+          referenceConverter: createLinkConverter()
         })).rejects.toThrow('must not be less than the start offset');
       });
     });
 
-    describe('editLinks', () => {
+    describe('editReferences', () => {
       it('should visit only the link fully contained in the offset range', async () => {
         mockApplyFileChangesToInvokeProvider();
         vi.mocked(getCacheSafe).mockResolvedValue(createThreeLinkCache());
-        const linkConverter = createLinkConverter();
+        const referenceConverter = createLinkConverter();
 
-        await editLinks({
+        await editReferences({
           app,
-          linkConverter,
           offsetRange: { endOffset: 11, startOffset: 6 },
           pathOrFile: 'note.md',
           pluginNoticeComponent: null,
+          referenceConverter,
           resourceLockComponent
         });
 
-        expect(linkConverter.mock.calls.map((call) => call[0].link)).toEqual(['b']);
+        expect(referenceConverter.mock.calls.map((call) => call[0].link)).toEqual(['b']);
       });
 
       it('should visit every link when the offset range is omitted', async () => {
         mockApplyFileChangesToInvokeProvider();
         vi.mocked(getCacheSafe).mockResolvedValue(createThreeLinkCache());
-        const linkConverter = createLinkConverter();
+        const referenceConverter = createLinkConverter();
 
-        await editLinks({
+        await editReferences({
           app,
-          linkConverter,
           pathOrFile: 'note.md',
           pluginNoticeComponent: null,
+          referenceConverter,
           resourceLockComponent
         });
 
-        expect(linkConverter.mock.calls.map((call) => call[0].link)).toEqual(['a', 'b', 'c']);
+        expect(referenceConverter.mock.calls.map((call) => call[0].link)).toEqual(['a', 'b', 'c']);
       });
 
       it('should not forward the offset range to applyFileChanges', async () => {
         mockApplyFileChangesToInvokeProvider();
         vi.mocked(getCacheSafe).mockResolvedValue(createThreeLinkCache());
 
-        await editLinks({
+        await editReferences({
           app,
-          linkConverter: createLinkConverter(),
           offsetRange: { endOffset: 11, startOffset: 6 },
           pathOrFile: 'note.md',
           pluginNoticeComponent: null,
+          referenceConverter: createLinkConverter(),
           resourceLockComponent
         });
 
@@ -2173,12 +2173,12 @@ describe('app-dependent functions', () => {
       });
 
       it('should reject an invalid offset range before touching the file', async () => {
-        await expect(editLinks({
+        await expect(editReferences({
           app,
-          linkConverter: createLinkConverter(),
           offsetRange: { endOffset: 5, startOffset: 10 },
           pathOrFile: 'note.md',
           pluginNoticeComponent: null,
+          referenceConverter: createLinkConverter(),
           resourceLockComponent
         })).rejects.toThrow('must not be less than the start offset');
 
@@ -2187,15 +2187,15 @@ describe('app-dependent functions', () => {
     });
 
     /*
-     * These pin the forwarding through the four wrappers over `editLinks` / `editLinksInContent`. Both
-     * wrappers over `editLinks` forwarded the range at runtime long before their params interfaces declared
+     * These pin the forwarding through the four wrappers over `editReferences` / `editReferencesInContent`. Both
+     * wrappers over `editReferences` forwarded the range at runtime long before their params interfaces declared
      * it, and neither forward was pinned by anything: a refactor of either spread to explicit destructuring
      * would have dropped the range silently, and a consumer converting a selection would have rewritten the
      * WHOLE note instead, with no compile error and no test failure.
      *
      * The assertion is the set of links that reached the converter, read off the changes the provider
      * returns. The cache positions are self-consistent and deliberately unrelated to the content string,
-     * which only has to match what the vault holds so the staleness check inside `editLinks` passes.
+     * which only has to match what the vault holds so the staleness check inside `editReferences` passes.
      */
     describe('wrapper forwarding', () => {
       const RANGE_AROUND_B = { endOffset: 11, startOffset: 6 };
@@ -2258,11 +2258,11 @@ describe('app-dependent functions', () => {
         };
       }
 
-      it('should forward the offset range from updateLinksInFile', async () => {
+      it('should forward the offset range from updateReferencesInFile', async () => {
         const changes = captureFileChanges();
         vi.mocked(getCacheSafe).mockResolvedValue(createThreeLinkCache());
 
-        await updateLinksInFile({
+        await updateReferencesInFile({
           app,
           newSourcePathOrFile: 'note.md',
           offsetRange: RANGE_AROUND_B,
@@ -2273,11 +2273,11 @@ describe('app-dependent functions', () => {
         expect(changes.map((change) => change.oldContent)).toEqual(['[[b]]']);
       });
 
-      it('should visit every link when updateLinksInFile omits the offset range', async () => {
+      it('should visit every link when updateReferencesInFile omits the offset range', async () => {
         const changes = captureFileChanges();
         vi.mocked(getCacheSafe).mockResolvedValue(createThreeLinkCache());
 
-        await updateLinksInFile({
+        await updateReferencesInFile({
           app,
           newSourcePathOrFile: 'note.md',
           pluginNoticeComponent: null,
@@ -2287,11 +2287,11 @@ describe('app-dependent functions', () => {
         expect(changes.map((change) => change.oldContent)).toEqual(['[[a]]', '[[b]]', '[[c]]']);
       });
 
-      it('should forward the offset range from updateLinksInContent', async () => {
+      it('should forward the offset range from updateReferencesInContent', async () => {
         const changes = captureContentChanges();
         vi.mocked(parseMetadata).mockResolvedValue(createThreeLinkCache());
 
-        await updateLinksInContent({
+        await updateReferencesInContent({
           app,
           content: CONTENT,
           newSourcePathOrFile: 'note.md',
@@ -2301,11 +2301,11 @@ describe('app-dependent functions', () => {
         expect(changes.map((change) => change.oldContent)).toEqual(['[[b]]']);
       });
 
-      it('should visit every link when updateLinksInContent omits the offset range', async () => {
+      it('should visit every link when updateReferencesInContent omits the offset range', async () => {
         const changes = captureContentChanges();
         vi.mocked(parseMetadata).mockResolvedValue(createThreeLinkCache());
 
-        await updateLinksInContent({
+        await updateReferencesInContent({
           app,
           content: CONTENT,
           newSourcePathOrFile: 'note.md'
@@ -2373,7 +2373,7 @@ describe('app-dependent functions', () => {
       });
 
       it('should reject an invalid offset range passed to a wrapper', async () => {
-        await expect(updateLinksInFile({
+        await expect(updateReferencesInFile({
           app,
           newSourcePathOrFile: 'note.md',
           offsetRange: { endOffset: 5, startOffset: 10 },
@@ -2406,66 +2406,66 @@ describe('app-dependent functions', () => {
         });
       }
 
-      it('should not call the converter for a link inside a heading in editLinksInContent', async () => {
+      it('should not call the converter for a link inside a heading in editReferencesInContent', async () => {
         vi.mocked(parseMetadata).mockResolvedValue(createHeadingCache());
-        const linkConverter = createLinkConverter();
+        const referenceConverter = createLinkConverter();
 
-        await editLinksInContent({
+        await editReferencesInContent({
           app,
           content: CONTENT,
-          linkConverter,
-          shouldSkipLinksInHeadings: true
+          referenceConverter,
+          shouldSkipReferencesInHeadings: true
         });
 
-        expect(linkConverter.mock.calls.map((call) => call[0].link)).toEqual(['c']);
+        expect(referenceConverter.mock.calls.map((call) => call[0].link)).toEqual(['c']);
       });
 
       it('should still visit links inside headings by default', async () => {
         vi.mocked(parseMetadata).mockResolvedValue(createHeadingCache());
-        const linkConverter = createLinkConverter();
+        const referenceConverter = createLinkConverter();
 
-        await editLinksInContent({
+        await editReferencesInContent({
           app,
           content: CONTENT,
-          linkConverter
+          referenceConverter
         });
 
-        expect(linkConverter.mock.calls.map((call) => call[0].link)).toEqual(['a', 'b', 'c']);
+        expect(referenceConverter.mock.calls.map((call) => call[0].link)).toEqual(['a', 'b', 'c']);
       });
 
-      it('should not call the converter for a link inside a heading in editLinks', async () => {
+      it('should not call the converter for a link inside a heading in editReferences', async () => {
         mockApplyFileChangesToInvokeProvider();
         vi.mocked(getCacheSafe).mockResolvedValue(createHeadingCache());
-        const linkConverter = createLinkConverter();
+        const referenceConverter = createLinkConverter();
 
-        await editLinks({
+        await editReferences({
           app,
-          linkConverter,
           pathOrFile: 'note.md',
           pluginNoticeComponent: null,
+          referenceConverter,
           resourceLockComponent,
-          shouldSkipLinksInHeadings: true
+          shouldSkipReferencesInHeadings: true
         });
 
-        expect(linkConverter.mock.calls.map((call) => call[0].link)).toEqual(['c']);
+        expect(referenceConverter.mock.calls.map((call) => call[0].link)).toEqual(['c']);
       });
 
       it('should combine with the offset range', async () => {
         vi.mocked(parseMetadata).mockResolvedValue(createHeadingCache());
-        const linkConverter = createLinkConverter();
+        const referenceConverter = createLinkConverter();
 
-        await editLinksInContent({
+        await editReferencesInContent({
           app,
           content: CONTENT,
-          linkConverter,
           offsetRange: { endOffset: 11, startOffset: 0 },
-          shouldSkipLinksInHeadings: true
+          referenceConverter,
+          shouldSkipReferencesInHeadings: true
         });
 
-        expect(linkConverter).not.toHaveBeenCalled();
+        expect(referenceConverter).not.toHaveBeenCalled();
       });
 
-      it('should forward the option from updateLinksInFile', async () => {
+      it('should forward the option from updateReferencesInFile', async () => {
         vi.mocked(getCacheSafe).mockResolvedValue(createHeadingCache());
         const changes: FileChange[] = [];
         vi.mocked(applyFileChanges).mockImplementation(
@@ -2479,18 +2479,18 @@ describe('app-dependent functions', () => {
           }
         );
 
-        await updateLinksInFile({
+        await updateReferencesInFile({
           app,
           newSourcePathOrFile: 'note.md',
           pluginNoticeComponent: null,
           resourceLockComponent,
-          shouldSkipLinksInHeadings: true
+          shouldSkipReferencesInHeadings: true
         });
 
         expect(changes.map((change) => change.oldContent)).toEqual(['[[c]]']);
       });
 
-      it('should forward the option from updateLinksInContent', async () => {
+      it('should forward the option from updateReferencesInContent', async () => {
         vi.mocked(parseMetadata).mockResolvedValue(createHeadingCache());
         const changes: FileChange[] = [];
         vi.mocked(applyContentChanges).mockImplementation(
@@ -2502,11 +2502,11 @@ describe('app-dependent functions', () => {
           }
         );
 
-        await updateLinksInContent({
+        await updateReferencesInContent({
           app,
           content: CONTENT,
           newSourcePathOrFile: 'note.md',
-          shouldSkipLinksInHeadings: true
+          shouldSkipReferencesInHeadings: true
         });
 
         expect(changes.map((change) => change.oldContent)).toEqual(['[[c]]']);
@@ -2545,7 +2545,7 @@ describe('app-dependent functions', () => {
         await updateFileUrlLinksInContent({
           app,
           content,
-          shouldSkipLinksInHeadings: true
+          shouldSkipReferencesInHeadings: true
         });
 
         expect(changes.map((change) => change.oldContent)).toEqual(['[b](file:///F:%5Cy.txt)']);
@@ -2588,7 +2588,7 @@ describe('app-dependent functions', () => {
           pathOrFile: 'note.md',
           pluginNoticeComponent: null,
           resourceLockComponent,
-          shouldSkipLinksInHeadings: true
+          shouldSkipReferencesInHeadings: true
         });
 
         expect(changes.map((change) => change.oldContent)).toEqual(['[a](file:///F:%5Cx.txt)']);
@@ -2597,7 +2597,7 @@ describe('app-dependent functions', () => {
   });
 
   describe('editBacklinks', () => {
-    it('should process backlinks and invoke linkConverter for matching links', async () => {
+    it('should process backlinks and invoke referenceConverter for matching links', async () => {
       const backlinkRef = {
         displayText: 'target',
         link: 'target',
@@ -2631,17 +2631,17 @@ describe('app-dependent functions', () => {
         sections: undefined
       }));
 
-      const linkConverter = vi.fn(() => '[[new-target]]');
+      const referenceConverter = vi.fn(() => '[[new-target]]');
       await editBacklinks({
         app,
-        linkConverter,
         pathOrFile: 'target.md',
         pluginNoticeComponent: null,
+        referenceConverter,
         resourceLockComponent
       });
 
       expect(applyFileChanges).toHaveBeenCalled();
-      expect(linkConverter).toHaveBeenCalled();
+      expect(referenceConverter).toHaveBeenCalled();
     });
 
     it('should skip links not in backlinks set', async () => {
@@ -2675,18 +2675,18 @@ describe('app-dependent functions', () => {
         sections: undefined
       }));
 
-      const linkConverter = vi.fn(() => '[[new-target]]');
+      const referenceConverter = vi.fn(() => '[[new-target]]');
       await editBacklinks({
         app,
-        linkConverter,
         pathOrFile: 'target.md',
         pluginNoticeComponent: null,
+        referenceConverter,
         resourceLockComponent
       });
 
       expect(applyFileChanges).toHaveBeenCalled();
-      // linkConverter should NOT be called because the link is not in the backlinks set
-      expect(linkConverter).not.toHaveBeenCalled();
+      // referenceConverter should NOT be called because the link is not in the backlinks set
+      expect(referenceConverter).not.toHaveBeenCalled();
     });
 
     it('should report progress once per backlink file with a running count and total', async () => {
@@ -2704,10 +2704,10 @@ describe('app-dependent functions', () => {
       const linkUpdateProgressReporter = vi.fn();
       await editBacklinks({
         app,
-        linkConverter: () => '[[new-target]]',
         linkUpdateProgressReporter,
         pathOrFile: 'target.md',
         pluginNoticeComponent: null,
+        referenceConverter: () => '[[new-target]]',
         resourceLockComponent
       });
 
@@ -2726,10 +2726,10 @@ describe('app-dependent functions', () => {
       const linkUpdateProgressReporter = vi.fn();
       await editBacklinks({
         app,
-        linkConverter: () => '[[new-target]]',
         linkUpdateProgressReporter,
         pathOrFile: 'target.md',
         pluginNoticeComponent: null,
+        referenceConverter: () => '[[new-target]]',
         resourceLockComponent
       });
 
@@ -2787,25 +2787,25 @@ describe('app-dependent functions', () => {
       expect(snapshot.get('note.md')?.get(JSON.stringify(linkToB))).toBe('b.md');
     });
 
-    it('should honour a custom linkIdentityKeyProvider', () => {
+    it('should honour a custom referenceIdentityKeyProvider', () => {
       const snapshot = buildBacklinksSnapshot<undefined>({
         backlinks: new Map([['note.md', [linkToA]]]),
-        linkIdentityKeyProvider: (link) => link.original,
-        payloadProvider: () => undefined
+        payloadProvider: () => undefined,
+        referenceIdentityKeyProvider: (link) => link.original
       });
 
       expect([...(snapshot.get('note.md') ?? new Map<string, undefined>()).keys()]).toEqual(['[[a]]']);
     });
 
     it('should key a merged target by the provider it was first built with', () => {
-      function linkIdentityKeyProvider(link: Reference): string {
+      function referenceIdentityKeyProvider(link: Reference): string {
         return link.original;
       }
 
       const snapshot = buildBacklinksSnapshot<undefined>({
         backlinks: new Map([['note.md', [linkToA]]]),
-        linkIdentityKeyProvider,
-        payloadProvider: () => undefined
+        payloadProvider: () => undefined,
+        referenceIdentityKeyProvider
       });
       buildBacklinksSnapshot<undefined>({
         backlinks: new Map([['note.md', [linkToB]]]),
@@ -2819,18 +2819,18 @@ describe('app-dependent functions', () => {
     it('should throw when merging into a target built with a different provider', () => {
       const snapshot = buildBacklinksSnapshot<undefined>({
         backlinks: new Map([['note.md', [linkToA]]]),
-        linkIdentityKeyProvider: (link) => link.original,
-        payloadProvider: () => undefined
+        payloadProvider: () => undefined,
+        referenceIdentityKeyProvider: (link) => link.original
       });
 
       expect(() =>
         buildBacklinksSnapshot<undefined>({
           backlinks: new Map([['note.md', [linkToB]]]),
-          linkIdentityKeyProvider: (link) => link.link,
           payloadProvider: () => undefined,
+          referenceIdentityKeyProvider: (link) => link.link,
           target: snapshot
         })
-      ).toThrow('buildBacklinksSnapshot was passed a linkIdentityKeyProvider that differs');
+      ).toThrow('buildBacklinksSnapshot was passed a referenceIdentityKeyProvider that differs');
     });
 
     it('should still record a holder that has no links', () => {
@@ -2866,7 +2866,7 @@ describe('app-dependent functions', () => {
           }
 
           const abortSignal = strictProxy<AbortSignal>({ throwIfAborted: vi.fn() });
-          // Must equal the fixture content of `note.md`, or `editLinks` bails before reaching the converter.
+          // Must equal the fixture content of `note.md`, or `editReferences` bails before reaching the converter.
           await resolveValue(changesProvider, { abortSignal, content: '# Note\n[[target]]' });
         }
       );
@@ -2881,12 +2881,12 @@ describe('app-dependent functions', () => {
 
     it('should hand the converter the payload captured for the link', async () => {
       mockFileWithLinks([linkToA]);
-      const linkConverter = vi.fn(() => '[[a-new]]');
+      const referenceConverter = vi.fn(() => '[[a-new]]');
 
       await editBacklinksSnapshot<string>({
         app,
-        linkConverter,
         pluginNoticeComponent: null,
+        referenceConverter,
         resourceLockComponent,
         snapshot: buildBacklinksSnapshot<string>({
           backlinks: new Map([['note.md', [linkToA]]]),
@@ -2894,7 +2894,7 @@ describe('app-dependent functions', () => {
         })
       });
 
-      expect(linkConverter).toHaveBeenCalledWith({ link: linkToA, payload: 'a.md', sourcePath: 'note.md' });
+      expect(referenceConverter).toHaveBeenCalledWith({ payload: 'a.md', reference: linkToA, sourcePath: 'note.md' });
     });
 
     it('should rewrite a holder that names several targets exactly once', async () => {
@@ -2908,31 +2908,31 @@ describe('app-dependent functions', () => {
         payloadProvider: () => 'b.md',
         target: snapshot
       });
-      const linkConverter = vi.fn(() => '[[new]]');
+      const referenceConverter = vi.fn(() => '[[new]]');
 
       await editBacklinksSnapshot<string>({
         app,
-        linkConverter,
         pluginNoticeComponent: null,
+        referenceConverter,
         resourceLockComponent,
         snapshot
       });
 
       // One `applyFileChanges` for the two targets is the whole point: the holder is opened once, not twice.
       expect(applyFileChanges).toHaveBeenCalledTimes(1);
-      expect(linkConverter).toHaveBeenCalledTimes(2);
-      expect(linkConverter).toHaveBeenCalledWith({ link: linkToA, payload: 'a.md', sourcePath: 'note.md' });
-      expect(linkConverter).toHaveBeenCalledWith({ link: linkToB, payload: 'b.md', sourcePath: 'note.md' });
+      expect(referenceConverter).toHaveBeenCalledTimes(2);
+      expect(referenceConverter).toHaveBeenCalledWith({ payload: 'a.md', reference: linkToA, sourcePath: 'note.md' });
+      expect(referenceConverter).toHaveBeenCalledWith({ payload: 'b.md', reference: linkToB, sourcePath: 'note.md' });
     });
 
     it('should skip links absent from the snapshot by default', async () => {
       mockFileWithLinks([linkToA, linkToB]);
-      const linkConverter = vi.fn(() => '[[a-new]]');
+      const referenceConverter = vi.fn(() => '[[a-new]]');
 
       await editBacklinksSnapshot<undefined>({
         app,
-        linkConverter,
         pluginNoticeComponent: null,
+        referenceConverter,
         resourceLockComponent,
         snapshot: buildBacklinksSnapshot<undefined>({
           backlinks: new Map([['note.md', [linkToA]]]),
@@ -2940,117 +2940,117 @@ describe('app-dependent functions', () => {
         })
       });
 
-      expect(linkConverter).toHaveBeenCalledTimes(1);
-      expect(linkConverter).toHaveBeenCalledWith({ link: linkToA, payload: undefined, sourcePath: 'note.md' });
+      expect(referenceConverter).toHaveBeenCalledTimes(1);
+      expect(referenceConverter).toHaveBeenCalledWith({ payload: undefined, reference: linkToA, sourcePath: 'note.md' });
     });
 
-    it('should show the converter unmatched links when shouldVisitUnmatchedLinks is true', async () => {
+    it('should show the converter unmatched links when shouldVisitUnmatchedReferences is true', async () => {
       mockFileWithLinks([linkToA, linkToB]);
-      const linkConverter = vi.fn(() => undefined);
+      const referenceConverter = vi.fn(() => undefined);
 
       await editBacklinksSnapshot<string>({
         app,
-        linkConverter,
         pluginNoticeComponent: null,
+        referenceConverter,
         resourceLockComponent,
-        shouldVisitUnmatchedLinks: true,
+        shouldVisitUnmatchedReferences: true,
         snapshot: buildBacklinksSnapshot<string>({
           backlinks: new Map([['note.md', [linkToA]]]),
           payloadProvider: () => 'a.md'
         })
       });
 
-      expect(linkConverter).toHaveBeenCalledTimes(2);
-      expect(linkConverter).toHaveBeenCalledWith({ link: linkToB, payload: undefined, sourcePath: 'note.md' });
+      expect(referenceConverter).toHaveBeenCalledTimes(2);
+      expect(referenceConverter).toHaveBeenCalledWith({ payload: undefined, reference: linkToB, sourcePath: 'note.md' });
     });
 
-    it('should match links through a custom linkIdentityKeyProvider', async () => {
+    it('should match links through a custom referenceIdentityKeyProvider', async () => {
       mockFileWithLinks([linkToA]);
 
-      function linkIdentityKeyProvider(link: Reference): string {
+      function referenceIdentityKeyProvider(link: Reference): string {
         return link.original;
       }
 
-      const linkConverter = vi.fn(() => '[[a-new]]');
+      const referenceConverter = vi.fn(() => '[[a-new]]');
 
       await editBacklinksSnapshot<undefined>({
         app,
-        linkConverter,
-        linkIdentityKeyProvider,
         pluginNoticeComponent: null,
+        referenceConverter,
+        referenceIdentityKeyProvider,
         resourceLockComponent,
         snapshot: buildBacklinksSnapshot<undefined>({
           // A DIFFERENT object with the same `original`: only the custom key provider can match it.
           backlinks: new Map([['note.md', [{ ...linkToA, displayText: 'something else' }]]]),
-          linkIdentityKeyProvider,
-          payloadProvider: () => undefined
+          payloadProvider: () => undefined,
+          referenceIdentityKeyProvider
         })
       });
 
-      expect(linkConverter).toHaveBeenCalledTimes(1);
+      expect(referenceConverter).toHaveBeenCalledTimes(1);
     });
 
     it('should reuse the provider the snapshot was built with when none is passed', async () => {
       mockFileWithLinks([linkToA]);
-      const linkConverter = vi.fn(() => '[[a-new]]');
+      const referenceConverter = vi.fn(() => '[[a-new]]');
 
       await editBacklinksSnapshot<undefined>({
         app,
-        linkConverter,
         pluginNoticeComponent: null,
+        referenceConverter,
         resourceLockComponent,
         snapshot: buildBacklinksSnapshot<undefined>({
           // A DIFFERENT object with the same `original`: only the build-side provider can match it.
           backlinks: new Map([['note.md', [{ ...linkToA, displayText: 'something else' }]]]),
-          linkIdentityKeyProvider: (link) => link.original,
-          payloadProvider: () => undefined
+          payloadProvider: () => undefined,
+          referenceIdentityKeyProvider: (link) => link.original
         })
       });
 
-      expect(linkConverter).toHaveBeenCalledTimes(1);
+      expect(referenceConverter).toHaveBeenCalledTimes(1);
     });
 
     it('should throw when passed a provider that differs from the snapshot\'s', async () => {
       mockFileWithLinks([linkToA]);
-      const linkConverter = vi.fn(() => '[[a-new]]');
+      const referenceConverter = vi.fn(() => '[[a-new]]');
 
       await expect(editBacklinksSnapshot<undefined>({
         app,
-        linkConverter,
-        linkIdentityKeyProvider: (link) => link.link,
         pluginNoticeComponent: null,
+        referenceConverter,
+        referenceIdentityKeyProvider: (link) => link.link,
         resourceLockComponent,
         snapshot: buildBacklinksSnapshot<undefined>({
           backlinks: new Map([['note.md', [linkToA]]]),
-          linkIdentityKeyProvider: (link) => link.original,
-          payloadProvider: () => undefined
+          payloadProvider: () => undefined,
+          referenceIdentityKeyProvider: (link) => link.original
         })
-      })).rejects.toThrow('editBacklinksSnapshot was passed a linkIdentityKeyProvider that differs');
-      expect(linkConverter).not.toHaveBeenCalled();
+      })).rejects.toThrow('editBacklinksSnapshot was passed a referenceIdentityKeyProvider that differs');
+      expect(referenceConverter).not.toHaveBeenCalled();
     });
 
     it('should use a passed provider for a snapshot assembled by hand', async () => {
       mockFileWithLinks([linkToA]);
-      const linkConverter = vi.fn(() => '[[a-new]]');
+      const referenceConverter = vi.fn(() => '[[a-new]]');
 
       await editBacklinksSnapshot<undefined>({
         app,
-        linkConverter,
-        linkIdentityKeyProvider: (link) => link.original,
         pluginNoticeComponent: null,
+        referenceConverter,
+        referenceIdentityKeyProvider: (link) => link.original,
         resourceLockComponent,
         snapshot: new Map([['note.md', new Map([['[[a]]', undefined]])]])
       });
 
-      expect(linkConverter).toHaveBeenCalledTimes(1);
+      expect(referenceConverter).toHaveBeenCalledTimes(1);
     });
   });
 
-  describe('updateLinksInContent', () => {
-    it('should call editLinksInContent with convertLink callback', async () => {
+  describe('updateReferencesInContent', () => {
+    it('should call editReferencesInContent with convertLink callback', async () => {
       vi.mocked(parseMetadata).mockResolvedValue(castTo<CachedMetadataEx>({}));
 
-      const result = await updateLinksInContent({
+      const result = await updateReferencesInContent({
         app,
         content: '# Note\n[[target]]',
         newSourcePathOrFile: 'note.md'
@@ -3072,7 +3072,7 @@ describe('app-dependent functions', () => {
         sections: undefined
       }));
 
-      const result = await updateLinksInContent({
+      const result = await updateReferencesInContent({
         app,
         content: '[[target]]',
         newSourcePathOrFile: 'note.md',
@@ -3095,7 +3095,7 @@ describe('app-dependent functions', () => {
         sections: undefined
       }));
 
-      const result = await updateLinksInContent({
+      const result = await updateReferencesInContent({
         app,
         content: '[[target]]',
         newSourcePathOrFile: 'note.md'
@@ -3127,17 +3127,17 @@ describe('app-dependent functions', () => {
         }
       );
 
-      // `UpdateLinksInContentParams` is module-private, so the params object is inferred rather than annotated.
+      // `UpdateReferencesInContentParams` is module-private, so the params object is inferred rather than annotated.
       const params = {
         app,
         content: '[[target]]',
         newSourcePathOrFile: 'folder/other.md'
       };
 
-      await updateLinksInContent(params);
+      await updateReferencesInContent(params);
       expect(ensureNonNullable(changes).map((change) => change.newContent)).toEqual(['[[target]]']);
 
-      await updateLinksInContent({ ...params, linkPathStyle: LinkPathStyle.RelativePathToTheSource });
+      await updateReferencesInContent({ ...params, linkPathStyle: LinkPathStyle.RelativePathToTheSource });
       expect(ensureNonNullable(changes).map((change) => change.newContent)).toEqual(['[[../target]]']);
     });
 
@@ -3164,7 +3164,7 @@ describe('app-dependent functions', () => {
         }
       );
 
-      // `UpdateLinksInContentParams` is module-private, so the params object is inferred rather than annotated.
+      // `UpdateReferencesInContentParams` is module-private, so the params object is inferred rather than annotated.
       const params = {
         app,
         content: '[[target]]',
@@ -3173,12 +3173,12 @@ describe('app-dependent functions', () => {
       };
 
       const linkStyleProvider = vi.fn((): LinkStyle | undefined => LinkStyle.Wikilink);
-      await updateLinksInContent({ ...params, linkStyleProvider });
+      await updateReferencesInContent({ ...params, linkStyleProvider });
       expect(linkStyleProvider).toHaveBeenCalledWith(expect.objectContaining({ original: '[[target]]' }));
       expect(ensureNonNullable(changes).map((change) => change.newContent)).toEqual(['[[target]]']);
 
       linkStyleProvider.mockReturnValue(undefined);
-      await updateLinksInContent({ ...params, linkStyleProvider });
+      await updateReferencesInContent({ ...params, linkStyleProvider });
       expect(ensureNonNullable(changes).map((change) => change.newContent)).toEqual(['[target](target.md)']);
     });
 
@@ -3200,7 +3200,7 @@ describe('app-dependent functions', () => {
         }
       );
 
-      // `UpdateLinksInContentParams` is module-private, so the params object is inferred rather than annotated.
+      // `UpdateReferencesInContentParams` is module-private, so the params object is inferred rather than annotated.
       const params = {
         app,
         content: shapingParamsCase.originalLink,
@@ -3208,17 +3208,17 @@ describe('app-dependent functions', () => {
         ...shapingParamsCase.baseParams
       };
 
-      await updateLinksInContent(params);
+      await updateReferencesInContent(params);
       expect(ensureNonNullable(changes).map((change) => change.newContent)).toEqual([shapingParamsCase.expectedOmitted]);
 
-      await updateLinksInContent({ ...params, ...shapingParamsCase.shapingParams });
+      await updateReferencesInContent({ ...params, ...shapingParamsCase.shapingParams });
       expect(ensureNonNullable(changes).map((change) => change.newContent)).toEqual([shapingParamsCase.expectedForced]);
     });
   });
 
-  describe('updateLinksInFile', () => {
-    it('should call editLinks for markdown files', async () => {
-      await updateLinksInFile({
+  describe('updateReferencesInFile', () => {
+    it('should call editReferences for markdown files', async () => {
+      await updateReferencesInFile({
         app,
         newSourcePathOrFile: 'note.md',
         pluginNoticeComponent: null,
@@ -3244,7 +3244,7 @@ describe('app-dependent functions', () => {
       const canvasFile = ensureNonNullable(canvasApp.vault.getFileByPath('canvas.canvas'));
       canvasFile.extension = 'canvas';
 
-      await updateLinksInFile({
+      await updateReferencesInFile({
         app: canvasApp,
         newSourcePathOrFile: canvasFile,
         pluginNoticeComponent: null,
@@ -3277,7 +3277,7 @@ describe('app-dependent functions', () => {
         sections: undefined
       }));
 
-      await updateLinksInFile({
+      await updateReferencesInFile({
         app,
         newSourcePathOrFile: 'note.md',
         pluginNoticeComponent: null,
@@ -3311,7 +3311,7 @@ describe('app-dependent functions', () => {
         sections: undefined
       }));
 
-      await updateLinksInFile({
+      await updateReferencesInFile({
         app,
         newSourcePathOrFile: 'note.md',
         pluginNoticeComponent: null,
@@ -3346,17 +3346,17 @@ describe('app-dependent functions', () => {
         }
       );
 
-      const params: UpdateLinksInFileParams = {
+      const params: UpdateReferencesInFileParams = {
         app,
         newSourcePathOrFile: 'folder/other.md',
         pluginNoticeComponent: null,
         resourceLockComponent
       };
 
-      await updateLinksInFile(params);
+      await updateReferencesInFile(params);
       expect(ensureNonNullable(changes).map((change) => change.newContent)).toEqual(['[[target]]']);
 
-      await updateLinksInFile({ ...params, linkPathStyle: LinkPathStyle.RelativePathToTheSource });
+      await updateReferencesInFile({ ...params, linkPathStyle: LinkPathStyle.RelativePathToTheSource });
       expect(ensureNonNullable(changes).map((change) => change.newContent)).toEqual(['[[../target]]']);
     });
 
@@ -3386,7 +3386,7 @@ describe('app-dependent functions', () => {
         }
       );
 
-      const params: UpdateLinksInFileParams = {
+      const params: UpdateReferencesInFileParams = {
         app,
         linkStyle: LinkStyle.Markdown,
         newSourcePathOrFile: 'folder/other.md',
@@ -3395,12 +3395,12 @@ describe('app-dependent functions', () => {
       };
 
       const linkStyleProvider = vi.fn((): LinkStyle | undefined => LinkStyle.Wikilink);
-      await updateLinksInFile({ ...params, linkStyleProvider });
+      await updateReferencesInFile({ ...params, linkStyleProvider });
       expect(linkStyleProvider).toHaveBeenCalledWith(expect.objectContaining({ original: link.original }));
       expect(ensureNonNullable(changes).map((change) => change.newContent)).toEqual(['[[target]]']);
 
       linkStyleProvider.mockReturnValue(undefined);
-      await updateLinksInFile({ ...params, linkStyleProvider });
+      await updateReferencesInFile({ ...params, linkStyleProvider });
       expect(ensureNonNullable(changes).map((change) => change.newContent)).toEqual(['[target](target.md)']);
     });
 
@@ -3412,7 +3412,7 @@ describe('app-dependent functions', () => {
         sections: undefined
       }));
 
-      // Here `editLinks` bails out unless the content handed to the provider matches what the vault holds.
+      // Here `editReferences` bails out unless the content handed to the provider matches what the vault holds.
       // Read it back rather than passing the link text.
       const sourceContent = await app.vault.cachedRead(ensureNonNullable(app.vault.getFileByPath(shapingParamsCase.sourcePath)));
 
@@ -3428,7 +3428,7 @@ describe('app-dependent functions', () => {
         }
       );
 
-      const params: UpdateLinksInFileParams = {
+      const params: UpdateReferencesInFileParams = {
         app,
         newSourcePathOrFile: shapingParamsCase.sourcePath,
         pluginNoticeComponent: null,
@@ -3436,10 +3436,10 @@ describe('app-dependent functions', () => {
         ...shapingParamsCase.baseParams
       };
 
-      await updateLinksInFile(params);
+      await updateReferencesInFile(params);
       expect(ensureNonNullable(changes).map((change) => change.newContent)).toEqual([shapingParamsCase.expectedOmitted]);
 
-      await updateLinksInFile({ ...params, ...shapingParamsCase.shapingParams });
+      await updateReferencesInFile({ ...params, ...shapingParamsCase.shapingParams });
       expect(ensureNonNullable(changes).map((change) => change.newContent)).toEqual([shapingParamsCase.expectedForced]);
     });
   });
@@ -3490,10 +3490,10 @@ describe('app-dependent functions', () => {
       // Those keys hold `undefined` and must not overwrite the registered default.
       const result = updateLink({
         app,
-        link: castTo<Reference>({ displayText: 'same', link: 'same', original: '[[same]]' }),
         linkPathStyle: LinkPathStyle.AbsolutePathInVault,
         newSourcePathOrFile: 'note.md',
-        newTargetPathOrFile: 'folder/same.md'
+        newTargetPathOrFile: 'folder/same.md',
+        reference: castTo<Reference>({ displayText: 'same', link: 'same', original: '[[same]]' })
       });
       expect(result).toBe('[[/folder/same]]');
 
@@ -3502,7 +3502,7 @@ describe('app-dependent functions', () => {
   });
 
   describe('getFileChanges canvas path', () => {
-    it('should handle canvas file changes through editLinks', async () => {
+    it('should handle canvas file changes through editReferences', async () => {
       const canvasApp = (
         App.createConfigured__({
           files: {
@@ -3539,11 +3539,11 @@ describe('app-dependent functions', () => {
         sections: undefined
       }));
 
-      await editLinks({
+      await editReferences({
         app: canvasApp,
-        linkConverter: () => 'new-target.md',
         pathOrFile: canvasFile,
         pluginNoticeComponent: null,
+        referenceConverter: () => 'new-target.md',
         resourceLockComponent
       });
 
@@ -3587,11 +3587,11 @@ describe('app-dependent functions', () => {
 
       vi.spyOn(console, 'error').mockImplementation(() => undefined);
 
-      await editLinks({
+      await editReferences({
         app: canvasApp,
-        linkConverter: () => '[[new-target]]',
         pathOrFile: canvasFile,
         pluginNoticeComponent: null,
+        referenceConverter: () => '[[new-target]]',
         resourceLockComponent
       });
 

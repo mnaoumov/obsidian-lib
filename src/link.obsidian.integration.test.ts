@@ -10,7 +10,7 @@
  * The offset-range cases confirm the range filter against positions produced by Obsidian's own parser
  * rather than hand-built fixtures, and pin the contract a selection command depends on: a range taken
  * from an UNSAVED editor buffer is valid, because the buffer is flushed to disk before the content is
- * read. The last of them pins the range reaching `editLinks` through `updateLinksInFile`, the wrapper a
+ * read. The last of them pins the range reaching `editReferences` through `updateReferencesInFile`, the wrapper a
  * plugin actually calls, so an out-of-range link is proved to survive a real conversion.
  */
 
@@ -52,7 +52,7 @@ interface OffsetRangeFromEditorResult {
  * Input of the heading-skipping test.
  */
 // A type alias rather than an interface, because the harness input must satisfy an index-signature constraint.
-type SkipLinksInHeadingsInput = Readonly<Record<'shouldSkipLinksInHeadings', boolean>>;
+type SkipLinksInHeadingsInput = Readonly<Record<'shouldSkipReferencesInHeadings', boolean>>;
 
 /**
  * Result of the heading-skipping test.
@@ -66,7 +66,7 @@ interface SkipLinksInHeadingsResult {
 }
 
 /**
- * Result of the `updateLinksInFile` selection-scope test.
+ * Result of the `updateReferencesInFile` selection-scope test.
  */
 interface UpdateLinksInFileResult {
   readonly diskAfterEdit: string;
@@ -75,7 +75,7 @@ interface UpdateLinksInFileResult {
 describe('angle-bracket heading destinations', () => {
   it('should keep plain and code-span headings linked after repeated conversion', async () => {
     const result = await evalInObsidian<Record<string, never>, AngleDestinationResult>({
-      async callback({ app, lib: { LinkStyle, updateLinksInContent, waitUntil }, obsidianModule }) {
+      async callback({ app, lib: { LinkStyle, updateReferencesInContent, waitUntil }, obsidianModule }) {
         const { Component, MarkdownRenderer, resolveSubpath } = obsidianModule;
         const headings = ['Angle <note> in a heading', 'Code `<note>` in a heading'];
         const path = 'angle-destination-headings.md';
@@ -88,14 +88,14 @@ describe('angle-bracket heading destinations', () => {
             message: 'index angle-destination headings',
             predicate: () => app.metadataCache.getFileCache(file)?.headings?.length === headings.length
           });
-          const converted = await updateLinksInContent({
+          const converted = await updateReferencesInContent({
             app,
             content,
             linkStyle: LinkStyle.Markdown,
             newSourcePathOrFile: file,
             shouldUseAngleBrackets: true
           });
-          const convertedAgain = await updateLinksInContent({
+          const convertedAgain = await updateReferencesInContent({
             app,
             content: converted,
             linkStyle: LinkStyle.Markdown,
@@ -132,13 +132,13 @@ describe('angle-bracket heading destinations', () => {
 /*
  * Issue mnaoumov/obsidian-better-markdown-links#44: a link inside a heading is part of that heading's text, so
  * converting it renames the heading and breaks every `#heading` subpath pointing at it, in the note itself
- * and in other notes. With `shouldSkipLinksInHeadings` the heading links stay byte-for-byte as written, and
+ * and in other notes. With `shouldSkipReferencesInHeadings` the heading links stay byte-for-byte as written, and
  * Obsidian's own parser still reports the same heading text and resolves both subpaths afterwards.
  */
 describe('links inside headings', () => {
-  async function convertNote(shouldSkipLinksInHeadings: boolean): Promise<SkipLinksInHeadingsResult> {
+  async function convertNote(shouldSkipReferencesInHeadings: boolean): Promise<SkipLinksInHeadingsResult> {
     return await evalInObsidian<SkipLinksInHeadingsInput, SkipLinksInHeadingsResult>({
-      async callback({ app, lib: { LinkStyle, updateLinksInFile, waitUntil }, obsidianModule, shouldSkipLinksInHeadings: shouldSkip }) {
+      async callback({ app, lib: { LinkStyle, updateReferencesInFile, waitUntil }, obsidianModule, shouldSkipReferencesInHeadings: shouldSkip }) {
         const { resolveSubpath } = obsidianModule;
         const notePath = 'heading-links.md';
         const inboundPath = 'heading-links-inbound.md';
@@ -167,13 +167,13 @@ describe('links inside headings', () => {
           });
           const headingsBefore = (app.metadataCache.getFileCache(noteFile)?.headings ?? []).map((heading) => heading.heading);
 
-          await updateLinksInFile({
+          await updateReferencesInFile({
             app,
             linkStyle: LinkStyle.Markdown,
             newSourcePathOrFile: noteFile,
             pluginNoticeComponent: null,
             resourceLockComponent: null,
-            shouldSkipLinksInHeadings: shouldSkip,
+            shouldSkipReferencesInHeadings: shouldSkip,
             timeoutInMilliseconds: 10_000
           });
 
@@ -207,7 +207,7 @@ describe('links inside headings', () => {
           await app.fileManager.trashFile(targetFile);
         }
       },
-      input: { shouldSkipLinksInHeadings }
+      input: { shouldSkipReferencesInHeadings }
     });
   }
 
@@ -276,14 +276,14 @@ describe('file:// link normalization', () => {
 describe('offset range', () => {
   it('should rewrite only the link fully contained in the range, against real parsed positions', async () => {
     const { result } = await evalInObsidian<Record<string, never>, NormalizeResult>({
-      async callback({ app, lib: { editLinksInContent } }) {
+      async callback({ app, lib: { editReferencesInContent } }) {
         const content = '[[alpha]] [[bravo]] [[charlie]]\n';
         // `[[bravo]]` spans exactly 10-19, so this also pins the inclusive bounds.
-        const edited = await editLinksInContent({
+        const edited = await editReferencesInContent({
           app,
           content,
-          linkConverter: (link) => `[[new-${link.link}]]`,
-          offsetRange: { endOffset: 19, startOffset: 10 }
+          offsetRange: { endOffset: 19, startOffset: 10 },
+          referenceConverter: (link) => `[[new-${link.link}]]`
         });
         return { result: edited };
       }
@@ -294,7 +294,7 @@ describe('offset range', () => {
 
   it('should honour a range taken from a dirty editor buffer, because the buffer is flushed before reading', async () => {
     const result = await evalInObsidian<Record<string, never>, OffsetRangeFromEditorResult>({
-      async callback({ app, lib: { editLinks }, obsidianModule }) {
+      async callback({ app, lib: { editReferences }, obsidianModule }) {
         const { MarkdownView } = obsidianModule;
         const targetPath = 'offset-range.md';
         const diskContent = '[[alpha]] [[bravo]] [[charlie]]\n';
@@ -320,12 +320,12 @@ describe('offset range', () => {
           const selectedStartOffset = editor.posToOffset(editor.getCursor('from'));
           const selectedEndOffset = editor.posToOffset(editor.getCursor('to'));
 
-          await editLinks({
+          await editReferences({
             app,
-            linkConverter: (link) => `[[new-${link.link}]]`,
             offsetRange: { endOffset: selectedEndOffset, startOffset: selectedStartOffset },
             pathOrFile: file,
             pluginNoticeComponent: null,
+            referenceConverter: (link) => `[[new-${link.link}]]`,
             resourceLockComponent: null,
             timeoutInMilliseconds: 10_000
           });
@@ -354,14 +354,14 @@ describe('offset range', () => {
   });
 
   /*
-   * `updateLinksInFile` is the function a plugin actually calls to convert the links in a note, and it
-   * reaches the range filter only by forwarding the param on to `editLinks`. The unit suite pins the
+   * `updateReferencesInFile` is the function a plugin actually calls to convert the links in a note, and it
+   * reaches the range filter only by forwarding the param on to `editReferences`. The unit suite pins the
    * forward against a hand-built cache; this pins it end to end, against Obsidian's own parser and its own
    * link generator, so an out-of-range link is proved to survive a real conversion rather than a mocked one.
    */
-  it('should leave a link outside the range untouched when updateLinksInFile converts a selection', async () => {
+  it('should leave a link outside the range untouched when updateReferencesInFile converts a selection', async () => {
     const { diskAfterEdit } = await evalInObsidian<Record<string, never>, UpdateLinksInFileResult>({
-      async callback({ app, lib: { LinkStyle, updateLinksInFile } }) {
+      async callback({ app, lib: { LinkStyle, updateReferencesInFile } }) {
         const targetPath = 'selection-scope.md';
         const alphaPath = 'alpha.md';
         const charliePath = 'charlie.md';
@@ -372,7 +372,7 @@ describe('offset range', () => {
         const file = await app.vault.create(targetPath, content);
         try {
           // `[[alpha]]` spans exactly 0-9; `[[charlie]]` starts at 10 and is therefore wholly outside.
-          await updateLinksInFile({
+          await updateReferencesInFile({
             app,
             linkStyle: LinkStyle.Markdown,
             newSourcePathOrFile: file,
