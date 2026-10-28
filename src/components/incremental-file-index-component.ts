@@ -60,6 +60,18 @@ export interface IncrementalFileIndexComponentConstructorParams<T> {
    * Persists a snapshot; writes are serialized and retried by the next flush after failure.
    */
   readonly save: (records: ReadonlyMap<string, IndexedFileRecord<T>>) => Promise<void>;
+  /**
+   * Whether a create or modify of the file is followed by a metadata-cache `changed` event carrying its text, as for
+   * Markdown notes. Such a file drops its stale projection and is not read; its record returns with that event, or
+   * with the next startup or {@link IncrementalFileIndexComponent.rescan} when Obsidian raises none (a modify that left
+   * the content unchanged). Consumers must treat a file without a record as unknown. Defaults to never.
+   */
+  readonly shouldAwaitMetadataChange?: (file: TFile) => boolean;
+  /**
+   * Whether a projection depends on text alone, so a rename moves it with its stats instead of reading the file again.
+   * A file renamed to a path {@link accepts} rejects loses its record either way. Defaults to `false`.
+   */
+  readonly shouldMoveRecordsOnRename?: boolean;
 }
 
 /**
@@ -117,7 +129,7 @@ export class IncrementalFileIndexComponent<T> extends ComponentEx {
   /**
    * Projection, notifications and persistence supplied by the consumer.
    */
-  protected readonly options: IncrementalFileIndexComponentConstructorParams<T>;
+  protected readonly options: Required<IncrementalFileIndexComponentConstructorParams<T>>;
 
   private isBuiltValue = false;
   private readTail: Promise<void> = noopAsync();
@@ -135,7 +147,17 @@ export class IncrementalFileIndexComponent<T> extends ComponentEx {
    */
   public constructor(params: IncrementalFileIndexComponentConstructorParams<T>) {
     super();
-    this.options = { accepts: params.accepts, app: params.app, indexFile: params.indexFile, load: params.load, onRemove: params.onRemove, onSet: params.onSet, save: params.save };
+    this.options = {
+      accepts: params.accepts,
+      app: params.app,
+      indexFile: params.indexFile,
+      load: params.load,
+      onRemove: params.onRemove,
+      onSet: params.onSet,
+      save: params.save,
+      shouldAwaitMetadataChange: params.shouldAwaitMetadataChange ?? ((): boolean => false),
+      shouldMoveRecordsOnRename: params.shouldMoveRecordsOnRename ?? false
+    };
     this.requestSave = debounce(
       () => {
         invokeAsyncSafely(() => this.flush());
@@ -181,8 +203,8 @@ export class IncrementalFileIndexComponent<T> extends ComponentEx {
       this.setText(file, content);
     }));
 
-    this.registerEvent(app.vault.on('create', this.queueScan.bind(this)));
-    this.registerEvent(app.vault.on('modify', this.queueScan.bind(this)));
+    this.registerEvent(app.vault.on('create', this.handleContentEvent.bind(this)));
+    this.registerEvent(app.vault.on('modify', this.handleContentEvent.bind(this)));
     this.registerEvent(app.vault.on('delete', (file) => {
       if (file instanceof TFile) {
         this.removeRecord(file.path);
@@ -248,10 +270,41 @@ export class IncrementalFileIndexComponent<T> extends ComponentEx {
     }
   }
 
+  private handleContentEvent(file: TAbstractFile): void {
+    if (!(file instanceof TFile)) {
+      return;
+    }
+    if (!this.options.shouldAwaitMetadataChange(file)) {
+      this.queueScan(file);
+      return;
+    }
+    if (!this.options.accepts(file)) {
+      return;
+    }
+    this.removeRecord(file.path);
+    // A fresh token supersedes queued reads, and startup leaves the saved entry to the coming `changed` event.
+    this.revisions.set(file, {});
+  }
+
   private markDirty(): void {
     this.revision++;
     if (this.isBuiltValue && !this.isUnloaded()) {
       this.requestSave();
+    }
+  }
+
+  private moveRecord(file: TFile, oldPath: string): void {
+    const entry = this.records.get(oldPath);
+    if (entry) {
+      this.removeRecord(oldPath);
+      if (this.options.accepts(file)) {
+        this.setRecord(file.path, entry);
+      }
+      return;
+    }
+    // A record already at the new path means another event for this rename moved it first.
+    if (!this.records.has(file.path)) {
+      this.queueScan(file);
     }
   }
 
@@ -281,6 +334,10 @@ export class IncrementalFileIndexComponent<T> extends ComponentEx {
   }
 
   private rename(file: TAbstractFile, oldPath: string): void {
+    if (this.options.shouldMoveRecordsOnRename) {
+      this.renameMovingRecords(file, oldPath);
+      return;
+    }
     if (file instanceof TFile) {
       this.removeRecord(oldPath);
     } else {
@@ -290,6 +347,23 @@ export class IncrementalFileIndexComponent<T> extends ComponentEx {
     if (file instanceof TFolder) {
       Vault.recurseChildren(file, this.queueScan.bind(this));
     }
+  }
+
+  private renameMovingRecords(file: TAbstractFile, oldPath: string): void {
+    if (file instanceof TFile) {
+      this.moveRecord(file, oldPath);
+      return;
+    }
+    if (!(file instanceof TFolder)) {
+      return;
+    }
+    // Obsidian may also raise a rename per descendant, in either order; moving is idempotent across both.
+    Vault.recurseChildren(file, (child) => {
+      if (child instanceof TFile) {
+        this.moveRecord(child, `${oldPath}${child.path.slice(file.path.length)}`);
+      }
+    });
+    this.removeTree(oldPath);
   }
 
   private async saveChanges(): Promise<void> {
@@ -316,7 +390,16 @@ export class IncrementalFileIndexComponent<T> extends ComponentEx {
       if (!isCurrent()) {
         return;
       }
-      const content = await this.options.app.vault.cachedRead(file);
+      let content: string;
+      try {
+        content = await this.options.app.vault.cachedRead(file);
+      } catch (error) {
+        // A file deleted or renamed during its read is the event handlers' to account for.
+        if (isCurrent()) {
+          throw error;
+        }
+        return;
+      }
       if (!isCurrent()) {
         return;
       }

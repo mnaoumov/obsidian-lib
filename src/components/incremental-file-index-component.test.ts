@@ -7,6 +7,7 @@ import {
   noop,
   noopAsync
 } from '@mnaoumov/typescript-lib/function';
+import { castTo } from '@mnaoumov/typescript-lib/object-utils';
 import { assertNonNullable } from '@mnaoumov/typescript-lib/type-guards';
 import { App } from 'obsidian-test-mocks/obsidian';
 import {
@@ -18,7 +19,10 @@ import {
   vi
 } from 'vitest';
 
-import type { IndexedFileRecord } from './incremental-file-index-component.ts';
+import type {
+  IncrementalFileIndexComponentConstructorParams,
+  IndexedFileRecord
+} from './incremental-file-index-component.ts';
 
 import { IncrementalFileIndexComponent } from './incremental-file-index-component.ts';
 
@@ -39,8 +43,12 @@ beforeEach(() => {
     saved = new Map(records);
     return noopAsync();
   });
-  component = new IncrementalFileIndexComponent({
-    accepts: (candidate): boolean => candidate.extension === 'md',
+  component = createComponent();
+});
+
+function createComponent(overrides: Partial<IncrementalFileIndexComponentConstructorParams<string>> = {}): IncrementalFileIndexComponent<string> {
+  return new IncrementalFileIndexComponent({
+    accepts: (candidate): boolean => candidate.extension === 'md' && !candidate.path.startsWith('excluded/'),
     app,
     indexFile: ({ content }): string => content.toUpperCase(),
     load,
@@ -50,9 +58,10 @@ beforeEach(() => {
     onSet: (path, record): void => {
       secondary.set(path, record);
     },
-    save
+    save,
+    ...overrides
   });
-});
+}
 
 afterEach(async () => {
   component.unload();
@@ -304,6 +313,116 @@ describe('IncrementalFileIndexComponent', () => {
     await expect(component.flush()).rejects.toThrow('disk full');
     await component.flush();
     expect(saved.size).toBe(2);
+  });
+
+  it('should discard a rejected read of a file renamed or deleted while it was read', async () => {
+    await component.loadWithPromises();
+    const read = vi.spyOn(app.vault, 'cachedRead').mockImplementationOnce(async (target) => {
+      await app.vault.rename(target, 'excluded/moved.md');
+      throw new Error('File not found folder/a.md');
+    });
+    await component.rescan();
+    expect(read).toHaveBeenCalled();
+    expect(component.getRecords().has('folder/a.md')).toBe(false);
+    expect(component.getRecords().has('excluded/moved.md')).toBe(false);
+    expect(secondary.get('folder/b.md')).toBe('BETA');
+  });
+
+  describe('awaiting metadata changes', () => {
+    beforeEach(() => {
+      component = createComponent({ shouldAwaitMetadataChange: (candidate): boolean => candidate.extension === 'md' });
+    });
+
+    it('should drop a modified projection without reading, and take the text from the changed event', async () => {
+      await component.loadWithPromises();
+      const read = vi.spyOn(app.vault, 'cachedRead');
+      await app.vault.modify(file(), 'edited');
+      await settle();
+      expect(secondary.has('folder/a.md')).toBe(false);
+      app.metadataCache.trigger('changed', file(), 'edited', {});
+      await app.vault.createFolder('excluded');
+      await app.vault.create('excluded/new.md', 'skipped');
+      await app.vault.create('other.txt', 'read');
+      await settle();
+      expect(secondary.get('folder/a.md')).toBe('EDITED');
+      expect(component.getRecords().has('excluded/new.md')).toBe(false);
+      expect(read).not.toHaveBeenCalled();
+    });
+
+    it('should leave a note modified during restore to its changed event, with no read', async () => {
+      const a = file();
+      saved.set(a.path, { mtime: a.stat.mtime, record: 'OLD', size: a.stat.size });
+      saved.set('folder/b.md', { mtime: file('folder/b.md').stat.mtime, record: 'B', size: file('folder/b.md').stat.size });
+      const pending = createPending<ReadonlyMap<string, IndexedFileRecord<string>>>();
+      load.mockReturnValue(pending.promise);
+      const read = vi.spyOn(app.vault, 'cachedRead');
+      const loading = component.loadWithPromises();
+      await app.vault.modify(a, 'latest');
+      await settle();
+      app.metadataCache.trigger('changed', a, 'latest', {});
+      pending.resolve(saved);
+      await loading;
+      expect(read).not.toHaveBeenCalled();
+      expect(secondary.get(a.path)).toBe('LATEST');
+    });
+  });
+
+  describe('moving records on rename', () => {
+    beforeEach(() => {
+      component = createComponent({ shouldMoveRecordsOnRename: true });
+    });
+
+    it('should move a renamed file\'s record with its stats and read nothing', async () => {
+      await component.loadWithPromises();
+      const before = component.getRecords().get('folder/a.md');
+      const read = vi.spyOn(app.vault, 'cachedRead');
+      await app.vault.rename(file(), 'folder/renamed.md');
+      await settle();
+      expect(read).not.toHaveBeenCalled();
+      expect(secondary.has('folder/a.md')).toBe(false);
+      expect(component.getRecords().get('folder/renamed.md')).toBe(before);
+      expect(secondary.get('folder/renamed.md')).toBe('ALPHA');
+    });
+
+    it('should keep a record a repeated event already moved, and drop one renamed out of the accepted set', async () => {
+      await component.loadWithPromises();
+      const read = vi.spyOn(app.vault, 'cachedRead');
+      app.vault.trigger('rename', file(), 'never-indexed.md');
+      await settle();
+      expect(secondary.get('folder/a.md')).toBe('ALPHA');
+      await app.vault.rename(file('folder/b.md'), 'excluded/b.md');
+      await settle();
+      expect(secondary.has('folder/b.md')).toBe(false);
+      expect(secondary.has('excluded/b.md')).toBe(false);
+      expect(read).not.toHaveBeenCalled();
+    });
+
+    it('should read a renamed file whose record is unknown', async () => {
+      await component.loadWithPromises();
+      const pending = createPending<string>();
+      vi.spyOn(app.vault, 'cachedRead').mockReturnValueOnce(pending.promise);
+      const scan = component.rescan();
+      await settle();
+      await app.vault.rename(file(), 'folder/renamed.md');
+      pending.resolve('obsolete');
+      await scan;
+      await settle();
+      expect(secondary.get('folder/renamed.md')).toBe('ALPHA');
+    });
+
+    it('should move a folder\'s records idempotently with its descendants\' events, and ignore other entries', async () => {
+      await component.loadWithPromises();
+      app.metadataCache.trigger('changed', file('folder/b.md'), 'temporary', {});
+      const read = vi.spyOn(app.vault, 'cachedRead');
+      const folder = app.vault.getFolderByPath('folder');
+      assertNonNullable(folder);
+      await app.vault.rename(folder, 'moved');
+      app.vault.trigger('rename', file('moved/a.md'), 'folder/a.md');
+      app.vault.trigger('rename', castTo<TFile>({ path: 'odd' }), 'old');
+      await settle();
+      expect(read).not.toHaveBeenCalled();
+      expect(secondary).toEqual(new Map([['moved/a.md', 'ALPHA'], ['moved/b.md', 'TEMPORARY']]));
+    });
   });
 
   it('should flush built records once more on unload and unregister listeners', async () => {
