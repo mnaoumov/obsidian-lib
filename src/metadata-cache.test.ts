@@ -61,7 +61,7 @@ import {
   getBacklinksForFileSafe,
   getCacheSafe,
   getFrontmatterSafe,
-  getLinks,
+  getReferences,
   hasBacklinkCachePlugin,
   isCachedMetadataEx,
   parseMetadata,
@@ -278,17 +278,17 @@ describe('isCachedMetadataEx', () => {
   });
 });
 
-describe('getLinks', () => {
+describe('getReferences', () => {
   it('should return empty array for empty cache', () => {
     const cache: CachedMetadata = {};
-    const result = getLinks({ cache });
+    const result = getReferences({ cache });
     expect(result).toEqual([]);
   });
 
   it('should return links from cache.links only', () => {
     const link = makeReferenceCache('[[note]]', 0);
     const cache: CachedMetadata = { links: [link] };
-    const result = getLinks({ cache });
+    const result = getReferences({ cache });
     expect(result).toHaveLength(1);
     expect(result[0]).toBe(link);
   });
@@ -296,7 +296,7 @@ describe('getLinks', () => {
   it('should return links from cache.embeds only', () => {
     const embed = makeReferenceCache('![[image.png]]', 10);
     const cache: CachedMetadata = { embeds: [embed] };
-    const result = getLinks({ cache });
+    const result = getReferences({ cache });
     expect(result).toHaveLength(1);
     expect(result[0]).toBe(embed);
   });
@@ -304,7 +304,7 @@ describe('getLinks', () => {
   it('should return links from cache.frontmatterLinks only', () => {
     const fmLink = makeFrontmatterLink('note', 'aliases');
     const cache: CachedMetadata = { frontmatterLinks: [fmLink] };
-    const result = getLinks({ cache });
+    const result = getReferences({ cache });
     expect(result).toHaveLength(1);
     expect(result[0]).toBe(fmLink);
   });
@@ -318,7 +318,7 @@ describe('getLinks', () => {
       frontmatterLinks: [fmLink],
       links: [link]
     };
-    const result = getLinks({ cache });
+    const result = getReferences({ cache });
     expect(result).toHaveLength(3);
   });
 
@@ -326,7 +326,7 @@ describe('getLinks', () => {
     const link1 = makeReferenceCache('[[note]]', 0);
     const link2 = makeReferenceCache('[[note]]', 0);
     const cache: CachedMetadata = { links: [link1, link2] };
-    const result = getLinks({ cache });
+    const result = getReferences({ cache });
     expect(result).toHaveLength(1);
   });
 
@@ -334,7 +334,7 @@ describe('getLinks', () => {
     const link1 = makeReferenceCache('[[note1]]', 0);
     const link2 = makeReferenceCache('[[note2]]', 20);
     const cache: CachedMetadata = { links: [link1, link2] };
-    const result = getLinks({ cache });
+    const result = getReferences({ cache });
     expect(result).toHaveLength(2);
   });
 
@@ -344,7 +344,7 @@ describe('getLinks', () => {
     const cache: CachedMetadata = {
       frontmatterLinks: [fmLink1, fmLink2]
     };
-    const result = getLinks({ cache });
+    const result = getReferences({ cache });
     expect(result).toHaveLength(1);
   });
 
@@ -354,7 +354,7 @@ describe('getLinks', () => {
     const cache: CachedMetadata = {
       frontmatterLinks: [fmLink1, fmLink2]
     };
-    const result = getLinks({ cache });
+    const result = getReferences({ cache });
     expect(result).toHaveLength(2);
   });
 
@@ -364,7 +364,7 @@ describe('getLinks', () => {
     const cache: CachedMetadata = {
       frontmatterLinks: [fmLink1, fmLink2]
     };
-    const result = getLinks({ cache });
+    const result = getReferences({ cache });
     expect(result).toHaveLength(1);
   });
 
@@ -374,7 +374,7 @@ describe('getLinks', () => {
     const cache: CachedMetadata = {
       frontmatterLinks: [fmLink1, fmLink2]
     };
-    const result = getLinks({ cache });
+    const result = getReferences({ cache });
     expect(result).toHaveLength(2);
   });
 
@@ -384,7 +384,7 @@ describe('getLinks', () => {
     const cache: CachedMetadata = {
       frontmatterLinks: [fmLinkWithOffsets, fmLinkWithout]
     };
-    const result = getLinks({ cache });
+    const result = getReferences({ cache });
     expect(result).toHaveLength(2);
   });
 
@@ -395,32 +395,32 @@ describe('getLinks', () => {
       frontmatterLinks: [fmLink],
       links: [referenceLink]
     };
-    const result = getLinks({ cache });
+    const result = getReferences({ cache });
     expect(result).toHaveLength(2);
   });
 });
 
-describe('getLinks selection', () => {
-  it('should exclude references when shouldIncludeReferences is false', () => {
+describe('getReferences selection', () => {
+  it('should exclude body links when shouldIncludeLinks is false', () => {
     const link = makeReferenceCache('[[note]]', 0);
     const cache: CachedMetadata = { links: [link] };
-    expect(getLinks({ cache, shouldIncludeReferences: false })).toEqual([]);
+    expect(getReferences({ cache, shouldIncludeLinks: false })).toEqual([]);
   });
 
   it('should exclude embeds when shouldIncludeEmbeds is false', () => {
     const embed = makeReferenceCache('![[image.png]]', 10);
     const cache: CachedMetadata = { embeds: [embed] };
-    expect(getLinks({ cache, shouldIncludeEmbeds: false })).toEqual([]);
+    expect(getReferences({ cache, shouldIncludeEmbeds: false })).toEqual([]);
   });
 
   it('should exclude frontmatter links when shouldIncludeFrontmatterLinks is false', () => {
     const fmLink = makeFrontmatterLink('note', 'aliases');
     const cache: CachedMetadata = { frontmatterLinks: [fmLink] };
-    expect(getLinks({ cache, shouldIncludeFrontmatterLinks: false })).toEqual([]);
+    expect(getReferences({ cache, shouldIncludeFrontmatterLinks: false })).toEqual([]);
   });
 });
 
-describe('getLinks external selection', () => {
+describe('getReferences external selection', () => {
   const content = '[x](file:///a.txt)';
   const parseLinkResult = parseLink(content);
   assertNonNullable(parseLinkResult);
@@ -455,16 +455,16 @@ describe('getLinks external selection', () => {
       externalLinks: [externalLink],
       features: [CachedMetadataExFeature.ExternalLinks]
     };
-    expect(getLinks({ cache, shouldIncludeExternalLinks: true })).toContain(externalLink);
+    expect(getReferences({ cache, shouldIncludeExternalLinks: true })).toContain(externalLink);
   });
 
   it('should throw for body external links when the feature is absent', () => {
     const cache: CachedMetadataEx = { features: [CachedMetadataExFeature.Native] };
-    expect(() => getLinks({ cache, shouldIncludeExternalLinks: true })).toThrow('body external links');
+    expect(() => getReferences({ cache, shouldIncludeExternalLinks: true })).toThrow('body external links');
   });
 
   it('should throw for body external links when the cache is not a CachedMetadataEx', () => {
-    expect(() => getLinks({ cache: {}, shouldIncludeExternalLinks: true })).toThrow('body external links');
+    expect(() => getReferences({ cache: {}, shouldIncludeExternalLinks: true })).toThrow('body external links');
   });
 
   it('should include frontmatter external links when the feature is present', () => {
@@ -472,16 +472,16 @@ describe('getLinks external selection', () => {
       features: [CachedMetadataExFeature.FrontmatterExternalLinks],
       frontmatterExternalLinks: [frontmatterExternalLink]
     };
-    expect(getLinks({ cache, shouldIncludeFrontmatterExternalLinks: true })).toContain(frontmatterExternalLink);
+    expect(getReferences({ cache, shouldIncludeFrontmatterExternalLinks: true })).toContain(frontmatterExternalLink);
   });
 
   it('should throw for frontmatter external links when the feature is absent', () => {
     const cache: CachedMetadataEx = { features: [CachedMetadataExFeature.Native] };
-    expect(() => getLinks({ cache, shouldIncludeFrontmatterExternalLinks: true })).toThrow('frontmatter external links');
+    expect(() => getReferences({ cache, shouldIncludeFrontmatterExternalLinks: true })).toThrow('frontmatter external links');
   });
 
   it('should throw for frontmatter external links when the cache is not a CachedMetadataEx', () => {
-    expect(() => getLinks({ cache: {}, shouldIncludeFrontmatterExternalLinks: true })).toThrow('frontmatter external links');
+    expect(() => getReferences({ cache: {}, shouldIncludeFrontmatterExternalLinks: true })).toThrow('frontmatter external links');
   });
 
   it('should include multi-value frontmatter external links when the feature is present', () => {
@@ -489,16 +489,16 @@ describe('getLinks external selection', () => {
       features: [CachedMetadataExFeature.MultiValueFrontmatterExternalLinks],
       multiValueFrontmatterExternalLinks: [multiValueFrontmatterExternalLink]
     };
-    expect(getLinks({ cache, shouldIncludeMultiValueFrontmatterExternalLinks: true })).toContain(multiValueFrontmatterExternalLink);
+    expect(getReferences({ cache, shouldIncludeMultiValueFrontmatterExternalLinks: true })).toContain(multiValueFrontmatterExternalLink);
   });
 
   it('should throw for multi-value frontmatter external links when the feature is absent', () => {
     const cache: CachedMetadataEx = { features: [CachedMetadataExFeature.Native] };
-    expect(() => getLinks({ cache, shouldIncludeMultiValueFrontmatterExternalLinks: true })).toThrow('multi-value frontmatter external links');
+    expect(() => getReferences({ cache, shouldIncludeMultiValueFrontmatterExternalLinks: true })).toThrow('multi-value frontmatter external links');
   });
 
   it('should throw for multi-value frontmatter external links when the cache is not a CachedMetadataEx', () => {
-    expect(() => getLinks({ cache: {}, shouldIncludeMultiValueFrontmatterExternalLinks: true })).toThrow('multi-value frontmatter external links');
+    expect(() => getReferences({ cache: {}, shouldIncludeMultiValueFrontmatterExternalLinks: true })).toThrow('multi-value frontmatter external links');
   });
 
   it('should include multi-value frontmatter links when the feature is present', () => {
@@ -506,16 +506,16 @@ describe('getLinks external selection', () => {
       features: [CachedMetadataExFeature.MultiValueFrontmatterLinks],
       multiValueFrontmatterLinks: [multiValueFrontmatterLink]
     };
-    expect(getLinks({ cache, shouldIncludeMultiValueFrontmatterLinks: true })).toContain(multiValueFrontmatterLink);
+    expect(getReferences({ cache, shouldIncludeMultiValueFrontmatterLinks: true })).toContain(multiValueFrontmatterLink);
   });
 
   it('should throw for multi-value frontmatter links when the feature is absent', () => {
     const cache: CachedMetadataEx = { features: [CachedMetadataExFeature.Native] };
-    expect(() => getLinks({ cache, shouldIncludeMultiValueFrontmatterLinks: true })).toThrow('multi-value frontmatter links');
+    expect(() => getReferences({ cache, shouldIncludeMultiValueFrontmatterLinks: true })).toThrow('multi-value frontmatter links');
   });
 
   it('should throw for multi-value frontmatter links when the cache is not a CachedMetadataEx', () => {
-    expect(() => getLinks({ cache: {}, shouldIncludeMultiValueFrontmatterLinks: true })).toThrow('multi-value frontmatter links');
+    expect(() => getReferences({ cache: {}, shouldIncludeMultiValueFrontmatterLinks: true })).toThrow('multi-value frontmatter links');
   });
 });
 

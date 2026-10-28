@@ -86,7 +86,7 @@ describe('backlinks via metadata cache', () => {
 
   it('should detect links in the metadata cache', async () => {
     const result = await evalInObsidian<Record<string, never>, string[]>({
-      async callback({ app, lib: { ensureMetadataCacheReady, getLinks } }) {
+      async callback({ app, lib: { ensureMetadataCacheReady, getReferences } }) {
         await app.vault.create('backlink-multi-linker.md', '# Multi\n\nLinks to [[alpha]] and [[beta]].\n');
 
         await ensureMetadataCacheReady(app);
@@ -96,7 +96,7 @@ describe('backlinks via metadata cache', () => {
           if (!cache) {
             return [];
           }
-          const links = getLinks({ cache });
+          const links = getReferences({ cache });
           return links.map((reference) => reference.link);
         } finally {
           const f = app.vault.getAbstractFileByPath('backlink-multi-linker.md');

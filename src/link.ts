@@ -81,7 +81,7 @@ import {
 import {
   getBacklinksForFileSafe,
   getCacheSafe,
-  getLinks,
+  getReferences,
   parseMetadata,
   registerFiles
 } from './metadata-cache.ts';
@@ -124,7 +124,7 @@ const UNESCAPED_WIKILINK_DIVIDER_REGEXP = /(?:^|[^\\])\|/;
  * provider to only one of {@link buildBacklinksSnapshot} and {@link editBacklinksSnapshot} used to leave every
  * link unmatched, and the edit rewrote nothing without a word.
  */
-const snapshotLinkIdentityKeyProviders = new WeakMap<BacklinksSnapshot<unknown>, (link: Reference) => string>();
+const snapshotReferenceIdentityKeyProviders = new WeakMap<BacklinksSnapshot<unknown>, (link: Reference) => string>();
 
 /**
  * A style of the link path.
@@ -200,17 +200,17 @@ enum FinalLinkPathStyle {
  */
 export interface BacklinkConversionParams<TPayload> {
   /**
-   * The link being converted.
-   */
-  readonly link: Reference;
-
-  /**
    * The payload captured for the link when the snapshot was built.
    *
    * `undefined` when the link is not in the snapshot, which can only happen if
-   * {@link EditBacklinksSnapshotParams.shouldVisitUnmatchedLinks} is `true`.
+   * {@link EditBacklinksSnapshotParams.shouldVisitUnmatchedReferences} is `true`.
    */
   readonly payload: TPayload | undefined;
+
+  /**
+   * The reference being converted.
+   */
+  readonly reference: Reference;
 
   /**
    * The path of the note holding the link.
@@ -270,18 +270,6 @@ export interface BuildBacklinksSnapshotParams<TPayload> {
   readonly backlinks: BacklinksLike;
 
   /**
-   * Computes the identity key of a link.
-   *
-   * The snapshot remembers it, so {@link editBacklinksSnapshot} looks the links up with the same function
-   * without being told. When {@link BuildBacklinksSnapshotParams.target} was built with a provider, omitting
-   * this reuses that one, and passing a different one throws: a snapshot keyed by two functions matches
-   * nothing.
-   *
-   * @default the provider `target` was built with, else `JSON.stringify`
-   */
-  readonly linkIdentityKeyProvider?: (link: Reference) => string;
-
-  /**
    * Rewrites the path of a backlink-holding note as it will be **after** the operation.
    *
    * A note that holds a backlink can itself be renamed or moved by the same operation — including the
@@ -299,6 +287,18 @@ export interface BuildBacklinksSnapshotParams<TPayload> {
    * @returns The payload.
    */
   readonly payloadProvider: (link: Reference) => TPayload;
+
+  /**
+   * Computes the identity key of a link.
+   *
+   * The snapshot remembers it, so {@link editBacklinksSnapshot} looks the links up with the same function
+   * without being told. When {@link BuildBacklinksSnapshotParams.target} was built with a provider, omitting
+   * this reuses that one, and passing a different one throws: a snapshot keyed by two functions matches
+   * nothing.
+   *
+   * @default the provider `target` was built with, else `JSON.stringify`
+   */
+  readonly referenceIdentityKeyProvider?: (link: Reference) => string;
 
   /**
    * An existing snapshot to merge into, so several sets of backlinks can be accumulated into one.
@@ -335,11 +335,6 @@ export interface ConvertLinkParams {
   readonly isEmptyEmbedAliasAllowed?: boolean;
 
   /**
-   * A reference for the link.
-   */
-  readonly link: Reference;
-
-  /**
    * A style of the link path.
    */
   readonly linkPathStyle?: LinkPathStyle;
@@ -358,6 +353,11 @@ export interface ConvertLinkParams {
    * An old path of the link.
    */
   readonly oldSourcePathOrFile?: PathOrFile;
+
+  /**
+   * The reference whose link is converted.
+   */
+  readonly reference: Reference;
 
   /**
    * Whether to escape the alias.
@@ -447,11 +447,6 @@ export interface EditBacklinksParams extends EditBacklinksOptions {
   readonly app: App;
 
   /**
-   * The function that converts each link.
-   */
-  readonly linkConverter: (link: Reference) => Promisable<MaybeReturn<string>>;
-
-  /**
    * An optional reporter invoked once per backlink file after its links are updated, with the running
    * count of processed files and the total. When omitted, no progress is reported.
    */
@@ -461,6 +456,11 @@ export interface EditBacklinksParams extends EditBacklinksOptions {
    * The path or file to edit the backlinks for.
    */
   readonly pathOrFile: PathOrFile;
+
+  /**
+   * The function that converts each link.
+   */
+  readonly referenceConverter: (link: Reference) => Promisable<MaybeReturn<string>>;
 }
 
 /**
@@ -480,9 +480,15 @@ export interface EditBacklinksSnapshotParams<TPayload> extends EditBacklinksSnap
   readonly app: App;
 
   /**
+   * An optional reporter invoked once per backlink file after its links are updated, with the running
+   * count of processed files and the total. When omitted, no progress is reported.
+   */
+  readonly linkUpdateProgressReporter?: LinkUpdateProgressReporter;
+
+  /**
    * The function that converts each link.
    */
-  readonly linkConverter: (params: BacklinkConversionParams<TPayload>) => Promisable<MaybeReturn<string>>;
+  readonly referenceConverter: (params: BacklinkConversionParams<TPayload>) => Promisable<MaybeReturn<string>>;
 
   /**
    * Computes the identity key of a link.
@@ -494,13 +500,7 @@ export interface EditBacklinksSnapshotParams<TPayload> extends EditBacklinksSnap
    *
    * @default the provider the snapshot was built with, else `JSON.stringify`
    */
-  readonly linkIdentityKeyProvider?: (link: Reference) => string;
-
-  /**
-   * An optional reporter invoked once per backlink file after its links are updated, with the running
-   * count of processed files and the total. When omitted, no progress is reported.
-   */
-  readonly linkUpdateProgressReporter?: LinkUpdateProgressReporter;
+  readonly referenceIdentityKeyProvider?: (link: Reference) => string;
 
   /**
    * Whether the converter is also shown links that are **not** in the snapshot, with an `undefined`
@@ -513,7 +513,7 @@ export interface EditBacklinksSnapshotParams<TPayload> extends EditBacklinksSnap
    *
    * @default `false`
    */
-  readonly shouldVisitUnmatchedLinks?: boolean;
+  readonly shouldVisitUnmatchedReferences?: boolean;
 
   /**
    * The captured backlinks to edit.
@@ -522,9 +522,9 @@ export interface EditBacklinksSnapshotParams<TPayload> extends EditBacklinksSnap
 }
 
 /**
- * Parameters for {@link editLinksInContent}.
+ * Parameters for {@link editReferencesInContent}.
  */
-export interface EditLinksInContentParams {
+export interface EditReferencesInContentParams {
   /**
    * The abort signal to control the execution of the function.
    */
@@ -541,12 +541,7 @@ export interface EditLinksInContentParams {
   readonly content: string;
 
   /**
-   * The function that converts each link.
-   */
-  readonly linkConverter: (link: Reference) => Promisable<MaybeReturn<string>>;
-
-  /**
-   * A range within {@link EditLinksInContentParams.content}, in character offsets, restricting the pass to
+   * A range within {@link EditReferencesInContentParams.content}, in character offsets, restricting the pass to
    * the links inside it. When omitted, every link is visited.
    *
    * A link is edited only when it is **fully contained** in the range; one that merely overlaps it is left
@@ -559,6 +554,11 @@ export interface EditLinksInContentParams {
    * @default `undefined`
    */
   readonly offsetRange?: OffsetRange;
+
+  /**
+   * The function that converts each link.
+   */
+  readonly referenceConverter: (link: Reference) => Promisable<MaybeReturn<string>>;
 
   /**
    * Whether to also edit external links parsed from the note body. When `true`, the converter also
@@ -592,27 +592,22 @@ export interface EditLinksInContentParams {
    *
    * @default `false`
    */
-  readonly shouldSkipLinksInHeadings?: boolean;
+  readonly shouldSkipReferencesInHeadings?: boolean;
 }
 
 /**
- * Options for {@link editLinks}.
+ * Options for {@link editReferences}.
  */
-export type EditLinksOptions = ProcessOptions;
+export type EditReferencesOptions = ProcessOptions;
 
 /**
- * Parameters for {@link editLinks}.
+ * Parameters for {@link editReferences}.
  */
-export interface EditLinksParams extends EditLinksOptions {
+export interface EditReferencesParams extends EditReferencesOptions {
   /**
    * The Obsidian application instance.
    */
   readonly app: App;
-
-  /**
-   * The function that converts each link.
-   */
-  readonly linkConverter: (link: Reference) => Promisable<MaybeReturn<string>>;
 
   /**
    * A range within the file's content, in character offsets, restricting the pass to the links inside it.
@@ -641,6 +636,11 @@ export interface EditLinksParams extends EditLinksOptions {
   readonly pathOrFile: PathOrFile;
 
   /**
+   * The function that converts each link.
+   */
+  readonly referenceConverter: (link: Reference) => Promisable<MaybeReturn<string>>;
+
+  /**
    * Whether to also edit external links parsed from the note body. When `true`, the converter also
    * receives references for external links.
    *
@@ -672,22 +672,22 @@ export interface EditLinksParams extends EditLinksOptions {
    *
    * @default `false`
    */
-  readonly shouldSkipLinksInHeadings?: boolean;
+  readonly shouldSkipReferencesInHeadings?: boolean;
 }
 
 /**
- * Parameters for {@link extractLinkFile}.
+ * Parameters for {@link extractReferenceFile}.
  */
-export interface ExtractLinkFileParams {
+export interface ExtractReferenceFileParams {
   /**
    * The Obsidian application instance.
    */
   readonly app: App;
 
   /**
-   * The reference cache for the link.
+   * The reference to resolve.
    */
-  readonly link: Reference;
+  readonly reference: Reference;
 
   /**
    * Whether to allow non-existing files.
@@ -1020,11 +1020,11 @@ export interface UpdateFileUrlLinksInContentParams {
 
   /**
    * Whether to leave every link inside a heading unchanged. See
-   * {@link EditLinksInContentParams.shouldSkipLinksInHeadings}.
+   * {@link EditReferencesInContentParams.shouldSkipReferencesInHeadings}.
    *
    * @default `false`
    */
-  readonly shouldSkipLinksInHeadings?: boolean;
+  readonly shouldSkipReferencesInHeadings?: boolean;
 
   /**
    * Whether to emit the normalized links with angle brackets and raw spaces instead of `%20`-encoding.
@@ -1070,11 +1070,11 @@ export interface UpdateFileUrlLinksInFileParams extends ProcessOptions {
   readonly pathOrFile: PathOrFile;
 
   /**
-   * Whether to leave every link inside a heading unchanged. See {@link EditLinksParams.shouldSkipLinksInHeadings}.
+   * Whether to leave every link inside a heading unchanged. See {@link EditReferencesParams.shouldSkipReferencesInHeadings}.
    *
    * @default `false`
    */
-  readonly shouldSkipLinksInHeadings?: boolean;
+  readonly shouldSkipReferencesInHeadings?: boolean;
 
   /**
    * Whether to emit the normalized links with angle brackets and raw spaces instead of `%20`-encoding.
@@ -1107,11 +1107,6 @@ export interface UpdateLinkParams {
   readonly isEmptyEmbedAliasAllowed?: boolean;
 
   /**
-   * A reference for the link.
-   */
-  readonly link: Reference;
-
-  /**
    * A style of the link path.
    */
   readonly linkPathStyle?: LinkPathStyle;
@@ -1140,6 +1135,11 @@ export interface UpdateLinkParams {
    * An old path of the file.
    */
   readonly oldTargetPathOrFile?: PathOrFile;
+
+  /**
+   * The reference whose link is updated.
+   */
+  readonly reference: Reference;
 
   /**
    * Whether to escape the alias.
@@ -1215,9 +1215,9 @@ export interface UpdateLinkParams {
 }
 
 /**
- * Params for {@link updateLinksInFile}.
+ * Params for {@link updateReferencesInFile}.
  */
-export interface UpdateLinksInFileParams extends ProcessOptions {
+export interface UpdateReferencesInFileParams extends ProcessOptions {
   /**
    * An Obsidian app instance.
    */
@@ -1323,7 +1323,7 @@ export interface UpdateLinksInFileParams extends ProcessOptions {
    *
    * @default `false`
    */
-  readonly shouldSkipLinksInHeadings?: boolean;
+  readonly shouldSkipReferencesInHeadings?: boolean;
 
   /**
    * Whether to update only embedded links.
@@ -1472,17 +1472,17 @@ interface GetFileChangesParams {
   readonly isCanvasFileCache: boolean;
 
   /**
-   * A function that converts each link.
-   */
-  readonly linkConverter: (link: Reference, abortSignal: AbortSignal) => Promisable<MaybeReturn<string>>;
-
-  /**
    * A range within the content, in character offsets, restricting the changes to the links fully contained
    * in it. When omitted, every link is visited.
    *
    * @default `undefined`
    */
   readonly offsetRange?: OffsetRange;
+
+  /**
+   * A function that converts each link.
+   */
+  readonly referenceConverter: (link: Reference, abortSignal: AbortSignal) => Promisable<MaybeReturn<string>>;
 
   /**
    * Whether to include external links (parsed from the note body) in the changes.
@@ -1510,7 +1510,7 @@ interface GetFileChangesParams {
    *
    * @default `false`
    */
-  readonly shouldSkipLinksInHeadings?: boolean;
+  readonly shouldSkipReferencesInHeadings?: boolean;
 }
 
 interface LinkConfig {
@@ -1554,9 +1554,9 @@ interface RefreshFileNameAliasParams {
 }
 
 /**
- * Params for {@link resolveSnapshotLinkIdentityKeyProvider}.
+ * Params for {@link resolveSnapshotReferenceIdentityKeyProvider}.
  */
-interface ResolveSnapshotLinkIdentityKeyProviderParams {
+interface ResolveSnapshotReferenceIdentityKeyProviderParams {
   /**
    * The public function asking, named in the error.
    */
@@ -1565,7 +1565,7 @@ interface ResolveSnapshotLinkIdentityKeyProviderParams {
   /**
    * The provider the caller passed, if any.
    */
-  readonly explicitLinkIdentityKeyProvider: ((link: Reference) => string) | undefined;
+  readonly explicitReferenceIdentityKeyProvider: ((link: Reference) => string) | undefined;
 
   /**
    * The snapshot whose recorded provider wins when the caller passed none.
@@ -1599,9 +1599,9 @@ interface TablePosition {
 }
 
 /**
- * Params for {@link updateLinksInContent}.
+ * Params for {@link updateReferencesInContent}.
  */
-interface UpdateLinksInContentParams {
+interface UpdateReferencesInContentParams {
   /**
    * An Obsidian app instance.
    */
@@ -1653,7 +1653,7 @@ interface UpdateLinksInContentParams {
   readonly newSourcePathOrFile: PathOrFile;
 
   /**
-   * A range within {@link UpdateLinksInContentParams.content}, in character offsets, restricting the pass
+   * A range within {@link UpdateReferencesInContentParams.content}, in character offsets, restricting the pass
    * to the links inside it. When omitted, every link is visited.
    *
    * A link is updated only when it is **fully contained** in the range; one that merely overlaps it is left
@@ -1706,7 +1706,7 @@ interface UpdateLinksInContentParams {
    *
    * @default `false`
    */
-  readonly shouldSkipLinksInHeadings?: boolean;
+  readonly shouldSkipReferencesInHeadings?: boolean;
 
   /**
    * Whether to update only embedded links.
@@ -1773,19 +1773,19 @@ interface UpdateLinksInContentParams {
 export function buildBacklinksSnapshot<TPayload>(params: BuildBacklinksSnapshotParams<TPayload>): MutableBacklinksSnapshot<TPayload> {
   const {
     backlinks,
-    linkIdentityKeyProvider: explicitLinkIdentityKeyProvider,
     pathRemapper,
     payloadProvider,
+    referenceIdentityKeyProvider: explicitReferenceIdentityKeyProvider,
     target
   } = params;
 
   const snapshot = target ?? new Map<string, Map<string, TPayload>>();
-  const linkIdentityKeyProvider = resolveSnapshotLinkIdentityKeyProvider({
+  const referenceIdentityKeyProvider = resolveSnapshotReferenceIdentityKeyProvider({
     callerName: 'buildBacklinksSnapshot',
-    explicitLinkIdentityKeyProvider,
+    explicitReferenceIdentityKeyProvider,
     snapshot
   });
-  snapshotLinkIdentityKeyProviders.set(snapshot, linkIdentityKeyProvider);
+  snapshotReferenceIdentityKeyProviders.set(snapshot, referenceIdentityKeyProvider);
 
   for (const backlinkPath of backlinks.keys()) {
     const newBacklinkPath = pathRemapper?.(backlinkPath) ?? backlinkPath;
@@ -1797,7 +1797,7 @@ export function buildBacklinksSnapshot<TPayload>(params: BuildBacklinksSnapshotP
 
     /* v8 ignore next -- A key yielded by `keys()` always resolves; the `?? []` is defensive. */
     for (const link of backlinks.get(backlinkPath) ?? []) {
-      payloads.set(linkIdentityKeyProvider(link), payloadProvider(link));
+      payloads.set(referenceIdentityKeyProvider(link), payloadProvider(link));
     }
   }
 
@@ -1811,21 +1811,21 @@ export function buildBacklinksSnapshot<TPayload>(params: BuildBacklinksSnapshotP
  * @returns The converted link.
  */
 export function convertLink(params: ConvertLinkParams): string {
-  const targetFile = extractLinkFile({
+  const targetFile = extractReferenceFile({
     app: params.app,
-    link: params.link,
+    reference: params.reference,
     sourcePathOrFile: params.oldSourcePathOrFile ?? params.newSourcePathOrFile
   });
   return targetFile
     ? updateLink(normalizeOptionalProperties<UpdateLinkParams>({
       app: params.app,
       isEmptyEmbedAliasAllowed: params.isEmptyEmbedAliasAllowed,
-      link: params.link,
       linkPathStyle: params.linkPathStyle,
       linkStyle: params.linkStyle,
       newSourcePathOrFile: params.newSourcePathOrFile,
       newTargetPathOrFile: targetFile,
       oldSourcePathOrFile: params.oldSourcePathOrFile,
+      reference: params.reference,
       shouldEscapeAlias: params.shouldEscapeAlias,
       shouldIncludeAttachmentExtensionToEmbedAlias: params.shouldIncludeAttachmentExtensionToEmbedAlias,
       shouldUpdateFileNameAlias: params.shouldUpdateFileNameAlias,
@@ -1833,7 +1833,7 @@ export function convertLink(params: ConvertLinkParams): string {
       shouldUseLeadingDotForRelativePaths: params.shouldUseLeadingDotForRelativePaths,
       shouldUseLeadingSlashForAbsolutePaths: params.shouldUseLeadingSlashForAbsolutePaths
     }))
-    : getReferenceLinkText(params.link);
+    : getReferenceLinkText(params.reference);
 }
 
 /**
@@ -1845,9 +1845,9 @@ export function convertLink(params: ConvertLinkParams): string {
 export async function editBacklinks(params: EditBacklinksParams): Promise<void> {
   const {
     app,
-    linkConverter,
     linkUpdateProgressReporter,
     pathOrFile,
+    referenceConverter,
     ...options
   } = params;
   const backlinks = await getBacklinksForFileSafe({ app, pathOrFile, ...options });
@@ -1857,8 +1857,8 @@ export async function editBacklinks(params: EditBacklinksParams): Promise<void> 
   });
   await editBacklinksSnapshot(normalizeOptionalProperties<EditBacklinksSnapshotParams<undefined>>({
     app,
-    linkConverter: ({ link }) => linkConverter(link),
     linkUpdateProgressReporter,
+    referenceConverter: ({ reference }) => referenceConverter(reference),
     snapshot,
     ...options
   }));
@@ -1878,16 +1878,16 @@ export async function editBacklinks(params: EditBacklinksParams): Promise<void> 
 export async function editBacklinksSnapshot<TPayload>(params: EditBacklinksSnapshotParams<TPayload>): Promise<void> {
   const {
     app,
-    linkConverter,
-    linkIdentityKeyProvider: explicitLinkIdentityKeyProvider,
     linkUpdateProgressReporter,
-    shouldVisitUnmatchedLinks = false,
+    referenceConverter,
+    referenceIdentityKeyProvider: explicitReferenceIdentityKeyProvider,
+    shouldVisitUnmatchedReferences = false,
     snapshot,
     ...options
   } = params;
-  const linkIdentityKeyProvider = resolveSnapshotLinkIdentityKeyProvider({
+  const referenceIdentityKeyProvider = resolveSnapshotReferenceIdentityKeyProvider({
     callerName: 'editBacklinksSnapshot',
-    explicitLinkIdentityKeyProvider,
+    explicitReferenceIdentityKeyProvider,
     snapshot
   });
 
@@ -1895,19 +1895,19 @@ export async function editBacklinksSnapshot<TPayload>(params: EditBacklinksSnaps
   let processed = 0;
   for (const backlinkNotePath of backlinkNotePaths) {
     const payloads = ensureNonNullable(snapshot.get(backlinkNotePath));
-    await editLinks({
+    await editReferences({
       app,
-      linkConverter: (link) => {
-        const linkIdentityKey = linkIdentityKeyProvider(link);
-        return !payloads.has(linkIdentityKey) && !shouldVisitUnmatchedLinks
+      pathOrFile: backlinkNotePath,
+      referenceConverter: (link) => {
+        const referenceIdentityKey = referenceIdentityKeyProvider(link);
+        return !payloads.has(referenceIdentityKey) && !shouldVisitUnmatchedReferences
           ? undefined
-          : linkConverter({
-            link,
-            payload: payloads.get(linkIdentityKey),
+          : referenceConverter({
+            payload: payloads.get(referenceIdentityKey),
+            reference: link,
             sourcePath: backlinkNotePath
           });
       },
-      pathOrFile: backlinkNotePath,
       ...options
     });
     processed++;
@@ -1925,16 +1925,16 @@ export async function editBacklinksSnapshot<TPayload>(params: EditBacklinksSnaps
  * @param params - The parameters for editing the links.
  * @returns A {@link Promise} that resolves when the links have been edited.
  */
-export async function editLinks(params: EditLinksParams): Promise<void> {
+export async function editReferences(params: EditReferencesParams): Promise<void> {
   const {
     app,
-    linkConverter,
     offsetRange,
     pathOrFile,
+    referenceConverter,
     shouldEditExternalLinks = false,
     shouldEditFrontmatterExternalLinks = false,
     shouldEditMultiValueFrontmatterExternalLinks = false,
-    shouldSkipLinksInHeadings = false,
+    shouldSkipReferencesInHeadings = false,
     ...options
   } = params;
 
@@ -1959,12 +1959,12 @@ export async function editLinks(params: EditLinksParams): Promise<void> {
           abortSignal,
           cache,
           isCanvasFileCache: isCanvasFile(pathOrFile),
-          linkConverter,
           offsetRange,
+          referenceConverter,
           shouldIncludeExternalLinks: shouldEditExternalLinks,
           shouldIncludeFrontmatterExternalLinks: shouldEditFrontmatterExternalLinks,
           shouldIncludeMultiValueFrontmatterExternalLinks: shouldEditMultiValueFrontmatterExternalLinks,
-          shouldSkipLinksInHeadings
+          shouldSkipReferencesInHeadings
         })))
         : null;
     },
@@ -1979,16 +1979,16 @@ export async function editLinks(params: EditLinksParams): Promise<void> {
  * @param params - The parameters for editing the links in the content.
  * @returns The promise that resolves to the updated content.
  */
-export async function editLinksInContent(params: EditLinksInContentParams): Promise<string> {
+export async function editReferencesInContent(params: EditReferencesInContentParams): Promise<string> {
   const {
     app,
     content,
-    linkConverter,
     offsetRange,
+    referenceConverter,
     shouldEditExternalLinks = false,
     shouldEditFrontmatterExternalLinks = false,
     shouldEditMultiValueFrontmatterExternalLinks = false,
-    shouldSkipLinksInHeadings = false
+    shouldSkipReferencesInHeadings = false
   } = params;
   let { abortSignal } = params;
   abortSignal ??= abortSignalNever();
@@ -2011,12 +2011,12 @@ export async function editLinksInContent(params: EditLinksInContentParams): Prom
         abortSignal,
         cache,
         isCanvasFileCache: false,
-        linkConverter,
         offsetRange,
+        referenceConverter,
         shouldIncludeExternalLinks: shouldEditExternalLinks,
         shouldIncludeFrontmatterExternalLinks: shouldEditFrontmatterExternalLinks,
         shouldIncludeMultiValueFrontmatterExternalLinks: shouldEditMultiValueFrontmatterExternalLinks,
-        shouldSkipLinksInHeadings
+        shouldSkipReferencesInHeadings
       }));
       abortSignal.throwIfAborted();
       return changes;
@@ -2037,10 +2037,10 @@ export async function editLinksInContent(params: EditLinksInContentParams): Prom
  * @param params - The parameters for extracting the link file.
  * @returns The file associated with the link, or `null` if not found.
  */
-export function extractLinkFile(params: ExtractLinkFileParams): null | TFile {
+export function extractReferenceFile(params: ExtractReferenceFileParams): null | TFile {
   const {
     app,
-    link,
+    reference: link,
     shouldAllowNonExistingFile = false,
     sourcePathOrFile
   } = params;
@@ -2281,17 +2281,17 @@ export function splitSubpath(link: string): SplitSubpathResult {
  * @returns A {@link Promise} that resolves to the content with normalized `file://` links.
  */
 export async function updateFileUrlLinksInContent(params: UpdateFileUrlLinksInContentParams): Promise<string> {
-  const { app, content, offsetRange, shouldSkipLinksInHeadings, shouldUseAngleBrackets = false } = params;
-  return await editLinksInContent(normalizeOptionalProperties<EditLinksInContentParams>({
+  const { app, content, offsetRange, shouldSkipReferencesInHeadings, shouldUseAngleBrackets = false } = params;
+  return await editReferencesInContent(normalizeOptionalProperties<EditReferencesInContentParams>({
     abortSignal: params.abortSignal,
     app,
     content,
-    linkConverter: (link) => normalizeFileUrlLink(link, shouldUseAngleBrackets),
     offsetRange,
+    referenceConverter: (link) => normalizeFileUrlLink(link, shouldUseAngleBrackets),
     shouldEditExternalLinks: true,
     shouldEditFrontmatterExternalLinks: true,
     shouldEditMultiValueFrontmatterExternalLinks: true,
-    shouldSkipLinksInHeadings
+    shouldSkipReferencesInHeadings
   }));
 }
 
@@ -2307,20 +2307,20 @@ export async function updateFileUrlLinksInFile(params: UpdateFileUrlLinksInFileP
     app,
     offsetRange,
     pathOrFile,
-    shouldSkipLinksInHeadings,
+    shouldSkipReferencesInHeadings,
     shouldUseAngleBrackets = false,
     ...options
   } = params;
-  await editLinks(normalizeOptionalProperties<EditLinksParams>({
+  await editReferences(normalizeOptionalProperties<EditReferencesParams>({
     app,
-    linkConverter: (link) => normalizeFileUrlLink(link, shouldUseAngleBrackets),
     // Forwarded by name rather than through `options`, so a later refactor cannot drop it silently.
     offsetRange,
     pathOrFile,
+    referenceConverter: (link) => normalizeFileUrlLink(link, shouldUseAngleBrackets),
     shouldEditExternalLinks: true,
     shouldEditFrontmatterExternalLinks: true,
     shouldEditMultiValueFrontmatterExternalLinks: true,
-    shouldSkipLinksInHeadings,
+    shouldSkipReferencesInHeadings,
     ...options
   }));
 }
@@ -2335,13 +2335,13 @@ export function updateLink(params: UpdateLinkParams): string {
   const {
     app,
     isEmptyEmbedAliasAllowed,
-    link,
     linkPathStyle,
     linkStyle,
     newSourcePathOrFile,
     newTargetPathOrFile,
     oldSourcePathOrFile,
     oldTargetPathOrFile,
+    reference: link,
     shouldEscapeAlias,
     shouldIncludeAttachmentExtensionToEmbedAlias,
     shouldUpdateFileNameAlias = true,
@@ -2431,7 +2431,7 @@ export function updateLink(params: UpdateLinkParams): string {
  * @param params - The parameters for updating the links.
  * @returns A {@link Promise} that resolves to the content with updated links.
  */
-export async function updateLinksInContent(params: UpdateLinksInContentParams): Promise<string> {
+export async function updateReferencesInContent(params: UpdateReferencesInContentParams): Promise<string> {
   const {
     app,
     content,
@@ -2444,7 +2444,7 @@ export async function updateLinksInContent(params: UpdateLinksInContentParams): 
     oldSourcePathOrFile,
     shouldEscapeAlias,
     shouldIncludeAttachmentExtensionToEmbedAlias,
-    shouldSkipLinksInHeadings,
+    shouldSkipReferencesInHeadings,
     shouldUpdateEmbedOnlyLinks,
     shouldUpdateFileNameAlias,
     shouldUseAngleBrackets,
@@ -2452,21 +2452,22 @@ export async function updateLinksInContent(params: UpdateLinksInContentParams): 
     shouldUseLeadingSlashForAbsolutePaths
   } = params;
 
-  return await editLinksInContent(normalizeOptionalProperties<EditLinksInContentParams>({
+  return await editReferencesInContent(normalizeOptionalProperties<EditReferencesInContentParams>({
     app,
     content,
-    linkConverter: (link) => {
+    offsetRange,
+    referenceConverter: (link) => {
       const isEmbedLink = hasEmbedSyntax(getReferenceLinkText(link));
       return shouldUpdateEmbedOnlyLinks !== undefined && shouldUpdateEmbedOnlyLinks !== isEmbedLink
         ? undefined
         : convertLink(normalizeOptionalProperties<ConvertLinkParams>({
           app,
           isEmptyEmbedAliasAllowed,
-          link,
           linkPathStyle,
           linkStyle: linkStyleProvider?.(link) ?? linkStyle,
           newSourcePathOrFile,
           oldSourcePathOrFile,
+          reference: link,
           shouldEscapeAlias,
           shouldIncludeAttachmentExtensionToEmbedAlias,
           shouldUpdateFileNameAlias,
@@ -2475,8 +2476,7 @@ export async function updateLinksInContent(params: UpdateLinksInContentParams): 
           shouldUseLeadingSlashForAbsolutePaths
         }));
     },
-    offsetRange,
-    shouldSkipLinksInHeadings
+    shouldSkipReferencesInHeadings
   }));
 }
 
@@ -2486,7 +2486,7 @@ export async function updateLinksInContent(params: UpdateLinksInContentParams): 
  * @param params - The parameters for updating the links.
  * @returns A {@link Promise} that resolves when the links are updated.
  */
-export async function updateLinksInFile(params: UpdateLinksInFileParams): Promise<void> {
+export async function updateReferencesInFile(params: UpdateReferencesInFileParams): Promise<void> {
   const {
     app,
     isEmptyEmbedAliasAllowed,
@@ -2498,7 +2498,7 @@ export async function updateLinksInFile(params: UpdateLinksInFileParams): Promis
     oldSourcePathOrFile,
     shouldEscapeAlias,
     shouldIncludeAttachmentExtensionToEmbedAlias,
-    shouldSkipLinksInHeadings,
+    shouldSkipReferencesInHeadings,
     shouldUpdateEmbedOnlyLinks,
     shouldUpdateFileNameAlias,
     shouldUseAngleBrackets,
@@ -2510,20 +2510,23 @@ export async function updateLinksInFile(params: UpdateLinksInFileParams): Promis
     return;
   }
 
-  await editLinks(normalizeOptionalProperties<EditLinksParams>({
+  await editReferences(normalizeOptionalProperties<EditReferencesParams>({
     ...params,
-    linkConverter: (link) => {
+    // Named beside the `...params` spread, so a later refactor to explicit forwarding cannot drop it silently.
+    offsetRange,
+    pathOrFile: newSourcePathOrFile,
+    referenceConverter: (link) => {
       const isEmbedLink = hasEmbedSyntax(getReferenceLinkText(link));
       return shouldUpdateEmbedOnlyLinks !== undefined && shouldUpdateEmbedOnlyLinks !== isEmbedLink
         ? undefined
         : convertLink(normalizeOptionalProperties<ConvertLinkParams>({
           app,
           isEmptyEmbedAliasAllowed,
-          link,
           linkPathStyle,
           linkStyle: linkStyleProvider?.(link) ?? linkStyle,
           newSourcePathOrFile,
           oldSourcePathOrFile,
+          reference: link,
           shouldEscapeAlias,
           shouldIncludeAttachmentExtensionToEmbedAlias,
           shouldUpdateFileNameAlias,
@@ -2532,14 +2535,11 @@ export async function updateLinksInFile(params: UpdateLinksInFileParams): Promis
           shouldUseLeadingSlashForAbsolutePaths
         }));
     },
-    // Named beside the `...params` spread, so a later refactor to explicit forwarding cannot drop it silently.
-    offsetRange,
-    pathOrFile: newSourcePathOrFile,
-    shouldSkipLinksInHeadings
+    shouldSkipReferencesInHeadings
   }));
 }
 
-function defaultLinkIdentityKeyProvider(link: Reference): string {
+function defaultReferenceIdentityKeyProvider(link: Reference): string {
   return JSON.stringify(link);
 }
 
@@ -2665,12 +2665,12 @@ async function getFileChanges(params: GetFileChangesParams): Promise<FileChange[
   const {
     cache,
     isCanvasFileCache,
-    linkConverter,
     offsetRange,
+    referenceConverter,
     shouldIncludeExternalLinks = false,
     shouldIncludeFrontmatterExternalLinks = false,
     shouldIncludeMultiValueFrontmatterExternalLinks = false,
-    shouldSkipLinksInHeadings = false
+    shouldSkipReferencesInHeadings = false
   } = params;
   let { abortSignal } = params;
   abortSignal ??= abortSignalNever();
@@ -2689,7 +2689,7 @@ async function getFileChanges(params: GetFileChangesParams): Promise<FileChange[
 
   const getFileChangesDebugger = getObsidianLibDebugger('Link:getFileChanges');
 
-  for (const link of getLinks({ cache, shouldIncludeExternalLinks, shouldIncludeFrontmatterExternalLinks, shouldIncludeMultiValueFrontmatterExternalLinks })) {
+  for (const link of getReferences({ cache, shouldIncludeExternalLinks, shouldIncludeFrontmatterExternalLinks, shouldIncludeMultiValueFrontmatterExternalLinks })) {
     abortSignal.throwIfAborted();
 
     if (offsetRange !== undefined && !isReferenceInOffsetRange(link, offsetRange)) {
@@ -2702,12 +2702,12 @@ async function getFileChanges(params: GetFileChangesParams): Promise<FileChange[
       continue;
     }
 
-    if (shouldSkipLinksInHeadings && isReferenceInHeading(link, cache)) {
+    if (shouldSkipReferencesInHeadings && isReferenceInHeading(link, cache)) {
       getFileChangesDebugger('Skipping a link inside a heading', { link: link.original });
       continue;
     }
 
-    const newContent = await linkConverter(link, abortSignal);
+    const newContent = await referenceConverter(link, abortSignal);
     abortSignal.throwIfAborted();
     if (newContent === undefined) {
       continue;
@@ -2864,19 +2864,19 @@ function resolveFinalLinkPathStyleFromObsidianSettings(app: App): FinalLinkPathS
   }
 }
 
-function resolveSnapshotLinkIdentityKeyProvider(params: ResolveSnapshotLinkIdentityKeyProviderParams): (link: Reference) => string {
-  const { callerName, explicitLinkIdentityKeyProvider, snapshot } = params;
-  const recordedLinkIdentityKeyProvider = snapshotLinkIdentityKeyProviders.get(snapshot);
+function resolveSnapshotReferenceIdentityKeyProvider(params: ResolveSnapshotReferenceIdentityKeyProviderParams): (link: Reference) => string {
+  const { callerName, explicitReferenceIdentityKeyProvider, snapshot } = params;
+  const recordedReferenceIdentityKeyProvider = snapshotReferenceIdentityKeyProviders.get(snapshot);
   if (
-    explicitLinkIdentityKeyProvider && recordedLinkIdentityKeyProvider
-    && explicitLinkIdentityKeyProvider !== recordedLinkIdentityKeyProvider
+    explicitReferenceIdentityKeyProvider && recordedReferenceIdentityKeyProvider
+    && explicitReferenceIdentityKeyProvider !== recordedReferenceIdentityKeyProvider
   ) {
     throw new Error(
-      `${callerName} was passed a linkIdentityKeyProvider that differs from the one the snapshot was built with. `
+      `${callerName} was passed a referenceIdentityKeyProvider that differs from the one the snapshot was built with. `
         + 'The snapshot is keyed by the other, so no link would match. Omit the parameter to use the snapshot\'s own.'
     );
   }
-  return explicitLinkIdentityKeyProvider ?? recordedLinkIdentityKeyProvider ?? defaultLinkIdentityKeyProvider;
+  return explicitReferenceIdentityKeyProvider ?? recordedReferenceIdentityKeyProvider ?? defaultReferenceIdentityKeyProvider;
 }
 
 function shouldEscapeWikilinkDivider(fileChange: FileChange, tablePositions: TablePosition[]): boolean {
