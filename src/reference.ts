@@ -7,7 +7,6 @@
 import type {
   CachedMetadata,
   FrontmatterLinkCache,
-  Pos,
   Reference
 } from 'obsidian';
 
@@ -19,6 +18,10 @@ import {
 import type { FileChange } from './file-change.ts';
 
 import { isFrontmatterLinkCacheWithOffsets } from './frontmatter-link-cache-with-offsets.ts';
+import {
+  isPositionInOffsetRange,
+  isPositionInsideAnyOf
+} from './position.ts';
 
 /**
  * A reference within a file node in a canvas.
@@ -152,12 +155,10 @@ export function isReferenceInHeading(reference: Reference, cache: CachedMetadata
     return false;
   }
 
-  const headingPositions: Pos[] = [
-    ...(cache.headings ?? []).map((heading) => heading.position),
-    ...(cache.sections ?? []).filter((section) => section.type === 'heading').map((section) => section.position)
-  ];
-
-  return headingPositions.some((position) => position.start.offset <= reference.position.start.offset && reference.position.end.offset <= position.end.offset);
+  return isPositionInsideAnyOf(reference.position, [
+    ...cache.headings ?? [],
+    ...(cache.sections ?? []).filter((section) => section.type === 'heading')
+  ]);
 }
 
 /**
@@ -177,7 +178,7 @@ export function isReferenceInHeading(reference: Reference, cache: CachedMetadata
  * @returns Whether the reference is fully contained within the offset range.
  */
 export function isReferenceInOffsetRange(reference: Reference, offsetRange: OffsetRange): boolean {
-  return isReferenceCache(reference) && offsetRange.startOffset <= reference.position.start.offset && reference.position.end.offset <= offsetRange.endOffset;
+  return isReferenceCache(reference) && isPositionInOffsetRange(reference.position, offsetRange);
 }
 
 /**
