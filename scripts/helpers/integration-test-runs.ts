@@ -9,6 +9,11 @@
  * bulk run's processor budget of two, four live Obsidian instances beside the test workers was the failure measured
  * on 2026-10-27, while the same suites passed one project at a time. Separate invocations keep at most one instance
  * alive at once and lose no parallelism, because the group orders already ran those projects one after another.
+ *
+ * The worker cap reaches each invocation as a `--maxWorkers` flag, never as Vitest's own `VITEST_MAX_WORKERS`. Vitest
+ * applies that variable AFTER `fileParallelism: false` has clamped a project to one worker, so `VITEST_MAX_WORKERS=2` ran
+ * two files at once in the one shared Obsidian instance: their workspaces, focus and keystrokes collided, and a release
+ * preflight failed a different set of UI tests each run. The flag is clamped per project, so it stays safe.
  */
 
 /**
@@ -55,20 +60,32 @@ export interface SelectIntegrationTestProjectsParams {
  * Builds the arguments of one vitest invocation for one integration project.
  *
  * `--passWithNoTests` keeps a project with no files (today `integration-tests`) from failing on its own, which the
- * combined invocation never did. When a bulk budget is set and Vitest's own `VITEST_MAX_WORKERS` is not, the budget
- * caps the workers too.
+ * combined invocation never did. Vitest's own `VITEST_MAX_WORKERS`, or failing that a bulk budget, caps the workers
+ * through `--maxWorkers`; {@link buildIntegrationTestVitestEnv} keeps the variable itself from reaching Vitest.
  *
  * @param params - The {@link BuildIntegrationTestVitestArgumentsParams}.
  * @returns The arguments after `vitest`.
  */
 export function buildIntegrationTestVitestArguments(params: BuildIntegrationTestVitestArgumentsParams): string[] {
   const vitestArguments = ['run', `--project=${params.projectName}`, '--passWithNoTests'];
-  const maxWorkers = getBulkCores(params.env);
-  const vitestMaxWorkers = params.env[VITEST_MAX_WORKERS_ENV_VARIABLE] ?? '';
-  if (maxWorkers !== null && vitestMaxWorkers === '') {
+  const maxWorkers = parsePositiveInteger(params.env[VITEST_MAX_WORKERS_ENV_VARIABLE]) ?? getBulkCores(params.env);
+  if (maxWorkers !== null) {
     vitestArguments.push(`--maxWorkers=${String(maxWorkers)}`);
   }
   return vitestArguments;
+}
+
+/**
+ * Builds the environment overrides of one vitest invocation for one integration project.
+ *
+ * It blanks `VITEST_MAX_WORKERS`, which Vitest reads only when non-empty: set, it overrides every project's
+ * `fileParallelism: false` and runs files of the shared Obsidian instance concurrently. Its value travels as the
+ * `--maxWorkers` flag {@link buildIntegrationTestVitestArguments} adds instead.
+ *
+ * @returns The variables to merge over the inherited environment.
+ */
+export function buildIntegrationTestVitestEnv(): Record<string, string> {
+  return { [VITEST_MAX_WORKERS_ENV_VARIABLE]: '' };
 }
 
 /**
@@ -78,12 +95,7 @@ export function buildIntegrationTestVitestArguments(params: BuildIntegrationTest
  * @returns The budget, or `null` when it is unset or not a positive integer.
  */
 export function getBulkCores(env: Readonly<Record<string, string | undefined>>): null | number {
-  const value = env[BULK_CORES_ENV_VARIABLE]?.trim() ?? '';
-  if (!/^\d+$/.test(value)) {
-    return null;
-  }
-  const bulkCores = Number(value);
-  return bulkCores > 0 ? bulkCores : null;
+  return parsePositiveInteger(env[BULK_CORES_ENV_VARIABLE]);
 }
 
 /**
@@ -130,4 +142,13 @@ export function selectIntegrationTestProjects(params: SelectIntegrationTestProje
 
 function isRequestedProject(name: string, requestedProject: string): boolean {
   return name === requestedProject || name.startsWith(`${requestedProject}:`);
+}
+
+function parsePositiveInteger(rawValue: string | undefined): null | number {
+  const value = rawValue?.trim() ?? '';
+  if (!/^\d+$/.test(value)) {
+    return null;
+  }
+  const parsed = Number(value);
+  return parsed > 0 ? parsed : null;
 }
