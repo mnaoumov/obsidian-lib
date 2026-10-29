@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 10.2.0
+
+- feat(attachment-path): let folder-only callers skip the generated attachment name
+- build(deps): bump typescript-dev-toolkit to ^5.2.0 and apply prefer-dedent
+
 ## 10.1.1
 
 - fix(link): stop reporting bare URLs in code and wrapping bare file: URLs as empty links
