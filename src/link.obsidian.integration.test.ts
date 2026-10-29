@@ -283,7 +283,7 @@ describe('offset range', () => {
           app,
           content,
           offsetRange: { endOffset: 19, startOffset: 10 },
-          referenceConverter: (link) => `[[new-${link.link}]]`
+          referenceConverter: (reference) => `[[new-${reference.link}]]`
         });
         return { result: edited };
       }
@@ -325,7 +325,7 @@ describe('offset range', () => {
             offsetRange: { endOffset: selectedEndOffset, startOffset: selectedStartOffset },
             pathOrFile: file,
             pluginNoticeComponent: null,
-            referenceConverter: (link) => `[[new-${link.link}]]`,
+            referenceConverter: (reference) => `[[new-${reference.link}]]`,
             resourceLockComponent: null,
             timeoutInMilliseconds: 10_000
           });

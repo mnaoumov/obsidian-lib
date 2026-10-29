@@ -216,11 +216,11 @@ describe('getIndexedBacklinksForFile', () => {
       if (path.endsWith('.png')) {
         continue;
       }
-      const links: ReferenceCache[] = [];
+      const references: ReferenceCache[] = [];
       for (let index = 0; index < LINKS_PER_NOTE; index++) {
-        links.push(link(linkTargets[random(linkTargets.length)] ?? ''));
+        references.push(link(linkTargets[random(linkTargets.length)] ?? ''));
       }
-      vault.setNote(path, { embeds: [link('image.png')], frontmatterLinks: [{ key: 'up', link: 'Alpha', original: 'Alpha' }], links });
+      vault.setNote(path, { embeds: [link('image.png')], frontmatterLinks: [{ key: 'up', link: 'Alpha', original: 'Alpha' }], links: references });
     }
     vault.canvasReferences.push({ reference: link('beta'), sourcePath: 'board.canvas' }, { reference: link('a/b/Epsilon'), sourcePath: 'board.canvas' });
 

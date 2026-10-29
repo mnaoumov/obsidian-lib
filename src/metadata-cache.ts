@@ -486,36 +486,36 @@ export async function getBacklinksForFileSafe(params: GetBacklinksForFileSafePar
         if (!content) {
           return false;
         }
-        const links = backlinks.get(notePath);
-        if (!links) {
+        const references = backlinks.get(notePath);
+        if (!references) {
           return false;
         }
 
         // Parsed only when a frontmatter link needs it: a note whose YAML does not parse still holds body links,
         // and `null` marks a parse that failed, so its frontmatter links are skipped rather than retried forever.
         let frontmatter: CombinedFrontmatter<unknown> | null | undefined;
-        for (const link of links) {
+        for (const reference of references) {
           let actualLink: string;
-          if (isReferenceCache(link)) {
-            actualLink = content.slice(link.position.start.offset, link.position.end.offset);
-          } else if (isFrontmatterLinkCache(link)) {
+          if (isReferenceCache(reference)) {
+            actualLink = content.slice(reference.position.start.offset, reference.position.end.offset);
+          } else if (isFrontmatterLinkCache(reference)) {
             if (frontmatter === undefined) {
               frontmatter = parseFrontmatterOrNull(content, notePath);
             }
             if (frontmatter === null) {
               continue;
             }
-            const propertyValue = getNestedPropertyValue(frontmatter, link.key);
+            const propertyValue = getNestedPropertyValue(frontmatter, reference.key);
             if (typeof propertyValue !== 'string') {
               return false;
             }
 
-            const linkWithOffsets = toFrontmatterLinkCacheWithOffsets(link);
+            const linkWithOffsets = toFrontmatterLinkCacheWithOffsets(reference);
             actualLink = propertyValue.slice(linkWithOffsets.startOffset, linkWithOffsets.endOffset);
           } else {
             continue;
           }
-          if (actualLink !== getReferenceLinkText(link)) {
+          if (actualLink !== getReferenceLinkText(reference)) {
             return false;
           }
         }
@@ -626,7 +626,7 @@ export function getReferences(params: GetReferencesParams): Reference[] {
     shouldIncludeMultiValueFrontmatterLinks = false
   } = params;
 
-  let links: Reference[] = [
+  let references: Reference[] = [
     ...(shouldIncludeLinks ? cache.links ?? [] : []),
     ...(shouldIncludeEmbeds ? cache.embeds ?? [] : []),
     ...(shouldIncludeFrontmatterLinks ? cache.frontmatterLinks ?? [] : [])
@@ -668,34 +668,34 @@ export function getReferences(params: GetReferencesParams): Reference[] {
       throw new Error(`Cannot include ${featureLinkSelector.description}: the cache was not computed with the ${featureLinkSelector.feature} feature.`);
     }
 
-    links.push(...ensureNonNullable(featureLinkSelector.select(cache)));
+    references.push(...ensureNonNullable(featureLinkSelector.select(cache)));
   }
 
-  sortReferences(links);
+  sortReferences(references);
 
   // BUG: https://forum.obsidian.md/t/bug-duplicated-links-in-metadatacache-inside-footnotes/85551
-  links = links.filter((link, index) => {
+  references = references.filter((reference, index) => {
     if (index === 0) {
       return true;
     }
 
-    const previousLink = ensureNonNullable(links[index - 1]);
+    const previousReference = ensureNonNullable(references[index - 1]);
 
-    if (isReferenceCache(link) && isReferenceCache(previousLink)) {
-      return link.position.start.offset !== previousLink.position.start.offset;
+    if (isReferenceCache(reference) && isReferenceCache(previousReference)) {
+      return reference.position.start.offset !== previousReference.position.start.offset;
     }
 
-    if (isFrontmatterLinkCache(link) && isFrontmatterLinkCache(previousLink)) {
-      const linkStartOffset = isFrontmatterLinkCacheWithOffsets(link) ? link.startOffset : 0;
-      const previousLinkStartOffset = isFrontmatterLinkCacheWithOffsets(previousLink) ? previousLink.startOffset : 0;
-      return link.key !== previousLink.key || isFrontmatterLinkCacheWithOffsets(link) !== isFrontmatterLinkCacheWithOffsets(previousLink)
+    if (isFrontmatterLinkCache(reference) && isFrontmatterLinkCache(previousReference)) {
+      const linkStartOffset = isFrontmatterLinkCacheWithOffsets(reference) ? reference.startOffset : 0;
+      const previousLinkStartOffset = isFrontmatterLinkCacheWithOffsets(previousReference) ? previousReference.startOffset : 0;
+      return reference.key !== previousReference.key || isFrontmatterLinkCacheWithOffsets(reference) !== isFrontmatterLinkCacheWithOffsets(previousReference)
         || linkStartOffset !== previousLinkStartOffset;
     }
 
     return true;
   });
 
-  return links;
+  return references;
 }
 
 /**
