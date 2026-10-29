@@ -4,6 +4,7 @@ import {
   getMandatoryNamedGroup,
   getOptionalNamedGroup
 } from '@mnaoumov/typescript-lib/reg-exp';
+import dedent from 'dedent';
 import {
   describe,
   expect,
@@ -34,32 +35,66 @@ describe('createCodeBlockRegExp', () => {
   });
 
   it('matches a basic fenced code block', () => {
-    expect(parseCodeBlocks(['```js', 'a', 'b', '```'].join('\n'))).toEqual([
+    expect(parseCodeBlocks(dedent`
+      \`\`\`js
+      a
+      b
+      \`\`\`
+    `)).toEqual([
       { content: 'a\nb', language: 'js' }
     ]);
   });
 
   it('captures the language and content of a code-button block', () => {
-    const note = ['```code-button', '---', 'shouldAutoRun: true', '---', 'console.log("hello");', '```'].join('\n');
+    const note = dedent`
+      \`\`\`code-button
+      ---
+      shouldAutoRun: true
+      ---
+      console.log("hello");
+      \`\`\`
+    `;
     expect(parseCodeBlocks(note)).toEqual([
       { content: '---\nshouldAutoRun: true\n---\nconsole.log("hello");', language: 'code-button' }
     ]);
   });
 
   it('matches blocks nested in callouts at any depth', () => {
-    expect(parseCodeBlocks(['> ```js', '> a', '> b', '> ```'].join('\n'))).toEqual([
+    expect(parseCodeBlocks(dedent`
+      > \`\`\`js
+      > a
+      > b
+      > \`\`\`
+    `)).toEqual([
       { content: '> a\n> b', language: 'js' }
     ]);
-    expect(parseCodeBlocks(['> > ```js', '> > a', '> > ```'].join('\n'))).toEqual([
+    expect(parseCodeBlocks(dedent`
+      > > \`\`\`js
+      > > a
+      > > \`\`\`
+    `)).toEqual([
       { content: '> > a', language: 'js' }
     ]);
-    expect(parseCodeBlocks(['> > > ```js', '> > > a', '> > > ```'].join('\n'))).toEqual([
+    expect(parseCodeBlocks(dedent`
+      > > > \`\`\`js
+      > > > a
+      > > > \`\`\`
+    `)).toEqual([
       { content: '> > > a', language: 'js' }
     ]);
   });
 
   it('keeps the match index of a block at offset 0 and of one in mid-text', () => {
-    const text = ['```js', 'a', '```', 'text', '> ```ts', '> b', '> ```', 'tail'].join('\n');
+    const text = dedent`
+      \`\`\`js
+      a
+      \`\`\`
+      text
+      > \`\`\`ts
+      > b
+      > \`\`\`
+      tail
+    `;
     const matches = [...text.matchAll(createCodeBlockRegExp())];
     expect(matches.map((match) => [match.index, match[0]])).toEqual([
       [0, '```js\na\n```'],
@@ -68,7 +103,11 @@ describe('createCodeBlockRegExp', () => {
   });
 
   it('starts a block only at the start of a line', () => {
-    expect(parseCodeBlocks(['text ```js', 'a', '```'].join('\n'))).toEqual([]);
+    expect(parseCodeBlocks(dedent`
+      text \`\`\`js
+      a
+      \`\`\`
+    `)).toEqual([]);
   });
 
   it('does not end a block at a closing fence followed by a carriage return', () => {
@@ -76,13 +115,20 @@ describe('createCodeBlockRegExp', () => {
   });
 
   it('matches tilde fences', () => {
-    expect(parseCodeBlocks(['~~~js', 'a', '~~~'].join('\n'))).toEqual([
+    expect(parseCodeBlocks(dedent`
+      ~~~js
+      a
+      ~~~
+    `)).toEqual([
       { content: 'a', language: 'js' }
     ]);
   });
 
   it('treats adjacent fences as a block with no content', () => {
-    expect(parseCodeBlocks(['```', '```'].join('\n'))).toEqual([
+    expect(parseCodeBlocks(dedent`
+      \`\`\`
+      \`\`\`
+    `)).toEqual([
       { content: null, language: '' }
     ]);
   });
@@ -95,22 +141,22 @@ describe('createCodeBlockRegExp', () => {
     const LINE_COUNT = 40;
 
     it('terminates on the issue #56 reproduction (empty code block + unterminated trailing text)', () => {
-      const note = [
-        '```code-button',
-        '---',
-        'shouldAutoRun: true',
-        '---',
-        'console.log("hello");',
-        '```',
-        '',
-        '```',
-        '',
-        '```',
-        '',
-        'some text',
-        'some text',
-        'some text'
-      ].join('\n');
+      const note = dedent`
+        \`\`\`code-button
+        ---
+        shouldAutoRun: true
+        ---
+        console.log("hello");
+        \`\`\`
+
+        \`\`\`
+
+        \`\`\`
+
+        some text
+        some text
+        some text
+      `;
       const blocks = parseCodeBlocks(note);
       expect(blocks[0]).toEqual({ content: '---\nshouldAutoRun: true\n---\nconsole.log("hello");', language: 'code-button' });
     });
@@ -128,11 +174,22 @@ describe('createCodeBlockRegExp', () => {
 
   describe('invalid syntax', () => {
     it('returns no match for an unterminated fence', () => {
-      expect(parseCodeBlocks(['```js', 'a', 'b', 'c'].join('\n'))).toEqual([]);
+      expect(parseCodeBlocks(dedent`
+        \`\`\`js
+        a
+        b
+        c
+      `)).toEqual([]);
     });
 
     it('returns no match for an unterminated code-button block', () => {
-      const note = ['```code-button', '---', 'shouldAutoRun: true', '---', 'console.log("hello");'].join('\n');
+      const note = dedent`
+        \`\`\`code-button
+        ---
+        shouldAutoRun: true
+        ---
+        console.log("hello");
+      `;
       expect(parseCodeBlocks(note)).toEqual([]);
     });
   });
