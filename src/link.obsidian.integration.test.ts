@@ -18,6 +18,7 @@
 
 // cspell:ignoreRegExp /%[0-9A-F]{2}/g
 
+import dedent from 'dedent';
 import { evalInObsidian } from 'obsidian-integration-testing';
 import {
   describe,
@@ -143,6 +144,7 @@ describe('links inside headings', () => {
         const notePath = 'heading-links.md';
         const inboundPath = 'heading-links-inbound.md';
         const targetPath = 'Target.md';
+        // eslint-disable-next-line typescript-dev-toolkit/prefer-dedent -- This callback is serialized into Obsidian, where the dedent import is not in scope.
         const content = [
           '## [[Target]] wikilink heading',
           '',
@@ -214,19 +216,18 @@ describe('links inside headings', () => {
   it('should leave ATX and Setext heading links unchanged and keep both subpaths resolving', async () => {
     const result = await convertNote(true);
 
-    expect(result.diskAfterEdit).toBe([
-      '## [[Target]] wikilink heading',
-      '',
-      '[to heading](#Target%20wikilink%20heading)',
-      '',
-      'Setext [[Target|alias]] heading',
-      '===',
-      '',
-      '![Target](Target.md)',
-      '',
-      'Body [Target](Target.md)',
-      ''
-    ].join('\n'));
+    expect(result.diskAfterEdit).toBe(dedent`
+      ## [[Target]] wikilink heading
+
+      [to heading](#Target%20wikilink%20heading)
+
+      Setext [[Target|alias]] heading
+      ===
+
+      ![Target](Target.md)
+
+      Body [Target](Target.md)\n
+    `);
     expect(result.headingsAfter).toEqual(result.headingsBefore);
     // The metadata keeps the heading's raw text, link markup included; only the subpath match strips it.
     expect(result.localResolvedHeading).toBe('[[Target]] wikilink heading');
