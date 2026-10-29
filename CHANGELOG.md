@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 10.1.0
+
+- feat(link): let callers exclude chosen links from the reference-editing passes (<https://github.com/mnaoumov/obsidian-better-markdown-links/issues/45>)
+- chore(scripts): forward CLI arguments from the test scripts to vitest
+- fix(resource-lock): match ResourceLockedError thrown by any library copy
+
 ## 10.0.0
 
 - refactor!: rename isPositionInsideAnyOf to isPositionInsideSome
