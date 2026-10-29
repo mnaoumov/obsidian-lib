@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 10.0.0
+
+- refactor!: rename isPositionInsideAnyOf to isPositionInsideSome
+- refactor: name Reference-typed locals and parameters reference
+
 ## 9.0.0
 
 - refactor!: name the Reference-typed API after Reference
