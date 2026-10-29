@@ -36,6 +36,7 @@ import type {
 } from './components/plugin-notice-component.ts';
 import type { LoopBuildNoticeMessageParams } from './loop.ts';
 
+import { registerBulkOperationProgressListener } from './bulk-operation-progress.ts';
 import { PluginNoticeComponent } from './components/plugin-notice-component.ts';
 import { getObsidianLibDebugger } from './debug.ts';
 import { appendCodeBlock } from './html-element.ts';
@@ -159,6 +160,21 @@ describe('loop', () => {
     expect(fake.dispose).toHaveBeenCalledTimes(1);
   });
 
+  it('should report bulk operation progress after each item', async () => {
+    const progressListener = vi.fn();
+    const unregister = registerBulkOperationProgressListener(progressListener);
+    const fake = createFakePluginNoticeComponent();
+
+    await loop({
+      buildNoticeMessage: vi.fn(),
+      items: ['a', 'b'],
+      pluginNoticeComponent: fake.pluginNoticeComponent,
+      processItem: vi.fn()
+    });
+    unregister();
+
+    expect(progressListener).toHaveBeenCalledTimes(2);
+  });
   it('should call processItem for each item', async () => {
     const processItem = vi.fn();
     const items = ['a', 'b', 'c'];

@@ -16,6 +16,15 @@ export const en = {
       terminateOperation: 'You can terminate the operation by clicking the button below, but be aware it might leave the vault in an inconsistent state.',
       timedOut: 'The operation timed out after {{duration, number}} milliseconds.'
     },
+    bulkOperation: {
+      noOperations: 'No bulk operation of this plugin was found in the vault repository.',
+      notActive: 'Bulk operation commits are off, or the vault is not in a git repository.',
+      recoveredInterrupted: 'A bulk operation was interrupted. Its changes were committed as {{operationId}} interrupted.',
+      revertConflict: 'Reverting {{operationId}} stopped on a conflict. The vault repository is left mid-revert: resolve the conflicts, then run git revert --continue, or git revert --abort to give up.',
+      reverted: 'Reverted {{operationId}}.',
+      revertFailed: 'Failed to revert {{operationId}}: {{error}}',
+      selectOperation: 'Select a bulk operation to undo'
+    },
     buttons: {
       cancel: 'Cancel',
       ok: 'OK'

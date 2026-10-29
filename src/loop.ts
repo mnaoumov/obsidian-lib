@@ -18,6 +18,7 @@ import { noop } from '@mnaoumov/typescript-lib/function';
 
 import type { PluginNoticeComponent } from './components/plugin-notice-component.ts';
 
+import { reportBulkOperationProgress } from './bulk-operation-progress.ts';
 import { getObsidianLibDebugger } from './debug.ts';
 import { appendTextOrFragmentClone } from './html-element.ts';
 import { addPluginCssClasses } from './plugin/plugin-context.ts';
@@ -229,6 +230,7 @@ export async function loop<T>(params: LoopParams<T>): Promise<void> {
         );
       }
       progressBarEl.value++;
+      reportBulkOperationProgress();
     }
     if (isNoticeShown) {
       await noticeMinTimeoutPromise;
