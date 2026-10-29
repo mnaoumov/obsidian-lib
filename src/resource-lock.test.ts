@@ -1278,6 +1278,30 @@ describe('ResourceLockedError', () => {
     expect(error.path).toBe('folder/note.md');
     expect(error.message).toContain('folder/note.md');
   });
+
+  it('should match an error thrown by another copy of the library', () => {
+    // Another copy's class: a different constructor carrying the same name and path.
+    class ForeignResourceLockedError extends Error {
+      public override readonly name = 'ResourceLockedError';
+      public readonly path = 'folder/note.md';
+    }
+    expect(new ForeignResourceLockedError()).toBeInstanceOf(ResourceLockedError);
+  });
+
+  it('should not match an error without the name or the path', () => {
+    const misnamed = Object.assign(new Error('x'), { path: 'folder/note.md' });
+    const pathless = { message: 'x', name: 'ResourceLockedError' };
+    expect(misnamed).not.toBeInstanceOf(ResourceLockedError);
+    expect(pathless).not.toBeInstanceOf(ResourceLockedError);
+    expect(null).not.toBeInstanceOf(ResourceLockedError);
+    expect('ResourceLockedError').not.toBeInstanceOf(ResourceLockedError);
+  });
+
+  it('should keep the prototype check for a subclass', () => {
+    class SubclassedResourceLockedError extends ResourceLockedError {}
+    expect(new SubclassedResourceLockedError('folder/note.md')).toBeInstanceOf(SubclassedResourceLockedError);
+    expect(new ResourceLockedError('folder/note.md')).not.toBeInstanceOf(SubclassedResourceLockedError);
+  });
 });
 
 describe('mutation blocker', () => {

@@ -75,6 +75,8 @@ import {
 } from './vault.ts';
 
 const RESOURCE_LOCK_STATE_KEY = 'resourceLock';
+// A cross-copy wire name: `ResourceLockedError`'s `instanceof` matches on it, so it never changes.
+const RESOURCE_LOCKED_ERROR_NAME = 'ResourceLockedError';
 const LOCK_ICON_ID = 'lock';
 const LOCK_INDICATOR_CSS_CLASS = 'obsidian-lib-lock-indicator';
 const LOCK_INDICATOR_FLASH_CSS_CLASS = 'obsidian-lib-lock-indicator-flash';
@@ -1262,6 +1264,11 @@ export class ResourceLockComponent extends ComponentEx {
  * Thrown by the vault-mutation blocker when a plugin tries to edit, delete, rename, move, or create a
  * resource whose path is covered by a lock taken with
  * {@link ResourceLockComponentLockForPathParams.shouldBlockMutations}.
+ *
+ * `instanceof ResourceLockedError` is structural: it matches any error named `ResourceLockedError` that carries a
+ * string `path`, whichever copy of this library threw it. The blocker belongs to the realm-wide lock manager in the
+ * shared-state bag, and that manager is built by whichever copy of the library touched it first, so the error a
+ * plugin catches is often another plugin's class.
  */
 export class ResourceLockedError extends Error {
   /**
@@ -1276,8 +1283,27 @@ export class ResourceLockedError extends Error {
    */
   public constructor(path: string) {
     super(`The resource "${path}" is locked and cannot be mutated.`);
-    this.name = 'ResourceLockedError';
+    this.name = RESOURCE_LOCKED_ERROR_NAME;
     this.path = path;
+  }
+
+  /**
+   * Matches a {@link ResourceLockedError} thrown by any copy of this library, by its `name` and `path`.
+   * A subclass keeps the ordinary prototype check.
+   *
+   * @param instance - The value on the left of `instanceof`.
+   * @returns `true` if the value is a resource-locked error.
+   */
+  public static override [Symbol.hasInstance](instance: unknown): boolean {
+    // eslint-disable-next-line unicorn/class-reference-in-static-methods -- Telling this class from a subclass is the point of the comparison.
+    if (this !== ResourceLockedError) {
+      return Function.prototype[Symbol.hasInstance].call(this, instance);
+    }
+    if (typeof instance !== 'object' || instance === null) {
+      return false;
+    }
+    const candidate = instance as Partial<Record<'name' | 'path', unknown>>;
+    return candidate.name === RESOURCE_LOCKED_ERROR_NAME && typeof candidate.path === 'string';
   }
 }
 
