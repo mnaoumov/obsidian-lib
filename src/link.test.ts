@@ -1659,6 +1659,35 @@ describe('app-dependent functions', () => {
       expect(capturedChanges[0]?.newContent).toBe('file:///F:/d.txt');
     });
 
+    it('should keep a bare file:// url in the body bare, changing only its slashes', async () => {
+      const content = String.raw`see file:///C:/x and file:///F:\a%20b\c.txt here`;
+      const externalLinks = parseLinks(content)
+        .filter((parseLinkResult) => parseLinkResult.isExternal)
+        .map((parseLinkResult) => toParseLinkReference({ content, parseLinkResult }));
+      vi.mocked(parseMetadata).mockResolvedValue(castTo<CachedMetadataEx>({
+        externalLinks,
+        features: [
+          CachedMetadataExFeature.Native,
+          CachedMetadataExFeature.ExternalLinks,
+          CachedMetadataExFeature.FrontmatterExternalLinks,
+          CachedMetadataExFeature.MultiValueFrontmatterExternalLinks
+        ],
+        frontmatterExternalLinks: [],
+        multiValueFrontmatterExternalLinks: []
+      }));
+
+      let capturedChanges: FileChange[] = [];
+      vi.mocked(applyContentChanges).mockImplementation(async ({ changesProvider, content: changedContent }) => {
+        if (typeof changesProvider === 'function') {
+          capturedChanges = await (changesProvider as () => Promise<FileChange[]>)();
+        }
+        return changedContent;
+      });
+
+      await updateFileUrlLinksInContent({ app, content });
+      expect(capturedChanges.map((change) => change.newContent)).toEqual(['file:///C:/x', 'file:///F:/a%20b/c.txt']);
+    });
+
     it('should convert each file:// link within a multi-link frontmatter value', async () => {
       const value = 'file:///F:%5Ca.txt file:///F:%5Cb.txt';
       const multiValueFrontmatterExternalLinks = parseFrontmatterLinks({ key: value }).multiValueFrontmatterExternalLinks;
