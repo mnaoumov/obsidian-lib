@@ -592,9 +592,12 @@ export interface EditReferencesInContentParams {
    *
    * Applied after the {@link isReferenceInHeading | heading} skip and the offset range.
    *
+   * `null` behaves like an absent key, so a predicate factory that returns `null` when nothing is excluded can be
+   * passed straight through.
+   *
    * @default `undefined`
    */
-  readonly shouldSkipReference?: (reference: Reference) => boolean;
+  readonly shouldSkipReference?: ((reference: Reference) => boolean) | null;
 
   /**
    * Whether to leave every link inside a heading unchanged: the converter is not called for it, so it stays
@@ -683,9 +686,12 @@ export interface EditReferencesParams extends EditReferencesOptions {
    *
    * Applied after the {@link isReferenceInHeading | heading} skip and the offset range.
    *
+   * `null` behaves like an absent key, so a predicate factory that returns `null` when nothing is excluded can be
+   * passed straight through.
+   *
    * @default `undefined`
    */
-  readonly shouldSkipReference?: (reference: Reference) => boolean;
+  readonly shouldSkipReference?: ((reference: Reference) => boolean) | null;
 
   /**
    * Whether to leave every link inside a heading unchanged: the converter is not called for it, so it stays
@@ -1047,9 +1053,12 @@ export interface UpdateFileUrlLinksInContentParams {
    *
    * Applied after the {@link isReferenceInHeading | heading} skip and the offset range.
    *
+   * `null` behaves like an absent key, so a predicate factory that returns `null` when nothing is excluded can be
+   * passed straight through.
+   *
    * @default `undefined`
    */
-  readonly shouldSkipReference?: (reference: Reference) => boolean;
+  readonly shouldSkipReference?: ((reference: Reference) => boolean) | null;
 
   /**
    * Whether to leave every link inside a heading unchanged. See
@@ -1109,9 +1118,12 @@ export interface UpdateFileUrlLinksInFileParams extends ProcessOptions {
    *
    * Applied after the {@link isReferenceInHeading | heading} skip and the offset range.
    *
+   * `null` behaves like an absent key, so a predicate factory that returns `null` when nothing is excluded can be
+   * passed straight through.
+   *
    * @default `undefined`
    */
-  readonly shouldSkipReference?: (reference: Reference) => boolean;
+  readonly shouldSkipReference?: ((reference: Reference) => boolean) | null;
 
   /**
    * Whether to leave every link inside a heading unchanged. See {@link EditReferencesParams.shouldSkipReferencesInHeadings}.
@@ -1366,9 +1378,12 @@ export interface UpdateReferencesInFileParams extends ProcessOptions {
    *
    * Applied after the {@link isReferenceInHeading | heading} skip and the offset range.
    *
+   * `null` behaves like an absent key, so a predicate factory that returns `null` when nothing is excluded can be
+   * passed straight through.
+   *
    * @default `undefined`
    */
-  readonly shouldSkipReference?: (reference: Reference) => boolean;
+  readonly shouldSkipReference?: ((reference: Reference) => boolean) | null;
 
   /**
    * Whether to leave every link inside a heading unchanged: it is neither converted nor restyled, so it
@@ -1567,9 +1582,12 @@ interface GetFileChangesParams {
    *
    * Applied after the {@link isReferenceInHeading | heading} skip and the offset range.
    *
+   * `null` behaves like an absent key, so a predicate factory that returns `null` when nothing is excluded can be
+   * passed straight through.
+   *
    * @default `undefined`
    */
-  readonly shouldSkipReference?: (reference: Reference) => boolean;
+  readonly shouldSkipReference?: ((reference: Reference) => boolean) | null;
 
   /**
    * Whether to leave every link inside a heading unchanged, without calling the converter for it.
@@ -1771,9 +1789,12 @@ interface UpdateReferencesInContentParams {
    *
    * Applied after the {@link isReferenceInHeading | heading} skip and the offset range.
    *
+   * `null` behaves like an absent key, so a predicate factory that returns `null` when nothing is excluded can be
+   * passed straight through.
+   *
    * @default `undefined`
    */
-  readonly shouldSkipReference?: (reference: Reference) => boolean;
+  readonly shouldSkipReference?: ((reference: Reference) => boolean) | null;
 
   /**
    * Whether to leave every link inside a heading unchanged: it is neither converted nor restyled, so it
