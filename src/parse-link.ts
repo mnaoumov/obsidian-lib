@@ -31,6 +31,12 @@ import { wikiLinkPlugin } from 'remark-wiki-link';
 import { visit } from 'unist-util-visit';
 
 /**
+ * Matches a bare `file:` URL worth reporting: one whose path starts with a slash, or with the backslash
+ * a Windows path written into it carries. A word such as `file:python3.py` is text, not a URL.
+ */
+const BARE_FILE_URL_REG_EXP = /^file:[/\\]/i;
+
+/**
  * Regular expression for special markdown link symbols.
  */
 const SPECIAL_MARKDOWN_LINK_SYMBOLS_REGEX = /[\\[\]<>_*~=`$]/g;
@@ -427,6 +433,21 @@ interface HasAngleBracketsInLinkParams {
 }
 
 /**
+ * A stretch of the parsed string {@link parseLinks} does not scan for bare URLs: a link, or code.
+ */
+interface SkippedTextRange {
+  /**
+   * The offset just past the stretch.
+   */
+  readonly endOffset: number;
+
+  /**
+   * The offset the stretch starts at.
+   */
+  readonly startOffset: number;
+}
+
+/**
  * Params for {@link widenToWholeValue}.
  */
 interface WidenToWholeValueParams {
@@ -606,6 +627,10 @@ export function parseLink($string: string, options?: ParseLinkOptions): null | P
  * `[alias](www.example.com)` is an internal link in Obsidian. A literal wrapped in `<...>` reports the
  * brackets as part of `raw`, so replacing `raw` leaves no stray bracket behind.
  *
+ * Code is never scanned: fenced and indented code blocks, a fence's info string and inline code hold no
+ * link in Obsidian. A bare `file:` URL is reported only when a slash or a backslash follows the scheme, so a
+ * word such as `file:python3.py` stays text.
+ *
  * @param $string - The string to parse the links in.
  * @param options - The parse options.
  * @returns The parsed links.
@@ -642,10 +667,21 @@ export function parseLinks($string: string, options?: ParseLinksOptions): ParseL
 
   const links: ParseLinkResult[] = [];
   const textLinks: ParseLinkResult[] = [];
+  const skippedRanges: SkippedTextRange[] = [];
 
   visit(root, (node: Node) => {
     let link: ParseLinkResult;
     switch (node.type) {
+      // Obsidian never links anything inside code, so its text, a fence's info string included, is not scanned for bare URLs.
+      case 'code':
+      case 'inlineCode': {
+        const position = ensureNonNullable(node.position);
+        skippedRanges.push({
+          endOffset: ensureNonNullable(position.end.offset),
+          startOffset: ensureNonNullable(position.start.offset)
+        });
+        return;
+      }
       case 'link': {
         link = parseLinkNode(node as Link, $string);
         break;
@@ -670,19 +706,24 @@ export function parseLinks($string: string, options?: ParseLinksOptions): ParseL
     links.push(link);
   });
 
-  links.sort((a, b) => a.startOffset - b.startOffset);
+  for (const link of links) {
+    skippedRanges.push({ endOffset: link.endOffset + 1, startOffset: link.startOffset });
+  }
+
+  skippedRanges.sort((a, b) => a.startOffset - b.startOffset);
 
   let textStartOffset = 0;
 
-  for (const link of links) {
+  for (const skippedRange of skippedRanges) {
     extractTextLinks({
       $string,
-      endOffset: link.startOffset - 1,
+      endOffset: skippedRange.startOffset - 1,
       shouldRecognizeWwwAutolinkLiterals,
       startOffset: textStartOffset,
       textLinks
     });
-    textStartOffset = link.endOffset + 1;
+    // A range nested in an earlier one, such as inline code in a link's alias, must not move the start back.
+    textStartOffset = Math.max(textStartOffset, skippedRange.endOffset);
   }
 
   extractTextLinks({
@@ -782,7 +823,7 @@ function extractTextLinks(params: ExtractTextLinksParams): void {
   replaceAll({
     $string: textPart,
     replacer: ({ capturedGroupArguments: [rawUrl = ''], offset }) => {
-      if (!isUrl(rawUrl)) {
+      if (!isUrl(rawUrl) || (isFileUrl(rawUrl) && !BARE_FILE_URL_REG_EXP.test(rawUrl))) {
         return;
       }
 

@@ -440,6 +440,36 @@ describe('parseLinks', () => {
     expect(fileUrl.raw).toBe('file:///F:%5Cd.txt');
   });
 
+  it('should not report a file: word in a code fence info string', () => {
+    expect(parseLinks('```python fold file:python3.py\nprint(1)\n```')).toEqual([]);
+  });
+
+  it('should not report a bare file:// url inside a fenced code block', () => {
+    expect(parseLinks('```\nfile:///C:/x\n```\nafter https://example.com')).toMatchObject([{ raw: 'https://example.com' }]);
+  });
+
+  it('should not report a bare url inside an indented code block', () => {
+    expect(parseLinks('text\n\n    file:///C:/x www.example.com\n')).toEqual([]);
+  });
+
+  it('should not report a bare url or www. literal inside inline code', () => {
+    expect(parseLinks('`file:///C:/x` and `www.example.com` but file:///D:/y')).toMatchObject([
+      { isFileUrl: true, raw: 'file:///D:/y', startOffset: 41 }
+    ]);
+  });
+
+  it('should not report inline code inside a link alias as a second link', () => {
+    expect(parseLinks('[`file:///C:/x`](https://example.com) next')).toMatchObject([{ url: 'https://example.com' }]);
+  });
+
+  it('should not report a bare file: word without a slash in prose', () => {
+    expect(parseLinks('use file:python3.py here')).toEqual([]);
+  });
+
+  it('should report a bare file: url with a backslash path', () => {
+    expect(parseLinks(String.raw`file:\\server\share`)).toMatchObject([{ isFileUrl: true }]);
+  });
+
   it('should return an empty array for text with no links', () => {
     const results = parseLinks('no links here');
     const nonExternal = results.filter((r) => !r.isExternal);
