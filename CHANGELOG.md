@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 10.3.0
+
+- feat(link): let shouldSkipReference accept null like an absent key
+
 ## 10.2.0
 
 - feat(attachment-path): let folder-only callers skip the generated attachment name
