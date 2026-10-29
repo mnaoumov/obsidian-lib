@@ -2594,6 +2594,176 @@ describe('app-dependent functions', () => {
         expect(changes.map((change) => change.oldContent)).toEqual(['[a](file:///F:%5Cx.txt)']);
       });
     });
+
+    /*
+     * `[[a]] [[b]] [[c]]` again, with the caller excluding `b`.
+     */
+    describe('caller exclusion', () => {
+      function createSkipBPredicate(): ReturnType<typeof vi.fn<(reference: Reference) => boolean>> {
+        return vi.fn((reference: Reference) => reference.link === 'b');
+      }
+
+      function captureContentChanges(): FileChange[] {
+        const changes: FileChange[] = [];
+        vi.mocked(applyContentChanges).mockImplementation(
+          async ({ changesProvider, content }) => {
+            if (typeof changesProvider === 'function') {
+              changes.push(...await (changesProvider as () => Promise<FileChange[] | null>)() ?? []);
+            }
+            return content;
+          }
+        );
+        return changes;
+      }
+
+      function captureFileChanges(): FileChange[] {
+        const changes: FileChange[] = [];
+        vi.mocked(applyFileChanges).mockImplementation(
+          async ({ changesProvider }) => {
+            if (typeof changesProvider !== 'function') {
+              return;
+            }
+
+            const abortSignal = strictProxy<AbortSignal>({ throwIfAborted: vi.fn() });
+            changes.push(...await resolveValue(changesProvider, { abortSignal, content: CONTENT }) ?? []);
+          }
+        );
+        return changes;
+      }
+
+      function createFileUrlCache(content: string): CachedMetadataEx {
+        const externalLinks = parseLinks(content)
+          .filter((parseLinkResult) => parseLinkResult.isExternal)
+          .map((parseLinkResult) => toParseLinkReference({ content, parseLinkResult }));
+        return castTo<CachedMetadataEx>({
+          externalLinks,
+          features: [
+            CachedMetadataExFeature.Native,
+            CachedMetadataExFeature.ExternalLinks,
+            CachedMetadataExFeature.FrontmatterExternalLinks,
+            CachedMetadataExFeature.MultiValueFrontmatterExternalLinks
+          ],
+          frontmatterExternalLinks: [],
+          headings: undefined,
+          links: undefined,
+          multiValueFrontmatterExternalLinks: [],
+          sections: undefined
+        });
+      }
+
+      it('should not call the converter for an excluded link in editReferencesInContent', async () => {
+        vi.mocked(parseMetadata).mockResolvedValue(createThreeLinkCache());
+        const changes = captureContentChanges();
+        const referenceConverter = createLinkConverter();
+        const shouldSkipReference = createSkipBPredicate();
+
+        await editReferencesInContent({
+          app,
+          content: CONTENT,
+          referenceConverter,
+          shouldSkipReference
+        });
+
+        expect(shouldSkipReference.mock.calls.map((call) => call[0].link)).toEqual(['a', 'b', 'c']);
+        expect(referenceConverter.mock.calls.map((call) => call[0].link)).toEqual(['a', 'c']);
+        expect(changes.map((change) => change.oldContent)).toEqual(['[[a]]', '[[c]]']);
+      });
+
+      it('should not call the predicate for a link the heading skip already left alone', async () => {
+        vi.mocked(parseMetadata).mockResolvedValue(castTo<CachedMetadataEx>({
+          ...createThreeLinkCache(),
+          sections: [{ position: { end: { col: 5, line: 0, offset: 5 }, start: { col: 0, line: 0, offset: 0 } }, type: 'heading' }]
+        }));
+        const referenceConverter = createLinkConverter();
+        const shouldSkipReference = createSkipBPredicate();
+
+        await editReferencesInContent({
+          app,
+          content: CONTENT,
+          referenceConverter,
+          shouldSkipReference,
+          shouldSkipReferencesInHeadings: true
+        });
+
+        expect(shouldSkipReference.mock.calls.map((call) => call[0].link)).toEqual(['b', 'c']);
+        expect(referenceConverter.mock.calls.map((call) => call[0].link)).toEqual(['c']);
+      });
+
+      it('should not call the converter for an excluded link in editReferences', async () => {
+        mockApplyFileChangesToInvokeProvider();
+        vi.mocked(getCacheSafe).mockResolvedValue(createThreeLinkCache());
+        const referenceConverter = createLinkConverter();
+
+        await editReferences({
+          app,
+          pathOrFile: 'note.md',
+          pluginNoticeComponent: null,
+          referenceConverter,
+          resourceLockComponent,
+          shouldSkipReference: createSkipBPredicate()
+        });
+
+        expect(referenceConverter.mock.calls.map((call) => call[0].link)).toEqual(['a', 'c']);
+      });
+
+      it('should forward the predicate from updateReferencesInFile', async () => {
+        vi.mocked(getCacheSafe).mockResolvedValue(createThreeLinkCache());
+        const changes = captureFileChanges();
+
+        await updateReferencesInFile({
+          app,
+          newSourcePathOrFile: 'note.md',
+          pluginNoticeComponent: null,
+          resourceLockComponent,
+          shouldSkipReference: createSkipBPredicate()
+        });
+
+        expect(changes.map((change) => change.oldContent)).toEqual(['[[a]]', '[[c]]']);
+      });
+
+      it('should forward the predicate from updateReferencesInContent', async () => {
+        vi.mocked(parseMetadata).mockResolvedValue(createThreeLinkCache());
+        const changes = captureContentChanges();
+
+        await updateReferencesInContent({
+          app,
+          content: CONTENT,
+          newSourcePathOrFile: 'note.md',
+          shouldSkipReference: createSkipBPredicate()
+        });
+
+        expect(changes.map((change) => change.oldContent)).toEqual(['[[a]]', '[[c]]']);
+      });
+
+      it('should forward the predicate from updateFileUrlLinksInContent', async () => {
+        const content = '[a](file:///F:%5Cx.txt) [b](file:///F:%5Cy.txt)';
+        vi.mocked(parseMetadata).mockResolvedValue(createFileUrlCache(content));
+        const changes = captureContentChanges();
+
+        await updateFileUrlLinksInContent({
+          app,
+          content,
+          shouldSkipReference: (reference) => reference.original.startsWith('[a]')
+        });
+
+        expect(changes.map((change) => change.oldContent)).toEqual(['[b](file:///F:%5Cy.txt)']);
+      });
+
+      it('should forward the predicate from updateFileUrlLinksInFile', async () => {
+        vi.mocked(getCacheSafe).mockResolvedValue(createFileUrlCache('[a](file:///F:%5Cx.txt) [b](file:///F:%5Cy.txt)'));
+        const changes = captureFileChanges();
+
+        await updateFileUrlLinksInFile({
+          app,
+          pathOrFile: 'note.md',
+          pluginNoticeComponent: null,
+          resourceLockComponent,
+          shouldSkipReference: (reference) => reference.original.startsWith('[b]')
+        });
+
+        expect(changes.map((change) => change.oldContent)).toEqual(['[a](file:///F:%5Cx.txt)']);
+      });
+    });
   });
 
   describe('editBacklinks', () => {

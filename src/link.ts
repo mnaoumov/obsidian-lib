@@ -586,6 +586,17 @@ export interface EditReferencesInContentParams {
   readonly shouldEditMultiValueFrontmatterExternalLinks?: boolean;
 
   /**
+   * A predicate choosing links to leave unchanged: for each reference it returns `true` for, the converter is
+   * not called, so the link stays byte-for-byte as written — its path, style, angle brackets and leading dot
+   * included. Use it to exclude links the caller decides on, for example by their resolved target path.
+   *
+   * Applied after the {@link isReferenceInHeading | heading} skip and the offset range.
+   *
+   * @default `undefined`
+   */
+  readonly shouldSkipReference?: (reference: Reference) => boolean;
+
+  /**
    * Whether to leave every link inside a heading unchanged: the converter is not called for it, so it stays
    * byte-for-byte as written. A link in a heading is part of the heading's text, so rewriting it changes
    * that text and breaks every `#heading` subpath pointing at the heading. See {@link isReferenceInHeading}.
@@ -664,6 +675,17 @@ export interface EditReferencesParams extends EditReferencesOptions {
    * @default `false`
    */
   readonly shouldEditMultiValueFrontmatterExternalLinks?: boolean;
+
+  /**
+   * A predicate choosing links to leave unchanged: for each reference it returns `true` for, the converter is
+   * not called, so the link stays byte-for-byte as written — its path, style, angle brackets and leading dot
+   * included. Use it to exclude links the caller decides on, for example by their resolved target path.
+   *
+   * Applied after the {@link isReferenceInHeading | heading} skip and the offset range.
+   *
+   * @default `undefined`
+   */
+  readonly shouldSkipReference?: (reference: Reference) => boolean;
 
   /**
    * Whether to leave every link inside a heading unchanged: the converter is not called for it, so it stays
@@ -1019,6 +1041,17 @@ export interface UpdateFileUrlLinksInContentParams {
   readonly offsetRange?: OffsetRange;
 
   /**
+   * A predicate choosing links to leave unchanged: for each reference it returns `true` for, the converter is
+   * not called, so the link stays byte-for-byte as written — its path, style, angle brackets and leading dot
+   * included. Use it to exclude links the caller decides on, for example by their resolved target path.
+   *
+   * Applied after the {@link isReferenceInHeading | heading} skip and the offset range.
+   *
+   * @default `undefined`
+   */
+  readonly shouldSkipReference?: (reference: Reference) => boolean;
+
+  /**
    * Whether to leave every link inside a heading unchanged. See
    * {@link EditReferencesInContentParams.shouldSkipReferencesInHeadings}.
    *
@@ -1068,6 +1101,17 @@ export interface UpdateFileUrlLinksInFileParams extends ProcessOptions {
    * The path or file to normalize the `file://` links in.
    */
   readonly pathOrFile: PathOrFile;
+
+  /**
+   * A predicate choosing links to leave unchanged: for each reference it returns `true` for, the converter is
+   * not called, so the link stays byte-for-byte as written — its path, style, angle brackets and leading dot
+   * included. Use it to exclude links the caller decides on, for example by their resolved target path.
+   *
+   * Applied after the {@link isReferenceInHeading | heading} skip and the offset range.
+   *
+   * @default `undefined`
+   */
+  readonly shouldSkipReference?: (reference: Reference) => boolean;
 
   /**
    * Whether to leave every link inside a heading unchanged. See {@link EditReferencesParams.shouldSkipReferencesInHeadings}.
@@ -1316,6 +1360,17 @@ export interface UpdateReferencesInFileParams extends ProcessOptions {
   readonly shouldIncludeAttachmentExtensionToEmbedAlias?: boolean;
 
   /**
+   * A predicate choosing links to leave unchanged: for each reference it returns `true` for, the converter is
+   * not called, so the link stays byte-for-byte as written — its path, style, angle brackets and leading dot
+   * included. Use it to exclude links the caller decides on, for example by their resolved target path.
+   *
+   * Applied after the {@link isReferenceInHeading | heading} skip and the offset range.
+   *
+   * @default `undefined`
+   */
+  readonly shouldSkipReference?: (reference: Reference) => boolean;
+
+  /**
    * Whether to leave every link inside a heading unchanged: it is neither converted nor restyled, so it
    * stays byte-for-byte as written. A link in a heading is part of the heading's text, so rewriting it
    * changes that text and breaks every `#heading` subpath pointing at the heading. See
@@ -1504,6 +1559,17 @@ interface GetFileChangesParams {
    * @default `false`
    */
   readonly shouldIncludeMultiValueFrontmatterExternalLinks?: boolean;
+
+  /**
+   * A predicate choosing links to leave unchanged: for each reference it returns `true` for, the converter is
+   * not called, so the link stays byte-for-byte as written — its path, style, angle brackets and leading dot
+   * included. Use it to exclude links the caller decides on, for example by their resolved target path.
+   *
+   * Applied after the {@link isReferenceInHeading | heading} skip and the offset range.
+   *
+   * @default `undefined`
+   */
+  readonly shouldSkipReference?: (reference: Reference) => boolean;
 
   /**
    * Whether to leave every link inside a heading unchanged, without calling the converter for it.
@@ -1697,6 +1763,17 @@ interface UpdateReferencesInContentParams {
    * @default `false`
    */
   readonly shouldIncludeAttachmentExtensionToEmbedAlias?: boolean;
+
+  /**
+   * A predicate choosing links to leave unchanged: for each reference it returns `true` for, the converter is
+   * not called, so the link stays byte-for-byte as written — its path, style, angle brackets and leading dot
+   * included. Use it to exclude links the caller decides on, for example by their resolved target path.
+   *
+   * Applied after the {@link isReferenceInHeading | heading} skip and the offset range.
+   *
+   * @default `undefined`
+   */
+  readonly shouldSkipReference?: (reference: Reference) => boolean;
 
   /**
    * Whether to leave every link inside a heading unchanged: it is neither converted nor restyled, so it
@@ -1934,6 +2011,7 @@ export async function editReferences(params: EditReferencesParams): Promise<void
     shouldEditExternalLinks = false,
     shouldEditFrontmatterExternalLinks = false,
     shouldEditMultiValueFrontmatterExternalLinks = false,
+    shouldSkipReference,
     shouldSkipReferencesInHeadings = false,
     ...options
   } = params;
@@ -1964,6 +2042,7 @@ export async function editReferences(params: EditReferencesParams): Promise<void
           shouldIncludeExternalLinks: shouldEditExternalLinks,
           shouldIncludeFrontmatterExternalLinks: shouldEditFrontmatterExternalLinks,
           shouldIncludeMultiValueFrontmatterExternalLinks: shouldEditMultiValueFrontmatterExternalLinks,
+          shouldSkipReference,
           shouldSkipReferencesInHeadings
         })))
         : null;
@@ -1988,6 +2067,7 @@ export async function editReferencesInContent(params: EditReferencesInContentPar
     shouldEditExternalLinks = false,
     shouldEditFrontmatterExternalLinks = false,
     shouldEditMultiValueFrontmatterExternalLinks = false,
+    shouldSkipReference,
     shouldSkipReferencesInHeadings = false
   } = params;
   let { abortSignal } = params;
@@ -2016,6 +2096,7 @@ export async function editReferencesInContent(params: EditReferencesInContentPar
         shouldIncludeExternalLinks: shouldEditExternalLinks,
         shouldIncludeFrontmatterExternalLinks: shouldEditFrontmatterExternalLinks,
         shouldIncludeMultiValueFrontmatterExternalLinks: shouldEditMultiValueFrontmatterExternalLinks,
+        shouldSkipReference,
         shouldSkipReferencesInHeadings
       }));
       abortSignal.throwIfAborted();
@@ -2281,7 +2362,7 @@ export function splitSubpath(link: string): SplitSubpathResult {
  * @returns A {@link Promise} that resolves to the content with normalized `file://` links.
  */
 export async function updateFileUrlLinksInContent(params: UpdateFileUrlLinksInContentParams): Promise<string> {
-  const { app, content, offsetRange, shouldSkipReferencesInHeadings, shouldUseAngleBrackets = false } = params;
+  const { app, content, offsetRange, shouldSkipReference, shouldSkipReferencesInHeadings, shouldUseAngleBrackets = false } = params;
   return await editReferencesInContent(normalizeOptionalProperties<EditReferencesInContentParams>({
     abortSignal: params.abortSignal,
     app,
@@ -2291,6 +2372,7 @@ export async function updateFileUrlLinksInContent(params: UpdateFileUrlLinksInCo
     shouldEditExternalLinks: true,
     shouldEditFrontmatterExternalLinks: true,
     shouldEditMultiValueFrontmatterExternalLinks: true,
+    shouldSkipReference,
     shouldSkipReferencesInHeadings
   }));
 }
@@ -2307,6 +2389,7 @@ export async function updateFileUrlLinksInFile(params: UpdateFileUrlLinksInFileP
     app,
     offsetRange,
     pathOrFile,
+    shouldSkipReference,
     shouldSkipReferencesInHeadings,
     shouldUseAngleBrackets = false,
     ...options
@@ -2320,6 +2403,7 @@ export async function updateFileUrlLinksInFile(params: UpdateFileUrlLinksInFileP
     shouldEditExternalLinks: true,
     shouldEditFrontmatterExternalLinks: true,
     shouldEditMultiValueFrontmatterExternalLinks: true,
+    shouldSkipReference,
     shouldSkipReferencesInHeadings,
     ...options
   }));
@@ -2444,6 +2528,7 @@ export async function updateReferencesInContent(params: UpdateReferencesInConten
     oldSourcePathOrFile,
     shouldEscapeAlias,
     shouldIncludeAttachmentExtensionToEmbedAlias,
+    shouldSkipReference,
     shouldSkipReferencesInHeadings,
     shouldUpdateEmbedOnlyLinks,
     shouldUpdateFileNameAlias,
@@ -2476,6 +2561,7 @@ export async function updateReferencesInContent(params: UpdateReferencesInConten
           shouldUseLeadingSlashForAbsolutePaths
         }));
     },
+    shouldSkipReference,
     shouldSkipReferencesInHeadings
   }));
 }
@@ -2498,6 +2584,7 @@ export async function updateReferencesInFile(params: UpdateReferencesInFileParam
     oldSourcePathOrFile,
     shouldEscapeAlias,
     shouldIncludeAttachmentExtensionToEmbedAlias,
+    shouldSkipReference,
     shouldSkipReferencesInHeadings,
     shouldUpdateEmbedOnlyLinks,
     shouldUpdateFileNameAlias,
@@ -2535,6 +2622,7 @@ export async function updateReferencesInFile(params: UpdateReferencesInFileParam
           shouldUseLeadingSlashForAbsolutePaths
         }));
     },
+    shouldSkipReference,
     shouldSkipReferencesInHeadings
   }));
 }
@@ -2670,6 +2758,7 @@ async function getFileChanges(params: GetFileChangesParams): Promise<FileChange[
     shouldIncludeExternalLinks = false,
     shouldIncludeFrontmatterExternalLinks = false,
     shouldIncludeMultiValueFrontmatterExternalLinks = false,
+    shouldSkipReference,
     shouldSkipReferencesInHeadings = false
   } = params;
   let { abortSignal } = params;
@@ -2704,6 +2793,11 @@ async function getFileChanges(params: GetFileChangesParams): Promise<FileChange[
 
     if (shouldSkipReferencesInHeadings && isReferenceInHeading(reference, cache)) {
       getFileChangesDebugger('Skipping a link inside a heading', { link: reference.original });
+      continue;
+    }
+
+    if (shouldSkipReference?.(reference)) {
+      getFileChangesDebugger('Skipping a link the caller excluded', { link: reference.original });
       continue;
     }
 
