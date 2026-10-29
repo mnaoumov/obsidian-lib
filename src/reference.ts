@@ -20,7 +20,7 @@ import type { FileChange } from './file-change.ts';
 import { isFrontmatterLinkCacheWithOffsets } from './frontmatter-link-cache-with-offsets.ts';
 import {
   isPositionInOffsetRange,
-  isPositionInsideAnyOf
+  isPositionInsideSome
 } from './position.ts';
 
 /**
@@ -155,7 +155,7 @@ export function isReferenceInHeading(reference: Reference, cache: CachedMetadata
     return false;
   }
 
-  return isPositionInsideAnyOf(reference.position, [
+  return isPositionInsideSome(reference.position, [
     ...cache.headings ?? [],
     ...(cache.sections ?? []).filter((section) => section.type === 'heading')
   ]);

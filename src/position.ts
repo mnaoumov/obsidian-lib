@@ -62,7 +62,7 @@ export function isPositionInside(inner: Pos, outer: Pos): boolean {
  * @param containers - The positions, or things carrying positions, to check against.
  * @returns Whether the inner position is fully contained within at least one container.
  */
-export function isPositionInsideAnyOf(inner: Pos, containers: readonly PositionContainer[]): boolean {
+export function isPositionInsideSome(inner: Pos, containers: readonly PositionContainer[]): boolean {
   return containers.some((container) => isPositionInside(inner, getPosition(container)));
 }
 
