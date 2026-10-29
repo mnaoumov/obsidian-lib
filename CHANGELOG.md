@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 10.4.0
+
+- feat(bulk-operation): wrap bulk operations in git commits, undone by revert
+
 ## 10.3.0
 
 - feat(link): let shouldSkipReference accept null like an absent key
