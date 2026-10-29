@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 10.1.1
+
+- fix(link): stop reporting bare URLs in code and wrapping bare file: URLs as empty links
+
 ## 10.1.0
 
 - feat(link): let callers exclude chosen links from the reference-editing passes (<https://github.com/mnaoumov/obsidian-better-markdown-links/issues/45>)
