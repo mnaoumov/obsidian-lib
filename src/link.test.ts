@@ -2792,6 +2792,37 @@ describe('app-dependent functions', () => {
 
         expect(changes.map((change) => change.oldContent)).toEqual(['[a](file:///F:%5Cx.txt)']);
       });
+
+      it('should treat a null predicate like an absent one in editReferencesInContent', async () => {
+        vi.mocked(parseMetadata).mockResolvedValue(createThreeLinkCache());
+        const changes = captureContentChanges();
+        const referenceConverter = createLinkConverter();
+
+        await editReferencesInContent({
+          app,
+          content: CONTENT,
+          referenceConverter,
+          shouldSkipReference: null
+        });
+
+        expect(referenceConverter.mock.calls.map((call) => call[0].link)).toEqual(['a', 'b', 'c']);
+        expect(changes.map((change) => change.oldContent)).toEqual(['[[a]]', '[[b]]', '[[c]]']);
+      });
+
+      it('should forward a null predicate from updateReferencesInFile like an absent one', async () => {
+        vi.mocked(getCacheSafe).mockResolvedValue(createThreeLinkCache());
+        const changes = captureFileChanges();
+
+        await updateReferencesInFile({
+          app,
+          newSourcePathOrFile: 'note.md',
+          pluginNoticeComponent: null,
+          resourceLockComponent,
+          shouldSkipReference: null
+        });
+
+        expect(changes.map((change) => change.oldContent)).toEqual(['[[a]]', '[[b]]', '[[c]]']);
+      });
     });
   });
 
