@@ -2899,15 +2899,24 @@ function normalizeFileUrlLink(reference: Reference, shouldUseAngleBrackets: bool
   }
 
   const { parseLinkResult } = reference;
-  return parseLinkResult.isFileUrl
-    ? generateRawMarkdownLink(normalizeOptionalProperties<GenerateRawMarkdownLinkParams>({
-      alias: parseLinkResult.alias,
-      isEmbed: parseLinkResult.isEmbed,
-      isWikilink: false,
-      shouldUseAngleBrackets,
-      url: normalizeFileUrl(parseLinkResult.url)
-    }))
-    : undefined;
+  if (!parseLinkResult.isFileUrl) {
+    return;
+  }
+
+  // A bare URL in the text, as opposed to a markdown link or an autolink, has no brackets of any kind.
+  const isBareUrl = !/^[!<[]/.test(parseLinkResult.raw);
+  if (isBareUrl) {
+    // Wrapping a bare URL as `[](<url>)` would hide its text, so only its slashes change, and its encoding stays as written.
+    return normalizeFileUrl(parseLinkResult.raw);
+  }
+
+  return generateRawMarkdownLink(normalizeOptionalProperties<GenerateRawMarkdownLinkParams>({
+    alias: parseLinkResult.alias,
+    isEmbed: parseLinkResult.isEmbed,
+    isWikilink: false,
+    shouldUseAngleBrackets,
+    url: normalizeFileUrl(parseLinkResult.url)
+  }));
 }
 
 /**
