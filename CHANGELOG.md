@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 9.0.0
+
+- refactor!: name the Reference-typed API after Reference
+- feat(position): add Pos containment helpers and use them in reference checks
+- build(deps): bump @mnaoumov/typescript-dev-toolkit to ^5.1.0
+
 ## 8.1.0
 
 - test(integration): keep VITEST_MAX_WORKERS from running shared-instance files at once
