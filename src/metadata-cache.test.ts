@@ -286,11 +286,11 @@ describe('getReferences', () => {
   });
 
   it('should return links from cache.links only', () => {
-    const link = makeReferenceCache('[[note]]', 0);
-    const cache: CachedMetadata = { links: [link] };
+    const reference = makeReferenceCache('[[note]]', 0);
+    const cache: CachedMetadata = { links: [reference] };
     const result = getReferences({ cache });
     expect(result).toHaveLength(1);
-    expect(result[0]).toBe(link);
+    expect(result[0]).toBe(reference);
   });
 
   it('should return links from cache.embeds only', () => {
@@ -310,30 +310,30 @@ describe('getReferences', () => {
   });
 
   it('should combine links, embeds, and frontmatterLinks', () => {
-    const link = makeReferenceCache('[[note]]', 0);
+    const reference = makeReferenceCache('[[note]]', 0);
     const embed = makeReferenceCache('![[image.png]]', 20);
     const fmLink = makeFrontmatterLink('note', 'aliases');
     const cache: CachedMetadata = {
       embeds: [embed],
       frontmatterLinks: [fmLink],
-      links: [link]
+      links: [reference]
     };
     const result = getReferences({ cache });
     expect(result).toHaveLength(3);
   });
 
   it('should deduplicate reference caches with same start offset', () => {
-    const link1 = makeReferenceCache('[[note]]', 0);
-    const link2 = makeReferenceCache('[[note]]', 0);
-    const cache: CachedMetadata = { links: [link1, link2] };
+    const reference1 = makeReferenceCache('[[note]]', 0);
+    const reference2 = makeReferenceCache('[[note]]', 0);
+    const cache: CachedMetadata = { links: [reference1, reference2] };
     const result = getReferences({ cache });
     expect(result).toHaveLength(1);
   });
 
   it('should keep reference caches with different start offsets', () => {
-    const link1 = makeReferenceCache('[[note1]]', 0);
-    const link2 = makeReferenceCache('[[note2]]', 20);
-    const cache: CachedMetadata = { links: [link1, link2] };
+    const reference1 = makeReferenceCache('[[note1]]', 0);
+    const reference2 = makeReferenceCache('[[note2]]', 20);
+    const cache: CachedMetadata = { links: [reference1, reference2] };
     const result = getReferences({ cache });
     expect(result).toHaveLength(2);
   });
@@ -389,11 +389,11 @@ describe('getReferences', () => {
   });
 
   it('should not deduplicate mixed types (reference + frontmatter)', () => {
-    const referenceLink = makeReferenceCache('[[note]]', 0);
+    const referenceCache = makeReferenceCache('[[note]]', 0);
     const fmLink = makeFrontmatterLink('note', 'aliases');
     const cache: CachedMetadata = {
       frontmatterLinks: [fmLink],
-      links: [referenceLink]
+      links: [referenceCache]
     };
     const result = getReferences({ cache });
     expect(result).toHaveLength(2);
@@ -402,8 +402,8 @@ describe('getReferences', () => {
 
 describe('getReferences selection', () => {
   it('should exclude body links when shouldIncludeLinks is false', () => {
-    const link = makeReferenceCache('[[note]]', 0);
-    const cache: CachedMetadata = { links: [link] };
+    const reference = makeReferenceCache('[[note]]', 0);
+    const cache: CachedMetadata = { links: [reference] };
     expect(getReferences({ cache, shouldIncludeLinks: false })).toEqual([]);
   });
 
@@ -1107,10 +1107,10 @@ describe('getBacklinksForFileSafe', () => {
 
   it('should return false when getFileOrNull returns null for note', async () => {
     setupRetryToInvokeOperationFunction();
-    const referenceLink = makeReferenceCache('[[target]]', 10);
+    const referenceCache = makeReferenceCache('[[target]]', 10);
 
     mockedGetIndexedBacklinksForFile.mockReturnValue(
-      createBacklinksDict({ 'source.md': [referenceLink] })
+      createBacklinksDict({ 'source.md': [referenceCache] })
     );
     mockedGetFileOrNull.mockReturnValue(null);
 
@@ -1120,10 +1120,10 @@ describe('getBacklinksForFileSafe', () => {
 
   it('should return false when readSafe returns null', async () => {
     setupRetryToInvokeOperationFunction();
-    const referenceLink = makeReferenceCache('[[target]]', 10);
+    const referenceCache = makeReferenceCache('[[target]]', 10);
 
     mockedGetIndexedBacklinksForFile.mockReturnValue(
-      createBacklinksDict({ 'source.md': [referenceLink] })
+      createBacklinksDict({ 'source.md': [referenceCache] })
     );
     mockedGetFileOrNull.mockReturnValue(castTo<ReturnType<typeof getFileOrNull>>({ path: 'source.md' }));
     mockedReadSafe.mockResolvedValue(null);
@@ -1157,10 +1157,10 @@ describe('getBacklinksForFileSafe', () => {
       operationResult = await operationFunction(abortSignal);
     });
     const content = '---\nauthor: [x]y\n---\n[[target]]';
-    const referenceLink = makeReferenceCache('[[target]]', content.indexOf('[[target]]'));
+    const referenceCache = makeReferenceCache('[[target]]', content.indexOf('[[target]]'));
 
     mockedGetIndexedBacklinksForFile.mockReturnValue(
-      createBacklinksDict({ 'source.md': [referenceLink] })
+      createBacklinksDict({ 'source.md': [referenceCache] })
     );
     mockedGetFileOrNull.mockReturnValue(castTo<ReturnType<typeof getFileOrNull>>({ path: 'source.md' }));
     mockedReadSafe.mockResolvedValue(content);
@@ -1245,10 +1245,10 @@ describe('getBacklinksForFileSafe', () => {
   it('should succeed when reference cache link matches content', async () => {
     setupRetryToInvokeOperationFunction();
     const content = '0123456789[[target]]more text';
-    const referenceLink = makeReferenceCache('[[target]]', 10);
+    const referenceCache = makeReferenceCache('[[target]]', 10);
 
     mockedGetIndexedBacklinksForFile.mockReturnValue(
-      createBacklinksDict({ 'source.md': [referenceLink] })
+      createBacklinksDict({ 'source.md': [referenceCache] })
     );
     mockedGetFileOrNull.mockReturnValue(castTo<ReturnType<typeof getFileOrNull>>({ path: 'source.md' }));
     mockedReadSafe.mockResolvedValue(content);
@@ -1266,10 +1266,10 @@ describe('getBacklinksForFileSafe', () => {
       operationResult = await operationFunction(abortSignal);
     });
     const content = '0123456789XXMISMATCHX more text';
-    const referenceLink = makeReferenceCache('[[target]]', 10);
+    const referenceCache = makeReferenceCache('[[target]]', 10);
 
     mockedGetIndexedBacklinksForFile.mockReturnValue(
-      createBacklinksDict({ 'source.md': [referenceLink] })
+      createBacklinksDict({ 'source.md': [referenceCache] })
     );
     mockedGetFileOrNull.mockReturnValue(castTo<ReturnType<typeof getFileOrNull>>({ path: 'source.md' }));
     mockedReadSafe.mockResolvedValue(content);
@@ -1365,10 +1365,10 @@ describe('getBacklinksForFileSafe', () => {
       operationResult = await operationFunction(abortSignal);
     });
     const unknownLink = { link: 'something', original: 'something' };
-    const staleLink = makeReferenceCache('[[target]]', 10);
+    const staleReference = makeReferenceCache('[[target]]', 10);
 
     mockedGetIndexedBacklinksForFile.mockReturnValue(
-      createBacklinksDict({ 'first.md': [unknownLink], 'second.md': [staleLink] })
+      createBacklinksDict({ 'first.md': [unknownLink], 'second.md': [staleReference] })
     );
     mockedGetFileOrNull.mockImplementation((params: GetFileOrNullParams) => castTo<ReturnType<typeof getFileOrNull>>({ path: params.pathOrFile }));
     mockedReadSafe.mockResolvedValue('0123456789XXMISMATCHX more text');

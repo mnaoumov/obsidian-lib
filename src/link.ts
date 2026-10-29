@@ -124,7 +124,7 @@ const UNESCAPED_WIKILINK_DIVIDER_REGEXP = /(?:^|[^\\])\|/;
  * provider to only one of {@link buildBacklinksSnapshot} and {@link editBacklinksSnapshot} used to leave every
  * link unmatched, and the edit rewrote nothing without a word.
  */
-const snapshotReferenceIdentityKeyProviders = new WeakMap<BacklinksSnapshot<unknown>, (link: Reference) => string>();
+const snapshotReferenceIdentityKeyProviders = new WeakMap<BacklinksSnapshot<unknown>, (reference: Reference) => string>();
 
 /**
  * A style of the link path.
@@ -196,7 +196,7 @@ enum FinalLinkPathStyle {
 /**
  * Params passed to the link converter of {@link editBacklinksSnapshot}.
  *
- * @typeParam TPayload - The payload recorded for each link when the snapshot was built.
+ * @typeParam TPayload - The payload recorded for each reference when the snapshot was built.
  */
 export interface BacklinkConversionParams<TPayload> {
   /**
@@ -250,18 +250,18 @@ export interface BacklinksLike {
  * the metadata cache for the old path, so a caller that rewrites links **after** renaming has to capture the
  * backlinks **before** — which is why {@link editBacklinksSnapshot} takes a snapshot rather than a path.
  *
- * The payload is whatever the caller needs to remember per link. It is `undefined` for a single-target
- * rewrite (the target is implied), and the old target's path for a multi-target one, where one note's links
- * may point at several files that all moved and each link has to be resolved to its own new path.
+ * The payload is whatever the caller needs to remember per reference. It is `undefined` for a single-target
+ * rewrite (the target is implied), and the old target's path for a multi-target one, where one note's references
+ * may point at several files that all moved and each reference has to be resolved to its own new path.
  *
- * @typeParam TPayload - The payload recorded for each link.
+ * @typeParam TPayload - The payload recorded for each reference.
  */
 export type BacklinksSnapshot<TPayload> = ReadonlyMap<string, ReadonlyMap<string, TPayload>>;
 
 /**
  * Params for {@link buildBacklinksSnapshot}.
  *
- * @typeParam TPayload - The payload recorded for each link.
+ * @typeParam TPayload - The payload recorded for each reference.
  */
 export interface BuildBacklinksSnapshotParams<TPayload> {
   /**
@@ -283,10 +283,10 @@ export interface BuildBacklinksSnapshotParams<TPayload> {
   /**
    * Produces the payload to record for a link. See {@link BacklinksSnapshot} for what a payload is for.
    *
-   * @param link - The link being recorded.
+   * @param reference - The reference being recorded.
    * @returns The payload.
    */
-  readonly payloadProvider: (link: Reference) => TPayload;
+  readonly payloadProvider: (reference: Reference) => TPayload;
 
   /**
    * Computes the identity key of a link.
@@ -298,7 +298,7 @@ export interface BuildBacklinksSnapshotParams<TPayload> {
    *
    * @default the provider `target` was built with, else `JSON.stringify`
    */
-  readonly referenceIdentityKeyProvider?: (link: Reference) => string;
+  readonly referenceIdentityKeyProvider?: (reference: Reference) => string;
 
   /**
    * An existing snapshot to merge into, so several sets of backlinks can be accumulated into one.
@@ -458,9 +458,9 @@ export interface EditBacklinksParams extends EditBacklinksOptions {
   readonly pathOrFile: PathOrFile;
 
   /**
-   * The function that converts each link.
+   * The function that converts each reference.
    */
-  readonly referenceConverter: (link: Reference) => Promisable<MaybeReturn<string>>;
+  readonly referenceConverter: (reference: Reference) => Promisable<MaybeReturn<string>>;
 }
 
 /**
@@ -471,7 +471,7 @@ export type EditBacklinksSnapshotOptions = ProcessOptions;
 /**
  * Parameters for {@link editBacklinksSnapshot}.
  *
- * @typeParam TPayload - The payload recorded for each link when the snapshot was built.
+ * @typeParam TPayload - The payload recorded for each reference when the snapshot was built.
  */
 export interface EditBacklinksSnapshotParams<TPayload> extends EditBacklinksSnapshotOptions {
   /**
@@ -486,7 +486,7 @@ export interface EditBacklinksSnapshotParams<TPayload> extends EditBacklinksSnap
   readonly linkUpdateProgressReporter?: LinkUpdateProgressReporter;
 
   /**
-   * The function that converts each link.
+   * The function that converts each reference.
    */
   readonly referenceConverter: (params: BacklinkConversionParams<TPayload>) => Promisable<MaybeReturn<string>>;
 
@@ -500,7 +500,7 @@ export interface EditBacklinksSnapshotParams<TPayload> extends EditBacklinksSnap
    *
    * @default the provider the snapshot was built with, else `JSON.stringify`
    */
-  readonly referenceIdentityKeyProvider?: (link: Reference) => string;
+  readonly referenceIdentityKeyProvider?: (reference: Reference) => string;
 
   /**
    * Whether the converter is also shown links that are **not** in the snapshot, with an `undefined`
@@ -556,9 +556,9 @@ export interface EditReferencesInContentParams {
   readonly offsetRange?: OffsetRange;
 
   /**
-   * The function that converts each link.
+   * The function that converts each reference.
    */
-  readonly referenceConverter: (link: Reference) => Promisable<MaybeReturn<string>>;
+  readonly referenceConverter: (reference: Reference) => Promisable<MaybeReturn<string>>;
 
   /**
    * Whether to also edit external links parsed from the note body. When `true`, the converter also
@@ -636,9 +636,9 @@ export interface EditReferencesParams extends EditReferencesOptions {
   readonly pathOrFile: PathOrFile;
 
   /**
-   * The function that converts each link.
+   * The function that converts each reference.
    */
-  readonly referenceConverter: (link: Reference) => Promisable<MaybeReturn<string>>;
+  readonly referenceConverter: (reference: Reference) => Promisable<MaybeReturn<string>>;
 
   /**
    * Whether to also edit external links parsed from the note body. When `true`, the converter also
@@ -925,7 +925,7 @@ export interface GenerateRawMarkdownLinkParams {
 /**
  * A {@link BacklinksSnapshot} while it is still being accumulated by {@link buildBacklinksSnapshot}.
  *
- * @typeParam TPayload - The payload recorded for each link.
+ * @typeParam TPayload - The payload recorded for each reference.
  */
 export type MutableBacklinksSnapshot<TPayload> = Map<string, Map<string, TPayload>>;
 
@@ -1256,7 +1256,7 @@ export interface UpdateReferencesInFileParams extends ProcessOptions {
    *
    * @default `undefined`
    */
-  readonly linkStyleProvider?: (link: Reference) => LinkStyle | undefined;
+  readonly linkStyleProvider?: (reference: Reference) => LinkStyle | undefined;
 
   /**
    * A file to update the links in.
@@ -1480,9 +1480,9 @@ interface GetFileChangesParams {
   readonly offsetRange?: OffsetRange;
 
   /**
-   * A function that converts each link.
+   * A function that converts each reference.
    */
-  readonly referenceConverter: (link: Reference, abortSignal: AbortSignal) => Promisable<MaybeReturn<string>>;
+  readonly referenceConverter: (reference: Reference, abortSignal: AbortSignal) => Promisable<MaybeReturn<string>>;
 
   /**
    * Whether to include external links (parsed from the note body) in the changes.
@@ -1565,7 +1565,7 @@ interface ResolveSnapshotReferenceIdentityKeyProviderParams {
   /**
    * The provider the caller passed, if any.
    */
-  readonly explicitReferenceIdentityKeyProvider: ((link: Reference) => string) | undefined;
+  readonly explicitReferenceIdentityKeyProvider: ((reference: Reference) => string) | undefined;
 
   /**
    * The snapshot whose recorded provider wins when the caller passed none.
@@ -1645,7 +1645,7 @@ interface UpdateReferencesInContentParams {
    *
    * @default `undefined`
    */
-  readonly linkStyleProvider?: (link: Reference) => LinkStyle | undefined;
+  readonly linkStyleProvider?: (reference: Reference) => LinkStyle | undefined;
 
   /**
    * A new source path or file.
@@ -1766,7 +1766,7 @@ interface UpdateReferencesInContentParams {
  * Call it once per target and pass {@link BuildBacklinksSnapshotParams.target} to accumulate several targets
  * into one snapshot, so that a note linking to several of them is still rewritten exactly once.
  *
- * @typeParam TPayload - The payload recorded for each link.
+ * @typeParam TPayload - The payload recorded for each reference.
  * @param params - The parameters for building the snapshot.
  * @returns The snapshot — {@link BuildBacklinksSnapshotParams.target} itself when one was passed.
  */
@@ -1796,8 +1796,8 @@ export function buildBacklinksSnapshot<TPayload>(params: BuildBacklinksSnapshotP
     }
 
     /* v8 ignore next -- A key yielded by `keys()` always resolves; the `?? []` is defensive. */
-    for (const link of backlinks.get(backlinkPath) ?? []) {
-      payloads.set(referenceIdentityKeyProvider(link), payloadProvider(link));
+    for (const reference of backlinks.get(backlinkPath) ?? []) {
+      payloads.set(referenceIdentityKeyProvider(reference), payloadProvider(reference));
     }
   }
 
@@ -1871,7 +1871,7 @@ export async function editBacklinks(params: EditBacklinksParams): Promise<void> 
  * because the rename that invalidated them has already happened — or that rewrite links to several targets
  * at once. See {@link BacklinksSnapshot} for both cases.
  *
- * @typeParam TPayload - The payload recorded for each link when the snapshot was built.
+ * @typeParam TPayload - The payload recorded for each reference when the snapshot was built.
  * @param params - The parameters for editing the backlinks.
  * @returns A {@link Promise} that resolves when the backlinks have been edited.
  */
@@ -1898,13 +1898,13 @@ export async function editBacklinksSnapshot<TPayload>(params: EditBacklinksSnaps
     await editReferences({
       app,
       pathOrFile: backlinkNotePath,
-      referenceConverter: (link) => {
-        const referenceIdentityKey = referenceIdentityKeyProvider(link);
+      referenceConverter: (reference) => {
+        const referenceIdentityKey = referenceIdentityKeyProvider(reference);
         return !payloads.has(referenceIdentityKey) && !shouldVisitUnmatchedReferences
           ? undefined
           : referenceConverter({
             payload: payloads.get(referenceIdentityKey),
-            reference: link,
+            reference,
             sourcePath: backlinkNotePath
           });
       },
@@ -2040,11 +2040,11 @@ export async function editReferencesInContent(params: EditReferencesInContentPar
 export function extractReferenceFile(params: ExtractReferenceFileParams): null | TFile {
   const {
     app,
-    reference: link,
+    reference,
     shouldAllowNonExistingFile = false,
     sourcePathOrFile
   } = params;
-  const { linkPath } = splitSubpath(link.link);
+  const { linkPath } = splitSubpath(reference.link);
   const sourcePath = getPath(app, sourcePathOrFile);
   const file = app.metadataCache.getFirstLinkpathDest(linkPath, sourcePath);
   if (file) {
@@ -2287,7 +2287,7 @@ export async function updateFileUrlLinksInContent(params: UpdateFileUrlLinksInCo
     app,
     content,
     offsetRange,
-    referenceConverter: (link) => normalizeFileUrlLink(link, shouldUseAngleBrackets),
+    referenceConverter: (reference) => normalizeFileUrlLink(reference, shouldUseAngleBrackets),
     shouldEditExternalLinks: true,
     shouldEditFrontmatterExternalLinks: true,
     shouldEditMultiValueFrontmatterExternalLinks: true,
@@ -2316,7 +2316,7 @@ export async function updateFileUrlLinksInFile(params: UpdateFileUrlLinksInFileP
     // Forwarded by name rather than through `options`, so a later refactor cannot drop it silently.
     offsetRange,
     pathOrFile,
-    referenceConverter: (link) => normalizeFileUrlLink(link, shouldUseAngleBrackets),
+    referenceConverter: (reference) => normalizeFileUrlLink(reference, shouldUseAngleBrackets),
     shouldEditExternalLinks: true,
     shouldEditFrontmatterExternalLinks: true,
     shouldEditMultiValueFrontmatterExternalLinks: true,
@@ -2341,7 +2341,7 @@ export function updateLink(params: UpdateLinkParams): string {
     newTargetPathOrFile,
     oldSourcePathOrFile,
     oldTargetPathOrFile,
-    reference: link,
+    reference,
     shouldEscapeAlias,
     shouldIncludeAttachmentExtensionToEmbedAlias,
     shouldUpdateFileNameAlias = true,
@@ -2349,7 +2349,7 @@ export function updateLink(params: UpdateLinkParams): string {
     shouldUseLeadingDotForRelativePaths,
     shouldUseLeadingSlashForAbsolutePaths
   } = params;
-  const originalLinkText = getReferenceLinkText(link);
+  const originalLinkText = getReferenceLinkText(reference);
   if (!newTargetPathOrFile) {
     return originalLinkText;
   }
@@ -2362,10 +2362,10 @@ export function updateLink(params: UpdateLinkParams): string {
     originalLink: originalLinkText
   }));
 
-  const { subpath } = splitSubpath(link.link);
+  const { subpath } = splitSubpath(reference.link);
 
   /* v8 ignore start -- Canvas file node reference branch is hard to reproduce in unit tests. */
-  if (isCanvasFile(newSourcePathOrFile) && isCanvasFileNodeReference(link)) {
+  if (isCanvasFile(newSourcePathOrFile) && isCanvasFileNodeReference(reference)) {
     return newTargetFile.path + subpath;
 
     /* v8 ignore stop */
@@ -2380,7 +2380,7 @@ export function updateLink(params: UpdateLinkParams): string {
 
   alias ??= shouldResetAlias(normalizeOptionalProperties<ShouldResetAliasParams>({
       app,
-      displayText: link.displayText,
+      displayText: reference.displayText,
       isWikilink,
       newSourcePathOrFile,
       oldSourcePathOrFile,
@@ -2456,18 +2456,18 @@ export async function updateReferencesInContent(params: UpdateReferencesInConten
     app,
     content,
     offsetRange,
-    referenceConverter: (link) => {
-      const isEmbedLink = hasEmbedSyntax(getReferenceLinkText(link));
+    referenceConverter: (reference) => {
+      const isEmbedLink = hasEmbedSyntax(getReferenceLinkText(reference));
       return shouldUpdateEmbedOnlyLinks !== undefined && shouldUpdateEmbedOnlyLinks !== isEmbedLink
         ? undefined
         : convertLink(normalizeOptionalProperties<ConvertLinkParams>({
           app,
           isEmptyEmbedAliasAllowed,
           linkPathStyle,
-          linkStyle: linkStyleProvider?.(link) ?? linkStyle,
+          linkStyle: linkStyleProvider?.(reference) ?? linkStyle,
           newSourcePathOrFile,
           oldSourcePathOrFile,
-          reference: link,
+          reference,
           shouldEscapeAlias,
           shouldIncludeAttachmentExtensionToEmbedAlias,
           shouldUpdateFileNameAlias,
@@ -2515,18 +2515,18 @@ export async function updateReferencesInFile(params: UpdateReferencesInFileParam
     // Named beside the `...params` spread, so a later refactor to explicit forwarding cannot drop it silently.
     offsetRange,
     pathOrFile: newSourcePathOrFile,
-    referenceConverter: (link) => {
-      const isEmbedLink = hasEmbedSyntax(getReferenceLinkText(link));
+    referenceConverter: (reference) => {
+      const isEmbedLink = hasEmbedSyntax(getReferenceLinkText(reference));
       return shouldUpdateEmbedOnlyLinks !== undefined && shouldUpdateEmbedOnlyLinks !== isEmbedLink
         ? undefined
         : convertLink(normalizeOptionalProperties<ConvertLinkParams>({
           app,
           isEmptyEmbedAliasAllowed,
           linkPathStyle,
-          linkStyle: linkStyleProvider?.(link) ?? linkStyle,
+          linkStyle: linkStyleProvider?.(reference) ?? linkStyle,
           newSourcePathOrFile,
           oldSourcePathOrFile,
-          reference: link,
+          reference,
           shouldEscapeAlias,
           shouldIncludeAttachmentExtensionToEmbedAlias,
           shouldUpdateFileNameAlias,
@@ -2539,8 +2539,8 @@ export async function updateReferencesInFile(params: UpdateReferencesInFileParam
   }));
 }
 
-function defaultReferenceIdentityKeyProvider(link: Reference): string {
-  return JSON.stringify(link);
+function defaultReferenceIdentityKeyProvider(reference: Reference): string {
+  return JSON.stringify(reference);
 }
 
 function generateLinkText(params: GenerateLinkTextParams): string {
@@ -2689,31 +2689,31 @@ async function getFileChanges(params: GetFileChangesParams): Promise<FileChange[
 
   const getFileChangesDebugger = getObsidianLibDebugger('Link:getFileChanges');
 
-  for (const link of getReferences({ cache, shouldIncludeExternalLinks, shouldIncludeFrontmatterExternalLinks, shouldIncludeMultiValueFrontmatterExternalLinks })) {
+  for (const reference of getReferences({ cache, shouldIncludeExternalLinks, shouldIncludeFrontmatterExternalLinks, shouldIncludeMultiValueFrontmatterExternalLinks })) {
     abortSignal.throwIfAborted();
 
-    if (offsetRange !== undefined && !isReferenceInOffsetRange(link, offsetRange)) {
+    if (offsetRange !== undefined && !isReferenceInOffsetRange(reference, offsetRange)) {
       getFileChangesDebugger(
-        isReferenceCache(link)
+        isReferenceCache(reference)
           ? 'Skipping a link that is not fully contained in the offset range'
           : 'Skipping a link that carries no position within the content, so it can never be in the offset range',
-        { link: link.original, offsetRange }
+        { link: reference.original, offsetRange }
       );
       continue;
     }
 
-    if (shouldSkipReferencesInHeadings && isReferenceInHeading(link, cache)) {
-      getFileChangesDebugger('Skipping a link inside a heading', { link: link.original });
+    if (shouldSkipReferencesInHeadings && isReferenceInHeading(reference, cache)) {
+      getFileChangesDebugger('Skipping a link inside a heading', { link: reference.original });
       continue;
     }
 
-    const newContent = await referenceConverter(link, abortSignal);
+    const newContent = await referenceConverter(reference, abortSignal);
     abortSignal.throwIfAborted();
     if (newContent === undefined) {
       continue;
     }
 
-    const fileChange = referenceToFileChange(link, newContent);
+    const fileChange = referenceToFileChange(reference, newContent);
 
     if (isCanvasFileCache) {
       if (isCanvasChange(fileChange)) {
@@ -2794,17 +2794,17 @@ function getUndefinedPayload(): undefined {
   // A single-target rewrite has nothing to remember per link: the target is implied.
 }
 
-function normalizeFileUrlLink(link: Reference, shouldUseAngleBrackets: boolean): MaybeReturn<string> {
-  if (isParseLinkFrontmatterReference(link)) {
+function normalizeFileUrlLink(reference: Reference, shouldUseAngleBrackets: boolean): MaybeReturn<string> {
+  if (isParseLinkFrontmatterReference(reference)) {
     // A frontmatter value holds a bare URL (re-serialized/quoted as YAML), not a `[alias](url)` markdown link.
-    return link.parseLinkResult.isFileUrl ? normalizeFileUrl(link.parseLinkResult.url) : undefined;
+    return reference.parseLinkResult.isFileUrl ? normalizeFileUrl(reference.parseLinkResult.url) : undefined;
   }
 
-  if (!isParseLinkReference(link)) {
+  if (!isParseLinkReference(reference)) {
     return;
   }
 
-  const { parseLinkResult } = link;
+  const { parseLinkResult } = reference;
   return parseLinkResult.isFileUrl
     ? generateRawMarkdownLink(normalizeOptionalProperties<GenerateRawMarkdownLinkParams>({
       alias: parseLinkResult.alias,
@@ -2864,7 +2864,7 @@ function resolveFinalLinkPathStyleFromObsidianSettings(app: App): FinalLinkPathS
   }
 }
 
-function resolveSnapshotReferenceIdentityKeyProvider(params: ResolveSnapshotReferenceIdentityKeyProviderParams): (link: Reference) => string {
+function resolveSnapshotReferenceIdentityKeyProvider(params: ResolveSnapshotReferenceIdentityKeyProviderParams): (reference: Reference) => string {
   const { callerName, explicitReferenceIdentityKeyProvider, snapshot } = params;
   const recordedReferenceIdentityKeyProvider = snapshotReferenceIdentityKeyProviders.get(snapshot);
   if (

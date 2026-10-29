@@ -322,10 +322,10 @@ class DeleteHandler {
       const cache = this.deletedMetadataCacheMap.get(this.file.path);
       this.deletedMetadataCacheMap.delete(this.file.path);
       if (cache) {
-        const links = getReferences({ cache });
+        const references = getReferences({ cache });
 
-        for (const link of links) {
-          const attachmentFile = extractReferenceFile({ app: this.app, reference: link, sourcePathOrFile: this.file.path });
+        for (const reference of references) {
+          const attachmentFile = extractReferenceFile({ app: this.app, reference, sourcePathOrFile: this.file.path });
           if (!attachmentFile || this.settingsManager.isNoteEx(attachmentFile.path)) {
             continue;
           }
@@ -946,7 +946,7 @@ class RenameHandler {
         app: this.app,
         linkUpdateProgressReporter: this.linkUpdateProgressReporter ?? undefined,
         pluginNoticeComponent,
-        referenceConverter: ({ payload: oldAttachmentPath, reference: link, sourcePath: newBacklinkPath }) => {
+        referenceConverter: ({ payload: oldAttachmentPath, reference, sourcePath: newBacklinkPath }) => {
           const linkIndex = (linkIndexes.get(newBacklinkPath) ?? 0) + 1;
           linkIndexes.set(newBacklinkPath, linkIndex);
 
@@ -959,7 +959,7 @@ class RenameHandler {
              * invisible: every skipped link left a broken embed and reported nothing.
              */
             getObsidianLibDebugger('RenameDeleteHandler:updateBacklinks')(
-              `No snapshot entry for link ${toJson(link)} in ${newBacklinkPath}; leaving it unchanged.`
+              `No snapshot entry for link ${toJson(reference)} in ${newBacklinkPath}; leaving it unchanged.`
             );
             return;
           }
@@ -974,7 +974,7 @@ class RenameHandler {
             newSourcePathOrFile: newBacklinkPath,
             newTargetPathOrFile: newAttachmentPath,
             oldTargetPathOrFile: oldAttachmentPath,
-            reference: link,
+            reference,
             shouldUpdateFileNameAlias: settings.shouldUpdateFileNameAliases
           }));
         },
@@ -1093,18 +1093,18 @@ class RenameHandler {
       oldPathBacklinksMapRefreshed = fakeOldFileBacklinks.data;
     }
 
-    for (const [backlinkPath, refreshedLinks] of oldPathBacklinksMapRefreshed) {
-      let oldLinks = this.oldPathBacklinksMap.get(backlinkPath);
-      if (!oldLinks) {
-        oldLinks = [];
-        this.oldPathBacklinksMap.set(backlinkPath, oldLinks);
+    for (const [backlinkPath, refreshedReferences] of oldPathBacklinksMapRefreshed) {
+      let oldReferences = this.oldPathBacklinksMap.get(backlinkPath);
+      if (!oldReferences) {
+        oldReferences = [];
+        this.oldPathBacklinksMap.set(backlinkPath, oldReferences);
       }
 
-      for (const link of refreshedLinks) {
-        if (oldLinks.includes(link)) {
+      for (const reference of refreshedReferences) {
+        if (oldReferences.includes(reference)) {
           continue;
         }
-        oldLinks.push(link);
+        oldReferences.push(reference);
       }
     }
   }
@@ -1127,7 +1127,7 @@ class RenameMap {
   private readonly newPath: string;
   private readonly oldCache: CachedMetadata | null;
   private readonly oldPath: string;
-  private readonly oldPathLinks: Reference[];
+  private readonly oldPathReferences: Reference[];
   private readonly settingsManager: SettingsManager;
 
   public constructor(params: RenameMapConstructorParams) {
@@ -1137,7 +1137,7 @@ class RenameMap {
     this.oldCache = params.oldCache;
     this.oldPath = params.oldPath;
     this.newPath = params.newPath;
-    this.oldPathLinks = this.oldCache ? getReferences({ cache: this.oldCache }) : [];
+    this.oldPathReferences = this.oldCache ? getReferences({ cache: this.oldCache }) : [];
   }
 
   public entries(): IterableIterator<[string, string]> {
@@ -1153,12 +1153,12 @@ class RenameMap {
     }
 
     // Obsidian does not index a canvas file into the metadata cache.
-    // The cache-derived `oldPathLinks` is empty for a canvas, hiding its embedded attachments.
+    // The cache-derived `oldPathReferences` is empty for a canvas, hiding its embedded attachments.
     // Reading the canvas references directly moves them with the canvas (mirroring note behavior).
     // The file already lives at the new path after the rename, so read the references from there.
     if (isCanvasFile(this.oldPath)) {
       const canvasReferences = await getCanvasReferences(this.app, this.newPath);
-      this.oldPathLinks.push(...canvasReferences);
+      this.oldPathReferences.push(...canvasReferences);
     }
 
     const settings = this.settingsManager.getSettings();
@@ -1198,9 +1198,9 @@ class RenameMap {
         }
       });
     } else {
-      for (const oldPathLink of this.oldPathLinks) {
+      for (const oldPathReference of this.oldPathReferences) {
         this.abortSignal.throwIfAborted();
-        const oldAttachmentFile = extractReferenceFile({ app: this.app, reference: oldPathLink, sourcePathOrFile: this.oldPath });
+        const oldAttachmentFile = extractReferenceFile({ app: this.app, reference: oldPathReference, sourcePathOrFile: this.oldPath });
         if (!oldAttachmentFile || (!isOldAttachmentFolderAtRoot && !oldAttachmentFile.path.startsWith(oldAttachmentFolderPath))) {
           continue;
         }
@@ -1279,12 +1279,12 @@ class RenameMap {
   }
 
   public initOriginalLinksMap(combinedBacklinksMap: Map<string, Map<string, string>>): void {
-    for (const oldPathLink of this.oldPathLinks) {
-      const oldAttachmentFile = extractReferenceFile({ app: this.app, reference: oldPathLink, sourcePathOrFile: this.oldPath });
+    for (const oldPathReference of this.oldPathReferences) {
+      const oldAttachmentFile = extractReferenceFile({ app: this.app, reference: oldPathReference, sourcePathOrFile: this.oldPath });
       if (!oldAttachmentFile) {
         continue;
       }
-      const backlinksMap = new Map<string, Reference[]>([[this.newPath, [oldPathLink]]]);
+      const backlinksMap = new Map<string, Reference[]>([[this.newPath, [oldPathReference]]]);
       this.initBacklinksMap({
         combinedBacklinksMap,
         path: oldAttachmentFile.path,
@@ -1639,13 +1639,13 @@ async function didRescueStillUsedAttachment(params: DidRescueStillUsedAttachment
  * Two links with identical text in one file necessarily resolve to the same target, so collapsing them onto
  * one key loses nothing.
  *
- * @param link - The link to build the key for.
+ * @param reference - The reference to build the key for.
  * @returns The key identifying the link by its text alone.
  */
-function getReferenceIdentityKey(link: Reference): string {
+function getReferenceIdentityKey(reference: Reference): string {
   return toJson({
-    link: link.link,
-    original: link.original
+    link: reference.link,
+    original: reference.original
   });
 }
 

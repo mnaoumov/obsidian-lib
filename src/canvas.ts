@@ -83,15 +83,15 @@ export async function getCanvasReferences(app: App, pathOrFile: PathOrFile): Pro
         if (hasFrontmatterMarkdownLinksPlugin) {
           contributeMultiValueFrontmatterLinks(metadata);
         }
-        const links = getReferences({ cache: metadata });
-        for (const [linkIndex, link] of links.entries()) {
+        const textReferences = getReferences({ cache: metadata });
+        for (const [referenceIndex, reference] of textReferences.entries()) {
           const canvasTextNodeReference: CanvasTextNodeReference = {
             isCanvas: true,
-            key: `nodes.${String(nodeIndex)}.text.${String(linkIndex)}`,
-            link: link.link,
+            key: `nodes.${String(nodeIndex)}.text.${String(referenceIndex)}`,
+            link: reference.link,
             nodeIndex,
-            original: link.original,
-            originalReference: link,
+            original: reference.original,
+            originalReference: reference,
             type: 'text'
           };
           references.push(canvasTextNodeReference);

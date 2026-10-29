@@ -783,41 +783,41 @@ describe('app-dependent functions', () => {
 
   describe('extractReferenceFile', () => {
     it('should return the file when found by getFirstLinkpathDest', () => {
-      const link = { link: 'target', original: '[[target]]' } as Reference;
-      const result = extractReferenceFile({ app, reference: link, sourcePathOrFile: 'note.md' });
+      const reference = { link: 'target', original: '[[target]]' } as Reference;
+      const result = extractReferenceFile({ app, reference, sourcePathOrFile: 'note.md' });
       assertNonNullable(result);
       expect(result.path).toBe('target.md');
     });
 
     it('should return null when file not found and shouldAllowNonExistingFile is false', () => {
-      const link = { link: 'nonexistent', original: '[[nonexistent]]' } as Reference;
-      const result = extractReferenceFile({ app, reference: link, sourcePathOrFile: 'note.md' });
+      const reference = { link: 'nonexistent', original: '[[nonexistent]]' } as Reference;
+      const result = extractReferenceFile({ app, reference, sourcePathOrFile: 'note.md' });
       expect(result).toBeNull();
     });
 
     it('should return file for absolute path when shouldAllowNonExistingFile is true', () => {
-      const link = { link: '/target.md', original: '[[/target.md]]' } as Reference;
+      const reference = { link: '/target.md', original: '[[/target.md]]' } as Reference;
       // eslint-disable-next-line unicorn/name-replacements -- The member belongs to a dependency and cannot be renamed here.
       app.metadataCache.getFirstLinkpathDest = (): null | TFileOriginal => null;
-      const result = extractReferenceFile({ app, reference: link, shouldAllowNonExistingFile: true, sourcePathOrFile: 'note.md' });
+      const result = extractReferenceFile({ app, reference, shouldAllowNonExistingFile: true, sourcePathOrFile: 'note.md' });
       assertNonNullable(result);
       expect(result.path).toBe('target.md');
     });
 
     it('should return file for relative path when shouldAllowNonExistingFile is true', () => {
-      const link = { link: 'other.md', original: '[[other.md]]' } as Reference;
+      const reference = { link: 'other.md', original: '[[other.md]]' } as Reference;
       // eslint-disable-next-line unicorn/name-replacements -- The member belongs to a dependency and cannot be renamed here.
       app.metadataCache.getFirstLinkpathDest = (): null | TFileOriginal => null;
-      const result = extractReferenceFile({ app, reference: link, shouldAllowNonExistingFile: true, sourcePathOrFile: 'folder/source.md' });
+      const result = extractReferenceFile({ app, reference, shouldAllowNonExistingFile: true, sourcePathOrFile: 'folder/source.md' });
       assertNonNullable(result);
       expect(result.path).toBe('folder/other.md');
     });
 
     it('should return null when relative path goes outside vault', () => {
-      const link = { link: '../../outside', original: '[[../../outside]]' } as Reference;
+      const reference = { link: '../../outside', original: '[[../../outside]]' } as Reference;
       // eslint-disable-next-line unicorn/name-replacements -- The member belongs to a dependency and cannot be renamed here.
       app.metadataCache.getFirstLinkpathDest = (): null | TFileOriginal => null;
-      const result = extractReferenceFile({ app, reference: link, shouldAllowNonExistingFile: true, sourcePathOrFile: 'note.md' });
+      const result = extractReferenceFile({ app, reference, shouldAllowNonExistingFile: true, sourcePathOrFile: 'note.md' });
       expect(result).toBeNull();
     });
   });
@@ -1249,7 +1249,7 @@ describe('app-dependent functions', () => {
 
   describe('convertLink', () => {
     it('should return original when extractReferenceFile returns null', () => {
-      const link = {
+      const reference = {
         displayText: 'nonexistent',
         link: 'nonexistent',
         original: '[[nonexistent]]'
@@ -1257,13 +1257,13 @@ describe('app-dependent functions', () => {
       const result = convertLink({
         app,
         newSourcePathOrFile: 'note.md',
-        reference: link
+        reference
       });
       expect(result).toBe('[[nonexistent]]');
     });
 
     it('should return updated link when file is found', () => {
-      const link = {
+      const reference = {
         displayText: 'target',
         link: 'target',
         original: '[[target]]'
@@ -1271,13 +1271,13 @@ describe('app-dependent functions', () => {
       const result = convertLink({
         app,
         newSourcePathOrFile: 'note.md',
-        reference: link
+        reference
       });
       expect(result).toContain('target');
     });
 
     it('should forward linkPathStyle to the generated link', () => {
-      const link = {
+      const reference = {
         displayText: 'target',
         link: 'target',
         original: '[[target]]'
@@ -1285,7 +1285,7 @@ describe('app-dependent functions', () => {
       const params: ConvertLinkParams = {
         app,
         newSourcePathOrFile: 'folder/other.md',
-        reference: link
+        reference
       };
 
       expect(convertLink(params)).toBe('[[target]]');
@@ -1307,7 +1307,7 @@ describe('app-dependent functions', () => {
 
   describe('updateLink', () => {
     it('should return original when newTargetPathOrFile is falsy', () => {
-      const link = {
+      const reference = {
         displayText: 'target',
         link: 'target',
         original: '[[target]]'
@@ -1316,7 +1316,7 @@ describe('app-dependent functions', () => {
         app,
         newSourcePathOrFile: 'note.md',
         newTargetPathOrFile: '',
-        reference: link
+        reference
       });
       expect(result).toBe('[[target]]');
     });
@@ -1353,7 +1353,7 @@ describe('app-dependent functions', () => {
     });
 
     it('should keep wikilink alias when present', () => {
-      const link = {
+      const reference = {
         displayText: 'my alias',
         link: 'target',
         original: '[[target|my alias]]'
@@ -1362,7 +1362,7 @@ describe('app-dependent functions', () => {
         app,
         newSourcePathOrFile: 'note.md',
         newTargetPathOrFile: 'target.md',
-        reference: link
+        reference
       });
       expect(result).toBe('[[target|my alias]]');
     });
@@ -1374,7 +1374,7 @@ describe('app-dependent functions', () => {
 
       function updateMultiLink(linkText: string, displayText: string, linkPath: string, oldTargetPath: string, newTargetPath: string): string {
         const startOffset = value.indexOf(linkText);
-        const link = castTo<Reference>({
+        const reference = castTo<Reference>({
           displayText,
           endOffset: startOffset + linkText.length,
           key: 'related',
@@ -1387,7 +1387,7 @@ describe('app-dependent functions', () => {
           newSourcePathOrFile: 'note.md',
           newTargetPathOrFile: newTargetPath,
           oldTargetPathOrFile: oldTargetPath,
-          reference: link
+          reference
         });
       }
 
@@ -1397,18 +1397,18 @@ describe('app-dependent functions', () => {
     });
 
     it('should keep the whole caption of a frontmatter link whose caption holds an unbalanced [', () => {
-      const link = castTo<Reference>({
+      const reference = castTo<Reference>({
         displayText: 'A [ B',
         key: 'book',
         link: 't.md',
         original: '[A [ B](t.md)'
       });
-      expect(updateLink({ app, newSourcePathOrFile: 'note.md', newTargetPathOrFile: 't.md', reference: link })).toBe('[A [ B](t.md)');
+      expect(updateLink({ app, newSourcePathOrFile: 'note.md', newTargetPathOrFile: 't.md', reference })).toBe('[A [ B](t.md)');
     });
 
     it('should return the span of an offset-carrying frontmatter link when newTargetPathOrFile is falsy', () => {
       const value = '[[a]] and [[b]]';
-      const link = castTo<Reference>({
+      const reference = castTo<Reference>({
         displayText: 'b',
         endOffset: value.length,
         key: 'related',
@@ -1416,11 +1416,11 @@ describe('app-dependent functions', () => {
         original: value,
         startOffset: value.indexOf('[[b]]')
       });
-      expect(updateLink({ app, newSourcePathOrFile: 'note.md', newTargetPathOrFile: '', reference: link })).toBe('[[b]]');
+      expect(updateLink({ app, newSourcePathOrFile: 'note.md', newTargetPathOrFile: '', reference })).toBe('[[b]]');
     });
 
     it('should refresh a wikilink alias equal to the old base name when shouldUpdateFileNameAlias is true', () => {
-      const link = {
+      const reference = {
         displayText: '2',
         link: 'folder/2',
         original: '[[folder/2|2]]'
@@ -1430,7 +1430,7 @@ describe('app-dependent functions', () => {
         newSourcePathOrFile: 'note.md',
         newTargetPathOrFile: 'folder/222.md',
         oldTargetPathOrFile: 'folder/2.md',
-        reference: link,
+        reference,
         shouldUpdateFileNameAlias: true
       });
       // Previously the explicit wikilink alias short-circuited the refresh, leaving the stale
@@ -1439,7 +1439,7 @@ describe('app-dependent functions', () => {
     });
 
     it('should update alias matching old basename when shouldUpdateFileNameAlias is not set', () => {
-      const link = {
+      const reference = {
         displayText: 'target',
         link: 'target',
         original: '[[target]]'
@@ -1449,13 +1449,13 @@ describe('app-dependent functions', () => {
         newSourcePathOrFile: 'note.md',
         newTargetPathOrFile: 'folder/other.md',
         oldTargetPathOrFile: 'target.md',
-        reference: link
+        reference
       });
       expect(result).toContain('other');
     });
 
     it('should update alias matching old name when shouldUpdateFileNameAlias is not set', () => {
-      const link = {
+      const reference = {
         displayText: 'target.md',
         link: 'target',
         original: '[[target]]'
@@ -1465,13 +1465,13 @@ describe('app-dependent functions', () => {
         newSourcePathOrFile: 'note.md',
         newTargetPathOrFile: 'folder/other.md',
         oldTargetPathOrFile: 'target.md',
-        reference: link
+        reference
       });
       expect(result).toContain('other');
     });
 
     it('should preserve alias when shouldUpdateFileNameAlias is false', () => {
-      const link = {
+      const reference = {
         displayText: 'custom alias',
         link: 'target',
         original: '[[target|custom alias]]'
@@ -1480,14 +1480,14 @@ describe('app-dependent functions', () => {
         app,
         newSourcePathOrFile: 'note.md',
         newTargetPathOrFile: 'target.md',
-        reference: link,
+        reference,
         shouldUpdateFileNameAlias: false
       });
       expect(result).toContain('custom alias');
     });
 
     it('should use markdown link style', () => {
-      const link = {
+      const reference = {
         displayText: 'target',
         link: 'target',
         original: '[target](target.md)'
@@ -1497,13 +1497,13 @@ describe('app-dependent functions', () => {
         linkStyle: LinkStyle.Markdown,
         newSourcePathOrFile: 'note.md',
         newTargetPathOrFile: 'target.md',
-        reference: link
+        reference
       });
       expect(result).toContain('(target.md)');
     });
 
     it('should handle subpath in link', () => {
-      const link = {
+      const reference = {
         displayText: 'target',
         link: 'target#heading',
         original: '[[target#heading]]'
@@ -1512,13 +1512,13 @@ describe('app-dependent functions', () => {
         app,
         newSourcePathOrFile: 'note.md',
         newTargetPathOrFile: 'target.md',
-        reference: link
+        reference
       });
       expect(result).toContain('#heading');
     });
 
     it('should remap alias from old basename to new basename when shouldUpdateFileNameAlias is true', () => {
-      const link = {
+      const reference = {
         displayText: 'target',
         link: 'target',
         original: '[target](target.md)'
@@ -1529,14 +1529,14 @@ describe('app-dependent functions', () => {
         newSourcePathOrFile: 'note.md',
         newTargetPathOrFile: 'folder/other.md',
         oldTargetPathOrFile: 'target.md',
-        reference: link,
+        reference,
         shouldUpdateFileNameAlias: true
       });
       expect(result).toContain('[other]');
     });
 
     it('should remap alias from old name to new name when shouldUpdateFileNameAlias is true', () => {
-      const link = {
+      const reference = {
         displayText: 'target.md',
         link: 'target',
         original: '[target.md](target.md)'
@@ -1547,14 +1547,14 @@ describe('app-dependent functions', () => {
         newSourcePathOrFile: 'note.md',
         newTargetPathOrFile: 'folder/other.md',
         oldTargetPathOrFile: 'target.md',
-        reference: link,
+        reference,
         shouldUpdateFileNameAlias: true
       });
       expect(result).toContain('[other.md]');
     });
 
     it('should set isSingleSubpathAllowed when old source equals old target and alias exists', () => {
-      const link = {
+      const reference = {
         displayText: 'alias',
         link: 'note#heading',
         original: '[[note#heading|alias]]'
@@ -1564,13 +1564,13 @@ describe('app-dependent functions', () => {
         newSourcePathOrFile: 'note.md',
         newTargetPathOrFile: 'note.md',
         oldTargetPathOrFile: 'note.md',
-        reference: link
+        reference
       });
       expect(result).toContain('#heading');
     });
 
     it('should forward linkPathStyle to generateMarkdownLink', () => {
-      const link = {
+      const reference = {
         displayText: 'same',
         link: 'same',
         original: '[[same]]'
@@ -1579,7 +1579,7 @@ describe('app-dependent functions', () => {
         app,
         newSourcePathOrFile: 'note.md',
         newTargetPathOrFile: 'folder/same.md',
-        reference: link
+        reference
       };
 
       expect(updateLink(params)).toBe('[[same]]');
@@ -1937,8 +1937,8 @@ describe('app-dependent functions', () => {
       });
     }
 
-    function createLinkConverter(): ReturnType<typeof vi.fn<(link: Reference) => string>> {
-      return vi.fn((link: Reference) => `[[new-${link.link}]]`);
+    function createLinkConverter(): ReturnType<typeof vi.fn<(reference: Reference) => string>> {
+      return vi.fn((reference: Reference) => `[[new-${reference.link}]]`);
     }
 
     /**
@@ -2791,15 +2791,15 @@ describe('app-dependent functions', () => {
       const snapshot = buildBacklinksSnapshot<undefined>({
         backlinks: new Map([['note.md', [linkToA]]]),
         payloadProvider: () => undefined,
-        referenceIdentityKeyProvider: (link) => link.original
+        referenceIdentityKeyProvider: (reference) => reference.original
       });
 
       expect([...(snapshot.get('note.md') ?? new Map<string, undefined>()).keys()]).toEqual(['[[a]]']);
     });
 
     it('should key a merged target by the provider it was first built with', () => {
-      function referenceIdentityKeyProvider(link: Reference): string {
-        return link.original;
+      function referenceIdentityKeyProvider(reference: Reference): string {
+        return reference.original;
       }
 
       const snapshot = buildBacklinksSnapshot<undefined>({
@@ -2820,14 +2820,14 @@ describe('app-dependent functions', () => {
       const snapshot = buildBacklinksSnapshot<undefined>({
         backlinks: new Map([['note.md', [linkToA]]]),
         payloadProvider: () => undefined,
-        referenceIdentityKeyProvider: (link) => link.original
+        referenceIdentityKeyProvider: (reference) => reference.original
       });
 
       expect(() =>
         buildBacklinksSnapshot<undefined>({
           backlinks: new Map([['note.md', [linkToB]]]),
           payloadProvider: () => undefined,
-          referenceIdentityKeyProvider: (link) => link.link,
+          referenceIdentityKeyProvider: (reference) => reference.link,
           target: snapshot
         })
       ).toThrow('buildBacklinksSnapshot was passed a referenceIdentityKeyProvider that differs');
@@ -2967,8 +2967,8 @@ describe('app-dependent functions', () => {
     it('should match links through a custom referenceIdentityKeyProvider', async () => {
       mockFileWithLinks([linkToA]);
 
-      function referenceIdentityKeyProvider(link: Reference): string {
-        return link.original;
+      function referenceIdentityKeyProvider(reference: Reference): string {
+        return reference.original;
       }
 
       const referenceConverter = vi.fn(() => '[[a-new]]');
@@ -3003,7 +3003,7 @@ describe('app-dependent functions', () => {
           // A DIFFERENT object with the same `original`: only the build-side provider can match it.
           backlinks: new Map([['note.md', [{ ...linkToA, displayText: 'something else' }]]]),
           payloadProvider: () => undefined,
-          referenceIdentityKeyProvider: (link) => link.original
+          referenceIdentityKeyProvider: (reference) => reference.original
         })
       });
 
@@ -3018,12 +3018,12 @@ describe('app-dependent functions', () => {
         app,
         pluginNoticeComponent: null,
         referenceConverter,
-        referenceIdentityKeyProvider: (link) => link.link,
+        referenceIdentityKeyProvider: (reference) => reference.link,
         resourceLockComponent,
         snapshot: buildBacklinksSnapshot<undefined>({
           backlinks: new Map([['note.md', [linkToA]]]),
           payloadProvider: () => undefined,
-          referenceIdentityKeyProvider: (link) => link.original
+          referenceIdentityKeyProvider: (reference) => reference.original
         })
       })).rejects.toThrow('editBacklinksSnapshot was passed a referenceIdentityKeyProvider that differs');
       expect(referenceConverter).not.toHaveBeenCalled();
@@ -3037,7 +3037,7 @@ describe('app-dependent functions', () => {
         app,
         pluginNoticeComponent: null,
         referenceConverter,
-        referenceIdentityKeyProvider: (link) => link.original,
+        referenceIdentityKeyProvider: (reference) => reference.original,
         resourceLockComponent,
         snapshot: new Map([['note.md', new Map([['[[a]]', undefined]])]])
       });

@@ -96,8 +96,8 @@ describe('backlinks via metadata cache', () => {
           if (!cache) {
             return [];
           }
-          const links = getReferences({ cache });
-          return links.map((reference) => reference.link);
+          const references = getReferences({ cache });
+          return references.map((reference) => reference.link);
         } finally {
           const f = app.vault.getAbstractFileByPath('backlink-multi-linker.md');
           if (f) {

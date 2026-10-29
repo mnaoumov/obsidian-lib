@@ -56,7 +56,7 @@ function update(params: UpdateParams): string {
   } = params;
   const app = params.app ?? createApp(INSIDE_FOLDER_FILES, INSIDE_FOLDER_SETTINGS);
   const linkPath = /\[\[(?<path>[^\]|]*)/.exec(original)?.groups?.['path'] ?? /\((?<path>[^)]*)\)/.exec(original)?.groups?.['path'] ?? '';
-  const link = castTo<Reference>({
+  const reference = castTo<Reference>({
     displayText: '',
     link: linkPath,
     original
@@ -64,7 +64,7 @@ function update(params: UpdateParams): string {
   return updateLink({
     app,
     linkPathStyle: LinkPathStyle.AbsolutePathInVault,
-    reference: link,
+    reference,
     ...linkStyle && { linkStyle },
     newSourcePathOrFile: 'note.md',
     newTargetPathOrFile: newTargetPath,

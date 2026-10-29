@@ -313,9 +313,9 @@ describe('sortReferences', () => {
 
   it('should place frontmatter links after reference caches', () => {
     const referenceCache = makeReferenceCache('[[link]]', 0);
-    const fmLink = makeFrontmatterLink('link', 'aliases');
-    const sorted = sortReferences([fmLink, referenceCache]);
-    expect(sorted).toEqual([referenceCache, fmLink]);
+    const fmReference = makeFrontmatterLink('link', 'aliases');
+    const sorted = sortReferences([fmReference, referenceCache]);
+    expect(sorted).toEqual([referenceCache, fmReference]);
   });
 
   it('should sort frontmatter links with offsets before those without for same key', () => {
