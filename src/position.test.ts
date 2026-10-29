@@ -9,7 +9,7 @@ import {
 import {
   isPositionInOffsetRange,
   isPositionInside,
-  isPositionInsideAnyOf
+  isPositionInsideSome
 } from './position.ts';
 
 function makePos(startOffset: number, endOffset: number): Pos {
@@ -45,21 +45,21 @@ describe('isPositionInside', () => {
   });
 });
 
-describe('isPositionInsideAnyOf', () => {
+describe('isPositionInsideSome', () => {
   it('should be true when a bare position contains it', () => {
-    expect(isPositionInsideAnyOf(makePos(5, 10), [makePos(30, 40), makePos(0, 20)])).toBe(true);
+    expect(isPositionInsideSome(makePos(5, 10), [makePos(30, 40), makePos(0, 20)])).toBe(true);
   });
 
   it('should be true when a container carrying a position contains it', () => {
-    expect(isPositionInsideAnyOf(makePos(5, 10), [{ position: makePos(30, 40) }, { position: makePos(5, 10) }])).toBe(true);
+    expect(isPositionInsideSome(makePos(5, 10), [{ position: makePos(30, 40) }, { position: makePos(5, 10) }])).toBe(true);
   });
 
   it('should be false when only overlapping or outside containers are given', () => {
-    expect(isPositionInsideAnyOf(makePos(5, 10), [makePos(0, 7), { position: makePos(8, 20) }, makePos(30, 40)])).toBe(false);
+    expect(isPositionInsideSome(makePos(5, 10), [makePos(0, 7), { position: makePos(8, 20) }, makePos(30, 40)])).toBe(false);
   });
 
   it('should be false for no containers', () => {
-    expect(isPositionInsideAnyOf(makePos(5, 10), [])).toBe(false);
+    expect(isPositionInsideSome(makePos(5, 10), [])).toBe(false);
   });
 });
 
