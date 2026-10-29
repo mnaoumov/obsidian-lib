@@ -28,6 +28,7 @@ import {
   CUSTOM_ATTACHMENT_LOCATION_PLUGIN_ID,
   getAttachmentFilePath,
   getAttachmentFolderPath,
+  getAttachmentFolderPathForAttachment,
   getAttachmentFolderPathSyncOrNull,
   getAvailablePathForAttachments,
   getCheckIsAttachmentUnitFolderFunction,
@@ -164,6 +165,15 @@ describe('getAttachmentFolderPath', () => {
         notePathOrFile: NOTE_PATH
       })
     ).toBe('Docs');
+  });
+
+  it('should ask Custom Attachment Location to skip the generated name, since only the folder is kept', async () => {
+    const app = createApp('./');
+    const extended = vi.fn().mockResolvedValue('Docs/note/__DUMMY__');
+    stubCustomAttachmentLocationApi({ getAvailablePathForAttachments: extended });
+
+    expect(await getAttachmentFolderPath({ app, notePathOrFile: NOTE_PATH })).toBe('Docs/note');
+    expect(extended).toHaveBeenCalledWith(expect.objectContaining({ shouldSkipGeneratedAttachmentFileName: true }));
   });
 });
 
@@ -356,6 +366,87 @@ describe('getAttachmentFilePath', () => {
     const params = castTo<GetAvailablePathForAttachmentsExtendedFunctionParams>(extended.mock.calls[0]?.[0]);
     expect(params.attachmentFileStats).toBeUndefined();
     expect(params.readAttachmentFileContent).toBeNull();
+  });
+
+  it('should ask the Custom Attachment Location resolver to generate a name unless told to skip it', async () => {
+    const app = createApp('./');
+    const extended = vi.fn().mockResolvedValue('Docs/img.png');
+    stubCustomAttachmentLocationApi({ getAvailablePathForAttachments: extended });
+
+    for (const shouldSkipGeneratedAttachmentFileName of [undefined, false, true]) {
+      await getAttachmentFilePath({
+        app,
+        context: AttachmentPathContext.Unknown,
+        notePathOrFile: NOTE_PATH,
+        oldAttachmentPathOrFile: 'Inbox/img.png',
+        shouldSkipDuplicateCheck: true,
+        shouldSkipGeneratedAttachmentFileName
+      });
+    }
+
+    expect(extended.mock.calls.map((call) => castTo<GetAvailablePathForAttachmentsExtendedFunctionParams>(call[0]).shouldSkipGeneratedAttachmentFileName))
+      .toEqual([false, false, true]);
+  });
+
+  it('should ignore the skip-generated-name flag when Custom Attachment Location publishes no API', async () => {
+    const app = createApp('./assets');
+    expect(
+      await getAttachmentFilePath({
+        app,
+        context: AttachmentPathContext.Unknown,
+        notePathOrFile: NOTE_PATH,
+        oldAttachmentPathOrFile: 'Inbox/img.png',
+        shouldSkipDuplicateCheck: true,
+        shouldSkipGeneratedAttachmentFileName: true
+      })
+    ).toBe('Docs/assets/img.png');
+  });
+});
+
+describe('getAttachmentFolderPathForAttachment', () => {
+  it('should resolve the attachment folder when Custom Attachment Location publishes no API', async () => {
+    const app = createApp('./assets');
+    expect(
+      await getAttachmentFolderPathForAttachment({
+        app,
+        attachmentPathOrFile: 'Inbox/img.png',
+        notePathOrFile: NOTE_PATH
+      })
+    ).toBe('Docs/assets');
+  });
+
+  it('should ask Custom Attachment Location for the folder of the attachment itself, skipping the generated name', async () => {
+    const app = createApp('./');
+    const extended = vi.fn().mockResolvedValue('Docs/note/generated.png');
+    stubCustomAttachmentLocationApi({ getAvailablePathForAttachments: extended });
+
+    expect(
+      await getAttachmentFolderPathForAttachment({
+        app,
+        attachmentPathOrFile: 'Inbox/img.png',
+        context: AttachmentPathContext.RenameNote,
+        notePathOrFile: NOTE_PATH
+      })
+    ).toBe('Docs/note');
+    expect(extended).toHaveBeenCalledTimes(1);
+    expect(extended).toHaveBeenCalledWith(expect.objectContaining({
+      attachmentFileBaseName: 'img',
+      attachmentFileExtension: 'png',
+      context: AttachmentPathContext.RenameNote,
+      notePathOrFile: NOTE_PATH,
+      oldAttachmentPathOrFile: 'Inbox/img.png',
+      shouldSkipDuplicateCheck: true,
+      shouldSkipGeneratedAttachmentFileName: true
+    }));
+  });
+
+  it('should default to the unknown context', async () => {
+    const app = createApp('./');
+    const extended = vi.fn().mockResolvedValue('Docs/img.png');
+    stubCustomAttachmentLocationApi({ getAvailablePathForAttachments: extended });
+
+    await getAttachmentFolderPathForAttachment({ app, attachmentPathOrFile: 'Inbox/img.png', notePathOrFile: NOTE_PATH });
+    expect(extended).toHaveBeenCalledWith(expect.objectContaining({ context: AttachmentPathContext.Unknown }));
   });
 });
 
