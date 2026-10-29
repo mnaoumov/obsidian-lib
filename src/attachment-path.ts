@@ -238,6 +238,44 @@ export interface GetAttachmentFilePathParams {
    * Should the duplicate check be skipped.
    */
   readonly shouldSkipDuplicateCheck: boolean;
+
+  /**
+   * Should the generated attachment file name be skipped, keeping the attachment's own name.
+   *
+   * Only `Custom Attachment Location`'s resolver generates a name, so only it reads this flag. A caller that keeps
+   * just the folder of the answer should set it: the folder does not depend on the generated name, and generating
+   * one can walk every link of the note.
+   *
+   * @default `false`
+   */
+  readonly shouldSkipGeneratedAttachmentFileName?: boolean | undefined;
+}
+
+/**
+ * Parameters for {@link getAttachmentFolderPathForAttachment}.
+ */
+export interface GetAttachmentFolderPathForAttachmentParams {
+  /**
+   * The Obsidian application instance.
+   */
+  readonly app: App;
+
+  /**
+   * The path or file of the attachment.
+   */
+  readonly attachmentPathOrFile: PathOrFile;
+
+  /**
+   * The context.
+   *
+   * @default {@link AttachmentPathContext.Unknown}
+   */
+  readonly context?: AttachmentPathContext;
+
+  /**
+   * The path or file of the note the attachment belongs to.
+   */
+  readonly notePathOrFile: PathOrFile;
 }
 
 /**
@@ -492,6 +530,7 @@ export async function getAttachmentFilePath(params: GetAttachmentFilePathParams)
     oldNotePathOrFile: params.oldNotePathOrFile,
     readAttachmentFileContent: attachmentFile ? (): Promise<ArrayBuffer> => app.vault.readBinary(attachmentFile) : null,
     shouldSkipDuplicateCheck,
+    shouldSkipGeneratedAttachmentFileName: params.shouldSkipGeneratedAttachmentFileName ?? false,
     shouldSkipMissingAttachmentFolderCreation: true
   });
 }
@@ -514,7 +553,41 @@ export async function getAttachmentFolderPath(params: GetAttachmentFolderPathPar
       context,
       notePathOrFile,
       oldAttachmentPathOrFile: DUMMY_PATH,
-      shouldSkipDuplicateCheck: true
+      shouldSkipDuplicateCheck: true,
+      shouldSkipGeneratedAttachmentFileName: true
+    })
+  );
+}
+
+/**
+ * Retrieves the folder a given attachment of a note belongs in, without generating the attachment's name.
+ *
+ * This is the question a caller judging only WHERE an attachment should be asks. It is cheaper than taking the
+ * folder of {@link getAttachmentFilePath}'s answer, because it sets
+ * {@link GetAttachmentFilePathParams.shouldSkipGeneratedAttachmentFileName}, so `Custom Attachment Location` skips
+ * generating a name, which can walk every link of the note.
+ *
+ * The answer can differ from {@link getAttachmentFolderPath}'s, which asks on behalf of a dummy attachment: a
+ * folder template may read the attachment's own name, extension or stats.
+ *
+ * @param params - Parameters for the get attachment folder path for attachment function.
+ * @returns A {@link Promise} that resolves to the attachment folder path.
+ */
+export async function getAttachmentFolderPathForAttachment(params: GetAttachmentFolderPathForAttachmentParams): Promise<string> {
+  const {
+    app,
+    attachmentPathOrFile,
+    context = AttachmentPathContext.Unknown,
+    notePathOrFile
+  } = params;
+  return parentFolderPath(
+    await getAttachmentFilePath({
+      app,
+      context,
+      notePathOrFile,
+      oldAttachmentPathOrFile: attachmentPathOrFile,
+      shouldSkipDuplicateCheck: true,
+      shouldSkipGeneratedAttachmentFileName: true
     })
   );
 }
