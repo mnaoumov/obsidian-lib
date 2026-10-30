@@ -34,6 +34,7 @@ import { AppActiveFileProvider } from '../active-file-provider.ts';
 import { CommandHandlerComponent } from '../command-handlers/command-handler-component.ts';
 import { UnlockActiveNoteCommandHandler } from '../command-handlers/unlock-active-note-command-handler.ts';
 import { PluginCommandRegistrar } from '../command-registrar.ts';
+import { PluginEnableRefusedError } from '../community-plugins.ts';
 import { AbortSignalComponent } from '../components/abort-signal-component.ts';
 import { AsyncErrorHandlerComponent } from '../components/async-error-handler-component.ts';
 import { ComponentEx } from '../components/component-ex.ts';
@@ -692,12 +693,16 @@ export abstract class PluginBase extends mixinAsyncEvents<PluginEventMap>()(Plug
  *
  * @param plugin - The plugin to reload.
  * @returns A {@link Promise} that resolves when the plugin is reloaded.
+ * @throws {@link PluginEnableRefusedError} If Obsidian refused to enable the plugin again, which leaves it
+ * disabled.
  */
 export async function reloadPlugin(plugin: Plugin): Promise<void> {
   const plugins = plugin.app.plugins;
   const pluginId = plugin.manifest.id;
   await plugins.disablePlugin(pluginId);
-  await plugins.enablePlugin(pluginId);
+  if (!await plugins.enablePlugin(pluginId)) {
+    throw new PluginEnableRefusedError(pluginId);
+  }
 }
 
 /**
