@@ -150,8 +150,7 @@ describe('EmbeddableMarkdownEditorComponent', () => {
     expect(result.isActiveEditorAfterUnload).toBe(false);
   });
 
-  // `Mod+Enter` and the exact line-break count are covered by the `.desktop` sibling: a phone's keyboard has no
-  // modifier keys, and on the Android emulator one Enter from the harness can reach CodeMirror's Android key path twice.
+  // `Mod+Enter` is covered by the `.desktop` sibling: a phone's keyboard has no modifier keys.
   it('should route Enter and Escape to its handlers', async () => {
     const result = await evalInObsidian({
       async callback({ app, lib: { EmbeddableMarkdownEditorComponent, pressKey, waitUntil } }) {
@@ -184,8 +183,9 @@ describe('EmbeddableMarkdownEditorComponent', () => {
           await pressKey({ key: 'Enter' });
           await waitUntil({
             message: 'plain Enter reaches onEnter and, refused there, inserts a line break',
-            predicate: () => enterCalls.length > 0 && component.value.startsWith('line\n')
+            predicate: () => enterCalls.length > 0 && component.value === 'line\n'
           });
+          const valueAfterEnter = component.value;
 
           await pressKey({ key: 'Escape' });
           await waitUntil({
@@ -193,7 +193,7 @@ describe('EmbeddableMarkdownEditorComponent', () => {
             predicate: () => escapeCount > 0
           });
 
-          return { enterCalls, escapeCount, value: component.value };
+          return { enterCalls, escapeCount, value: component.value, valueAfterEnter };
         } finally {
           component.unload();
           containerEl.remove();
@@ -201,9 +201,10 @@ describe('EmbeddableMarkdownEditorComponent', () => {
       }
     });
 
-    expect(result.enterCalls[0]).toBe('mod=false shift=false');
+    expect(result.enterCalls).toEqual(['mod=false shift=false']);
+    expect(result.valueAfterEnter).toBe('line\n');
     expect(result.escapeCount).toBe(1);
-    expect(result.value.startsWith('line\n')).toBe(true);
+    expect(result.value).toBe('line\n');
   });
 
   it('should keep its focus when the workspace activates a leaf', async () => {
