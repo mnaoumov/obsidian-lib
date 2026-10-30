@@ -535,7 +535,7 @@ describe('reloadPlugin', () => {
       app: {
         plugins: {
           disablePlugin: vi.fn(() => noopAsync()),
-          enablePlugin: vi.fn(() => noopAsync())
+          enablePlugin: vi.fn(() => Promise.resolve(true))
         }
       },
       manifest: { id: 'test-plugin' }

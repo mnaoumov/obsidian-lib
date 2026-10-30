@@ -27,6 +27,7 @@ import {
   replaceAll,
   trimStart
 } from '@mnaoumov/typescript-lib/string';
+import { ensureNonNullable } from '@mnaoumov/typescript-lib/type-guards';
 import {
   getDataAdapterEx,
   parentFolderPath
@@ -926,7 +927,8 @@ function resolveAttachmentFolder(params: ResolveAttachmentFolderParams): Resolve
     app,
     notePathOrFile
   } = params;
-  let attachmentFolderPath = app.vault.getConfig('attachmentFolderPath') as string;
+  // `getConfig` falls back to Obsidian's default for a key the user never set, so it always has a value here.
+  let attachmentFolderPath = ensureNonNullable(app.vault.getConfig('attachmentFolderPath'));
   const isCurrentFolder = attachmentFolderPath === '.' || attachmentFolderPath === './';
   const relativePath = attachmentFolderPath.startsWith('./')
     ? trimStart({

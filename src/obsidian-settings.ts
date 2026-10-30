@@ -6,7 +6,10 @@
 
 import type { App } from 'obsidian';
 
-import { assertNever } from '@mnaoumov/typescript-lib/type-guards';
+import {
+  assertNever,
+  ensureNonNullable
+} from '@mnaoumov/typescript-lib/type-guards';
 
 /**
  * A way an input decides whether it is spell-checked.
@@ -45,7 +48,8 @@ export type NewLinkFormat = 'absolute' | 'relative' | 'shortest';
  * @returns Whether to use relative links.
  */
 export function getNewLinkFormat(app: App): NewLinkFormat {
-  return app.vault.getConfig('newLinkFormat') as NewLinkFormat;
+  // `getConfig` falls back to Obsidian's default for a key the user never set, so it always has a value.
+  return ensureNonNullable(app.vault.getConfig('newLinkFormat'));
 }
 
 /**
