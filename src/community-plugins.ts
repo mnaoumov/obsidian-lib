@@ -247,6 +247,22 @@ export enum UpdateCommunityPluginResult {
 }
 
 /**
+ * Thrown when Obsidian refuses to enable a plugin: its `enablePlugin` / `enablePluginAndSave` resolved
+ * `false`, because the plugin is unknown, deprecated, desktop-only on mobile, or threw while loading.
+ */
+export class PluginEnableRefusedError extends Error {
+  /**
+   * Creates a {@link PluginEnableRefusedError}.
+   *
+   * @param pluginId - The id of the plugin Obsidian refused to enable.
+   */
+  public constructor(public readonly pluginId: string) {
+    super(`Obsidian refused to enable the plugin "${pluginId}".`);
+    this.name = 'PluginEnableRefusedError';
+  }
+}
+
+/**
  * Configures a community plugin, preferring the running plugin's own settings component over its
  * `data.json`.
  *
@@ -327,6 +343,7 @@ export async function disableCommunityPlugin(params: DisableCommunityPluginParam
  * @param params - The {@link EnableCommunityPluginParams}.
  * @returns A {@link Promise} that resolves once the plugin is enabled.
  * @throws If selected by `pluginName` and the name is not listed in Obsidian's community plugins registry.
+ * @throws {@link PluginEnableRefusedError} If Obsidian refused to enable the plugin; nothing is saved then.
  */
 export async function enableCommunityPlugin(params: EnableCommunityPluginParams): Promise<void> {
   const { app } = params;
@@ -334,7 +351,9 @@ export async function enableCommunityPlugin(params: EnableCommunityPluginParams)
   if (app.plugins.enabledPlugins.has(pluginId)) {
     return;
   }
-  await app.plugins.enablePluginAndSave(pluginId);
+  if (!await app.plugins.enablePluginAndSave(pluginId)) {
+    throw new PluginEnableRefusedError(pluginId);
+  }
 }
 
 /**

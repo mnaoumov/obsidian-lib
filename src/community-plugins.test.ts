@@ -27,6 +27,7 @@ import {
   getLatestReleaseVersion,
   installCommunityPlugin,
   installConfigureEnableCommunityPlugin,
+  PluginEnableRefusedError,
   searchCommunityPlugins,
   toggleEnableCommunityPlugin,
   toggleInstallCommunityPlugin,
@@ -453,6 +454,18 @@ describe('enableCommunityPlugin', () => {
     const { app, enablePluginAndSave } = createApp({ enabledIds: ['plugin-a'] });
     await enableCommunityPlugin({ app, pluginId: 'plugin-a' });
     expect(enablePluginAndSave).not.toHaveBeenCalled();
+  });
+
+  it('should throw a PluginEnableRefusedError when Obsidian refuses to enable the plugin', async () => {
+    const { app, enablePluginAndSave } = createApp();
+    vi.mocked(enablePluginAndSave).mockResolvedValue(false);
+    const promise = enableCommunityPlugin({ app, pluginId: 'plugin-a' });
+    await expect(promise).rejects.toBeInstanceOf(PluginEnableRefusedError);
+    await expect(promise).rejects.toMatchObject({
+      message: 'Obsidian refused to enable the plugin "plugin-a".',
+      name: 'PluginEnableRefusedError',
+      pluginId: 'plugin-a'
+    });
   });
 });
 

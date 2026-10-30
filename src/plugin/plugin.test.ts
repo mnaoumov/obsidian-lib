@@ -27,6 +27,7 @@ import type { PluginApiDeclaration } from './plugin-api.ts';
 import type { PluginLifecycleEventPayload } from './plugin-lifecycle-events.ts';
 
 import { FileCommandHandler } from '../command-handlers/file-command-handler.ts';
+import { PluginEnableRefusedError } from '../community-plugins.ts';
 import { ComponentEx } from '../components/component-ex.ts';
 import { PluginConflictSeverity } from '../components/plugin-gate-component.ts';
 import { PluginNoticeComponent } from '../components/plugin-notice-component.ts';
@@ -530,12 +531,12 @@ describe('PluginBase', () => {
 });
 
 describe('reloadPlugin', () => {
-  function createMockPlugin(): Plugin {
+  function createMockPlugin(isEnableAccepted = true): Plugin {
     return strictProxy<Plugin>({
       app: {
         plugins: {
           disablePlugin: vi.fn(() => noopAsync()),
-          enablePlugin: vi.fn(() => Promise.resolve(true))
+          enablePlugin: vi.fn(() => Promise.resolve(isEnableAccepted))
         }
       },
       manifest: { id: 'test-plugin' }
@@ -547,6 +548,14 @@ describe('reloadPlugin', () => {
     await reloadPlugin(plugin);
     expect(plugin.app.plugins.disablePlugin).toHaveBeenCalledWith('test-plugin');
     expect(plugin.app.plugins.enablePlugin).toHaveBeenCalledWith('test-plugin');
+  });
+
+  it('should throw a PluginEnableRefusedError when Obsidian refuses to enable the plugin again', async () => {
+    const plugin = createMockPlugin(false);
+    const promise = reloadPlugin(plugin);
+    await expect(promise).rejects.toBeInstanceOf(PluginEnableRefusedError);
+    await expect(promise).rejects.toMatchObject({ pluginId: 'test-plugin' });
+    expect(plugin.app.plugins.disablePlugin).toHaveBeenCalledWith('test-plugin');
   });
 });
 
