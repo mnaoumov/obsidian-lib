@@ -144,7 +144,6 @@ describe('links inside headings', () => {
         const notePath = 'heading-links.md';
         const inboundPath = 'heading-links-inbound.md';
         const targetPath = 'Target.md';
-        // eslint-disable-next-line typescript-dev-toolkit/prefer-dedent -- This callback is serialized into Obsidian, where the dedent import is not in scope.
         const content = [
           '## [[Target]] wikilink heading',
           '',
