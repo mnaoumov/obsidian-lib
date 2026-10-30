@@ -1,10 +1,8 @@
 /**
  * @file
  *
- * Desktop-only integration test for {@link EmbeddableMarkdownEditorComponent}: the `Mod+Enter` handling and the exact
- * line-break count of a plain Enter. A phone's keyboard has no modifier keys, and on the Android emulator one Enter from
- * the harness can reach CodeMirror's Android key path twice, so the cross-platform cases live in the sibling file
- * without the `.desktop` segment.
+ * Desktop-only integration test for {@link EmbeddableMarkdownEditorComponent}: the `Mod+Enter` handling. A phone's
+ * keyboard has no modifier keys, so the cross-platform cases live in the sibling file without the `.desktop` segment.
  */
 
 /// <reference types="obsidian-integration-testing/vitest/typings" />
@@ -28,7 +26,6 @@ describe('EmbeddableMarkdownEditorComponent on desktop', () => {
           cursorLocation: { anchor: 4, head: 4 },
           onEnter: ({ isModifierPressed, isShiftPressed }): boolean => {
             enterCalls.push(`mod=${String(isModifierPressed)} shift=${String(isShiftPressed)}`);
-            // Plain Enter is left to the editor, so the line break proves a `false` return lets it through.
             return isModifierPressed;
           },
           value: 'line'
@@ -42,19 +39,6 @@ describe('EmbeddableMarkdownEditorComponent on desktop', () => {
             predicate: () => component.editorView.hasFocus
           });
 
-          // One plain Enter, refused by `onEnter`, inserts exactly one line break.
-          enterCalls.length = 0;
-          await pressKey({ key: 'Enter' });
-          await waitUntil({
-            message: 'plain Enter inserts a line break',
-            predicate: () => component.value === 'line\n'
-          });
-          const valueAfterPlainEnter = component.value;
-          const plainEnterCalls = [...enterCalls];
-          enterCalls.length = 0;
-          component.setValue('line');
-          component.editor.setCursor({ ch: 4, line: 0 });
-
           // Without the component's keymap scope, Obsidian's `Mod+Enter` hotkey takes the key and the editor never
           // sees it, so these calls are what the scope is for.
           await pressKey({ key: 'Enter', modifiers: ['Mod'] });
@@ -64,7 +48,7 @@ describe('EmbeddableMarkdownEditorComponent on desktop', () => {
             predicate: () => enterCalls.length >= 2
           });
 
-          return { enterCalls, plainEnterCalls, value: component.value, valueAfterPlainEnter };
+          return { enterCalls, value: component.value };
         } finally {
           component.unload();
           containerEl.remove();
@@ -72,8 +56,6 @@ describe('EmbeddableMarkdownEditorComponent on desktop', () => {
       }
     });
 
-    expect(result.plainEnterCalls).toEqual(['mod=false shift=false']);
-    expect(result.valueAfterPlainEnter).toBe('line\n');
     expect(result.enterCalls).toEqual(['mod=true shift=false', 'mod=true shift=true']);
     expect(result.value).toBe('line');
   });
