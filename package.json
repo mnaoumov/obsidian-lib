@@ -421,7 +421,7 @@
     "markdownlint-cli2": "^0.23.2",
     "nano-staged": "^1.0.2",
     "obsidian": "^1.14.4",
-    "obsidian-integration-testing": "^17.6.1",
+    "obsidian-integration-testing": "^17.7.4",
     "obsidian-test-mocks": "^7.2.3",
     "prismjs": "^1.30.0",
     "sass": "^1.104.1",
@@ -439,7 +439,7 @@
     "@lezer/common": "^1.5.2",
     "@obsidian-typings/obsidian-public-latest": "^6.55.0",
     "obsidian": "^1.14.4",
-    "obsidian-integration-testing": "^17.6.1"
+    "obsidian-integration-testing": "^17.7.4"
   },
   "peerDependenciesMeta": {
     "obsidian-integration-testing": {
