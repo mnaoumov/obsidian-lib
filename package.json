@@ -367,7 +367,6 @@
     "typescript": "$typescript"
   },
   "dependencies": {
-    "@lezer/common": "1.5.2",
     "@mnaoumov/obsidian-dataview": "^1.0.0",
     "@mnaoumov/typescript-lib": "^2.0.0",
     "@standard-schema/spec": "^1.1.0",
@@ -390,6 +389,7 @@
     "@codemirror/view": "6.43.13",
     "@commitlint/cli": "^21.2.2",
     "@commitlint/config-conventional": "^21.2.2",
+    "@lezer/common": "1.5.2",
     "@mnaoumov/obsidian-dev-toolkit": "^7.4.0",
     "@mnaoumov/typescript-dev-toolkit": "^5.4.1",
     "@mnaoumov/typescript-test-toolkit": "^1.0.3",
@@ -436,6 +436,7 @@
   "peerDependencies": {
     "@codemirror/state": "^6.7.6",
     "@codemirror/view": "^6.43.13",
+    "@lezer/common": "^1.5.2",
     "@obsidian-typings/obsidian-public-latest": "^6.37.0",
     "obsidian": "^1.14.4",
     "obsidian-integration-testing": "^17.6.1"
