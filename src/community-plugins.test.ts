@@ -105,7 +105,7 @@ function createApp(options: CreateAppOptions = {}): AppMock {
   });
   const enablePluginAndSave = vi.fn<App['plugins']['enablePluginAndSave']>().mockImplementation((id) => {
     enabledPlugins.add(id);
-    return noopAsync();
+    return Promise.resolve(true);
   });
   const installPlugin = vi.fn<App['plugins']['installPlugin']>().mockResolvedValue();
   const uninstallPlugin = vi.fn<App['plugins']['uninstallPlugin']>().mockResolvedValue();

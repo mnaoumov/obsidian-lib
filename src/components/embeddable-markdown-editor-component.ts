@@ -37,14 +37,14 @@
 import type { Extension } from '@codemirror/state';
 import type { ViewUpdate } from '@codemirror/view';
 import type {
-  ConstructorBase,
+  ExtractConstructor,
   MarkdownScrollableEditView,
+  MarkdownScrollableEditViewOwner,
   WidgetEditorView
 } from '@obsidian-typings/obsidian-public-latest';
 import type {
   App,
   Editor,
-  MarkdownFileInfo,
   TFile
 } from 'obsidian';
 
@@ -174,12 +174,11 @@ interface EditorHooks {
 type EmbeddedScrollableMarkdownEditorConstructor = new (
   app: App,
   containerEl: HTMLElement,
-  owner: MarkdownFileInfo,
+  owner: MarkdownScrollableEditViewOwner,
   hooks: EditorHooks
 ) => MarkdownScrollableEditView;
 
-// TODO: Use `ExtractConstructor<MarkdownScrollableEditView>` once obsidian-typings declares its constructor.
-type ScrollableMarkdownEditorConstructor = ConstructorBase<[app: App, containerEl: HTMLElement, owner: MarkdownFileInfo], MarkdownScrollableEditView>;
+type ScrollableMarkdownEditorConstructor = ExtractConstructor<MarkdownScrollableEditView>;
 
 interface ScrollableMarkdownEditorConstructorCache {
   // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Filled on first use.
@@ -187,11 +186,9 @@ interface ScrollableMarkdownEditorConstructorCache {
 }
 
 /* eslint-disable typescript-dev-toolkit/readonly-interface-members -- The owner learns its editor after the editor, which needs the owner, is built. */
-interface ScrollableMarkdownEditorOwner extends MarkdownFileInfo {
+interface ScrollableMarkdownEditorOwner extends MarkdownScrollableEditViewOwner {
   editMode: MarkdownScrollableEditView | null;
   readonly getMode: () => 'source';
-  readonly onMarkdownScroll: () => void;
-  readonly syncScroll: () => void;
 }
 /* eslint-enable typescript-dev-toolkit/readonly-interface-members -- Restore the rule after the owner. */
 
@@ -302,7 +299,6 @@ export class EmbeddableMarkdownEditorComponent extends ComponentEx {
       file: null,
       getMode: (): 'source' => 'source',
       hoverPopover: null,
-      onMarkdownScroll: noop,
       syncScroll: noop
     };
   }
@@ -462,10 +458,8 @@ export class EmbeddableMarkdownEditorComponent extends ComponentEx {
 }
 
 function createEditorClass(BaseConstructor: ScrollableMarkdownEditorConstructor): EmbeddedScrollableMarkdownEditorConstructor {
-  return class EmbeddedScrollableMarkdownEditor extends castTo<new (app: App, containerEl: HTMLElement, owner: MarkdownFileInfo) => MarkdownScrollableEditView>(
-    BaseConstructor
-  ) {
-    public constructor(app: App, containerEl: HTMLElement, owner: MarkdownFileInfo, private readonly hooks: EditorHooks) {
+  return class EmbeddedScrollableMarkdownEditor extends BaseConstructor {
+    public constructor(app: App, containerEl: HTMLElement, owner: MarkdownScrollableEditViewOwner, private readonly hooks: EditorHooks) {
       // The base builds its extensions lazily, on the first `set()`, so the hooks are not needed during `super()`.
       super(app, containerEl, owner);
     }
