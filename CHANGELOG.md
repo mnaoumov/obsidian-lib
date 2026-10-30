@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 10.4.1
+
+- perf(data-stores): commit local data-store writes without a whole-store count
+- build(deps): override re2js to ^2.9.1 for GHSA-gg6h-894w-4m9c
+
 ## 10.4.0
 
 - feat(bulk-operation): wrap bulk operations in git commits, undone by revert
