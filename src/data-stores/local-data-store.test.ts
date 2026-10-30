@@ -60,6 +60,16 @@ describe('LocalDataStore', () => {
     store.close();
   });
 
+  it('commits without issuing a whole-store count', async () => {
+    const store = await LocalDataStore.open({ factory: new IDBFactory(), pluginId: 'plugin', storeId: 'cache', vaultId: 'vault' });
+    await store.commit({ entries: [['a', 1], ['b', 2]] });
+    const countSpy = vi.spyOn(IDBObjectStore.prototype, 'count');
+    await expect(store.commit({ entries: [['c', 3]], removedKeys: ['a'], shouldClear: false })).resolves.toBeUndefined();
+    expect(countSpy).not.toHaveBeenCalled();
+    expect(await store.entries()).toEqual([['b', 2], ['c', 3]]);
+    store.close();
+  });
+
   it('clears and reseeds a store in one transaction, durably and only for that store', async () => {
     const factory = new IDBFactory();
     const params = { factory, pluginId: 'plugin', storeId: 'cache', vaultId: 'vault' };

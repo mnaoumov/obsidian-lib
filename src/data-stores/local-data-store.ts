@@ -116,7 +116,7 @@ export class LocalDataStore {
       for (const [key, value] of params.entries) {
         store.put(value, key);
       }
-      return store.count();
+      // No request to resolve with: a closing `store.count()` would walk every record of the store on each commit.
     });
   }
 
@@ -208,10 +208,10 @@ export class LocalDataStore {
     await this.run('readwrite', (store) => store.put(value, key));
   }
 
-  private async run<T>(mode: IDBTransactionMode, action: (store: IDBObjectStore) => IDBRequest<T>): Promise<T> {
+  private async run<T>(mode: IDBTransactionMode, action: (store: IDBObjectStore) => IDBRequest<T> | undefined): Promise<T | undefined> {
     return await new Promise((resolve, reject) => {
       const transaction = this.database.transaction('records', mode);
-      let request: IDBRequest<T>;
+      let request: IDBRequest<T> | undefined;
       try {
         request = action(transaction.objectStore('records'));
       } catch (error) {
@@ -220,7 +220,8 @@ export class LocalDataStore {
         return;
       }
       transaction.oncomplete = (): void => {
-        resolve(request.result);
+        // An action that issued no request of its own resolves with `undefined` once its writes commit.
+        resolve(request?.result);
       };
       transaction.addEventListener('abort', (): void => {
         reject(new Error('Local data-store transaction aborted', { cause: transaction.error }));
