@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## 10.5.0
+
+- docs: record that the harness, not the embeddable editor, doubles an Android Enter
+- refactor: type the embeddable editor through the released constructor typing
+- chore: wrap pinned-versions.json entries under a pins key
+- feat: add bug-report links, a settings-tab opener and single-choice menu items
+- feat(codemirror): add all-editor dispatch, reconfigurable extension, RangeSet and parse helpers
+- feat(components): add EmbeddableMarkdownEditorComponent
+- build(deps): bump typescript-dev-toolkit to ^5.4.1 and obsidian-dev-toolkit to ^7.4.0
+
 ## 10.4.1
 
 - perf(data-stores): commit local data-store writes without a whole-store count
