@@ -1,75 +1,88 @@
 {
-  "@codemirror/state": {
-    "section": "devDependencies",
-    "why": "Must match Obsidian's exact peer dependency so consumers use one CodeMirror instance.",
-    "check": "node -p \"require('obsidian/package.json').peerDependencies['@codemirror/state']\"",
-    "expect": "6.7.6"
-  },
-  "@codemirror/view": {
-    "section": "devDependencies",
-    "why": "Must match Obsidian's exact peer dependency so consumers use one CodeMirror instance.",
-    "check": "node -p \"require('obsidian/package.json').peerDependencies['@codemirror/view']\"",
-    "expect": "6.43.13"
-  },
-  "@lezer/common": {
-    "section": "dependencies",
-    "why": "Types must match the version bundled in Obsidian; see AGENTS.md for the distinguishing bundle markers.",
-    "check": "npm view @lezer/common version",
-    "expect": "1.5.4"
-  },
-  "@puppeteer/browsers": {
-    "section": "overrides",
-    "why": "Keep the integration tooling's browser downloader on the patched 3.x line.",
-    "check": null,
-    "manualCheck": "Re-evaluate the inherited override against npm audit and the browser downloader ranges in obsidian-integration-testing. Remove when all parents admit the patched version."
-  },
-  "deepmerge-ts": {
-    "section": "overrides",
-    "why": "Keep the Webdriver integration tooling on the patched 8.x line.",
-    "check": null,
-    "manualCheck": "Re-evaluate the inherited override against npm audit and Webdriver's dependency ranges. Remove when all parents admit the patched version."
-  },
-  "js-yaml": {
-    "section": "overrides",
-    "why": "The inherited exact override keeps YAML parsing on the existing pinned 4.3.2 release.",
-    "check": null,
-    "manualCheck": "Compare upstream changes and npm audit before moving this inherited pin; remove it when parent ranges resolve safely without it."
-  },
-  "katex": {
-    "section": "overrides",
-    "why": "https://github.com/advisories/GHSA-238p-pmpm-9mq7 is fixed in 0.18.2; micromark-extension-math still requests the vulnerable ^0.16.0 line. Used by development markdown linting.",
-    "check": "npm view micromark-extension-math@latest dependencies.katex",
-    "expect": "^0.16.0"
-  },
-  "markdown-it@>=15.0.0": {
-    "section": "overrides",
-    "why": "markdownlint-cli2 0.23.3 pins 15.0.1, affected by https://github.com/advisories/GHSA-r7fv-28h4-cvq7, https://github.com/advisories/GHSA-vfgh-jcmw-g37q and https://github.com/advisories/GHSA-gfr2-rv44-r23c. Force the patched 15.x release while preserving TypeDoc's 14.x dependency.",
-    "check": "node -p \"require('./node_modules/markdownlint-cli2/package.json').dependencies['markdown-it']\"",
-    "expect": "15.0.1"
-  },
-  "moment": {
-    "section": "overrides",
-    "why": "https://github.com/advisories/GHSA-4p3w-j4w9-5jqw is fixed in 2.31.0; eslint-plugin-obsidianmd's nested obsidian 1.12.3 pins a vulnerable Moment release. Obsidian's runtime Moment is supplied by the host.",
-    "check": "npm view eslint-plugin-obsidianmd@latest dependencies.obsidian",
-    "expect": "1.12.3"
-  },
-  "re2js": {
-    "section": "overrides",
-    "why": "Clears GHSA-gg6h-894w-4m9c (RE2JS quadratic-time denial of service in lookbehind matching, >=2.2.0 <2.8.7). Reached only through markdownlint, whose newest release 0.42.0 pins re2js at the exact 2.8.6, and markdownlint-cli2 0.24.0 pins that markdownlint exactly in turn, so no bump reaches the fix. 2.9.1 is the version markdownlint itself moved to upstream, so the forced minor is the one it is tested against. NEVER take the `npm audit fix --force` remedy: it downgrades the toolkit packages.",
-    "check": "node -e \"const fs=require('node:fs');process.stdout.write(JSON.parse(fs.readFileSync('node_modules/@mnaoumov/typescript-dev-toolkit/node_modules/markdownlint/package.json','utf8')).dependencies.re2js)\"",
-    "expect": "2.8.6",
-    "manualCheck": "The check reads the exact re2js pin of the markdownlint the toolkit brings (the top-level copy is markdownlint 0.41.1, brought by this repo's own markdownlint-cli2 0.23 devDependency, and uses no re2js). That pin moves only when a markdownlint-cli2 release pins a newer markdownlint. When it reads 2.8.7 or later, or the nested copy disappears and the check fails to read it, drop the override and this entry and re-run `npm audit`."
-  },
-  "smol-toml": {
-    "section": "overrides",
-    "why": "Keep transitive TOML parsers on a patched release; https://github.com/advisories/GHSA-r4xh-jqrq-34v2 affects versions through 1.8.0.",
-    "check": null,
-    "manualCheck": "Check all parent TOML parser ranges against npm audit; remove the override when every parent admits a patched release."
-  },
-  "typescript": {
-    "section": "devDependencies",
-    "why": "The compiler is deliberately held at the version this strict library toolchain builds and tests against.",
-    "check": null,
-    "manualCheck": "Upgrade the compiler together with its tooling compatibility checks and run the complete branch gate."
+  "comment": [
+    "Release conditions for every exact-pinned version in package.json (dependencies, devDependencies and overrides),",
+    "plus any override added to clear an npm audit advisory. An exact pin is invisible to update-npm-deps.ps1 - that",
+    "script upgrades caret ranges and skips exact versions - so nothing would ever remind you a pin is stale. This file",
+    "is what makes that check happen: on every run the script executes each `check` and compares its trimmed stdout to",
+    "`expect`. Equal means the pin is still required; different means the condition that justified the pin has changed",
+    "and the pin should be re-examined. `check: null` means no mechanical test exists - it is reported for manual review",
+    "on every run instead of going quiet. Every exact pin must have an entry here, and every entry must name a package",
+    "that is actually present in the declared section; the script reports either mismatch. Same shape as",
+    "obsidian-test-mocks/pinned-versions.json."
+  ],
+  "pins": {
+    "@codemirror/state": {
+      "section": "devDependencies",
+      "why": "Must match Obsidian's exact peer dependency so consumers use one CodeMirror instance.",
+      "check": "node -p \"require('obsidian/package.json').peerDependencies['@codemirror/state']\"",
+      "expect": "6.7.6"
+    },
+    "@codemirror/view": {
+      "section": "devDependencies",
+      "why": "Must match Obsidian's exact peer dependency so consumers use one CodeMirror instance.",
+      "check": "node -p \"require('obsidian/package.json').peerDependencies['@codemirror/view']\"",
+      "expect": "6.43.13"
+    },
+    "@lezer/common": {
+      "section": "devDependencies",
+      "why": "Types must match the version bundled in Obsidian; see AGENTS.md for the distinguishing bundle markers.",
+      "check": "npm view @lezer/common version",
+      "expect": "1.5.4"
+    },
+    "@puppeteer/browsers": {
+      "section": "overrides",
+      "why": "Keep the integration tooling's browser downloader on the patched 3.x line.",
+      "check": null,
+      "manualCheck": "Re-evaluate the inherited override against npm audit and the browser downloader ranges in obsidian-integration-testing. Remove when all parents admit the patched version."
+    },
+    "deepmerge-ts": {
+      "section": "overrides",
+      "why": "Keep the Webdriver integration tooling on the patched 8.x line.",
+      "check": null,
+      "manualCheck": "Re-evaluate the inherited override against npm audit and Webdriver's dependency ranges. Remove when all parents admit the patched version."
+    },
+    "js-yaml": {
+      "section": "overrides",
+      "why": "The inherited exact override keeps YAML parsing on the existing pinned 4.3.2 release.",
+      "check": null,
+      "manualCheck": "Compare upstream changes and npm audit before moving this inherited pin; remove it when parent ranges resolve safely without it."
+    },
+    "katex": {
+      "section": "overrides",
+      "why": "https://github.com/advisories/GHSA-238p-pmpm-9mq7 is fixed in 0.18.2; micromark-extension-math still requests the vulnerable ^0.16.0 line. Used by development markdown linting.",
+      "check": "npm view micromark-extension-math@latest dependencies.katex",
+      "expect": "^0.16.0"
+    },
+    "markdown-it@>=15.0.0": {
+      "section": "overrides",
+      "why": "markdownlint-cli2 0.23.3 pins 15.0.1, affected by https://github.com/advisories/GHSA-r7fv-28h4-cvq7, https://github.com/advisories/GHSA-vfgh-jcmw-g37q and https://github.com/advisories/GHSA-gfr2-rv44-r23c. Force the patched 15.x release while preserving TypeDoc's 14.x dependency.",
+      "check": "node -p \"require('./node_modules/markdownlint-cli2/package.json').dependencies['markdown-it']\"",
+      "expect": "15.0.1"
+    },
+    "moment": {
+      "section": "overrides",
+      "why": "https://github.com/advisories/GHSA-4p3w-j4w9-5jqw is fixed in 2.31.0; eslint-plugin-obsidianmd's nested obsidian 1.12.3 pins a vulnerable Moment release. Obsidian's runtime Moment is supplied by the host.",
+      "check": "npm view eslint-plugin-obsidianmd@latest dependencies.obsidian",
+      "expect": "1.12.3"
+    },
+    "re2js": {
+      "section": "overrides",
+      "why": "Clears GHSA-gg6h-894w-4m9c (RE2JS quadratic-time denial of service in lookbehind matching, >=2.2.0 <2.8.7). Reached only through markdownlint, whose newest release 0.42.0 pins re2js at the exact 2.8.6, and markdownlint-cli2 0.24.0 pins that markdownlint exactly in turn, so no bump reaches the fix. 2.9.1 is the version markdownlint itself moved to upstream, so the forced minor is the one it is tested against. NEVER take the `npm audit fix --force` remedy: it downgrades the toolkit packages.",
+      "check": "node -e \"const fs=require('node:fs');process.stdout.write(JSON.parse(fs.readFileSync('node_modules/@mnaoumov/typescript-dev-toolkit/node_modules/markdownlint/package.json','utf8')).dependencies.re2js)\"",
+      "expect": "2.8.6",
+      "manualCheck": "The check reads the exact re2js pin of the markdownlint the toolkit brings (the top-level copy is markdownlint 0.41.1, brought by this repo's own markdownlint-cli2 0.23 devDependency, and uses no re2js). That pin moves only when a markdownlint-cli2 release pins a newer markdownlint. When it reads 2.8.7 or later, or the nested copy disappears and the check fails to read it, drop the override and this entry and re-run `npm audit`."
+    },
+    "smol-toml": {
+      "section": "overrides",
+      "why": "Keep transitive TOML parsers on a patched release; https://github.com/advisories/GHSA-r4xh-jqrq-34v2 affects versions through 1.8.0.",
+      "check": null,
+      "manualCheck": "Check all parent TOML parser ranges against npm audit; remove the override when every parent admits a patched release."
+    },
+    "typescript": {
+      "section": "devDependencies",
+      "why": "The compiler is deliberately held at the version this strict library toolchain builds and tests against.",
+      "check": null,
+      "manualCheck": "Upgrade the compiler together with its tooling compatibility checks and run the complete branch gate."
+    }
   }
 }
