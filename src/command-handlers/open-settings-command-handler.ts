@@ -9,6 +9,7 @@ import type {
   SettingTab
 } from 'obsidian';
 
+import { openSettingTab } from '../settings-modal.ts';
 import { GlobalCommandHandler } from './global-command-handler.ts';
 
 /**
@@ -60,7 +61,9 @@ export class OpenSettingsCommandHandler extends GlobalCommandHandler {
    * Executes the command.
    */
   public override execute(): void {
-    this.app.setting.open();
-    this.app.setting.openTab(this.settingTab);
+    openSettingTab({
+      app: this.app,
+      tabId: this.settingTab.id
+    });
   }
 }

@@ -404,6 +404,7 @@ async function createLoadedComponent(options: CreateComponentOptions = {}): Prom
     // Cast rather than typed one member at a time: `openTabById` is overloaded (`'hotkeys'` returns a
     // narrower tab), and a plain mock cannot satisfy an overload set.
     setting: strictProxy<AppOriginal['setting']>(castTo<Partial<AppOriginal['setting']>>({
+      activeTab: null,
       addSettingTab,
       open: openSetting,
       openTabById,
