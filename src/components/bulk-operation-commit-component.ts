@@ -198,7 +198,7 @@ export class BulkOperationCommitComponent extends ComponentEx {
       return await params.operation();
     }
 
-    const { commitSha, operationId, result } = await repo.runBulkOperation({
+    const { commitSha, operationId, recoveredOperationId, result } = await repo.runBulkOperation({
       operation: async () => await params.operation(),
       pluginId: this.pluginId,
       settle: () => this.settle(),
@@ -207,6 +207,9 @@ export class BulkOperationCommitComponent extends ComponentEx {
     getObsidianLibDebugger('BulkOperationCommitComponent')(
       commitSha === null ? `${operationId} changed nothing` : `${operationId} committed as ${commitSha}`
     );
+    if (recoveredOperationId !== null) {
+      this.pluginNoticeComponent.showNotice(t(($) => $.obsidianLib.bulkOperation.resumedAfterRecovery, { operationId, recoveredOperationId }));
+    }
     return result;
   }
 
