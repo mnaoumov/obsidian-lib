@@ -128,6 +128,7 @@ import {
   PLUGIN_LOADED_EVENT_NAME,
   PLUGIN_UNLOADED_EVENT_NAME
 } from '../plugin/plugin-lifecycle-events.ts';
+import { openSettingTab } from '../settings-modal.ts';
 import { registerAsyncEvent } from './async-events-component.ts';
 import { ComponentEx } from './component-ex.ts';
 import { CallbackLayoutReadyComponent } from './layout-ready-component.ts';
@@ -889,8 +890,10 @@ export class PluginGateComponent extends ComponentEx {
         dependencyPluginName: pluginName
       }))
       .onClick(() => {
-        this.app.setting.open();
-        this.app.setting.openTabById(pluginId);
+        openSettingTab({
+          app: this.app,
+          tabId: pluginId
+        });
       });
   }
 

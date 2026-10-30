@@ -3,6 +3,7 @@ import type {
   SettingTab as SettingTabOriginal
 } from 'obsidian';
 
+import { castTo } from '@mnaoumov/typescript-lib/object-utils';
 import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import {
   describe,
@@ -16,23 +17,23 @@ import { OpenSettingsCommandHandler } from './open-settings-command-handler.ts';
 interface CreateHandlerResult {
   readonly handler: OpenSettingsCommandHandler;
   readonly open: ReturnType<typeof vi.fn>;
-  readonly openTab: ReturnType<typeof vi.fn>;
-  readonly settingTab: SettingTabOriginal;
+  readonly openTabById: ReturnType<typeof vi.fn>;
 }
 
 describe('OpenSettingsCommandHandler', () => {
   function createHandler(): CreateHandlerResult {
-    const settingTab = strictProxy<SettingTabOriginal>({});
+    const settingTab = strictProxy<SettingTabOriginal>({ id: 'my-plugin' });
     const open = vi.fn();
-    const openTab = vi.fn();
+    const openTabById = vi.fn().mockReturnValue(settingTab);
     const app = strictProxy<AppOriginal>({
-      setting: { open, openTab }
+      // Cast: `openTabById` is overloaded, and a plain mock cannot satisfy an overload set.
+      setting: castTo<AppOriginal['setting']>({ activeTab: null, open, openTabById })
     });
     const handler = new OpenSettingsCommandHandler({
       app,
       settingTab
     });
-    return { handler, open, openTab, settingTab };
+    return { handler, open, openTabById };
   }
 
   it('should build a command with checkCallback', () => {
@@ -44,11 +45,11 @@ describe('OpenSettingsCommandHandler', () => {
     expect(command.checkCallback).toBeTypeOf('function');
   });
 
-  it('should call app.setting.open() and openTab() when executed', () => {
-    const { handler, open, openTab, settingTab } = createHandler();
+  it('should open Settings on the plugin tab when executed', () => {
+    const { handler, open, openTabById } = createHandler();
     handler.execute();
     expect(open).toHaveBeenCalled();
-    expect(openTab).toHaveBeenCalledWith(settingTab);
+    expect(openTabById).toHaveBeenCalledWith('my-plugin');
   });
 
   it('should execute via checkCallback with checking=false', () => {
