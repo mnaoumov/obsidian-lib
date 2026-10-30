@@ -39,6 +39,7 @@ type ExecFileOverride = (gitArguments: readonly string[], callback: ExecFileCall
 const { execFileOverrides, fsOverrides } = vi.hoisted(() => ({
   execFileOverrides: [] as ExecFileOverride[],
   fsOverrides: {
+    readFile: null as ((path: string) => void) | null,
     unlink: null as ((path: string) => null | Promise<void>) | null,
     writeFile: null as ((path: string) => null | Promise<void>) | null
   }
@@ -63,6 +64,11 @@ vi.mock('node:fs/promises', async (importOriginal) => {
   const actual = await importOriginal<typeof import('node:fs/promises')>();
   return {
     ...actual,
+    async readFile(path: string, options: BufferEncoding): Promise<string> {
+      const text = await actual.readFile(path, options);
+      fsOverrides.readFile?.(path);
+      return text;
+    },
     async unlink(path: string): Promise<void> {
       await (fsOverrides.unlink?.(path) ?? actual.unlink(path));
     },
@@ -142,6 +148,7 @@ function writeLock(repo: TestRepo, lock: BulkOperationLock): void {
 
 beforeEach(() => {
   execFileOverrides.length = 0;
+  fsOverrides.readFile = null;
   fsOverrides.unlink = null;
   fsOverrides.writeFile = null;
 });
@@ -217,7 +224,7 @@ describe('BulkOperationGitRepo.runBulkOperation', () => {
       settle: () => noopAsync(),
       summary: 'Nothing'
     });
-    expect(result).toEqual({ commitSha: null, operationId: 'OP1', result: 'done' });
+    expect(result).toEqual({ commitSha: null, operationId: 'OP1', recoveredOperationId: null, result: 'done' });
     expect(log(repo)).toEqual([]);
   });
 
@@ -312,6 +319,34 @@ describe('BulkOperationGitRepo.runBulkOperation', () => {
       summary: 'Heartbeat'
     });
     expect(heartbeatAfter - heartbeatBefore).toBeGreaterThanOrEqual(10_000);
+  });
+
+  it('should not refresh a lock that is no longer its own', async () => {
+    const repo = createRepo();
+    const foreignLock = createLock();
+    await openRepo(repo).runBulkOperation({
+      operation: async () => {
+        const ownLock = readLock(repo);
+        writeLock(repo, foreignLock);
+        let lockReadCount = 0;
+        fsOverrides.readFile = (path): void => {
+          if (path.endsWith('obsidian-bulk-operation.json')) {
+            lockReadCount++;
+          }
+        };
+        vi.spyOn(Date, 'now').mockReturnValue(Date.now() + 10_000);
+        reportBulkOperationProgress();
+        // The heartbeat decides in the microtasks after its read, so the poll's next timer already sees the outcome.
+        await waitUntil(() => lockReadCount > 0);
+        vi.mocked(Date.now).mockRestore();
+        fsOverrides.readFile = null;
+        expect(readLock(repo)).toEqual(foreignLock);
+        writeLock(repo, ownLock);
+      },
+      pluginId: PLUGIN_ID,
+      settle: () => noopAsync(),
+      summary: 'Foreign heartbeat'
+    });
   });
 
   it('should log a heartbeat that fails to write and carry on', async () => {
@@ -409,6 +444,76 @@ describe('BulkOperationGitRepo.runBulkOperation', () => {
     });
     expect(result.operationId).toBe('OP6');
     expect(log(repo)).toEqual(['OP6: After recovery', 'OP5 interrupted']);
+  });
+
+  it('should commit the rest under a fresh id when its lock was recovered while it ran', async () => {
+    const repo = createRepo();
+    const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(vi.fn());
+    const result = await openRepo(repo).runBulkOperation({
+      operation: async () => {
+        writeFileSync(join(repo.root, 'before.md'), 'before');
+        writeLock(repo, { ...readLock(repo), heartbeatAt: 0 });
+        expect(await openRepo(repo).recoverStaleLock()).toBe('OP1');
+        writeFileSync(join(repo.root, 'after.md'), 'after');
+        return 'resumed';
+      },
+      pluginId: PLUGIN_ID,
+      settle: () => noopAsync(),
+      summary: 'Waited on the user'
+    });
+    expect(result).toEqual({
+      commitSha: git(repo.root, 'rev-parse', 'HEAD'),
+      operationId: 'OP2',
+      recoveredOperationId: 'OP1',
+      result: 'resumed'
+    });
+    expect(log(repo)).toEqual(['OP2: Waited on the user (resumed after OP1 was recovered)', 'OP1 interrupted']);
+    expect(git(repo.root, 'show', '--name-only', '--format=', 'HEAD')).toBe('after.md');
+    expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining('OP1 was recovered while it ran'));
+    expect(existsSync(lockPath(repo))).toBe(false);
+  });
+
+  it('should commit a failure after its lock was recovered as interrupted under a fresh id', async () => {
+    const repo = createRepo();
+    vi.spyOn(console, 'warn').mockImplementation(vi.fn());
+    const error = new Error('boom');
+    await expect(
+      openRepo(repo).runBulkOperation({
+        operation: async () => {
+          writeFileSync(join(repo.root, 'before.md'), 'before');
+          writeLock(repo, { ...readLock(repo), heartbeatAt: 0 });
+          await openRepo(repo).recoverStaleLock();
+          writeFileSync(join(repo.root, 'after.md'), 'after');
+          throw error;
+        },
+        pluginId: PLUGIN_ID,
+        settle: () => noopAsync(),
+        summary: 'Fails after recovery'
+      })
+    ).rejects.toBe(error);
+    expect(log(repo)).toEqual(['OP2 interrupted', 'OP1 interrupted']);
+    expect(existsSync(lockPath(repo))).toBe(false);
+  });
+
+  it('should wait for another holder before committing the rest of a recovered operation', async () => {
+    const repo = createRepo();
+    vi.spyOn(console, 'warn').mockImplementation(vi.fn());
+    const result = await openRepo(repo).runBulkOperation({
+      operation: async () => {
+        writeLock(repo, { ...readLock(repo), heartbeatAt: 0 });
+        await openRepo(repo).recoverStaleLock();
+        writeLock(repo, createLock());
+        window.setTimeout(() => {
+          rmSync(lockPath(repo));
+        }, 200);
+        writeFileSync(join(repo.root, 'after.md'), 'after');
+      },
+      pluginId: PLUGIN_ID,
+      settle: () => noopAsync(),
+      summary: 'Behind another'
+    });
+    expect(result.operationId).toBe('OP2');
+    expect(log(repo)).toEqual(['OP2: Behind another (resumed after OP1 was recovered)']);
   });
 
   it('should retry a command that finds the index locked', async () => {
@@ -596,23 +701,27 @@ describe('lock edge cases', () => {
     ).rejects.toMatchObject({ code: 'ENOENT' });
   });
 
-  it('should leave a lock that another operation took over', async () => {
+  it('should leave a lock that another operation took over, and wait for it before committing', async () => {
     const repo = createRepo();
+    vi.spyOn(console, 'warn').mockImplementation(vi.fn());
     const foreignLock = createLock();
-    await openRepo(repo).runBulkOperation({
-      operation: () => {
-        writeLock(repo, foreignLock);
-        return noopAsync();
-      },
-      pluginId: PLUGIN_ID,
-      settle: () => noopAsync(),
-      summary: 'Taken over'
-    });
+    await expect(
+      openRepo(repo, repo.root, 0).runBulkOperation({
+        operation: () => {
+          writeLock(repo, foreignLock);
+          return noopAsync();
+        },
+        pluginId: PLUGIN_ID,
+        settle: () => noopAsync(),
+        summary: 'Taken over'
+      })
+    ).rejects.toThrow('Timed out waiting for OP5 of other-plugin');
     expect(readLock(repo)).toEqual(foreignLock);
   });
 
   it('should tolerate its own lock vanishing before release', async () => {
     const repo = createRepo();
+    vi.spyOn(console, 'warn').mockImplementation(vi.fn());
     const result = await openRepo(repo).runBulkOperation({
       operation: () => {
         rmSync(lockPath(repo));

@@ -118,6 +118,14 @@ export interface GitBulkOperationResult<T> {
   readonly operationId: string;
 
   /**
+   * The id the operation started under, when its lock was recovered as stale while it ran, or `null` otherwise.
+   *
+   * The changes made before the recovery are in the `<recoveredOperationId> interrupted` commit, and the rest went into
+   * a fresh {@link operationId}, so undoing the whole operation takes reverting both.
+   */
+  readonly recoveredOperationId: null | string;
+
+  /**
    * The operation's result.
    */
   readonly result: T;
@@ -309,17 +317,21 @@ export class BulkOperationGitRepo {
    * follow-ups to settle, commits the result as `OP<n>: <summary>` and releases the lock. An operation that throws
    * still gets its partial changes committed, as `OP<n> interrupted`, before the error is rethrown.
    *
+   * When the lock was recovered under the operation (it went stale, and another operation, the scheduled autocommit or
+   * a reload committed `OP<n> interrupted` and removed it), the rest is never committed under the recovered id: the
+   * lock is taken again and the rest is committed as a fresh `OP<m>` whose summary names `OP<n>`.
+   *
    * @typeParam T - The type of the operation's result.
    * @param params - The parameters.
-   * @returns The operation's result, its id and the hash of its commit.
+   * @returns The operation's result, its id, the hash of its commit and the id it lost to a recovery, if any.
    */
   public async runBulkOperation<T>(params: BulkOperationGitRepoRunBulkOperationParams<T>): Promise<GitBulkOperationResult<T>> {
     await this.assertCanCommitLargeFiles();
     await this.acquireLock();
     let unregisterProgressListener: (() => void) | null = null;
     try {
-      const operationId = await this.allocateOperationId(params.pluginId);
-      await this.commitPending({ body: '', subject: buildBeforeOperationCommitSubject(operationId) });
+      const startOperationId = await this.allocateOperationId(params.pluginId);
+      await this.commitPending({ body: '', subject: buildBeforeOperationCommitSubject(startOperationId) });
 
       unregisterProgressListener = registerBulkOperationProgressListener(this.createThrottledHeartbeat());
 
@@ -328,14 +340,16 @@ export class BulkOperationGitRepo {
         result = await params.operation();
         await params.settle();
       } catch (error) {
-        await this.heartbeat();
+        const operationId = await this.reclaimLockIfRecovered(startOperationId, params.pluginId) ?? startOperationId;
         await this.commitOperation({ isInterrupted: true, operationId, pluginId: params.pluginId });
         throw error;
       }
 
-      await this.heartbeat();
-      const commitSha = await this.commitOperation({ operationId, pluginId: params.pluginId, summary: params.summary });
-      return { commitSha, operationId, result };
+      const resumedOperationId = await this.reclaimLockIfRecovered(startOperationId, params.pluginId);
+      const operationId = resumedOperationId ?? startOperationId;
+      const summary = resumedOperationId === null ? params.summary : `${params.summary} (resumed after ${startOperationId} was recovered)`;
+      const commitSha = await this.commitOperation({ operationId, pluginId: params.pluginId, summary });
+      return { commitSha, operationId, recoveredOperationId: resumedOperationId === null ? null : startOperationId, result };
     } finally {
       unregisterProgressListener?.();
       await this.releaseLock();
@@ -370,8 +384,8 @@ export class BulkOperationGitRepo {
     }
   }
 
-  private async allocateOperationId(pluginId: string): Promise<string> {
-    const operationId = await this.findNextOperationId();
+  private async allocateOperationId(pluginId: string, usedOperationId?: string): Promise<string> {
+    const operationId = await this.findNextOperationId(usedOperationId);
     const ownLock = ensureNonNullable(this.ownLock);
     this.ownLock = { ...ownLock, heartbeatAt: Date.now(), operationId, pluginId };
     await this.writeLock(this.ownLock);
@@ -420,12 +434,13 @@ export class BulkOperationGitRepo {
     };
   }
 
-  private async findNextOperationId(): Promise<string> {
+  private async findNextOperationId(usedOperationId?: string): Promise<string> {
     // `--all` also reads a repository with no commit yet, where a plain `git log` fails.
     const result = await this.runGit({
       gitArguments: ['log', '--all', '--format=%s', '--extended-regexp', '--grep=^(chore: before )?OP[0-9]+']
     });
-    return getNextOperationId(result.stdout.split(/\r?\n/));
+    // A recovered operation that changed nothing yet left no commit naming its id, so it is passed in explicitly.
+    return getNextOperationId([...result.stdout.split(/\r?\n/), usedOperationId ?? '']);
   }
 
   private async heartbeat(): Promise<void> {
@@ -482,6 +497,26 @@ export class BulkOperationGitRepo {
       processStartedAt: 0,
       startedAt: 0
     };
+  }
+
+  /**
+   * Refreshes the operation's lock before its commit, or takes the lock again when it was recovered under the
+   * operation.
+   *
+   * @param operationId - The id the operation started under.
+   * @param pluginId - The id of the plugin running the operation.
+   * @returns `null` when the lock is still the operation's own, otherwise the fresh id the rest is committed under.
+   */
+  private async reclaimLockIfRecovered(operationId: string, pluginId: string): Promise<null | string> {
+    const lock = await this.readLock();
+    if (lock !== null && this.isOwnLock(lock)) {
+      await this.writeLock({ ...lock, heartbeatAt: Date.now() });
+      return null;
+    }
+    console.warn(`The bulk operation lock of ${operationId} was recovered while it ran; committing the rest under a fresh operation id.`);
+    this.ownLock = null;
+    await this.acquireLock();
+    return await this.allocateOperationId(pluginId, operationId);
   }
 
   private async recover(lock: BulkOperationLock): Promise<string> {

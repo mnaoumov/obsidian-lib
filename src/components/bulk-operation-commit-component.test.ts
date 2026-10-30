@@ -135,7 +135,7 @@ beforeEach(() => {
     runBulkOperation: vi.fn(async (params: FakeRunBulkOperationParams) => {
       const result = await params.operation();
       await params.settle();
-      return { commitSha: 'sha', operationId: 'OP3', result };
+      return { commitSha: 'sha', operationId: 'OP3', recoveredOperationId: null, result };
     })
   };
   mocks.open.mockResolvedValue(repo);
@@ -201,9 +201,17 @@ describe('BulkOperationCommitComponent', () => {
   });
 
   it('should log an operation that changed nothing', async () => {
-    repo.runBulkOperation.mockResolvedValue({ commitSha: null, operationId: 'OP3', result: 'none' });
+    repo.runBulkOperation.mockResolvedValue({ commitSha: null, operationId: 'OP3', recoveredOperationId: null, result: 'none' });
     const component = await createComponent();
     expect(await component.runBulkOperation({ operation: () => 'none', summary: 'Nothing' })).toBe('none');
+    expect(showNotice).not.toHaveBeenCalled();
+  });
+
+  it('should say so when the operation lock was recovered while it ran', async () => {
+    repo.runBulkOperation.mockResolvedValue({ commitSha: 'sha', operationId: 'OP4', recoveredOperationId: 'OP3', result: 'split' });
+    const component = await createComponent();
+    expect(await component.runBulkOperation({ operation: () => 'split', summary: 'Split' })).toBe('split');
+    expect(showNotice).toHaveBeenCalledWith(expect.stringContaining('committed as OP3 interrupted, and the rest as OP4'));
   });
 
   it('should wait for the vault to go quiet after its last change, reporting progress meanwhile', async () => {

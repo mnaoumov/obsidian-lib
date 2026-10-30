@@ -55,6 +55,22 @@ The heartbeat is refreshed by the operation's own progress, never by a timer, so
 
 A lock is stale after 2 minutes without a heartbeat. On this machine it is stale sooner when its heartbeat predates the last boot or its process is gone. Whoever finds a stale lock first, the component when the plugin loads or another operation waiting for it, commits the leftovers as `OP<n> interrupted` and removes the lock. The threshold errs long on purpose: holding a dead lock too long only delays an autocommit, while dropping a live one splits an operation.
 
+### Waiting on the user
+
+An operation that stops on a dialog (a confirmation, a picker) makes no progress while the user reads it, yet it is not hung. `holdBulkOperationWhile(promise)` from `@mnaoumov/obsidian-lib/bulk-operation-progress` reports progress every 10 seconds while the promise is pending, and stops the moment it settles, so the timer covers only the wait and a hung operation outside a dialog still goes stale. Every modal helper of this library (`alert`, `confirm`, `prompt`, `selectItem`, `selectOption`) holds through `showModal`, so a command that asks through them needs nothing more. A plugin with a modal of its own wraps the promise it awaits:
+
+<!-- snippet-check: context declare function promptForMode(): Promise<string>; -->
+
+```ts
+import { holdBulkOperationWhile } from '@mnaoumov/obsidian-lib/bulk-operation-progress';
+
+const mode = await holdBulkOperationWhile(promptForMode());
+```
+
+### A lock recovered under a running operation
+
+If the lock goes stale anyway (a dialog the library does not know about, a sleeping laptop), whoever finds it commits the changes so far as `OP<n> interrupted`. The operation notices when it resumes: before its commit it checks that the lock is still its own, and when it is not, it takes the lock again and commits the rest as a fresh `OP<m>`, with `(resumed after OP<n> was recovered)` in the summary, never under the recovered id. The component shows a notice naming both ids, since undoing the whole operation then takes reverting both commits.
+
 The lock record is a wire format shared with the autocommit script and with other copies of this library: fields may be added, never renamed or reinterpreted.
 
 ## Undoing

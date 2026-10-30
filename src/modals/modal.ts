@@ -9,6 +9,7 @@ import type { App } from 'obsidian';
 
 import { Modal } from 'obsidian';
 
+import { holdBulkOperationWhile } from '../bulk-operation-progress.ts';
 import { addPluginCssClasses } from '../plugin/plugin-context.ts';
 
 /**
@@ -76,10 +77,16 @@ export abstract class ModalBase<Value> extends Modal {
  * @typeParam Value - The type of the value resolved by the modal.
  * @param modalCreator - A function that creates a modal.
  * @returns A {@link Promise} that resolves when the modal is closed.
+ *
+ * @remarks
+ * While the modal is open, a bulk operation that awaits it keeps its lease lock fresh, through
+ * `holdBulkOperationWhile`.
  */
 export async function showModal<Value>(modalCreator: (resolve: PromiseResolve<Value>) => Modal): Promise<Value> {
-  return await new Promise<Value>((resolve) => {
-    const modal = modalCreator(resolve);
-    modal.open();
-  });
+  return await holdBulkOperationWhile(
+    new Promise<Value>((resolve) => {
+      const modal = modalCreator(resolve);
+      modal.open();
+    })
+  );
 }

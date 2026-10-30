@@ -15,6 +15,7 @@ import {
   vi
 } from 'vitest';
 
+import { registerBulkOperationProgressListener } from '../bulk-operation-progress.ts';
 import { addPluginCssClasses } from '../plugin/plugin-context.ts';
 import {
   ModalBase,
@@ -102,5 +103,13 @@ describe('showModal', () => {
       return modal;
     });
     expect(result).toBe('closed');
+  });
+
+  it('should keep a waiting bulk operation fresh while the modal is open', async () => {
+    const listener = vi.fn();
+    const unregister = registerBulkOperationProgressListener(listener);
+    await showModal<string>((promiseResolve) => new TestModal({ app, promiseResolve }));
+    unregister();
+    expect(listener).toHaveBeenCalledTimes(2);
   });
 });

@@ -20,6 +20,7 @@ export const en = {
       noOperations: 'No bulk operation of this plugin was found in the vault repository.',
       notActive: 'Bulk operation commits are off, or the vault is not in a git repository.',
       recoveredInterrupted: 'A bulk operation was interrupted. Its changes were committed as {{operationId}} interrupted.',
+      resumedAfterRecovery: 'The lock of {{recoveredOperationId}} went stale while it ran, so its changes so far were committed as {{recoveredOperationId}} interrupted, and the rest as {{operationId}}. Undoing the whole operation takes reverting both.',
       revertConflict: 'Reverting {{operationId}} stopped on a conflict. The vault repository is left mid-revert: resolve the conflicts, then run git revert --continue, or git revert --abort to give up.',
       reverted: 'Reverted {{operationId}}.',
       revertFailed: 'Failed to revert {{operationId}}: {{error}}',
