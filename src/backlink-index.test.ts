@@ -5,6 +5,7 @@ import type {
   ReferenceCache,
   TFile
 } from 'obsidian';
+import type { Writable } from 'type-fest';
 
 import { castTo } from '@mnaoumov/typescript-lib/object-utils';
 import {
@@ -15,7 +16,10 @@ import {
   vi
 } from 'vitest';
 
-import { getIndexedBacklinksForFile } from './backlink-index.ts';
+import {
+  getIndexedBacklinksForFile,
+  iterateReferencesAffectedByRename
+} from './backlink-index.ts';
 import { resetObsidianLibState } from './obsidian-lib-state.ts';
 
 interface CallCounter {
@@ -307,3 +311,155 @@ describe('getIndexedBacklinksForFile', () => {
     expect(vault.resolveCalls.count).toBe(0);
   });
 });
+
+describe('iterateReferencesAffectedByRename', () => {
+  beforeEach(() => {
+    currentVault = createVault();
+    vi.clearAllMocks();
+  });
+
+  it('visits every reference whose resolution a rename changes, for every rename of a randomized vault', () => {
+    const vault = currentVault;
+    let seed = 7;
+    const names = ['Alpha', 'beta', 'Gamma.Delta', 'image.png', 'Epsilon'];
+    const folders = ['', 'a/', 'a/b/', 'C/'];
+    for (let index = 0; index < 60; index++) {
+      const name = names[random(names.length)] ?? '';
+      const path = `${folders[random(folders.length)] ?? ''}${name}${name.endsWith('.png') ? '' : '.md'}`;
+      if (!vault.files.has(path)) {
+        vault.files.set(path, makeFile(path));
+      }
+    }
+    const paths = [...vault.files.keys()];
+    const linkTargets = [...paths.map((path) => path.replace(/\.md$/u, '')), ...names, 'ALPHA', 'Zeta', 'missing', '', 'a/beta#Heading'];
+    for (const path of paths) {
+      if (!path.endsWith('.md')) {
+        continue;
+      }
+      const references: ReferenceCache[] = [];
+      for (let index = 0; index < 4; index++) {
+        references.push(link(linkTargets[random(linkTargets.length)] ?? ''));
+      }
+      vault.setNote(path, { embeds: [link('image.png')], frontmatterLinks: [{ key: 'up', link: 'Alpha', original: 'Alpha' }], links: references });
+    }
+    vault.canvasReferences.push({ reference: link('beta'), sourcePath: 'board.canvas' });
+
+    for (const oldPath of paths) {
+      for (const newPath of [`moved/${oldPath.slice(oldPath.lastIndexOf('/') + 1)}`, oldPath.replace(/[^/]+$/u, 'Zeta.md')]) {
+        const file = getTestFile(oldPath);
+        const visited = new Set<Reference>();
+        iterateReferencesAffectedByRename(vault.app, file, newPath, (_sourcePath, reference) => {
+          visited.add(reference);
+        });
+
+        const before = resolveAll(vault);
+        renameInVault(vault, oldPath, newPath);
+        const after = resolveAll(vault);
+        renameInVault(vault, newPath, oldPath);
+
+        for (const [reference, resolvedBefore] of before) {
+          if (after.get(reference) !== resolvedBefore) {
+            expect(visited.has(reference), `${oldPath} -> ${newPath}: ${reference.link}`).toBe(true);
+          }
+        }
+      }
+    }
+
+    function random(limit: number): number {
+      seed = (seed * 1_103_515_245 + 12_345) % 2_147_483_648;
+      return seed % limit;
+    }
+  });
+
+  it('visits only the candidate notes, the renamed note and the link updaters', () => {
+    const vault = currentVault;
+    for (let index = 0; index < 200; index++) {
+      vault.setNote(`notes/note-${String(index)}.md`, { links: [link(`note-${String((index + 1) % 200)}`)] });
+    }
+    vault.setNote('target.md', { links: [link('note-5')] });
+    vault.setNote('holder.md', { links: [link('target'), link('note-1')] });
+    vault.setNote('future.md', { links: [link('renamed')] });
+    vault.canvasReferences.push({ reference: link('note-7'), sourcePath: 'board.canvas' });
+
+    const visited: string[] = [];
+    iterateReferencesAffectedByRename(vault.app, getTestFile('target.md'), 'folder/renamed.md', (sourcePath, reference) => {
+      visited.push(`${sourcePath}: ${reference.link}`);
+    });
+
+    expect(visited.sort()).toEqual([
+      'board.canvas: note-7',
+      'future.md: renamed',
+      'holder.md: note-1',
+      'holder.md: target',
+      'target.md: note-5'
+    ]);
+  });
+
+  it('stops walking a note\'s references when the callback returns true, and moves on to the next note', () => {
+    const vault = currentVault;
+    vault.setNote('target.md', {});
+    vault.setNote('first.md', { links: [link('target'), link('target#Heading')] });
+    vault.setNote('second.md', { links: [link('target')] });
+
+    const visited: string[] = [];
+    iterateReferencesAffectedByRename(vault.app, getTestFile('target.md'), 'target2.md', (sourcePath, reference) => {
+      visited.push(`${sourcePath}: ${reference.link}`);
+      return true;
+    });
+
+    expect(visited.sort()).toEqual(['first.md: target', 'second.md: target']);
+  });
+});
+
+/**
+ * Renames a file in the fake vault the way Obsidian does: the same `TFile` object takes the new path, and its
+ * cache entry moves with it.
+ *
+ * @param vault - The fake vault.
+ * @param oldPath - The file's current path.
+ * @param newPath - Its new path.
+ */
+function renameInVault(vault: FakeVault, oldPath: string, newPath: string): void {
+  const file = castTo<Writable<TFile>>(getTestFile(oldPath));
+  const renamed = makeFile(newPath);
+  file.basename = renamed.basename;
+  file.extension = renamed.extension;
+  file.name = renamed.name;
+  file.path = renamed.path;
+  vault.files.delete(oldPath);
+  vault.files.set(newPath, castTo<TFile>(file));
+  const fileCache = vault.app.metadataCache.fileCache;
+  const entry = fileCache[oldPath];
+  if (!entry) {
+    return;
+  }
+
+  Reflect.deleteProperty(fileCache, oldPath);
+  fileCache[newPath] = entry;
+}
+
+/**
+ * Resolves every reference in the fake vault, the way Obsidian's `runAsyncLinkUpdate` snapshot does.
+ *
+ * @param vault - The fake vault.
+ * @returns Each reference's resolved file, or `null`.
+ */
+function resolveAll(vault: FakeVault): Map<Reference, null | TFile> {
+  const result = new Map<Reference, null | TFile>();
+  const metadataCache = vault.app.metadataCache;
+  for (const [sourcePath, entry] of Object.entries(metadataCache.fileCache)) {
+    const cache = metadataCache.metadataCache[entry.hash];
+    for (const reference of [...cache?.frontmatterLinks ?? [], ...cache?.links ?? [], ...cache?.embeds ?? []]) {
+      result.set(reference, resolve(sourcePath, reference));
+    }
+  }
+  for (const { reference, sourcePath } of vault.canvasReferences) {
+    result.set(reference, resolve(sourcePath, reference));
+  }
+  return result;
+
+  function resolve(sourcePath: string, reference: Reference): null | TFile {
+    const hashIndex = reference.link.indexOf('#');
+    return metadataCache.getFirstLinkpathDest(hashIndex === -1 ? reference.link : reference.link.slice(0, hashIndex), sourcePath);
+  }
+}

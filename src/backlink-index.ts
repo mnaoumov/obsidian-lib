@@ -51,6 +51,11 @@ import { CustomArrayDictImpl } from '@obsidian-typings/obsidian-public-latest/im
 
 import { getObsidianLibState } from './obsidian-lib-state.ts';
 
+/**
+ * The callback Obsidian's `metadataCache.iterateAllRefs` takes.
+ */
+export type IterateReferencesCallback = Parameters<App['metadataCache']['iterateAllRefs']>[0];
+
 interface BacklinkIndexData {
   readonly indexedHashes: Map<string, string>;
   readonly nameKeySourcePaths: Map<string, Set<string>>;
@@ -98,6 +103,54 @@ export function getIndexedBacklinksForFile(app: App, file: TFile): CustomArrayDi
     if (metadataCache.getFirstLinkpathDest(getLinkpath(reference.link), sourcePath) === file) {
       backlinks.add(sourcePath, reference);
     }
+  }
+}
+
+/**
+ * Visits the references `app.metadataCache.iterateAllRefs` would visit, minus every reference whose resolution
+ * cannot change when `file` is renamed to `newPath`.
+ *
+ * Obsidian's `FileManager.runAsyncLinkUpdate` resolves EVERY reference in the vault before each rename, to diff
+ * the resolutions afterwards in `updateAllLinks`; that is the whole cost of a rename in a large vault. A reference
+ * can resolve to `file` only if its linkpath's last segment matches `file`'s name before the rename or its name
+ * after it (see the file header), and a reference that resolves to neither keeps resolving to whatever it did. So
+ * the references that can change are those of the index's candidates for both names, plus the references held by
+ * `file` itself, whose relative links resolve from its new folder afterwards. `linkUpdaters` references are walked
+ * in full, as in {@link getIndexedBacklinksForFile}.
+ *
+ * @param app - The Obsidian app instance.
+ * @param file - The file being renamed, still at its old path.
+ * @param newPath - The path it is being renamed to.
+ * @param callback - Called with each reference and the path of the note holding it. Returning `true` stops the
+ *   walk over that note's references, as in Obsidian's own walk.
+ */
+export function iterateReferencesAffectedByRename(
+  app: App,
+  file: TFile,
+  newPath: string,
+  callback: IterateReferencesCallback
+): void {
+  const data = getBacklinkIndexData();
+  refresh(app, data);
+
+  const newName = newPath.slice(newPath.lastIndexOf('/') + 1);
+  const candidateSourcePaths = new Set<string>([file.path]);
+  for (const nameKey of [...getTargetNameKeys(file.name), ...getTargetNameKeys(newName)]) {
+    for (const sourcePath of data.nameKeySourcePaths.get(nameKey) ?? []) {
+      candidateSourcePaths.add(sourcePath);
+    }
+  }
+
+  for (const sourcePath of candidateSourcePaths) {
+    for (const reference of getCacheReferences(getCachedMetadata(app, sourcePath))) {
+      if (callback(sourcePath, reference) === true) {
+        break;
+      }
+    }
+  }
+
+  for (const linkUpdater of Object.values(app.metadataCache.linkUpdaters)) {
+    linkUpdater?.iterateReferences(callback);
   }
 }
 
