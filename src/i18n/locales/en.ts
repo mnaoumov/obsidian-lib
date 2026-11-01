@@ -43,6 +43,13 @@ export const en = {
       notSet: 'Not set',
       pressHotkey: 'Press a hotkey...'
     },
+    list: {
+      add: 'Add',
+      empty: 'No items',
+      moveDown: 'Move down',
+      moveUp: 'Move up',
+      remove: 'Remove'
+    },
     menu: {
       copy: 'Copy'
     },

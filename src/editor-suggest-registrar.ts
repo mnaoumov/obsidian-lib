@@ -9,6 +9,8 @@ import {
   Plugin
 } from 'obsidian';
 
+import { prioritizeEditorSuggest } from './editor-suggest.ts';
+
 /**
  * Editor suggest registrar.
  */
@@ -17,8 +19,20 @@ export interface EditorSuggestRegistrar {
    * Registers an editor suggest.
    *
    * @param editorSuggest - The editor suggest to register.
+   * @param options - The options.
    */
-  readonly registerEditorSuggest: (editorSuggest: EditorSuggest<unknown>) => void;
+  readonly registerEditorSuggest: (editorSuggest: EditorSuggest<unknown>, options?: RegisterEditorSuggestOptions) => void;
+}
+
+/**
+ * Options for {@link EditorSuggestRegistrar.registerEditorSuggest}.
+ */
+export interface RegisterEditorSuggestOptions {
+  /**
+   * Whether the suggest is asked before the others already registered, Obsidian's own included. Defaults to `false`:
+   * registration order decides.
+   */
+  readonly shouldPrioritize?: boolean;
 }
 
 /**
@@ -36,8 +50,13 @@ export class PluginEditorSuggestRegistrar implements EditorSuggestRegistrar {
    * Registers an editor suggest.
    *
    * @param editorSuggest - The editor suggest to register.
+   * @param options - The options.
    */
-  public registerEditorSuggest(editorSuggest: EditorSuggest<unknown>): void {
+  // eslint-disable-next-line typescript-dev-toolkit/params-options-name-match -- It implements `EditorSuggestRegistrar.registerEditorSuggest`, whose options type every registrar shares.
+  public registerEditorSuggest(editorSuggest: EditorSuggest<unknown>, options?: RegisterEditorSuggestOptions): void {
     this.plugin.registerEditorSuggest(editorSuggest);
+    if (options?.shouldPrioritize) {
+      prioritizeEditorSuggest({ app: this.plugin.app, editorSuggest });
+    }
   }
 }

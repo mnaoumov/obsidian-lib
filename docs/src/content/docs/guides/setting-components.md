@@ -135,6 +135,20 @@ new SettingEx(containerEl)
 
 ![FileComponent](./images/setting-components/FileComponent.png)
 
+## FolderListComponent
+
+A [`ListComponent`](#listcomponent) of vault folder paths. The new-item row suggests the vault's folders, and a typed path is normalized with Obsidian's `normalizePath`, so the root reads as `/`. A path need not exist yet.
+
+```ts
+import { SettingEx } from '@mnaoumov/obsidian-lib/setting-ex';
+
+new SettingEx(containerEl)
+  .addFolderList(app, (folderList) => {
+    folderList.setValue(['Daily', 'Projects/Archive']);
+    folderList.onChange((folders) => console.log(folders));
+  });
+```
+
 ## HotkeyComponent
 
 A hotkey recorder: click the button, then press the key combination. Escape cancels the recording, and the clear button sets the value to `null`. The value is a `Hotkey`, the shape Obsidian stores in `hotkeys.json`, so it can be handed straight to `Scope.register`.
@@ -167,6 +181,27 @@ import {
 
 formatHotkey({ hotkey: { key: 'P', modifiers: ['Mod', 'Shift'] } }); // 'Ctrl + Shift + P', or '⌘⇧P' on macOS
 const pressed = getHotkeyFromKeyboardEvent({ event: keyboardEvent }); // null when only a modifier key is down
+```
+
+## ListComponent
+
+A reorderable list of strings: each item has move-up, move-down and remove buttons, and a row below the list adds an item, on its button or on Enter. Text is trimmed, and an empty or duplicate item is not added. `newItemInputEl` is a plain `<input>`, so any `AbstractInputSuggest` can be attached to it; a subclass shapes items by overriding `normalizeItem` and `formatItem`, as `FolderListComponent` and `TagListComponent` do.
+
+```ts
+import { ListComponent } from '@mnaoumov/obsidian-lib/setting-components/list-component';
+
+const list = new ListComponent(containerEl);
+list.setPlaceholder('Add a word').setValue(['alpha', 'beta']);
+list.onChange((items) => console.log(items));
+
+// or
+
+import { SettingEx } from '@mnaoumov/obsidian-lib/setting-ex';
+
+new SettingEx(containerEl)
+  .addList((list) => {
+    list.setValue(['alpha', 'beta']);
+  });
 ```
 
 ## MonthComponent
@@ -328,6 +363,19 @@ new SettingEx(containerEl)
 ```
 
 ![PasswordComponent](./images/setting-components/PasswordComponent.png)
+
+## TagListComponent
+
+A [`ListComponent`](#listcomponent) of tags, stored without the `#` and shown with it. The new-item row suggests the vault's tags, most used first, whether or not the typed text starts with `#`, and a typed tag is refused unless it is a valid Obsidian tag: letters, digits, `_`, `-` and `/`, not digits only.
+
+```ts
+import { SettingEx } from '@mnaoumov/obsidian-lib/setting-ex';
+
+new SettingEx(containerEl)
+  .addTagList(app, (tagList) => {
+    tagList.setValue(['project', 'area/health']);
+  });
+```
 
 ## TelephoneComponent
 
@@ -534,3 +582,102 @@ new SettingEx(containerEl)
 - `#` at the start of the text or after whitespace suggests the vault's tags, most used first, and inserts `#tag` and a space.
 - `shouldSuggestLinks: false` or `shouldSuggestTags: false` turns one trigger off.
 - The insertion dispatches an `input` event, so the text component's own `onChange` sees it. `onSelect` still reports the chosen suggestion.
+
+## Settings tabs
+
+`SettingsTabs` splits a settings tab into tabbed sections: a row of tab buttons and one panel, which renders only the selected tab and is emptied each time another is selected. The first tab added is selected, `selectTab` ignores an id it does not know (such as a stored id whose tab was since removed), and the arrow keys, Home and End move between tabs.
+
+<!-- snippet-check: context declare let lastTabId: string | null; -->
+```ts
+import { Setting } from 'obsidian';
+import { SettingsTabs } from '@mnaoumov/obsidian-lib/settings-tabs';
+
+new SettingsTabs(containerEl)
+  .addTab({
+    id: 'general',
+    name: 'General',
+    render: (el) => {
+      new Setting(el).setName('Name');
+    }
+  })
+  .addTab({
+    icon: 'wrench',
+    id: 'advanced',
+    name: 'Advanced',
+    render: (el) => {
+      new Setting(el).setName('Debug mode');
+    }
+  })
+  .selectTab(lastTabId)
+  .onTabChange((tabId) => {
+    lastTabId = tabId;
+  });
+```
+
+## Suggest popover at an anchor
+
+`AnchoredSuggest` is Obsidian's suggest popover with no input behind it, for a picker opened from a button, a menu item or an editor decoration. `openAt` places it against an element or a viewport rectangle; arrows and Enter pick, and Escape, a pointer-down outside it, or its anchor element leaving the DOM close it. `setQuery` recomputes the suggestions in place.
+
+```ts
+import { AnchoredSuggest } from '@mnaoumov/obsidian-lib/anchored-suggest';
+
+class ColorSuggest extends AnchoredSuggest<string> {
+  public renderSuggestion(color: string, el: HTMLElement): void {
+    el.setText(color);
+  }
+
+  protected getSuggestions(query: string): string[] {
+    return ['red', 'green', 'blue'].filter((color) => color.includes(query));
+  }
+
+  protected onChooseSuggestion(color: string): void {
+    console.log(color);
+  }
+}
+
+const buttonEl = containerEl.createEl('button', { text: 'Pick a color' });
+buttonEl.addEventListener('click', () => {
+  void new ColorSuggest(app).openAt({ anchor: buttonEl });
+});
+```
+
+## Editor suggests: opened from a command, or given priority
+
+Obsidian asks each registered `EditorSuggest` in registration order and opens the first whose trigger accepts the text, so a plugin's suggest loses to Obsidian's own `[[` and `#` suggests, and to any plugin registered before it.
+
+- `prioritizeEditorSuggest({ app, editorSuggest })` moves a registered suggest to the front of that list. `PluginEditorSuggestRegistrar.registerEditorSuggest(suggest, { shouldPrioritize: true })` does the same as it registers.
+- `CommandEditorSuggest` is an `EditorSuggest` a command can open at the cursor, with no trigger character: `openFromCommand({ editor, file })` opens it, the text typed after that point on the same line is the query, and moving the cursor before it or off the line closes it. Override `onTextTrigger` to open it on typed text as well.
+
+<!-- snippet-check: context declare const plugin: import('obsidian').Plugin; -->
+```ts
+import type { EditorSuggestContext } from 'obsidian';
+
+import { CommandEditorSuggest } from '@mnaoumov/obsidian-lib/editor-suggest';
+
+class EmojiSuggest extends CommandEditorSuggest<string> {
+  public getSuggestions(context: EditorSuggestContext): string[] {
+    return ['😀', '🎉', '🚀'].filter((emoji) => emoji.includes(context.query));
+  }
+
+  public renderSuggestion(emoji: string, el: HTMLElement): void {
+    el.setText(emoji);
+  }
+
+  public selectSuggestion(emoji: string): void {
+    this.context?.editor.replaceRange(emoji, this.context.start, this.context.end);
+    this.close();
+  }
+}
+
+const suggest = new EmojiSuggest(app);
+plugin.registerEditorSuggest(suggest);
+plugin.addCommand({
+  editorCallback: (editor, ctx) => {
+    suggest.openFromCommand({ editor, file: ctx.file });
+  },
+  id: 'insert-emoji',
+  name: 'Insert emoji'
+});
+```
+
+Both read Obsidian internals (`app.workspace.editorSuggest` and `EditorSuggest.trigger`), checked against Obsidian `1.15.0`.

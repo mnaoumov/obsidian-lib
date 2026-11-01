@@ -1,0 +1,31 @@
+.obsidian-lib {
+  &.settings-tabs {
+    .settings-tabs-bar {
+      border-bottom: var(--border-width) solid var(--background-modifier-border);
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--size-2-1);
+      margin-bottom: var(--size-4-3);
+    }
+
+    .settings-tabs-button {
+      align-items: center;
+      background: none;
+      border-bottom: 2px solid transparent;
+      border-radius: 0;
+      box-shadow: none;
+      color: var(--text-muted);
+      display: flex;
+      gap: var(--size-2-2);
+
+      &.is-active {
+        border-bottom-color: var(--interactive-accent);
+        color: var(--text-normal);
+      }
+    }
+
+    .settings-tabs-icon {
+      display: flex;
+    }
+  }
+}

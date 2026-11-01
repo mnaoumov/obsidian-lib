@@ -18,6 +18,9 @@ import {
   sortSearchResults
 } from 'obsidian';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- We need to import `TagListComponent` to use it in the tsdocs.
+import type { TagListComponent } from './setting-components/tag-list-component.ts';
+
 /**
  * What a completion trigger completes.
  */
@@ -142,6 +145,21 @@ const LINK_OPEN = '[[';
 const LINK_CLOSE = ']]';
 const TAG_PREFIX = '#';
 const TAG_BEFORE_CARET_REG_EXP = /(?:^|\s)#[\p{L}\p{N}_/-]*$/u;
+
+/**
+ * Parameters for {@link getVaultTagSuggestions}.
+ */
+export interface GetVaultTagSuggestionsParams {
+  /**
+   * The Obsidian app.
+   */
+  readonly app: App;
+
+  /**
+   * The text typed, without the `#`.
+   */
+  readonly query: string;
+}
 
 /**
  * Completes `[[` links and `#` tags inside any `<input>` or `<textarea>`.
@@ -302,26 +320,7 @@ export class LinkAndTagInputSuggest extends AbstractInputSuggest<LinkAndTagSugge
    * @returns The suggestions, best match first, then the most used.
    */
   protected getTagSuggestions(query: string): TagSuggestion[] {
-    const counts = new Map<string, number>();
-    for (const file of this.app.vault.getMarkdownFiles()) {
-      const cache = this.app.metadataCache.getFileCache(file);
-      for (const tag of (cache ? getAllTags(cache) : null) ?? []) {
-        const name = tag.slice(TAG_PREFIX.length);
-        counts.set(name, (counts.get(name) ?? 0) + 1);
-      }
-    }
-
-    const fuzzySearch = prepareFuzzySearch(query);
-    const results: SuggestionSearchResult<TagSuggestion>[] = [];
-    const sortedCounts = [...counts].sort(([tag1, count1], [tag2, count2]) => count2 - count1 || tag1.localeCompare(tag2));
-    for (const [tag, count] of sortedCounts) {
-      const match = fuzzySearch(tag);
-      if (match) {
-        results.push({ match, suggestion: { count, kind: LinkAndTagCompletionKind.Tag, tag } });
-      }
-    }
-    sortSearchResults(results);
-    return results.map((result) => result.suggestion);
+    return getVaultTagSuggestions({ app: this.app, query });
   }
 
   /**
@@ -366,4 +365,35 @@ export function getLinkAndTagCompletionTrigger(text: string, caret: number): Lin
   }
 
   return null;
+}
+
+/**
+ * Gets the tags of every note matching a query, as {@link LinkAndTagInputSuggest} and {@link TagListComponent}
+ * suggest them.
+ *
+ * @param params - The parameters.
+ * @returns The suggestions, best match first, then the most used.
+ */
+export function getVaultTagSuggestions(params: GetVaultTagSuggestionsParams): TagSuggestion[] {
+  const { app, query } = params;
+  const counts = new Map<string, number>();
+  for (const file of app.vault.getMarkdownFiles()) {
+    const cache = app.metadataCache.getFileCache(file);
+    for (const tag of (cache ? getAllTags(cache) : null) ?? []) {
+      const name = tag.slice(TAG_PREFIX.length);
+      counts.set(name, (counts.get(name) ?? 0) + 1);
+    }
+  }
+
+  const fuzzySearch = prepareFuzzySearch(query);
+  const results: SuggestionSearchResult<TagSuggestion>[] = [];
+  const sortedCounts = [...counts].sort(([tag1, count1], [tag2, count2]) => count2 - count1 || tag1.localeCompare(tag2));
+  for (const [tag, count] of sortedCounts) {
+    const match = fuzzySearch(tag);
+    if (match) {
+      results.push({ match, suggestion: { count, kind: LinkAndTagCompletionKind.Tag, tag } });
+    }
+  }
+  sortSearchResults(results);
+  return results.map((result) => result.suggestion);
 }

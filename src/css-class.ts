@@ -69,6 +69,10 @@ export enum CssClass {
   FoldableMarkdown = 'foldable-markdown',
 
   /**
+   * A CSS class for the folder list component.
+   */
+  FolderListComponent = 'folder-list-component',
+  /**
    * A CSS class for the hotkey component.
    */
   HotkeyComponent = 'hotkey-component',
@@ -94,6 +98,10 @@ export enum CssClass {
    */
   LibraryName = 'obsidian-lib',
 
+  /**
+   * A CSS class for the reorderable list component.
+   */
+  ListComponent = 'list-component',
   /**
    * Obsidian's class marking rendered-markdown content (used by `appendCodeBlock`).
    */
@@ -298,6 +306,14 @@ export enum CssClass {
    */
   SettingComponentWrapper = 'setting-component-wrapper',
 
+  /**
+   * A CSS class for the settings tabs.
+   */
+  SettingsTabs = 'settings-tabs',
+  /**
+   * A CSS class for the tag list component.
+   */
+  TagListComponent = 'tag-list-component',
   /**
    * A CSS class for the telephone component.
    */
