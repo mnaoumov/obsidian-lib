@@ -556,7 +556,9 @@ export async function createTemporaryFolder(app: App, path: string): Promise<() 
  * Deletes an empty folder.
  *
  * A folder the vault index still holds but the disk has already lost is not empty: it is nothing to delete, so it
- * is left alone rather than handed to the trash as a missing path.
+ * is left alone rather than removed as a missing path.
+ *
+ * The folder is removed outright rather than sent to the trash: an empty folder holds nothing to recover.
  *
  * @param app - The application instance.
  * @param pathOrFolder - The folder to delete.
@@ -567,7 +569,15 @@ export async function deleteEmptyFolder(app: App, pathOrFolder: null | PathOrFol
   if (!folder || !await isExistingEmptyFolder(app, folder)) {
     return;
   }
-  await trashSafe(app, folder);
+  /*
+   * An empty folder holds nothing to recover, so it is removed, not trashed: on Windows the system trash costs
+   * about 0.1 s per item through a synchronous IPC call, which was most of a 1,000-note move.
+   * The removal is forced because Obsidian 1.15.0's desktop adapter hands `force` to `fs.rm` as `recursive`,
+   * which refuses every folder, even an empty one, with `ERR_FS_EISDIR` when it is `false`.
+   * The emptiness was just proven against the adapter, and the mobile adapter removes recursively regardless.
+   */
+  // eslint-disable-next-line obsidianmd/prefer-file-manager-trash-file -- An empty folder holds nothing the user's Deleted files setting could recover, and the trash costs about 0.1 s per folder.
+  await app.vault.delete(folder, true);
 }
 
 /**
