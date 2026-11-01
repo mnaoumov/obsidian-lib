@@ -1249,38 +1249,38 @@ describe('deleteEmptyFolder', () => {
   it('should do nothing when folder is null', async () => {
     mockApp = App.createConfigured__();
     app = mockApp.asOriginalType__();
-    vi.spyOn(app.fileManager, 'trashFile');
+    vi.spyOn(app.vault, 'delete').mockResolvedValue();
     await deleteEmptyFolder(app, null);
-    expect(app.fileManager.trashFile).not.toHaveBeenCalled();
+    expect(app.vault.delete).not.toHaveBeenCalled();
   });
 
   it('should do nothing when folder is not empty', async () => {
     mockApp = App.createConfigured__({ files: { 'my-folder/': '' } });
     app = mockApp.asOriginalType__();
-    vi.spyOn(app.fileManager, 'trashFile');
+    vi.spyOn(app.vault, 'delete').mockResolvedValue();
     vi.spyOn(app.vault.adapter, 'stat').mockResolvedValue({ ctime: 0, mtime: 0, size: 0, type: 'folder' });
     vi.spyOn(app.vault.adapter, 'list').mockResolvedValue({ files: ['my-folder/note.md'], folders: [] });
     await deleteEmptyFolder(app, 'my-folder');
-    expect(app.fileManager.trashFile).not.toHaveBeenCalled();
+    expect(app.vault.delete).not.toHaveBeenCalled();
   });
 
   it('should delete when folder is empty', async () => {
     mockApp = App.createConfigured__({ files: { 'my-folder/': '' } });
     app = mockApp.asOriginalType__();
-    vi.spyOn(app.fileManager, 'trashFile');
+    vi.spyOn(app.vault, 'delete').mockResolvedValue();
     vi.spyOn(app.vault.adapter, 'stat').mockResolvedValue({ ctime: 0, mtime: 0, size: 0, type: 'folder' });
     vi.spyOn(app.vault.adapter, 'list').mockResolvedValue({ files: [], folders: [] });
     await deleteEmptyFolder(app, 'my-folder');
-    expect(app.fileManager.trashFile).toHaveBeenCalled();
+    expect(app.vault.delete).toHaveBeenCalledWith(app.vault.getFolderByPath('my-folder'), true);
   });
 
   it('should not delete an indexed folder that is already gone from disk', async () => {
     mockApp = App.createConfigured__({ files: { 'my-folder/': '' } });
     app = mockApp.asOriginalType__();
-    vi.spyOn(app.fileManager, 'trashFile');
+    vi.spyOn(app.vault, 'delete').mockResolvedValue();
     vi.spyOn(app.vault.adapter, 'stat').mockResolvedValue(null);
     await deleteEmptyFolder(app, 'my-folder');
-    expect(app.fileManager.trashFile).not.toHaveBeenCalled();
+    expect(app.vault.delete).not.toHaveBeenCalled();
   });
 });
 
@@ -1288,38 +1288,41 @@ describe('deleteEmptyFolderHierarchy', () => {
   it('should do nothing when folder is null', async () => {
     mockApp = App.createConfigured__();
     app = mockApp.asOriginalType__();
-    vi.spyOn(app.fileManager, 'trashFile');
+    vi.spyOn(app.vault, 'delete').mockResolvedValue();
     await deleteEmptyFolderHierarchy(app, null);
-    expect(app.fileManager.trashFile).not.toHaveBeenCalled();
+    expect(app.vault.delete).not.toHaveBeenCalled();
   });
 
   it('should stop when folder is not empty', async () => {
     mockApp = App.createConfigured__({ files: { 'my-folder/': '' } });
     app = mockApp.asOriginalType__();
-    vi.spyOn(app.fileManager, 'trashFile');
+    vi.spyOn(app.vault, 'delete').mockResolvedValue();
     vi.spyOn(app.vault.adapter, 'stat').mockResolvedValue({ ctime: 0, mtime: 0, size: 0, type: 'folder' });
     vi.spyOn(app.vault.adapter, 'list').mockResolvedValue({ files: ['my-folder/note.md'], folders: [] });
     await deleteEmptyFolderHierarchy(app, 'my-folder');
-    expect(app.fileManager.trashFile).not.toHaveBeenCalled();
+    expect(app.vault.delete).not.toHaveBeenCalled();
   });
 
   it('should delete folder hierarchy when empty', async () => {
     mockApp = App.createConfigured__({ files: { 'parent/child/': '' } });
     app = mockApp.asOriginalType__();
-    vi.spyOn(app.fileManager, 'trashFile');
+    vi.spyOn(app.vault, 'delete').mockResolvedValue();
     vi.spyOn(app.vault.adapter, 'stat').mockResolvedValue({ ctime: 0, mtime: 0, size: 0, type: 'folder' });
     vi.spyOn(app.vault.adapter, 'list').mockResolvedValue({ files: [], folders: [] });
+    const child = app.vault.getFolderByPath('parent/child');
+    const parent = app.vault.getFolderByPath('parent');
     await deleteEmptyFolderHierarchy(app, 'parent/child');
-    expect(app.fileManager.trashFile).toHaveBeenCalled();
+    expect(app.vault.delete).toHaveBeenCalledWith(child, true);
+    expect(app.vault.delete).toHaveBeenCalledWith(parent, true);
   });
 
   it('should not walk up from an indexed folder that is already gone from disk', async () => {
     mockApp = App.createConfigured__({ files: { 'parent/child/': '' } });
     app = mockApp.asOriginalType__();
-    vi.spyOn(app.fileManager, 'trashFile');
+    vi.spyOn(app.vault, 'delete').mockResolvedValue();
     vi.spyOn(app.vault.adapter, 'stat').mockResolvedValue(null);
     await deleteEmptyFolderHierarchy(app, 'parent/child');
-    expect(app.fileManager.trashFile).not.toHaveBeenCalled();
+    expect(app.vault.delete).not.toHaveBeenCalled();
   });
 });
 
@@ -1332,33 +1335,33 @@ describe('cleanupEmptyFolders', () => {
       }
     });
     app = mockApp.asOriginalType__();
-    // Make every listed folder appear empty so the delete paths reach trashFile.
+    // Make every listed folder appear empty so the delete paths reach vault.delete.
     vi.spyOn(app.vault.adapter, 'stat').mockResolvedValue({ ctime: 0, mtime: 0, size: 0, type: 'folder' });
     vi.spyOn(app.vault.adapter, 'list').mockResolvedValue({ files: [], folders: [] });
   });
 
   it('should do nothing when behavior is Keep', async () => {
-    vi.spyOn(app.fileManager, 'trashFile');
+    vi.spyOn(app.vault, 'delete').mockResolvedValue();
     await cleanupEmptyFolders({ app, emptyFolderBehavior: EmptyFolderBehavior.Keep, folderPaths: ['my-folder'] });
-    expect(app.fileManager.trashFile).not.toHaveBeenCalled();
+    expect(app.vault.delete).not.toHaveBeenCalled();
   });
 
   it('should delete each empty folder when behavior is Delete', async () => {
-    vi.spyOn(app.fileManager, 'trashFile');
+    vi.spyOn(app.vault, 'delete').mockResolvedValue();
     await cleanupEmptyFolders({ app, emptyFolderBehavior: EmptyFolderBehavior.Delete, folderPaths: ['my-folder'] });
-    expect(app.fileManager.trashFile).toHaveBeenCalled();
+    expect(app.vault.delete).toHaveBeenCalled();
   });
 
   it('should delete the empty folder hierarchy when behavior is DeleteWithEmptyParents', async () => {
-    vi.spyOn(app.fileManager, 'trashFile');
+    vi.spyOn(app.vault, 'delete').mockResolvedValue();
     await cleanupEmptyFolders({ app, emptyFolderBehavior: EmptyFolderBehavior.DeleteWithEmptyParents, folderPaths: ['parent/child'] });
-    expect(app.fileManager.trashFile).toHaveBeenCalled();
+    expect(app.vault.delete).toHaveBeenCalled();
   });
 
   it('should do nothing when there are no folder paths', async () => {
-    vi.spyOn(app.fileManager, 'trashFile');
+    vi.spyOn(app.vault, 'delete').mockResolvedValue();
     await cleanupEmptyFolders({ app, emptyFolderBehavior: EmptyFolderBehavior.Delete, folderPaths: [] });
-    expect(app.fileManager.trashFile).not.toHaveBeenCalled();
+    expect(app.vault.delete).not.toHaveBeenCalled();
   });
 
   it('should throw for an invalid behavior', async () => {
