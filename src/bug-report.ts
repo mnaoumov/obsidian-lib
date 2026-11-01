@@ -58,7 +58,7 @@ export const BUG_REPORT_ISSUE_FORM_TEMPLATE = 'bug_report.yml';
  */
 export interface BugReportEnvironment {
   /**
-   * The other enabled plugins, sorted by id.
+   * The other loaded plugins, sorted by id.
    */
   readonly enabledPlugins: readonly BugReportPluginInfo[];
 
@@ -199,7 +199,9 @@ export async function getBugReportEnvironment(params: GetBugReportEnvironmentPar
   const { installerVersion, operatingSystem } = await getAppAndOperatingSystem();
 
   return {
-    enabledPlugins: [...app.plugins.enabledPlugins]
+    // The loaded plugins, as Obsidian's Show debug info lists them: `enabledPlugins` also holds an id
+    // whose folder was deleted, or whose load failed.
+    enabledPlugins: Object.keys(app.plugins.plugins)
       .filter((id) => id !== pluginId)
       .sort()
       .map((id) => getPluginInfo(app, id)),
