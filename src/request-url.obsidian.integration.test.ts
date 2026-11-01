@@ -16,6 +16,7 @@ import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 
 import { createServer } from 'node:http';
+import { setTimeout } from 'node:timers';
 import { evalInObsidian } from 'obsidian-integration-testing';
 import {
   afterAll,
@@ -74,7 +75,7 @@ beforeAll(async () => {
         case '/stream': {
           response.writeHead(200, { 'Content-Type': 'text/plain' });
           response.write('first ');
-          window.setTimeout(() => {
+          setTimeout(() => {
             response.end('second');
           }, STREAM_CHUNK_DELAY_IN_MILLISECONDS);
           break;
