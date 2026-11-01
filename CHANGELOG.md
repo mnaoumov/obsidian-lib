@@ -29,6 +29,7 @@
 - feat: add bug-report links, a settings-tab opener and single-choice menu items
 - feat(codemirror): add all-editor dispatch, reconfigurable extension, RangeSet and parse helpers
 - feat(components): add EmbeddableMarkdownEditorComponent
+  - Adapted from the [embeddable editor gist](https://gist.github.com/Fevol/caa478ce303e69eabede7b12b2323838) by Matthew Meyers (mgmeyers) and Fevol, MIT
 - build(deps): bump typescript-dev-toolkit to ^5.4.1 and obsidian-dev-toolkit to ^7.4.0
 
 ## 10.4.1
