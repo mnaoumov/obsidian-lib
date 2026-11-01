@@ -277,6 +277,15 @@ describe('getIndexedBacklinksForFile', () => {
     expect(getIndexedBacklinksForFile(vault.app, target).keys()).toEqual([]);
   });
 
+  it('skips a key the file cache only inherits', () => {
+    const vault = currentVault;
+    vault.setNote('target.md', {});
+    vault.setNote('holder.md', { links: [link('target')] });
+    vault.app.metadataCache.metadataCache['inherited-hash'] = { links: [link('target')] };
+    Object.setPrototypeOf(vault.app.metadataCache.fileCache, { 'inherited.md': { hash: 'inherited-hash' } });
+    expect(getIndexedBacklinksForFile(vault.app, getTestFile('target.md')).keys()).toEqual(['holder.md']);
+  });
+
   it('looks again at a note whose metadata was not stored yet when it was first seen', () => {
     const vault = currentVault;
     vault.setNote('target.md', {});
