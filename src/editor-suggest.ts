@@ -16,7 +16,6 @@ import type {
   TFile
 } from 'obsidian';
 
-import { castTo } from '@mnaoumov/typescript-lib/object-utils';
 import { EditorSuggest } from 'obsidian';
 
 /**
@@ -116,8 +115,7 @@ export abstract class CommandEditorSuggest<T> extends EditorSuggest<T> {
   public openFromCommand(params: CommandEditorSuggestOpenFromCommandParams): boolean {
     const { editor, file } = params;
     this.commandStart = editor.getCursor();
-    // TODO: Pass `file` straight through once obsidian-typings types it `TFile | null`.
-    if (!this.trigger(editor, castTo<TFile>(file), true)) {
+    if (!this.trigger(editor, file, true)) {
       this.commandStart = null;
       return false;
     }
