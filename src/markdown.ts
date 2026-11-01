@@ -55,6 +55,10 @@ import {
   resolveFolderNote,
   resolveFolderNoteConfig
 } from './folder-note.ts';
+import {
+  registerFoldHandlers,
+  registerFootnoteLinkHandler
+} from './rendered-markdown.ts';
 
 /**
  * How long to let Obsidian settle before opening a folder note. The click can land right after an
@@ -118,6 +122,14 @@ export interface FullRenderParams {
    * The Markdown string to render.
    */
   readonly markdown: string;
+
+  /**
+   * Whether to make the rendered headings and nested lists foldable, as in a Reading view. See
+   * {@link registerFoldHandlers}.
+   *
+   * @default `false`
+   */
+  readonly shouldRegisterFoldHandlers?: boolean;
 
   /**
    * Whether to register link handlers for the rendered element.
@@ -458,6 +470,10 @@ export async function fullRender(params: FullRenderParams): Promise<void> {
       sourcePath: params.sourcePath
     }));
   }
+
+  if (params.shouldRegisterFoldHandlers) {
+    registerFoldHandlers({ el: params.el });
+  }
 }
 
 /**
@@ -482,7 +498,9 @@ export async function markdownToHtml(params: MarkdownToHtmlParams): Promise<stri
 }
 
 /**
- * Registers link handlers for the given element.
+ * Registers link handlers for the given element, so its links act as they do in a Reading view: click,
+ * mod-click, middle-click, drag, hover preview, the context menu, tags, and footnote links, which scroll
+ * to their footnote and back.
  *
  * @param params - The parameters for registering link handlers.
  */
@@ -502,6 +520,8 @@ export function registerLinkHandlers(params: RegisterLinkHandlersParams): void {
       })
     )
   );
+  // `registerDomEvents` handles a footnote link's hover, but its click only inside a Reading view.
+  registerFootnoteLinkHandler({ el });
 }
 
 /**

@@ -64,6 +64,11 @@ export enum CssClass {
   FileComponent = 'file-component',
 
   /**
+   * A CSS class for rendered markdown whose headings and lists `registerFoldHandlers` made foldable.
+   */
+  FoldableMarkdown = 'foldable-markdown',
+
+  /**
    * Obsidian's class for a control that is currently ON, reused so a pressed command button matches the
    * app's own toggled controls.
    */
