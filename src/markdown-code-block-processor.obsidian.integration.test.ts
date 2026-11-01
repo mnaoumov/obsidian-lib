@@ -237,4 +237,97 @@ describe('markdown-code-block-processor', () => {
     // The unsaved line was flushed first, so the file's content matched and the write went through.
     expect(diskContent).toBe(`added line\n${savedContent.replace('console.log(1);', 'console.log(2);')}`);
   });
+
+  it('should replace a code block inside a callout, where getSectionInfo returns null', async () => {
+    const noteContent = `${dedent`
+      # Note
+
+      > [!note]
+      > \`\`\`js
+      > console.log(1);
+      > \`\`\`
+    `}\n`;
+    const diskContent = await evalInObsidian({
+      async callback({ app, lib: { castTo, replaceCodeBlock }, noteContent: content }): Promise<string> {
+        const notePath = 'code-block-callout-replace.md';
+        await app.vault.create(notePath, content);
+        try {
+          const calloutContentEl = createDiv({ cls: 'callout-content' });
+          await replaceCodeBlock({
+            app,
+            codeBlockProvider: '```js\nconsole.log(2);\n```',
+            context: castTo<Parameters<typeof replaceCodeBlock>[0]['context']>({
+              getSectionInfo: () => null,
+              sourcePath: notePath
+            }),
+            el: calloutContentEl.createDiv({ cls: 'block-language-js' }),
+            resourceLockComponent: null,
+            shouldPreserveLinePrefix: true,
+            source: 'console.log(1);'
+          });
+
+          return await app.vault.adapter.read(notePath);
+        } finally {
+          if (await app.vault.adapter.exists(notePath)) {
+            await app.vault.adapter.trashLocal(notePath);
+          }
+        }
+      },
+      input: { noteContent }
+    });
+
+    expect(diskContent).toBe(noteContent.replace('console.log(1);', 'console.log(2);'));
+  });
+
+  it('should leave one undo step in an open editor', async () => {
+    const savedContent = `${dedent`
+      # Note
+
+      \`\`\`js
+      console.log(1);
+      \`\`\`
+    `}\n`;
+    const result = await evalInObsidian({
+      // Under the transport's ~30s per-closure cap, not at it. One wait of 5 s for the editor to take the write.
+      async callback({ app, lib: { castTo, replaceCodeBlock, waitUntil }, obsidianModule, savedContent: noteContent }): Promise<string[]> {
+        const { MarkdownView } = obsidianModule;
+        const notePath = 'code-block-undo.md';
+
+        const file = await app.vault.create(notePath, noteContent);
+        const leaf = app.workspace.getLeaf(true);
+        try {
+          await leaf.openFile(file);
+          const view = leaf.view;
+          if (!(view instanceof MarkdownView)) {
+            throw new TypeError('expected a MarkdownView');
+          }
+
+          await replaceCodeBlock({
+            app,
+            codeBlockProvider: '```js\nconsole.log(2);\n```',
+            context: castTo<Parameters<typeof replaceCodeBlock>[0]['context']>({ sourcePath: notePath }),
+            el: createDiv({ cls: 'block-language-js' }),
+            resourceLockComponent: null,
+            source: 'console.log(1);'
+          });
+
+          await waitUntil({
+            message: 'The editor did not take the write.',
+            predicate: () => view.editor.getValue().includes('console.log(2);')
+          });
+          const afterWrite = view.editor.getValue();
+          view.editor.undo();
+          return [afterWrite, view.editor.getValue()];
+        } finally {
+          leaf.detach();
+          if (await app.vault.adapter.exists(notePath)) {
+            await app.vault.adapter.trashLocal(notePath);
+          }
+        }
+      },
+      input: { savedContent }
+    });
+
+    expect(result).toEqual([savedContent.replace('console.log(1);', 'console.log(2);'), savedContent]);
+  });
 });

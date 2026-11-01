@@ -34,10 +34,15 @@ import { ViewType } from '@obsidian-typings/obsidian-public-latest/implementatio
 import { MarkdownView } from 'obsidian';
 
 import type { CodeBlockMarkdownInformation } from './code-block-markdown-information.ts';
+import type { CodeBlockFocusSnapshot } from './code-block-render-handoff.ts';
 import type { ResourceLockComponent } from './resource-lock.ts';
 import type { ContentArguments } from './vault.ts';
 
 import { createCodeBlockRegExp } from './code-block-reg-exp.ts';
+import {
+  captureCodeBlockFocus,
+  recordCodeBlockRenderHandoff
+} from './code-block-render-handoff.ts';
 import { getFileOrNull } from './file-system.ts';
 import {
   invokeWithFileSystemLock,
@@ -131,9 +136,24 @@ export interface ReplaceCodeBlockParams extends GetCodeBlockMarkdownInfoParams {
   readonly codeBlockProvider: ValueProvider<string, ContentArguments>;
 
   /**
+   * A state passed to the next render of the code block, which gets it from {@link claimCodeBlockRenderHandoff}.
+   *
+   * @default `undefined`
+   */
+  readonly nextRenderState?: unknown;
+
+  /**
    * The resource-lock component used to lock the note while it is being modified.
    */
   readonly resourceLockComponent: null | ResourceLockComponent;
+
+  /**
+   * Whether the next render of the code block may put the focus back where it is now inside {@link el}, through
+   * {@link claimCodeBlockRenderHandoff}.
+   *
+   * @default `false`
+   */
+  readonly shouldCarryFocusToNextRender?: boolean;
 
   /**
    * Whether to keep the gap when the new code block is empty.
@@ -330,11 +350,19 @@ export async function removeCodeBlock(params: RemoveCodeBlockParams): Promise<vo
 /**
  * Replaces the code block.
  *
+ * Obsidian renders the block again from its new source. To keep the focus or plugin state across that render, pass
+ * {@link ReplaceCodeBlockParams.shouldCarryFocusToNextRender} or {@link ReplaceCodeBlockParams.nextRenderState}, and
+ * call {@link claimCodeBlockRenderHandoff} from the processor. When the note is open in an editor, Obsidian applies
+ * the write as one change the user can undo.
+ *
  * @param params - The parameters for the function.
  */
 export async function replaceCodeBlock(params: ReplaceCodeBlockParams): Promise<void> {
   const { app, codeBlockProvider, context } = params;
   params.abortSignal?.throwIfAborted();
+  const shouldRecordHandoff = params.shouldCarryFocusToNextRender === true || params.nextRenderState !== undefined;
+  const focus: CodeBlockFocusSnapshot | null = params.shouldCarryFocusToNextRender ? captureCodeBlockFocus(params.el) : null;
+  let isHandoffRecorded = false;
 
   await process({
     app,
@@ -369,6 +397,16 @@ export async function replaceCodeBlock(params: ReplaceCodeBlockParams): Promise<
 
       const textBeforeCodeBlock = content.slice(0, markdownInfo.positionInNote.start.offset);
       const textAfterCodeBlock = content.slice(markdownInfo.positionInNote.end.offset);
+
+      if (shouldRecordHandoff && !isHandoffRecorded && newCodeBlock) {
+        // Recorded before the write, because an open editor can render the new source before the write settles.
+        isHandoffRecorded = recordCodeBlockRenderHandoff({
+          focus,
+          newCodeBlock,
+          sourcePath: context.sourcePath,
+          state: params.nextRenderState
+        });
+      }
 
       if (newCodeBlock || params.shouldKeepGapWhenEmpty) {
         return `${textBeforeCodeBlock}${newCodeBlock}${textAfterCodeBlock}`;
