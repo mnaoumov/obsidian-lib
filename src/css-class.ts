@@ -69,6 +69,11 @@ export enum CssClass {
   FoldableMarkdown = 'foldable-markdown',
 
   /**
+   * A CSS class for the element an inline token renders into, in Reading view and in Live Preview.
+   */
+  InlineToken = 'inline-token',
+
+  /**
    * Obsidian's class for a control that is currently ON, reused so a pressed command button matches the
    * app's own toggled controls.
    */

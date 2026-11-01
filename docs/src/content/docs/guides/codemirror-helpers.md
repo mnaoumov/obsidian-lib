@@ -1,6 +1,6 @@
 ---
 title: CodeMirror helpers
-description: Reach every open editor, swap an editor extension at runtime, list a RangeSet, and keep an incremental Lezer parse of the document.
+description: Reach every open editor, swap an editor extension at runtime, feed settings to extensions through a facet, render inline tokens in Reading view and Live Preview from one definition, list a RangeSet, and keep an incremental Lezer parse of the document.
 ---
 
 ## Every open editor
@@ -49,6 +49,85 @@ class MyPlugin extends Plugin {
 ```
 
 The extension lives in a CodeMirror `Compartment`. A reconfigure dispatches the compartment's reconfigure effect to the open editors and swaps the entry in the registered array, which new editors read. That avoids `workspace.updateOptions()`, which Obsidian describes as fairly expensive. Obsidian cannot unregister an editor extension, so unloading the component empties the compartment instead.
+
+## Settings through a facet
+
+An extension that closes over a settings object never sees the settings change. `createSettingsFacet` from `@mnaoumov/obsidian-lib/codemirror/settings-facet` makes a facet the extension reads instead, and `SettingsFacetComponent` from `@mnaoumov/obsidian-lib/components/settings-facet-component` provides the current settings to it in every open editor and every editor opened later. It is a `ReconfigurableEditorExtensionComponent` holding `facet.of(settings)`, so `setSettings` is one reconfigure, and every view plugin sees the new value in the same update.
+
+```ts
+import { createSettingsFacet } from '@mnaoumov/obsidian-lib/codemirror/settings-facet';
+import { SettingsFacetComponent } from '@mnaoumov/obsidian-lib/components/settings-facet-component';
+import { PluginEditorExtensionRegistrar } from '@mnaoumov/obsidian-lib/editor-extension-registrar';
+import { Plugin } from 'obsidian';
+
+interface MySettings {
+  readonly color: string;
+}
+
+const settingsFacet = createSettingsFacet<MySettings>({ color: 'red' });
+
+class MyPlugin extends Plugin {
+  private settingsFacetComponent?: SettingsFacetComponent<MySettings>;
+
+  public override onload(): void {
+    this.settingsFacetComponent = this.addChild(
+      new SettingsFacetComponent({
+        app: this.app,
+        editorExtensionRegistrar: new PluginEditorExtensionRegistrar(this),
+        facet: settingsFacet,
+        settings: { color: 'red' }
+      })
+    );
+  }
+
+  public onSettingsChanged(settings: MySettings): void {
+    this.settingsFacetComponent?.setSettings(settings);
+  }
+}
+```
+
+An extension reads the value with `state.facet(settingsFacet)`. A view plugin must rebuild when the configuration changes (`update.transactions.some((transaction) => transaction.reconfigured)`), which the inline token widgets below already do.
+
+## Inline tokens in Reading view and Live Preview
+
+`registerInlineTokenRenderer` from `@mnaoumov/obsidian-lib/inline-token-renderer` takes one definition, a regular expression and a render function, and registers it twice: as a Markdown post processor for Reading view, and as an editor extension that replaces each match with a widget in Live Preview. Both call the same function, so the two views render a token the same way.
+
+```ts
+import { PluginEditorExtensionRegistrar } from '@mnaoumov/obsidian-lib/editor-extension-registrar';
+import { registerInlineTokenRenderer } from '@mnaoumov/obsidian-lib/inline-token-renderer';
+import { PluginMarkdownPostProcessorRegistrar } from '@mnaoumov/obsidian-lib/markdown-post-processor-registrar';
+import { Plugin } from 'obsidian';
+
+class MyPlugin extends Plugin {
+  public override onload(): void {
+    registerInlineTokenRenderer({
+      editorExtensionRegistrar: new PluginEditorExtensionRegistrar(this),
+      markdownPostProcessorRegistrar: new PluginMarkdownPostProcessorRegistrar(this),
+      regExp: /::kbd-(\w+)::/,
+      render({ containerEl, match }) {
+        containerEl.createEl('kbd', { text: match[1] ?? '' });
+      }
+    });
+  }
+}
+```
+
+The render function gets the container element, the match, and the note's path. In Live Preview it also gets the editor state, so it can read a settings facet.
+
+In Live Preview a token shows its source again while the cursor or a selection touches it, the way Obsidian's own links do. Set `shouldRevealOnSelection: false` to keep it rendered. Nothing is replaced in Source mode.
+
+The two halves see different text. Reading view walks the rendered text nodes, skipping the elements `skipSelector` names (`code, pre` by default), so a token never spans formatting. Live Preview matches each line of the source, Markdown markup included, and skips nothing by default. To skip code there, pass `shouldDecorate` and ask the syntax tree, which needs `@codemirror/language` from Obsidian's module map:
+
+<!-- snippet-check: skip @codemirror/language is not a dependency of this package -->
+
+```ts
+import { syntaxTree } from '@codemirror/language';
+
+const shouldDecorate = ({ from, state }: InlineTokenShouldDecorateParams): boolean =>
+  !syntaxTree(state).resolveInner(from, 1).name.includes('code');
+```
+
+`createInlineTokenWidgetsExtension` from `@mnaoumov/obsidian-lib/codemirror/inline-token-widgets` and `createInlineTokenPostProcessor` are the two halves, for a plugin that registers them some other way.
 
 ## Listing a RangeSet
 
