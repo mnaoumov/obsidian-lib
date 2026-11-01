@@ -135,6 +135,40 @@ new SettingEx(containerEl)
 
 ![FileComponent](./images/setting-components/FileComponent.png)
 
+## HotkeyComponent
+
+A hotkey recorder: click the button, then press the key combination. Escape cancels the recording, and the clear button sets the value to `null`. The value is a `Hotkey`, the shape Obsidian stores in `hotkeys.json`, so it can be handed straight to `Scope.register`.
+
+```ts
+import { HotkeyComponent } from '@mnaoumov/obsidian-lib/setting-components/hotkey-component';
+
+const hotkey = new HotkeyComponent(containerEl);
+hotkey.setValue({ key: 'P', modifiers: ['Mod', 'Shift'] });
+hotkey.onChange((value) => console.log(value));
+
+// or
+
+import { SettingEx } from '@mnaoumov/obsidian-lib/setting-ex';
+
+new SettingEx(containerEl)
+  .addHotkey((hotkey) => {
+    hotkey.setValue({ key: 'P', modifiers: ['Mod', 'Shift'] });
+  });
+```
+
+The same display string and key reading are available on their own, for a hotkey shown or captured anywhere else:
+
+<!-- snippet-check: context declare const keyboardEvent: KeyboardEvent; -->
+```ts
+import {
+  formatHotkey,
+  getHotkeyFromKeyboardEvent
+} from '@mnaoumov/obsidian-lib/hotkey';
+
+formatHotkey({ hotkey: { key: 'P', modifiers: ['Mod', 'Shift'] } }); // 'Ctrl + Shift + P', or '⌘⇧P' on macOS
+const pressed = getHotkeyFromKeyboardEvent({ event: keyboardEvent }); // null when only a modifier key is down
+```
+
 ## MonthComponent
 
 ```ts
@@ -481,3 +515,22 @@ new SettingEx(containerEl)
 ```
 
 ![WeekComponent](./images/setting-components/WeekComponent.png)
+
+## Link and tag completion in any input
+
+`LinkAndTagInputSuggest` adds the editor's `[[` and `#` completion to any `<input>` or `<textarea>`. Unlike Obsidian's `AbstractInputSuggest`, which treats the whole value as the query and replaces it, it reads the trigger before the caret and replaces only that, so it works inside free text such as a template or a description setting.
+
+```ts
+import { LinkAndTagInputSuggest } from '@mnaoumov/obsidian-lib/link-and-tag-input-suggest';
+import { SettingEx } from '@mnaoumov/obsidian-lib/setting-ex';
+
+new SettingEx(containerEl)
+  .addTextArea((textArea) => {
+    new LinkAndTagInputSuggest({ app, inputEl: textArea.inputEl });
+  });
+```
+
+- `[[` suggests vault files, matched fuzzily on their link text or path, and inserts `[[link]]`, taking over a `]]` already after the caret. Links are relative to `sourcePath`, the vault root by default.
+- `#` at the start of the text or after whitespace suggests the vault's tags, most used first, and inserts `#tag` and a space.
+- `shouldSuggestLinks: false` or `shouldSuggestTags: false` turns one trigger off.
+- The insertion dispatches an `input` event, so the text component's own `onChange` sees it. `onSelect` still reports the chosen suggestion.

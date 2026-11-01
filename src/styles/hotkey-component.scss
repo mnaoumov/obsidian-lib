@@ -1,0 +1,11 @@
+.obsidian-lib {
+  &.hotkey-component {
+    button.is-placeholder {
+      color: var(--text-faint);
+    }
+
+    button.is-active {
+      color: var(--text-accent);
+    }
+  }
+}
