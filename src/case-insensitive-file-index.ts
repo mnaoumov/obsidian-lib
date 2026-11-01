@@ -21,6 +21,7 @@ import type {
 } from 'obsidian';
 
 import { snapshot } from '@mnaoumov/typescript-lib/array';
+import { TFolder } from 'obsidian';
 
 import { getObsidianLibState } from './obsidian-lib-state.ts';
 
@@ -59,7 +60,12 @@ export class CaseInsensitiveFileIndex {
    */
   public delete(path: string): void {
     const key = path.toLowerCase();
+    const abstractFile = this.map.get(key);
     this.map.delete(key);
+    // Only a folder has descendants; scanning the whole index for a file's made every delete O(vault).
+    if (abstractFile && !(abstractFile instanceof TFolder)) {
+      return;
+    }
     const descendantPrefix = `${key}/`;
     for (const existingKey of snapshot(this.map.keys())) {
       if (existingKey.startsWith(descendantPrefix)) {
@@ -104,6 +110,10 @@ export class CaseInsensitiveFileIndex {
     const newKey = newAbstractFile.path.toLowerCase();
     this.map.delete(oldKey);
     this.map.set(newKey, newAbstractFile);
+    // Only a folder has descendants; scanning the whole index for a file's made every rename O(vault).
+    if (!(newAbstractFile instanceof TFolder)) {
+      return;
+    }
 
     const oldDescendantPrefix = `${oldKey}/`;
     const newDescendantPrefix = `${newKey}/`;
