@@ -1,0 +1,33 @@
+// Obsidian lays its collapse indicators out only inside `.markdown-preview-view` (and the list one inside
+// `.markdown-rendered`), so markdown rendered anywhere else and made foldable by `registerFoldHandlers`
+// would get them inline, pushing the text aside. These are the Reading view's own rules, read from
+// Obsidian 1.15.0. The opacity and hover rules are global in Obsidian and need no copy.
+.obsidian-lib {
+  &.foldable-markdown {
+    .collapse-indicator {
+      cursor: var(--cursor);
+      display: inline-flex;
+      position: absolute;
+      user-select: none;
+
+      .svg-icon {
+        vertical-align: middle;
+      }
+    }
+
+    .heading-collapse-indicator {
+      margin-inline-start: -22px;
+      padding: 0 6px;
+    }
+
+    .list-collapse-indicator {
+      margin-inline-start: -2.65em;
+      padding-inline-end: 2em;
+    }
+
+    li.is-collapsed > ul,
+    li.is-collapsed > ol {
+      display: none;
+    }
+  }
+}
