@@ -240,18 +240,41 @@ function indexSource(app: App, data: BacklinkIndexData, sourcePath: string, hash
   data.indexedHashes.set(sourcePath, hash);
 }
 
+/**
+ * Brings the index in line with `metadataCache.fileCache`. It runs on every query, so it is one pass over
+ * `fileCache` with no allocation per note (a rename in a large vault queries several times), and the pass over the
+ * index that finds notes gone from `fileCache` runs only when that first pass did not see every indexed note.
+ *
+ * @param app - The Obsidian app instance.
+ * @param data - The index.
+ */
 function refresh(app: App, data: BacklinkIndexData): void {
   const fileCache = app.metadataCache.fileCache;
+  const indexedCountBefore = data.indexedHashes.size;
+  let seenIndexedCount = 0;
+
+  // eslint-disable-next-line guard-for-in -- `Object.hasOwn` below is the guard; `for...in` avoids an entry array per note.
+  for (const sourcePath in fileCache) {
+    const entry = Object.hasOwn(fileCache, sourcePath) ? fileCache[sourcePath] : undefined;
+    if (!entry) {
+      continue;
+    }
+    const indexedHash = data.indexedHashes.get(sourcePath);
+    if (indexedHash !== undefined) {
+      seenIndexedCount++;
+    }
+    if (indexedHash !== entry.hash) {
+      indexSource(app, data, sourcePath, entry.hash);
+    }
+  }
+
+  if (seenIndexedCount === indexedCountBefore) {
+    return;
+  }
 
   for (const sourcePath of data.sourcePathNameKeys.keys()) {
     if (!Object.hasOwn(fileCache, sourcePath)) {
       removeSource(data, sourcePath);
-    }
-  }
-
-  for (const [sourcePath, { hash }] of Object.entries(fileCache)) {
-    if (data.indexedHashes.get(sourcePath) !== hash) {
-      indexSource(app, data, sourcePath, hash);
     }
   }
 }
