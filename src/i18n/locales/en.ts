@@ -38,6 +38,11 @@ export const en = {
       jumpToPage: 'Jump to page:',
       pageHeader: 'Page {{pageNumber, number}} of {{totalPages, number}}, Total items: {{totalItems, number}}'
     },
+    hotkey: {
+      clear: 'Clear hotkey',
+      notSet: 'Not set',
+      pressHotkey: 'Press a hotkey...'
+    },
     menu: {
       copy: 'Copy'
     },

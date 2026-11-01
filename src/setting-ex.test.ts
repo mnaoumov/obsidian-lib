@@ -160,6 +160,13 @@ describe('SettingEx', () => {
       expect(callback).toHaveBeenCalled();
     });
 
+    it('should add hotkey component', () => {
+      const callback = vi.fn();
+      const result = settingEx.addHotkey(callback);
+      expect(result).toBe(settingEx);
+      expect(callback).toHaveBeenCalled();
+    });
+
     it('should add month component', () => {
       const callback = vi.fn();
       const result = settingEx.addMonth(callback);

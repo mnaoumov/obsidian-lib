@@ -15,6 +15,7 @@ import { DateComponent } from './setting-components/date-component.ts';
 import { DateTimeComponent } from './setting-components/date-time-component.ts';
 import { EmailComponent } from './setting-components/email-component.ts';
 import { FileComponent } from './setting-components/file-component.ts';
+import { HotkeyComponent } from './setting-components/hotkey-component.ts';
 import { MonthComponent } from './setting-components/month-component.ts';
 import { MultipleDropdownComponent } from './setting-components/multiple-dropdown-component.ts';
 import { MultipleEmailComponent } from './setting-components/multiple-email-component.ts';
@@ -108,6 +109,16 @@ export class SettingEx extends Setting {
    */
   public addFile(callback: (file: FileComponent) => void): this {
     return this.addComponentClass(FileComponent, callback);
+  }
+
+  /**
+   * Adds a {@link HotkeyComponent} to the setting.
+   *
+   * @param callback - The callback to call with the component.
+   * @returns The setting instance.
+   */
+  public addHotkey(callback: (hotkey: HotkeyComponent) => void): this {
+    return this.addComponentClass(HotkeyComponent, callback);
   }
 
   /**

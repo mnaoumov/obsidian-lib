@@ -69,6 +69,11 @@ export enum CssClass {
   FoldableMarkdown = 'foldable-markdown',
 
   /**
+   * A CSS class for the hotkey component.
+   */
+  HotkeyComponent = 'hotkey-component',
+
+  /**
    * A CSS class for the element an inline token renders into, in Reading view and in Live Preview.
    */
   InlineToken = 'inline-token',
