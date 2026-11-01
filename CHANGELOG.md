@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## 10.5.1
+
+- test(backlink-index): cover a file cache key that is only inherited
+- perf(rename): narrow the rename link snapshot and speed up the backlink and path indexes
+- fix: keep a bulk operation fresh while it waits on a dialog
+- docs: add issue-filing instructions for AI agents
+- chore: add issue forms
+- test: assert the embeddable editor's exact Enter on Android too
+- fix: throw PluginEnableRefusedError when Obsidian refuses to enable a plugin
+
 ## 10.5.0
 
 - docs: record that the harness, not the embeddable editor, doubles an Android Enter
