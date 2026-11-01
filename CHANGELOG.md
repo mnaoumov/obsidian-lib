@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## 10.6.0
+
+- fix(bug-report): list only the loaded plugins, as Show debug info does (<https://github.com/mnaoumov/obsidian-advanced-debug-mode/issues/5>)
+- feat(request-url): add a requestUrl wrapper with abort, timeout, FormData, rich errors and streaming
+- feat(input): open suggests at an anchor or from a command, edit lists and tabs
+- feat(input): complete links and tags in any input, and record hotkeys
+- feat(codemirror): add inline token renderer and settings facet
+- feat(markdown): carry focus and state across a self-editing code block's re-render
+- docs: add a fresh data reads guide
+- feat(markdown): footnote clicks and folding in rendered markdown
+
 ## 10.5.1
 
 - test(backlink-index): cover a file cache key that is only inherited
