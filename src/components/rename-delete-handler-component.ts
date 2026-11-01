@@ -58,6 +58,7 @@ import {
   getAttachmentFolderPath,
   hasOwnAttachmentFolder
 } from '../attachment-path.ts';
+import { iterateReferencesAffectedByRename } from '../backlink-index.ts';
 import { getCanvasReferences } from '../canvas.ts';
 import { getObsidianLibDebugger } from '../debug.ts';
 import { waitForPendingLinkUpdates } from '../file-manager.ts';
@@ -267,6 +268,11 @@ interface MetadataDeletedHandlerConstructorParams {
   readonly file: TAbstractFile;
   readonly previousCache: CachedMetadata | null;
   readonly settingsManager: SettingsManager;
+}
+
+interface PendingRename {
+  readonly file: TFile;
+  readonly newPath: string;
 }
 
 interface RenameDeleteHandlerComponentConstructorParams {
@@ -623,8 +629,18 @@ class DeleteProtectionPatchComponent extends MonkeyAroundComponent {
 }
 
 class FileManagerRunAsyncLinkUpdatePatchComponent extends MonkeyAroundComponent {
+  /**
+   * The rename whose `runAsyncLinkUpdate` snapshot is about to be taken: set when Obsidian's `onCleanCache`
+   * callback for that snapshot fires, consumed by the very next `iterateAllRefs` call, which is the snapshot.
+   */
+  private activeSnapshotRename: null | PendingRename = null;
   private readonly app: App;
   private readonly fileManager: FileManager;
+  /**
+   * The rename `fileManager.renameFile` is performing, recorded for the `runAsyncLinkUpdate` call it makes
+   * synchronously, which is the only one that cannot otherwise tell what is being renamed.
+   */
+  private pendingRename: null | PendingRename = null;
   private readonly settingsManager: SettingsManager;
 
   public constructor(params: FileManagerRunAsyncLinkUpdatePatchComponentConstructorParams) {
@@ -649,7 +665,10 @@ class FileManagerRunAsyncLinkUpdatePatchComponent extends MonkeyAroundComponent 
         }
 
         const newHandler: LinkUpdatesHandler = (linkUpdates) => this.wrapLinkUpdatesHandler(linkUpdates, linkUpdatesHandler);
-        return originalMethodBound(newHandler);
+        const rename = this.pendingRename;
+        this.pendingRename = null;
+        // With `inProgressUpdates` set, Obsidian queues the handler onto the running update and takes no snapshot.
+        return !rename || this.fileManager.inProgressUpdates ? originalMethodBound(newHandler) : this.withNarrowedSnapshot(rename, () => originalMethodBound(newHandler));
       },
       /*
        * Suppressing Obsidian's own link updates is NOT idempotent, so two live copies of this component
@@ -672,6 +691,98 @@ class FileManagerRunAsyncLinkUpdatePatchComponent extends MonkeyAroundComponent 
        */
       patchToken: PATCH_TOKEN
     });
+
+    this.registerMethodPatch({
+      $object: this.fileManager,
+      methodName: 'renameFile',
+      patchHandler: ({
+        fallback,
+        originalArguments: [file, newPath],
+        originalMethod,
+        originalMethodBound
+      }) => {
+        if (hasPatchToken(originalMethod, PATCH_TOKEN) || !isFile(file)) {
+          return fallback();
+        }
+
+        // `renameFile` calls `runAsyncLinkUpdate` synchronously, which picks this up and clears it.
+        this.pendingRename = { file, newPath };
+        try {
+          return originalMethodBound(file, newPath);
+        } finally {
+          this.pendingRename = null;
+        }
+      },
+      patchToken: PATCH_TOKEN
+    });
+
+    this.registerMethodPatch({
+      $object: this.app.metadataCache,
+      methodName: 'iterateAllRefs',
+      patchHandler: ({
+        fallback,
+        originalArguments: [callback],
+        originalMethod
+      }) => {
+        const rename = this.activeSnapshotRename;
+        if (hasPatchToken(originalMethod, PATCH_TOKEN) || !rename) {
+          fallback();
+          return;
+        }
+
+        this.activeSnapshotRename = null;
+        iterateReferencesAffectedByRename(this.app, rename.file, rename.newPath, callback);
+      },
+      patchToken: PATCH_TOKEN
+    });
+  }
+
+  /**
+   * Runs `runAsyncLinkUpdate` so that its snapshot of resolved references covers only the references the rename
+   * can affect ({@link iterateReferencesAffectedByRename}) instead of every reference in the vault.
+   *
+   * Obsidian's `runAsyncLinkUpdate` queues a task on `fileManager.updateQueue`. The task waits for
+   * `metadataCache.onCleanCache`, then calls `metadataCache.iterateAllRefs` once to take the snapshot, then runs the
+   * handler that renames. The queued task is wrapped so that the `onCleanCache` callback it registers, and only
+   * that one, arms the narrowing, which the `iterateAllRefs` patch consumes on the next call. Both temporary swaps
+   * are undone synchronously, before anything else can call either method.
+   *
+   * @param rename - The rename being performed.
+   * @param callOriginal - Calls Obsidian's `runAsyncLinkUpdate`.
+   * @returns What `runAsyncLinkUpdate` returns.
+   */
+  private withNarrowedSnapshot(rename: PendingRename, callOriginal: () => Promise<void>): Promise<void> {
+    const updateQueue = this.fileManager.updateQueue;
+    const metadataCache = this.app.metadataCache;
+    const originalQueue = Object.getOwnPropertyDescriptor(updateQueue, 'queue');
+    const queue = updateQueue.queue.bind(updateQueue);
+
+    updateQueue.queue = <T>(task: () => Promise<T> | T): Promise<T> =>
+      queue(() => {
+        const originalOnCleanCache = Object.getOwnPropertyDescriptor(metadataCache, 'onCleanCache');
+        const onCleanCache = metadataCache.onCleanCache.bind(metadataCache);
+        metadataCache.onCleanCache = (onCleanCacheCallback: () => void): void => {
+          onCleanCache(() => {
+            this.activeSnapshotRename = rename;
+            onCleanCacheCallback();
+          });
+        };
+        let result: Promise<T> | T;
+        try {
+          result = task();
+        } finally {
+          restoreProperty(metadataCache, 'onCleanCache', originalOnCleanCache);
+        }
+        return Promise.resolve(result).finally(() => {
+          this.activeSnapshotRename = null;
+        });
+      });
+
+    try {
+      return callOriginal();
+    } finally {
+      restoreProperty(updateQueue, 'queue', originalQueue);
+    }
   }
 
   private async wrapLinkUpdatesHandler(linkUpdates: LinkUpdate[], linkUpdatesHandler: LinkUpdatesHandler): Promise<void> {
@@ -1647,6 +1758,22 @@ function getReferenceIdentityKey(reference: Reference): string {
     link: reference.link,
     original: reference.original
   });
+}
+
+/**
+ * Puts back a property swapped out for a moment: the own property it had, or none, so a method inherited from the
+ * prototype is inherited again.
+ *
+ * @param $object - The object the property was swapped on.
+ * @param key - The property's key.
+ * @param descriptor - Its own property descriptor before the swap, `undefined` when it had none.
+ */
+function restoreProperty($object: object, key: string, descriptor: PropertyDescriptor | undefined): void {
+  if (descriptor) {
+    Object.defineProperty($object, key, descriptor);
+  } else {
+    Reflect.deleteProperty($object, key);
+  }
 }
 
 /* v8 ignore stop */
