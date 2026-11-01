@@ -55,13 +55,19 @@ const PLUGIN_ID = 'my-plugin';
 function createApp(): AppOriginal {
   return strictProxy<AppOriginal>({
     plugins: strictProxy<AppOriginal['plugins']>({
-      enabledPlugins: new Set(['alpha', 'no-manifest', PLUGIN_ID, 'zeta']),
+      // `deleted` is in `community-plugins.json`, but its folder is gone, so Obsidian never loaded it.
+      enabledPlugins: new Set(['alpha', 'deleted', PLUGIN_ID, 'zeta']),
       manifests: {
         'alpha': strictProxy({ version: '2.0.0' }),
-        'no-manifest': undefined,
+        'deleted': undefined,
         'not-installed': undefined,
         [PLUGIN_ID]: strictProxy({ version: '1.2.3' }),
         'zeta': strictProxy({ version: '0.1.0' })
+      },
+      plugins: {
+        alpha: strictProxy({}),
+        [PLUGIN_ID]: strictProxy({}),
+        zeta: strictProxy({})
       }
     })
   });
@@ -91,7 +97,6 @@ describe('getBugReportEnvironment', () => {
     expect(await getBugReportEnvironment({ app: createApp(), pluginId: PLUGIN_ID })).toEqual({
       enabledPlugins: [
         { id: 'alpha', version: '2.0.0' },
-        { id: 'no-manifest', version: null },
         { id: 'zeta', version: '0.1.0' }
       ],
       installerVersion: '1.8.10',
@@ -100,6 +105,11 @@ describe('getBugReportEnvironment', () => {
       platform: 'Windows',
       plugin: { id: PLUGIN_ID, version: '1.2.3' }
     });
+  });
+
+  it('should give no version for a plugin whose manifest is not known', async () => {
+    const environment = await getBugReportEnvironment({ app: createApp(), pluginId: 'not-installed' });
+    expect(environment.plugin).toEqual({ id: 'not-installed', version: null });
   });
 
   it('should read the installer version as unknown when Platform has no build', async () => {
