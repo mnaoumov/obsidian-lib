@@ -4,7 +4,10 @@
  * Extends the Setting class with additional methods for adding components.
  */
 
-import type { BaseComponent } from 'obsidian';
+import type {
+  App,
+  BaseComponent
+} from 'obsidian';
 
 import { castTo } from '@mnaoumov/typescript-lib/object-utils';
 import { Setting } from 'obsidian';
@@ -15,7 +18,9 @@ import { DateComponent } from './setting-components/date-component.ts';
 import { DateTimeComponent } from './setting-components/date-time-component.ts';
 import { EmailComponent } from './setting-components/email-component.ts';
 import { FileComponent } from './setting-components/file-component.ts';
+import { FolderListComponent } from './setting-components/folder-list-component.ts';
 import { HotkeyComponent } from './setting-components/hotkey-component.ts';
+import { ListComponent } from './setting-components/list-component.ts';
 import { MonthComponent } from './setting-components/month-component.ts';
 import { MultipleDropdownComponent } from './setting-components/multiple-dropdown-component.ts';
 import { MultipleEmailComponent } from './setting-components/multiple-email-component.ts';
@@ -23,6 +28,7 @@ import { MultipleFileComponent } from './setting-components/multiple-file-compon
 import { MultipleTextComponent } from './setting-components/multiple-text-component.ts';
 import { NumberComponent } from './setting-components/number-component.ts';
 import { PasswordComponent } from './setting-components/password-component.ts';
+import { TagListComponent } from './setting-components/tag-list-component.ts';
 import { TelephoneComponent } from './setting-components/telephone-component.ts';
 import { TimeComponent } from './setting-components/time-component.ts';
 import { TriStateCheckboxComponent } from './setting-components/tri-state-checkbox-component.ts';
@@ -112,6 +118,21 @@ export class SettingEx extends Setting {
   }
 
   /**
+   * Adds a {@link FolderListComponent} to the setting.
+   *
+   * @param app - The Obsidian app, for the folder suggest.
+   * @param callback - The callback to call with the component.
+   * @returns The setting instance.
+   */
+  public addFolderList(app: App, callback: (folderList: FolderListComponent) => void): this {
+    return this.addComponent((element) => {
+      const component = new FolderListComponent(element, app);
+      callback(component);
+      return component;
+    });
+  }
+
+  /**
    * Adds a {@link HotkeyComponent} to the setting.
    *
    * @param callback - The callback to call with the component.
@@ -119,6 +140,16 @@ export class SettingEx extends Setting {
    */
   public addHotkey(callback: (hotkey: HotkeyComponent) => void): this {
     return this.addComponentClass(HotkeyComponent, callback);
+  }
+
+  /**
+   * Adds a {@link ListComponent} to the setting.
+   *
+   * @param callback - The callback to call with the component.
+   * @returns The setting instance.
+   */
+  public addList(callback: (list: ListComponent) => void): this {
+    return this.addComponentClass(ListComponent, callback);
   }
 
   /**
@@ -189,6 +220,21 @@ export class SettingEx extends Setting {
    */
   public addPassword(callback: (password: PasswordComponent) => void): this {
     return this.addComponentClass(PasswordComponent, callback);
+  }
+
+  /**
+   * Adds a {@link TagListComponent} to the setting.
+   *
+   * @param app - The Obsidian app, for the tag suggest.
+   * @param callback - The callback to call with the component.
+   * @returns The setting instance.
+   */
+  public addTagList(app: App, callback: (tagList: TagListComponent) => void): this {
+    return this.addComponent((element) => {
+      const component = new TagListComponent(element, app);
+      callback(component);
+      return component;
+    });
   }
 
   /**

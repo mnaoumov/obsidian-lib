@@ -2,6 +2,7 @@
 
 import { noop } from '@mnaoumov/typescript-lib/function';
 import { Setting } from 'obsidian';
+import { App } from 'obsidian-test-mocks/obsidian';
 import {
   beforeEach,
   describe,
@@ -10,6 +11,9 @@ import {
   vi
 } from 'vitest';
 
+import { FolderListComponent } from './setting-components/folder-list-component.ts';
+import { ListComponent } from './setting-components/list-component.ts';
+import { TagListComponent } from './setting-components/tag-list-component.ts';
 import {
   adoptSettingEx,
   SettingEx
@@ -165,6 +169,19 @@ describe('SettingEx', () => {
       const result = settingEx.addHotkey(callback);
       expect(result).toBe(settingEx);
       expect(callback).toHaveBeenCalled();
+    });
+
+    it('should add list components', () => {
+      const app = App.createConfigured__().asOriginalType__();
+      const listCallback = vi.fn();
+      const folderListCallback = vi.fn();
+      const tagListCallback = vi.fn();
+      expect(settingEx.addList(listCallback)).toBe(settingEx);
+      expect(settingEx.addFolderList(app, folderListCallback)).toBe(settingEx);
+      expect(settingEx.addTagList(app, tagListCallback)).toBe(settingEx);
+      expect(listCallback).toHaveBeenCalledWith(expect.any(ListComponent));
+      expect(folderListCallback).toHaveBeenCalledWith(expect.any(FolderListComponent));
+      expect(tagListCallback).toHaveBeenCalledWith(expect.any(TagListComponent));
     });
 
     it('should add month component', () => {

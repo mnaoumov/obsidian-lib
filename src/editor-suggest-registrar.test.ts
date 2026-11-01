@@ -30,4 +30,22 @@ describe('PluginEditorSuggestRegistrar', () => {
 
     expect(registerEditorSuggest).toHaveBeenCalledWith(editorSuggest);
   });
+
+  it('should move a prioritized suggest to the front', () => {
+    const other = strictProxy<EditorSuggestOriginal<unknown>>({});
+    const editorSuggest = strictProxy<EditorSuggestOriginal<unknown>>({});
+    const suggests: EditorSuggestOriginal<unknown>[] = [other];
+    const app = { workspace: { editorSuggest: { suggests } } };
+    const plugin = strictProxy<PluginOriginal>({
+      app,
+      registerEditorSuggest: vi.fn((suggest: EditorSuggestOriginal<unknown>) => {
+        suggests.push(suggest);
+      })
+    });
+
+    new PluginEditorSuggestRegistrar(plugin).registerEditorSuggest(editorSuggest, { shouldPrioritize: true });
+
+    expect(suggests).toEqual([editorSuggest, other]);
+    expect(suggests[0]).toBe(editorSuggest);
+  });
 });
