@@ -45,7 +45,7 @@ export interface SharedDataStoreOpenParams {
    */
   readonly adapter: DataAdapter;
   /**
-   * Configurable non-dot vault folder.
+   * Vault-relative folder. Hidden segments are allowed; callers must arrange their synchronization.
    *
    * @default `'Plugin data'`
    */
