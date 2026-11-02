@@ -8,6 +8,47 @@ import {
 } from 'vitest';
 
 describe('shared data stores in Obsidian', () => {
+  it.each(['.plugin-data', 'plugin-config'])('round trips hidden storage through the real adapter in %s', async (location) => {
+    const result = await evalInObsidian({
+      async callback({ app, folderType, lib: { DataStoreTransport, LocalDataStore, SharedDataStore } }) {
+        const folder = folderType === 'plugin-config' ? `${app.vault.configDir}/plugins/obsidian-lib-test/shared-data` : folderType;
+        const storeId = `integration-${window.crypto.randomUUID()}`;
+        const params = { pluginId: 'obsidian-lib-test', storeId, vaultId: app.appId };
+        const local = await LocalDataStore.open(params);
+        const freshLocal = await LocalDataStore.open({ ...params, vaultId: `${app.appId}-new-device` });
+        const shared = { adapter: app.vault.adapter, folder, kind: 'last-write-wins' as const, pluginId: params.pluginId, storeId };
+        const transport = new DataStoreTransport(shared);
+        try {
+          const first = await SharedDataStore.open({ ...shared, local });
+          await first.set('key', 'value');
+          const reopened = await SharedDataStore.open({ ...shared, local });
+          const fresh = await SharedDataStore.open({ ...shared, local: freshLocal });
+          await fresh.set('other', 2);
+          await reopened.synchronize();
+          const files = await transport.list();
+          const logPath = files.find((path) => path.endsWith('/log-1.md'));
+          return {
+            files,
+            folder,
+            indexed: files.some((path) => app.vault.getAbstractFileByPath(path) !== null),
+            readable: logPath !== undefined && (await transport.read(logPath)) !== undefined,
+            reopened: reopened.entries()
+          };
+        } finally {
+          local.close();
+          freshLocal.close();
+          await app.vault.adapter.rmdir(transport.root, true);
+        }
+      },
+      input: { folderType: location }
+    });
+    expect(result.reopened).toEqual([['key', 'value'], ['other', 2]]);
+    expect(result.files.length).toBeGreaterThan(0);
+    expect(result.files.every((path) => path.startsWith(`${result.folder}/obsidian-lib-test/`))).toBe(true);
+    expect(result.readable).toBe(true);
+    expect(result.indexed).toBe(false);
+  });
+
   it('serializes two connections through real Web Locks and bootstraps from real vault snapshots', async () => {
     const result = await evalInObsidian({
       async callback({ app, lib: { LocalDataStore, SharedDataStore } }) {

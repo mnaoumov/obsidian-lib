@@ -30,7 +30,7 @@ export interface DataStoreTransportConstructorParams {
    */
   readonly adapter: DataAdapter;
   /**
-   * Configurable non-dot vault folder.
+   * Vault-relative folder. Hidden segments are allowed; callers must arrange their synchronization.
    *
    * @default `'Plugin data'`
    */
@@ -91,10 +91,10 @@ export class DataStoreTransport {
     this.adapter = params.adapter;
     const folder = params.folder ?? 'Plugin data';
     if (
-      !folder || folder.split('/').some((part) => !part || part.startsWith('.') || part.includes('\\'))
+      !isSafeVaultPath(folder)
       || !/^[\w-]+$/.test(params.pluginId) || !/^[\w-]+$/.test(params.storeId)
     ) {
-      throw new Error('Data store requires a non-dot vault folder and safe plugin/store ids');
+      throw new Error('Data store requires a safe vault-relative folder and safe plugin/store ids');
     }
     this.root = `${folder}/${params.pluginId}/${params.storeId}`;
     this.maxFileBytes = params.maxFileBytes ?? DEFAULT_MAX_FILE_BYTES;
@@ -268,7 +268,7 @@ export class DataStoreTransport {
   }
 
   private checkPath(path: string): void {
-    if (!path.startsWith(`${this.root}/`) || path.split('/').some((part) => !part || part.startsWith('.') || part.includes('\\'))) {
+    if (!path.startsWith(`${this.root}/`) || !isSafeVaultPath(path)) {
       throw new Error('Data-store path leaves its configured folder');
     }
   }
@@ -296,6 +296,10 @@ export class DataStoreTransport {
 async function digest(text: string): Promise<string> {
   const hash = await window.crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
   return [...new Uint8Array(hash)].map((byte) => byte.toString(HEX_RADIX).padStart(HEX_BYTE_LENGTH, '0')).join('');
+}
+
+function isSafeVaultPath(path: string): boolean {
+  return path.split('/').every((part) => part.length > 0 && part !== '.' && part !== '..' && !/[<>:"\\|?*\p{Control}]|[. ]$/u.test(part));
 }
 
 /* eslint-enable n/no-unsupported-features/node-builtins -- These are Obsidian renderer Web APIs, not Node builtins. */

@@ -99,6 +99,22 @@ describe('SharedDataStore', () => {
     expect([...files.keys()].some((path) => path.includes('snapshot-'))).toBe(true);
   });
 
+  it.each(['.plugin-data', '.config/plugins/test/shared-data'])('persists, synchronizes and reopens a hidden store in %s', async (folder) => {
+    const files = new Map<string, string>();
+    const local = await openLocal();
+    const first = await openDevice(files, { folder, local });
+    const second = await openDevice(files, { folder });
+    await first.set('key', 'value');
+    await second.synchronize();
+    expect(second.entries()).toEqual([['key', 'value']]);
+    await first.compact();
+    const reopened = await openDevice(files, { folder, local });
+    const fresh = await openDevice(files, { folder });
+    expect(reopened.entries()).toEqual(second.entries());
+    expect(fresh.entries()).toEqual(second.entries());
+    expect([...files.keys()].every((path) => path.startsWith(`${folder}/test/shared/`))).toBe(true);
+  });
+
   it('holds acknowledgements at gaps and ignores a segment copied partway', async () => {
     const source = new Map<string, string>();
     const writer = await openDevice(source);
@@ -307,7 +323,32 @@ describe('SharedDataStore', () => {
   it('validates transport paths and limits before writing', async () => {
     const files = new Map<string, string>();
     const adapter = createAdapter(files);
-    for (const folder of ['', '.hidden', 'a/../b', String.raw`a\b`]) {
+    for (
+      const folder of [
+        '',
+        '/',
+        '/absolute',
+        'a/',
+        'a//b',
+        '.',
+        '..',
+        'a/./b',
+        'a/../b',
+        String.raw`a\b`,
+        'C:/data',
+        'C:data',
+        'a<b',
+        'a>b',
+        'a"b',
+        'a|b',
+        'a?b',
+        'a*b',
+        'a\0b',
+        'a\nb',
+        'a.',
+        'a '
+      ]
+    ) {
       expect(() => new DataStoreTransport({ adapter, folder, pluginId: 'test', storeId: 'test' })).toThrow('folder');
     }
     expect(() => new DataStoreTransport({ adapter, pluginId: '../bad', storeId: 'test' })).toThrow('ids');
@@ -317,6 +358,39 @@ describe('SharedDataStore', () => {
     await expect(transport.write(`${transport.root}/../file.md`, {})).rejects.toThrow('path');
     await expect(transport.write(`${transport.root}/file.md`, undefined)).rejects.toThrow('JSON');
     expect(files.size).toBe(0);
+  });
+
+  it.each(['.plugin-data', '.config/plugins/test/shared-data'])('contains all adapter reads, writes and removals within %s', async (folder) => {
+    const files = new Map<string, string>();
+    const adapter = createAdapter(files);
+    const transport = new DataStoreTransport({ adapter, folder, pluginId: 'test', storeId: 'shared' });
+    const path = `${transport.root}/.nested/value.md`;
+    await transport.write(path, { value: 1 });
+    expect(await transport.read(path)).toEqual({ value: 1 });
+    expect(await transport.list()).toEqual([path]);
+    for (
+      const invalid of [
+        'outside/file.md',
+        `${transport.root}-sibling/file.md`,
+        transport.root,
+        `${transport.root}/../file.md`,
+        `${transport.root}/./file.md`,
+        `${transport.root}//file.md`,
+        `${transport.root}/`,
+        String.raw`${transport.root}/a\b.md`,
+        `${transport.root}/C:file.md`,
+        `${transport.root}/a?b.md`,
+        `${transport.root}/a\0b.md`,
+        `${transport.root}/a.`
+      ]
+    ) {
+      await expect(transport.write(invalid, true)).rejects.toThrow('path');
+      await expect(transport.read(invalid)).rejects.toThrow('path');
+      await expect(transport.remove(invalid)).rejects.toThrow('path');
+    }
+    expect([...files.keys()]).toEqual([path]);
+    await transport.remove(path);
+    expect(await transport.list()).toEqual([]);
   });
 
   it('distinguishes incomplete documents, deletion races and adapter failures', async () => {
