@@ -7,6 +7,7 @@ import type {
   WorkspaceLeaf
 } from 'obsidian';
 
+import { castTo } from '@mnaoumov/typescript-lib/object-utils';
 import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import {
   afterEach,
@@ -40,10 +41,12 @@ function createMockApp(domWindows: Window[]): App {
           callback(leaf);
         }
       },
-      on: vi.fn().mockReturnValue(strictProxy<EventRef>({})),
+      // eslint-disable-next-line unicorn/name-replacements -- Obsidian's EventRef shape names its emitter `e`, which Component.unload reads.
+      on: vi.fn().mockReturnValue(castTo<EventRef>({ e: { offref: vi.fn() } })),
       onLayoutReady: (callback: () => void): void => {
         callback();
-      }
+      },
+      rootSplit: { win: activeWindow }
     }
   });
 }

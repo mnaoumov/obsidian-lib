@@ -114,10 +114,6 @@ export class StyleSheetComponent extends ComponentEx {
   }
 
   private attach(win: Window): void {
-    if (this.styleSheetsByWindow.has(win)) {
-      return;
-    }
-
     const styleSheet = new (castTo<typeof window>(win).CSSStyleSheet)();
     styleSheet.replaceSync(this._css);
     win.document.adoptedStyleSheets = [...win.document.adoptedStyleSheets, styleSheet];
