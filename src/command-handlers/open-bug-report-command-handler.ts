@@ -7,7 +7,7 @@
 import type { App } from 'obsidian';
 
 import { getBugReportIssueFormUrl } from '../bug-report.ts';
-import { GlobalCommandHandler } from './global-command-handler.ts';
+import { OpenGitHubCommandHandler } from './open-git-hub-command-handler.ts';
 
 /**
  * Constructor parameters for {@link OpenBugReportCommandHandler}.
@@ -33,16 +33,11 @@ export interface OpenBugReportCommandHandlerConstructorParams {
  * A command handler that opens the plugin's bug-report issue form on GitHub, prefilled with the
  * environment. See {@link getBugReportIssueFormUrl} for the field ids the form must use.
  */
-export class OpenBugReportCommandHandler extends GlobalCommandHandler {
+export class OpenBugReportCommandHandler extends OpenGitHubCommandHandler {
   /**
    * The Obsidian app instance.
    */
   protected readonly app: App;
-
-  /**
-   * The plugin's GitHub repository, as `owner/name`.
-   */
-  protected readonly gitHubRepo: string;
 
   /**
    * The id of the reporting plugin.
@@ -56,6 +51,7 @@ export class OpenBugReportCommandHandler extends GlobalCommandHandler {
    */
   public constructor(params: OpenBugReportCommandHandlerConstructorParams) {
     super({
+      gitHubRepo: params.gitHubRepo,
       icon: 'bug',
       id: 'report-bug',
       name: 'Report a bug'
@@ -63,18 +59,18 @@ export class OpenBugReportCommandHandler extends GlobalCommandHandler {
 
     this.app = params.app;
     this.pluginId = params.pluginId;
-    this.gitHubRepo = params.gitHubRepo;
   }
 
   /**
-   * Executes the command, opening the prefilled issue form in the browser.
+   * Builds the prefilled bug-report URL.
+   *
+   * @returns The link.
    */
-  public override async execute(): Promise<void> {
-    const url = await getBugReportIssueFormUrl({
+  protected override async getUrl(): Promise<string> {
+    return getBugReportIssueFormUrl({
       app: this.app,
       gitHubRepo: this.gitHubRepo,
       pluginId: this.pluginId
     });
-    window.open(url, '_blank');
   }
 }
