@@ -70,6 +70,263 @@ async function openLocal(): Promise<LocalDataStore> {
 }
 
 describe('SharedDataStore', () => {
+  it('makes no adapter calls while disabled and publishes offline history when enabled', async () => {
+    const files = new Map<string, string>();
+    const local = await openLocal();
+    const adapter = strictProxy<DataAdapter>({});
+    const first = await openDevice(files, { adapter, isSyncEnabled: false, local });
+    await first.set('deleted', 1);
+    await first.delete('deleted');
+    await first.set('offline', 2);
+    await first.compact();
+    await first.synchronize();
+    const reopened = await openDevice(files, { adapter, isSyncEnabled: false, local });
+    expect(reopened.entries()).toEqual([['offline', 2]]);
+    expect(reopened.transportRoots).toEqual(['Plugin data/test/shared']);
+    const online = await openDevice(files, { format: 'json', local });
+    const reader = await openDevice(files, { format: 'json' });
+    expect(reader.entries()).toEqual(reopened.entries());
+    await online.setSyncEnabled(false);
+    await online.set('after-disable', 3);
+    await online.setSyncEnabled(true);
+    await reader.synchronize();
+    expect(reader.entries()).toEqual(online.entries());
+    expect([...files.keys()].every((path) => path.endsWith('.json'))).toBe(true);
+  });
+
+  it('retains old-root readers through relocation, restart, and late old-client writes', async () => {
+    const files = new Map<string, string>();
+    const first = await openDevice(files);
+    const secondFiles = new Map<string, string>();
+    const second = await openDevice(secondFiles);
+    await first.set('old', 1);
+    await second.set('other', 2);
+    for (const entry of secondFiles) {
+      files.set(...entry);
+    }
+    await first.relocate({ folder: 'New data', format: 'json' });
+    expect(first.transportRoots).toEqual(['Plugin data/test/shared', 'New data/test/shared']);
+    expect(first.containsTransportPath('New data')).toBe(true);
+    expect(first.containsTransportPath('New data/test/shared-sibling')).toBe(false);
+    await first.set('new', 3);
+    const reopened = await openDevice(files);
+    expect(reopened.entries()).toEqual(first.entries());
+    await second.set('late', 4);
+    for (const entry of secondFiles) {
+      files.set(...entry);
+    }
+    await reopened.synchronize();
+    expect(reopened.get('late')).toBe(4);
+    expect([...files.keys()].some((path) => path.startsWith('New data/') && path.endsWith('.json'))).toBe(true);
+    expect([...files.keys()].some((path) => path.startsWith('Plugin data/') && path.includes('/log-'))).toBe(true);
+  });
+
+  it('retains migration exclusions across disabled restarts without touching the adapter', async () => {
+    const files = new Map<string, string>();
+    const local = await openLocal();
+    const store = await openDevice(files, { local });
+    await store.set('key', 1);
+    await store.relocate({ folder: 'Moved', format: 'json' });
+    await store.setSyncEnabled(false);
+    const disabled = await openDevice(files, { adapter: strictProxy<DataAdapter>({}), isSyncEnabled: false, local });
+    expect(disabled.transportRoots).toEqual(['Plugin data/test/shared', 'Moved/test/shared']);
+    expect(disabled.containsTransportPath('Moved/test')).toBe(true);
+    expect(disabled.containsTransportPath('Moved/test/shared-sibling')).toBe(false);
+    expect(disabled.get('key')).toBe(1);
+    for (const roots of [null, [1], ['wrong/plugin/store'], ['../test/shared']]) {
+      await local.set('shared-transport-roots-v1', roots);
+      await expect(openDevice(files, { adapter: strictProxy<DataAdapter>({}), isSyncEnabled: false, local })).rejects.toThrow();
+    }
+  });
+
+  it('retries an interrupted enable from its durable unpublished checkpoint', async () => {
+    const files = new Map<string, string>();
+    const local = await openLocal();
+    const adapter = createAdapter(files);
+    const store = await openDevice(files, { adapter, format: 'json', isSyncEnabled: false, local });
+    await store.set('key', 'offline');
+    const write = vi.spyOn(adapter, 'write').mockRejectedValueOnce(new Error('Offline disk'));
+    await expect(store.setSyncEnabled(true)).rejects.toThrow('Offline disk');
+    write.mockRestore();
+    await openDevice(files, { format: 'json', local });
+    const reader = await openDevice(files, { format: 'json' });
+    expect(reader.get('key')).toBe('offline');
+    expect(await local.get('shared-unpublished-v1')).toBe(false);
+  });
+
+  it('retries partial relocation without overwriting conflicting history or deleting siblings', async () => {
+    const files = new Map<string, string>();
+    const local = await openLocal();
+    const adapter = createAdapter(files);
+    const store = await openDevice(files, { adapter, local });
+    await store.set('first', 1);
+    await store.set('second', 2);
+    await store.compact();
+    files.set('Plugin data/sibling/shared/keep.md', 'sibling');
+    const original = adapter.write.bind(adapter);
+    const write = vi.spyOn(adapter, 'write').mockImplementation(async (path, text) => {
+      if (path.startsWith('Moved/') && path.includes('-manifest.md')) {
+        throw new Error('Interrupted transfer');
+      }
+      await original(path, text);
+    });
+    await expect(store.relocate({ folder: 'Moved', format: 'json' })).rejects.toThrow('Interrupted transfer');
+    write.mockRestore();
+    await store.relocate({ folder: 'Moved', format: 'json' });
+    await store.relocate({ folder: 'Moved', format: 'json' });
+    expect(files.get('Plugin data/sibling/shared/keep.md')).toBe('sibling');
+    expect([...files.keys()].some((path) => path.startsWith('Moved/sibling/'))).toBe(false);
+    const copy = [...files.keys()].find((path) => path.startsWith('Moved/') && path.endsWith('-manifest.md'));
+    if (!copy) {
+      throw new Error('Expected copied manifest');
+    }
+    const correct = files.get(copy);
+    files.set(copy, 'different bytes');
+    await expect(store.synchronize()).rejects.toThrow('Conflicting immutable');
+    files.set(copy, correct ?? '');
+    const reopened = await openDevice(files, { local });
+    expect(reopened.entries()).toEqual([['first', 1], ['second', 2]]);
+  });
+
+  it('retains incomplete old-root deliveries until complete and verifies destination bytes', async () => {
+    const files = new Map<string, string>();
+    const adapter = createAdapter(files);
+    const store = await openDevice(files, { adapter });
+    await store.set('first', 1);
+    const log = [...files].find(([path]) => path.includes('/log-'));
+    if (!log) {
+      throw new Error('Expected journal');
+    }
+    files.set(log[0], 'partial');
+    await store.relocate({ folder: 'Moved' });
+    const destination = log[0].replace('Plugin data/', 'Moved/');
+    expect(files.has(destination)).toBe(false);
+    files.set(...log);
+    const write = vi.spyOn(adapter, 'write').mockImplementation((path, text) => {
+      files.set(path, path === destination ? 'torn' : text);
+      return noopAsync();
+    });
+    await expect(store.synchronize()).rejects.toThrow('verification');
+    files.delete(destination);
+    write.mockRestore();
+    await store.synchronize();
+    expect(files.get(destination)).toBe(log[1]);
+  });
+
+  it('changes format in place, preserves deletions and compacts JSON snapshots', async () => {
+    const files = new Map<string, string>();
+    const store = await openDevice(files);
+    await store.set('deleted', 1);
+    await store.relocate({ folder: 'Plugin data', format: 'json' });
+    await store.delete('deleted');
+    await store.set('kept', 2);
+    await store.compact();
+    const reader = await openDevice(files);
+    expect(reader.entries()).toEqual([['kept', 2]]);
+    expect(store.transportRoots).toEqual(['Plugin data/test/shared']);
+    await expect(store.relocate({ folder: 'Plugin data' })).rejects.toThrow('loop');
+    await store.setSyncEnabled(false);
+    await expect(store.relocate({ folder: 'Elsewhere' })).rejects.toThrow('Enable');
+  });
+
+  it('fails closed on concurrent conflicting destinations and reordered transition delivery', async () => {
+    const firstFiles = new Map<string, string>();
+    const secondFiles = new Map<string, string>();
+    const first = await openDevice(firstFiles);
+    const second = await openDevice(secondFiles);
+    await first.set('A', 1);
+    await second.set('B', 2);
+    await first.relocate({ folder: 'First' });
+    await second.relocate({ folder: 'Second' });
+    for (const entry of secondFiles) {
+      firstFiles.set(...entry);
+    }
+    await expect(first.synchronize()).rejects.toThrow('Conflicting');
+    expect(first.get('A')).toBe(1);
+    const transport = new DataStoreTransport({ adapter: createAdapter(new Map()), pluginId: 'test', storeId: 'shared' });
+    await expect(transport.readSnapshot(`${transport.root}/missing.md`)).resolves.toBeUndefined();
+    const reordered = new Map<string, string>();
+    const control = new DataStoreTransport({ adapter: createAdapter(reordered), pluginId: 'test', storeId: 'shared' });
+    const path = `${control.root}/locations-v1/later.json`;
+    await control.write(path, { format: 1, from: { folder: 'First' }, to: { folder: 'Last' } });
+    await expect(openDevice(reordered)).rejects.toThrow('incomplete');
+    await control.write(`${control.root}/locations-v1/earlier.json`, { format: 1, from: { folder: 'Plugin data' }, to: { folder: 'First' } });
+    const reader = await openDevice(reordered);
+    expect(reader.transportRoots).toEqual(['Plugin data/test/shared', 'First/test/shared', 'Last/test/shared']);
+  });
+
+  it('validates transition documents, containment, duplicate destinations and loops', async () => {
+    const files = new Map<string, string>();
+    const store = await openDevice(files);
+    const control = new DataStoreTransport({ adapter: createAdapter(files), pluginId: 'test', storeId: 'shared' });
+    const path = `${control.root}/locations-v1/request.json`;
+    for (const value of [null, {}, { format: 2 }, { format: 1, from: {}, to: {} }, { format: 1, from: { folder: 'Plugin data' }, to: { folder: 'Bad', format: 'bad' } }]) {
+      await control.write(path, value);
+      await expect(store.synchronize()).rejects.toThrow('invalid');
+    }
+    files.set(path, '{');
+    await expect(store.synchronize()).rejects.toThrow('Incomplete');
+    files.delete(path);
+    await expect(store.relocate({ folder: '../outside' })).rejects.toThrow('folder');
+    await expect(store.relocate({ folder: 'Plugin data/test/shared/nested' })).rejects.toThrow('Overlapping');
+    const transition = { format: 1, from: { folder: 'Plugin data' }, to: { folder: 'Moved' } };
+    await control.write(path, transition);
+    await control.write(`${control.root}/locations-v1/duplicate.json`, transition);
+    await store.synchronize();
+    expect(store.transportRoots).toEqual(['Plugin data/test/shared', 'Moved/test/shared']);
+    await control.write(`${control.root}/locations-v1/loop.json`, { format: 1, from: { folder: 'Moved' }, to: { folder: 'Plugin data' } });
+    await expect(store.synchronize()).rejects.toThrow('loop');
+  });
+
+  it('ignores unknown location metadata without changing adapter, limits or store identity', async () => {
+    const files = new Map<string, string>();
+    const store = await openDevice(files);
+    await store.set('key', 1);
+    const control = new DataStoreTransport({ adapter: createAdapter(files), pluginId: 'test', storeId: 'shared' });
+    await control.write(`${control.root}/locations-v1/request.json`, {
+      format: 1,
+      from: { folder: 'Plugin data' },
+      to: { adapter: {}, folder: 'Moved', format: 'json', maxFileBytes: 1, maxSnapshotBytes: 1, pluginId: 'sibling', storeId: 'other' }
+    });
+    await store.synchronize();
+    await store.set('after', 2);
+    expect(store.transportRoots).toEqual(['Plugin data/test/shared', 'Moved/test/shared']);
+    expect(store.entries()).toEqual([['after', 2], ['key', 1]]);
+    expect([...files.keys()].some((path) => path.startsWith('Moved/sibling/'))).toBe(false);
+  });
+
+  it('bounds JSON envelopes and reconstructed snapshots, and refuses immutable rewrites', async () => {
+    const files = new Map<string, string>();
+    const params = { adapter: createAdapter(files), format: 'json' as const, pluginId: 'test', storeId: 'shared' };
+    const transport = new DataStoreTransport(params);
+    const path = `${transport.root}/value.json`;
+    await transport.writeImmutable(path, { value: 1 });
+    await transport.writeImmutable(path, { value: 1 });
+    await expect(transport.writeImmutable(path, { value: 2 })).rejects.toThrow('Conflicting immutable');
+    files.set(path, '{');
+    expect(await transport.read(path)).toBeUndefined();
+    for (const text of ['null', '{}', '{"format":2,"payload":1}', '{"format":1}']) {
+      files.set(path, text);
+      await expect(transport.read(path)).rejects.toThrow('Invalid JSON');
+    }
+    expect(() => new DataStoreTransport({ ...params, maxSnapshotBytes: 0 })).toThrow('snapshot limit');
+    const bounded = new DataStoreTransport({ ...params, maxFileBytes: 256, maxSnapshotBytes: 256 });
+    await expect(bounded.writeSnapshot({ base: `${transport.root}/oversize`, payload: 'x'.repeat(300) })).rejects.toThrow('decoded byte limit');
+    await transport.writeSnapshot({ base: `${transport.root}/snapshot`, payload: 'x'.repeat(300) });
+    await expect(bounded.readSnapshot(`${transport.root}/snapshot.json`)).rejects.toThrow('file limit');
+    const decodedBound = new DataStoreTransport({ ...params, maxSnapshotBytes: 256 });
+    await expect(decodedBound.readSnapshot(`${transport.root}/snapshot.json`)).rejects.toThrow('decoded byte limit');
+    const seeds = new DataStoreSeeds({ local: await openLocal(), share: true, transport });
+    await seeds.publish([]);
+    expect(await seeds.readLatest()).toEqual([]);
+    await expect(transport.copyHistoryTo(new DataStoreTransport({ ...params, storeId: 'other' }))).rejects.toThrow('different store');
+    const store = await openDevice(files, { format: 'json', storeId: 'move-json' });
+    await store.set('JSON source', 1);
+    await store.compact();
+    await store.relocate({ folder: 'JSON destination', format: 'json' });
+    expect(store.entries()).toEqual([['JSON source', 1]]);
+  });
+
   beforeEach(() => {
     vi.stubGlobal('navigator', { locks: { request: async <T>(_name: string, callback: () => Promise<T>): Promise<T> => await callback() } });
   });

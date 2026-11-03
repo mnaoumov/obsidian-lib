@@ -2,7 +2,7 @@
 /**
  * @file
  *
- * Size-bounded Markdown transport carried by vault synchronization with default file types.
+ * Size-bounded Markdown or JSON transport, with verified chunked snapshots.
  */
 
 import type { DataAdapter } from 'obsidian';
@@ -15,6 +15,7 @@ import { getObsidianLibDebugger } from '../debug.ts';
 const DEFAULT_MAX_FILE_BYTES = 1_000_000;
 const MIN_FILE_BYTES = 256;
 const MAX_FILE_BYTES = 4_000_000;
+const MAX_SNAPSHOT_BYTES = 64_000_000;
 const DOCUMENT_PREFIX = '```json\n';
 const DOCUMENT_SUFFIX = '\n```\n';
 const BISECTION_DIVISOR = 2;
@@ -36,11 +37,23 @@ export interface DataStoreTransportConstructorParams {
    */
   readonly folder?: string;
   /**
-   * Maximum UTF-8 bytes in any file, including its Markdown wrapper.
+   * Document encoding. JSON requires a sync tool configured to carry arbitrary files.
+   *
+   * @default `'markdown'`
+   */
+  readonly format?: 'json' | 'markdown';
+  /**
+   * Maximum UTF-8 bytes in any file, including its encoding wrapper.
    *
    * @default `1000000`
    */
   readonly maxFileBytes?: number;
+  /**
+   * Maximum UTF-8 bytes in the reconstructed snapshot, before JSON parsing.
+   *
+   * @default `64000000`
+   */
+  readonly maxSnapshotBytes?: number;
   /**
    * Plugin manifest id.
    */
@@ -56,7 +69,7 @@ export interface DataStoreTransportConstructorParams {
  */
 export interface DataStoreTransportWriteSnapshotParams {
   /**
-   * Vault-relative base path without the `.md` extension. Use a fresh unique name for every publication.
+   * Vault-relative base path without its extension. Use a fresh unique name for every publication.
    */
   readonly base: string;
   /**
@@ -70,6 +83,10 @@ export interface DataStoreTransportWriteSnapshotParams {
  */
 export class DataStoreTransport {
   /**
+  File extension for new documents.
+   */
+  public readonly extension: string;
+  /**
    * Maximum encoded bytes per document.
    */
   public readonly maxFileBytes: number;
@@ -81,6 +98,7 @@ export class DataStoreTransport {
    * Vault adapter used by this transport.
    */
   protected readonly adapter: DataAdapter;
+  private readonly maxSnapshotBytes: number;
 
   /**
    * Creates a bounded vault transport.
@@ -89,6 +107,7 @@ export class DataStoreTransport {
    */
   public constructor(protected readonly params: DataStoreTransportConstructorParams) {
     this.adapter = params.adapter;
+    this.extension = params.format === 'json' ? '.json' : '.md';
     const folder = params.folder ?? 'Plugin data';
     if (
       !isSafeVaultPath(folder)
@@ -100,6 +119,61 @@ export class DataStoreTransport {
     this.maxFileBytes = params.maxFileBytes ?? DEFAULT_MAX_FILE_BYTES;
     if (!Number.isSafeInteger(this.maxFileBytes) || this.maxFileBytes < MIN_FILE_BYTES || this.maxFileBytes > MAX_FILE_BYTES) {
       throw new Error('Data-store file limit must be between 256 and 4000000 bytes');
+    }
+    this.maxSnapshotBytes = params.maxSnapshotBytes ?? MAX_SNAPSHOT_BYTES;
+    if (!Number.isSafeInteger(this.maxSnapshotBytes) || this.maxSnapshotBytes < MIN_FILE_BYTES || this.maxSnapshotBytes > MAX_SNAPSHOT_BYTES) {
+      throw new Error('Data-store snapshot limit must be between 256 and 64000000 bytes');
+    }
+  }
+
+  /**
+   * Copies history byte for byte, preserving source files and refusing conflicting immutable destinations.
+   * Acknowledgements are local to each location and are not copied.
+   *
+   * @param target - Destination for this same plugin and store.
+   * @returns A promise that resolves after every copied file has been verified.
+   */
+  public async copyHistoryTo(target: DataStoreTransport): Promise<void> {
+    if (this.params.pluginId !== target.params.pluginId || this.params.storeId !== target.params.storeId) {
+      throw new Error('Cannot copy data-store history to a different store');
+    }
+    const allFiles = await this.list();
+    const files = allFiles.filter((path) => path.startsWith(`${this.root}/devices/`));
+    const complete = new Set<string>();
+    for (const path of files) {
+      if (/\/log-\d+\.(?:md|json)$/.test(path) && await this.read(path) !== undefined) {
+        complete.add(path);
+      }
+      if (!/\/snapshot-[\w-]+-manifest\.(?:md|json)$/.test(path) || await this.readSnapshot(path) === undefined) {
+        continue;
+      }
+      const extension = path.endsWith('.json') ? '.json' : '.md';
+      const base = path.slice(0, -extension.length);
+      for (const chunk of files) {
+        if (chunk.startsWith(`${base}-`) && chunk.endsWith(extension)) {
+          complete.add(chunk);
+        }
+      }
+      complete.add(path);
+    }
+    for (const path of complete) {
+      this.checkPath(path);
+      const text = await this.adapter.read(path);
+      this.checkSize(text);
+      target.checkSize(text);
+      const destination = target.root + path.slice(this.root.length);
+      target.checkPath(destination);
+      if (await target.adapter.exists(destination)) {
+        if (await target.adapter.read(destination) !== text) {
+          throw new Error('Conflicting immutable data-store history');
+        }
+      } else {
+        await target.ensureParent(destination);
+        await target.adapter.write(destination, text);
+      }
+      if (await target.adapter.read(destination) !== text) {
+        throw new Error('Data-store history copy failed verification');
+      }
     }
   }
 
@@ -134,7 +208,7 @@ export class DataStoreTransport {
   }
 
   /**
-   * Reads a complete fenced JSON document. Partial or not-yet-delivered documents are ignored.
+   * Reads complete fenced Markdown JSON or a version-one JSON envelope. Partial documents remain pending.
    *
    * @param path - Vault-relative file within this store.
    * @returns Parsed JSON, or `undefined` for an incomplete document.
@@ -154,6 +228,18 @@ export class DataStoreTransport {
       throw error;
     }
     this.checkSize(text);
+    if (path.endsWith('.json')) {
+      let document: unknown;
+      try {
+        document = JSON.parse(text);
+      } catch {
+        return undefined;
+      }
+      if (typeof document !== 'object' || document === null || !('format' in document) || document.format !== 1 || !('payload' in document)) {
+        throw new Error('Invalid JSON data-store document');
+      }
+      return document.payload;
+    }
     if (!text.startsWith(DOCUMENT_PREFIX) || !text.endsWith(DOCUMENT_SUFFIX)) {
       return undefined;
     }
@@ -177,10 +263,16 @@ export class DataStoreTransport {
       return undefined;
     }
     const chunks: string[] = [];
+    let bytes = 0;
     for (const [index, hash] of manifest.hashes.entries()) {
-      const chunk = await this.read(`${path.slice(0, -'.md'.length)}-${String(index)}.md`);
+      const extension = path.endsWith('.json') ? '.json' : '.md';
+      const chunk = await this.read(`${path.slice(0, -extension.length)}-${String(index)}${extension}`);
       if (typeof chunk !== 'string' || await digest(chunk) !== hash) {
         return undefined;
+      }
+      bytes += new TextEncoder().encode(chunk).length;
+      if (bytes > this.maxSnapshotBytes) {
+        throw new Error('Data-store snapshot exceeds decoded byte limit');
       }
       chunks.push(chunk);
     }
@@ -208,23 +300,30 @@ export class DataStoreTransport {
    */
   public async write(path: string, value: unknown): Promise<void> {
     this.checkPath(path);
-    const text = this.encode(value);
+    const text = this.encode(value, path.endsWith('.json'));
     this.checkSize(text);
-    const parts = path.split('/');
-    parts.pop();
-    let folder = '';
-    for (const part of parts) {
-      folder = folder ? `${folder}/${part}` : part;
-      if (!await this.adapter.exists(folder)) {
-        try {
-          await this.adapter.mkdir(folder);
-        } catch (error) {
-          if (!await this.adapter.exists(folder)) {
-            throw error;
-          }
-        }
+    await this.ensureParent(path);
+    await this.adapter.write(path, text);
+  }
+
+  /**
+   * Publishes an immutable document, accepting only byte-identical retries at an occupied path.
+   *
+   * @param path - Vault-relative destination within this store.
+   * @param value - JSON-compatible payload.
+   * @returns A promise that resolves after publication or an identical retry.
+   */
+  public async writeImmutable(path: string, value: unknown): Promise<void> {
+    this.checkPath(path);
+    const text = this.encode(value, path.endsWith('.json'));
+    this.checkSize(text);
+    if (await this.adapter.exists(path)) {
+      if (await this.adapter.read(path) !== text) {
+        throw new Error('Conflicting immutable data-store document');
       }
+      return;
     }
+    await this.ensureParent(path);
     await this.adapter.write(path, text);
   }
 
@@ -238,6 +337,9 @@ export class DataStoreTransport {
     const payload = JSON.stringify(params.payload);
     if (payload === undefined) {
       throw new Error('Snapshot must be JSON-compatible');
+    }
+    if (new TextEncoder().encode(payload).length > this.maxSnapshotBytes) {
+      throw new Error('Data-store snapshot exceeds decoded byte limit');
     }
     const chunks: string[] = [];
     let offset = 0;
@@ -262,9 +364,9 @@ export class DataStoreTransport {
     const manifest = { format: 1, hashes };
     this.checkSize(this.encode(manifest));
     for (const [index, chunk] of chunks.entries()) {
-      await this.write(`${params.base}-${String(index)}.md`, chunk);
+      await this.write(`${params.base}-${String(index)}${this.extension}`, chunk);
     }
-    await this.write(`${params.base}.md`, manifest);
+    await this.write(`${params.base}${this.extension}`, manifest);
   }
 
   private checkPath(path: string): void {
@@ -284,12 +386,30 @@ export class DataStoreTransport {
     throw new Error(message);
   }
 
-  private encode(value: unknown): string {
+  private encode(value: unknown, isJson = this.extension === '.json'): string {
     const json = JSON.stringify(value);
     if (json === undefined) {
       throw new Error('Data-store payload must be JSON-compatible');
     }
-    return `${DOCUMENT_PREFIX}${json}${DOCUMENT_SUFFIX}`;
+    return isJson ? JSON.stringify({ format: 1, payload: value }) : `${DOCUMENT_PREFIX}${json}${DOCUMENT_SUFFIX}`;
+  }
+
+  private async ensureParent(path: string): Promise<void> {
+    const parts = path.split('/');
+    parts.pop();
+    let folder = '';
+    for (const part of parts) {
+      folder = folder ? `${folder}/${part}` : part;
+      if (!await this.adapter.exists(folder)) {
+        try {
+          await this.adapter.mkdir(folder);
+        } catch (error) {
+          if (!await this.adapter.exists(folder)) {
+            throw error;
+          }
+        }
+      }
+    }
   }
 }
 

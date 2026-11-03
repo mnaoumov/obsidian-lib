@@ -57,7 +57,7 @@ export interface DataStoreSeedsConstructorParams {
    */
   readonly share: boolean;
   /**
-   * Store-scoped, bounded Markdown transport. Include the consumer schema version in its store id.
+   * Store-scoped, bounded transport. Include the consumer schema version in its store id.
    */
   readonly transport: DataStoreTransport;
 }
@@ -171,7 +171,7 @@ export class DataStoreSeeds {
     let newest = -Infinity;
     let entries: DataStoreSeedEntry[] | undefined;
     for (const path of files) {
-      if (!/\/seed-[\w-]+-manifest\.md$/.test(path)) {
+      if (!/\/seed-[\w-]+-manifest\.(?:md|json)$/.test(path)) {
         continue;
       }
       let seed: unknown;
