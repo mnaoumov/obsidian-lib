@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## 10.7.0
+
+- feat: add broken-link candidate discovery and git rename evidence
+- feat: add feature request and discussion commands
+- feat(data-stores): allow explicit hidden vault folders (<https://github.com/mnaoumov/obsidian-custom-attachment-location/issues/99>)
+- feat(components): add registerStyle for plugin stylesheets in every window
+- docs(changelog): credit the embeddable editor gist authors in 10.5.0
+- refactor(editor-suggest): pass a null file straight to EditorSuggest.trigger
+- perf(vault): remove an emptied folder outright instead of trashing it
+
 ## 10.6.0
 
 - fix(bug-report): list only the loaded plugins, as Show debug info does (<https://github.com/mnaoumov/obsidian-advanced-debug-mode/issues/5>)
