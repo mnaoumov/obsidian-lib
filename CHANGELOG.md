@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## 10.8.0
+
+1. Keep a shared data store entirely local with `isSyncEnabled: false`, then enable synchronization without resetting identity, causal history or deletions.
+2. Write new transport documents as versioned JSON to keep them out of Markdown note indexing. Markdown remains the default; JSON requires a sync tool configured to carry it on every device.
+3. Relocate shared history through `relocate`, with verified immutable copies, retained old-root readers, interrupted-copy retries and explicit conflict detection. Keep the original folder as the discovery anchor.
+4. Filter transport events through `transportRoots` or `containsTransportPath`, including remembered migration roots while disabled. Bound reconstructed snapshots before parsing.
+
+This library prerequisite supports the configurable/local-only storage work in [`obsidian-custom-attachment-location` #99](https://github.com/mnaoumov/obsidian-custom-attachment-location/issues/99); the plugin's settings and migration flow are delivered separately.
+
 ## 10.7.0
 
 - feat: add broken-link candidate discovery and git rename evidence
