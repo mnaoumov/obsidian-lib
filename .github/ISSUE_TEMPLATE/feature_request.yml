@@ -39,6 +39,7 @@ body:
     validations:
       required: true
   - type: input
+    id: plugin-version
     attributes:
       label: Version
       description: The version, release or commit you used. ⚠️ Must be the latest one. If not, explain why above.
