@@ -6,7 +6,13 @@
 
 import type { App } from 'obsidian';
 
-import { getAllDomWindows } from '../workspace.ts';
+import { isFunction } from '@mnaoumov/typescript-lib/type-guards';
+import { Component } from 'obsidian';
+
+import {
+  getAllDomWindows,
+  getMainWindow
+} from '../workspace.ts';
 import { ComponentEx } from './component-ex.ts';
 import { CallbackLayoutReadyComponent } from './layout-ready-component.ts';
 
@@ -58,6 +64,42 @@ export interface AllWindowsEventComponentRegisterAllWindowsDomEventParams<Window
    * The type of the event.
    */
   readonly type: WindowEventType;
+}
+
+/**
+ * Parameters for {@link forEachWindow}.
+ */
+export interface ForEachWindowParams {
+  /**
+   * The Obsidian app instance.
+   */
+  readonly app: App;
+  /**
+   * The handler, optionally returning cleanup for that window.
+   */
+  readonly callback: (win: Window) => unknown;
+  /**
+   * The component that owns the registration and its cleanup.
+   */
+  readonly component: Component;
+}
+
+/**
+ * Parameters for {@link registerBodyClass}.
+ */
+export interface RegisterBodyClassParams {
+  /**
+   * The Obsidian app instance.
+   */
+  readonly app: App;
+  /**
+   * One CSS class to add to each window's body. Use a plugin-specific name.
+   */
+  readonly className: string;
+  /**
+   * The component that owns the body class.
+   */
+  readonly component: Component;
 }
 
 /**
@@ -116,30 +158,89 @@ export class AllWindowsEventComponent extends ComponentEx {
   }
 
   /**
-   * Registers a handler for all windows (main window and all existing/future popup windows).
+   * Registers a handler once for each window, including popouts opened later.
    *
-   * @param allWindowsHandler - The handler called for each window (main + popups).
+   * @param allWindowsHandler - The handler. Its optional cleanup runs when the window closes or this component unloads.
    */
-  public registerAllWindowsHandler(allWindowsHandler: (win: Window) => void): void {
+  public registerAllWindowsHandler(allWindowsHandler: (win: Window) => unknown): void {
     this.ensureLoaded();
 
-    const mainWindow = activeWindow;
-    allWindowsHandler(mainWindow);
+    const componentsByWindow = new Map<Window, Component>();
+    this.register(() => {
+      componentsByWindow.clear();
+    });
+
+    const attach = (win: Window): void => {
+      if (componentsByWindow.has(win)) {
+        return;
+      }
+
+      const component = this.addChild(new Component());
+      componentsByWindow.set(win, component);
+      const cleanup = allWindowsHandler(win);
+      if (isFunction(cleanup)) {
+        component.register(cleanup);
+      }
+    };
+
+    this.registerEvent(this.app.workspace.on('window-close', (_workspaceWindow, win) => {
+      const component = componentsByWindow.get(win);
+      if (!component) {
+        return;
+      }
+
+      componentsByWindow.delete(win);
+      this.removeChild(component);
+    }));
+
+    attach(getMainWindow(this.app));
 
     this.addChild(
       new CallbackLayoutReadyComponent(this.app, () => {
-        for (const win of getAllDomWindows(this.app)) {
-          if (win === mainWindow) {
-            continue;
-          }
-
-          allWindowsHandler(win);
-        }
-
         this.registerEvent(this.app.workspace.on('window-open', (workspaceWindow) => {
-          allWindowsHandler(workspaceWindow.win);
+          attach(workspaceWindow.win);
         }));
+
+        for (const win of getAllDomWindows(this.app)) {
+          attach(win);
+        }
       })
     );
   }
+}
+
+/**
+ * Applies a handler to the main window immediately and to existing and future popouts after layout ready.
+ * Cleanup runs when each window closes or the owning component unloads.
+ *
+ * @param params - The registration parameters. The owner must be loaded.
+ * @returns The child component; remove it from the owner to stop early.
+ */
+export function forEachWindow(params: ForEachWindowParams): AllWindowsEventComponent {
+  const { app, callback, component } = params;
+  const allWindowsComponent = component.addChild(new AllWindowsEventComponent(app));
+  allWindowsComponent.registerAllWindowsHandler(callback);
+  return allWindowsComponent;
+}
+
+/**
+ * Adds a body class to the main window and every existing or future popout until the owner unloads.
+ * Use a plugin-specific class owned exclusively by this registration.
+ *
+ * @param params - The registration parameters. The owner must be loaded.
+ * @returns The child component; remove it from the owner to stop early.
+ */
+export function registerBodyClass(params: RegisterBodyClassParams): AllWindowsEventComponent {
+  const { app, className, component } = params;
+  return forEachWindow({
+    app,
+    callback(win) {
+      const { classList } = win.document.body;
+      classList.add(className);
+      return () => {
+        classList.remove(className);
+      };
+    },
+    component
+  });
 }

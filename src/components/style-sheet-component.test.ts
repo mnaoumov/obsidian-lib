@@ -40,7 +40,7 @@ class FakeStyleSheet {
 }
 
 function createMockApp(popoutWindows: Window[] = []): MockApp {
-  const callbacks = new Map<string, WindowEventCallback>();
+  const callbacks = new Map<string, WindowEventCallback[]>();
   const leaves = popoutWindows.map((win) =>
     strictProxy<WorkspaceLeaf>({
       getContainer: (): WorkspaceContainer => strictProxy<WorkspaceContainer>({ win })
@@ -55,20 +55,25 @@ function createMockApp(popoutWindows: Window[] = []): MockApp {
         }
       },
       on: castTo<Workspace['on']>((name: string, callback: WindowEventCallback): EventRef => {
-        callbacks.set(name, callback);
+        const handlers = callbacks.get(name) ?? [];
+        handlers.push(callback);
+        callbacks.set(name, handlers);
         // eslint-disable-next-line unicorn/name-replacements -- Obsidian's EventRef shape names its emitter `e`, which Component.unload reads.
         return castTo<EventRef>({ e: { offref: vi.fn() } });
       }),
       onLayoutReady: (callback: () => void): void => {
         callback();
-      }
+      },
+      rootSplit: { win: activeWindow }
     }
   });
 
   return {
     app,
     trigger: (name, win): void => {
-      callbacks.get(name)?.(strictProxy<WorkspaceWindow>({ win }), win);
+      for (const callback of callbacks.get(name) ?? []) {
+        callback(strictProxy<WorkspaceWindow>({ win }), win);
+      }
     }
   };
 }
