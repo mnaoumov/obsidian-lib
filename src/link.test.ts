@@ -1372,7 +1372,7 @@ describe('app-dependent functions', () => {
       const wikilink = '[[old-a]]';
       const markdownLink = '[Multi B](<old-b.md>)';
 
-      function updateMultiLink(linkText: string, displayText: string, linkPath: string, oldTargetPath: string, newTargetPath: string): string {
+      function updateMultiLink(linkText: string, displayText: string, linkPath: string, oldTargetPath: string): string {
         const startOffset = value.indexOf(linkText);
         const reference = castTo<Reference>({
           displayText,
@@ -1385,15 +1385,15 @@ describe('app-dependent functions', () => {
         return updateLink({
           app,
           newSourcePathOrFile: 'note.md',
-          newTargetPathOrFile: newTargetPath,
+          newTargetPathOrFile: 'a b.md',
           oldTargetPathOrFile: oldTargetPath,
           reference
         });
       }
 
       // The target is `a b.md`, whose space makes the angle brackets of the markdown link observable.
-      expect(updateMultiLink(wikilink, 'old-a', 'old-a', 'old-a.md', 'a b.md')).toBe('[[a b]]');
-      expect(updateMultiLink(markdownLink, 'Multi B', 'old-b.md', 'old-b.md', 'a b.md')).toBe('[Multi B](<a b.md>)');
+      expect(updateMultiLink(wikilink, 'old-a', 'old-a', 'old-a.md')).toBe('[[a b]]');
+      expect(updateMultiLink(markdownLink, 'Multi B', 'old-b.md', 'old-b.md')).toBe('[Multi B](<a b.md>)');
     });
 
     it('should keep the whole caption of a frontmatter link whose caption holds an unbalanced [', () => {

@@ -107,13 +107,13 @@ describe('getInstalledPluginVersion', () => {
   });
 
   it('should report null when the plugin is installed but disabled, because it registers nothing', () => {
-    setInstalledVersion('1.2.3');
+    setInstalledVersion();
 
     expect(getInstalledPluginVersion({ app, pluginId: PLUGIN_ID })).toBeNull();
   });
 
   it('should report the manifest version when the plugin is enabled', () => {
-    setInstalledVersion('1.2.3');
+    setInstalledVersion();
     enabledPlugins.add(PLUGIN_ID);
 
     expect(getInstalledPluginVersion({ app, pluginId: PLUGIN_ID })).toBe('1.2.3');
@@ -229,9 +229,9 @@ function setInstalled(): void {
   manifests[PLUGIN_ID] = strictProxy<PluginManifest>({ id: PLUGIN_ID });
 }
 
-function setInstalledVersion(version: string): void {
+function setInstalledVersion(): void {
   manifests[PLUGIN_ID] = strictProxy<PluginManifest>({
     id: PLUGIN_ID,
-    version
+    version: '1.2.3'
   });
 }

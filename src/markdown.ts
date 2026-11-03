@@ -486,12 +486,12 @@ export async function markdownToHtml(params: MarkdownToHtmlParams): Promise<stri
   const {
     app,
     markdown,
-    sourcePath
+    sourcePath = ''
   } = params;
   const component = new Component();
   component.load();
   const renderDiv = createDiv();
-  await MarkdownRenderer.render(app, markdown, renderDiv, sourcePath ?? '', component);
+  await MarkdownRenderer.render(app, markdown, renderDiv, sourcePath, component);
   const html = renderDiv.innerHTML;
   component.unload();
   return html;
@@ -508,7 +508,7 @@ export function registerLinkHandlers(params: RegisterLinkHandlersParams): void {
   const {
     app,
     el,
-    sourcePath
+    sourcePath = ''
   } = params;
   MarkdownPreviewRenderer.registerDomEvents(
     el,
@@ -516,7 +516,7 @@ export function registerLinkHandlers(params: RegisterLinkHandlersParams): void {
       new FixedZIndexDomEventsHandlersInfo({
         app,
         el,
-        path: sourcePath ?? ''
+        path: sourcePath
       })
     )
   );
@@ -576,7 +576,7 @@ export async function renderInternalLink(params: RenderInternalLinkParams): Prom
     app,
     folderNote,
     pathOrAbstractFile,
-    shouldRevealFile
+    shouldRevealFile = false
   } = params;
 
   // A DOM listener cannot await, so the reveal, and the hook ordered after it, run detached.
@@ -616,7 +616,7 @@ export async function renderInternalLink(params: RenderInternalLinkParams): Prom
     app,
     el: aEl
   });
-  if (shouldRevealFile ?? false) {
+  if (shouldRevealFile) {
     aEl.addEventListener('click', () => {
       // Layered ON TOP of Obsidian's own handler — no `preventDefault`, so the open is untouched. A path
       // that resolves to nothing gets no reveal: an unresolved link has nothing to reveal, and clicking

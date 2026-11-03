@@ -42,11 +42,11 @@ interface FrontmatterLinkCacheWithOffsetsEx extends FrontmatterLinkCacheWithOffs
   readonly position?: undefined;
 }
 
-function makeCanvasReference(type: 'file' | 'text', key: string): Reference {
+function makeCanvasReference(type: 'file' | 'text'): Reference {
   return strictProxy<CanvasReferenceEx>({
     displayText: 'link',
     isCanvas: true,
-    key,
+    key: 'k',
     link: 'link',
     nodeIndex: 0,
     original: 'link',
@@ -93,7 +93,7 @@ function makeReferenceCache(original: string, startOffset: number): Reference {
 
 describe('isCanvasReference', () => {
   it('should return true for a canvas reference', () => {
-    const reference = makeCanvasReference('file', 'k');
+    const reference = makeCanvasReference('file');
     expect(isCanvasReference(reference)).toBe(true);
   });
 
@@ -110,12 +110,12 @@ describe('isCanvasReference', () => {
 
 describe('isCanvasFileNodeReference', () => {
   it('should return true for a canvas file node reference', () => {
-    const reference = makeCanvasReference('file', 'k');
+    const reference = makeCanvasReference('file');
     expect(isCanvasFileNodeReference(reference)).toBe(true);
   });
 
   it('should return false for a canvas text node reference', () => {
-    const reference = makeCanvasReference('text', 'k');
+    const reference = makeCanvasReference('text');
     expect(isCanvasFileNodeReference(reference)).toBe(false);
   });
 
@@ -127,12 +127,12 @@ describe('isCanvasFileNodeReference', () => {
 
 describe('isCanvasTextNodeReference', () => {
   it('should return true for a canvas text node reference', () => {
-    const reference = makeCanvasReference('text', 'k');
+    const reference = makeCanvasReference('text');
     expect(isCanvasTextNodeReference(reference)).toBe(true);
   });
 
   it('should return false for a canvas file node reference', () => {
-    const reference = makeCanvasReference('file', 'k');
+    const reference = makeCanvasReference('file');
     expect(isCanvasTextNodeReference(reference)).toBe(false);
   });
 
@@ -250,7 +250,7 @@ describe('isReferenceInOffsetRange', () => {
   });
 
   it('should return false for a canvas reference', () => {
-    const reference = makeCanvasReference('file', 'k');
+    const reference = makeCanvasReference('file');
     expect(isReferenceInOffsetRange(reference, { endOffset: 1000, startOffset: 0 })).toBe(false);
   });
 });

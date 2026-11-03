@@ -104,7 +104,7 @@ function createApp(options: CreateAppOptions = {}): AppMock {
     enabledPlugins.delete(id);
     return noopAsync();
   });
-  const enablePluginAndSave = vi.fn<App['plugins']['enablePluginAndSave']>().mockImplementation((id) => {
+  const checkEnablePluginAndSave = vi.fn<App['plugins']['enablePluginAndSave']>().mockImplementation((id) => {
     enabledPlugins.add(id);
     return Promise.resolve(true);
   });
@@ -132,7 +132,7 @@ function createApp(options: CreateAppOptions = {}): AppMock {
 
   const existingData = options.existingRawPluginData
     ?? (options.existingPluginData === undefined ? undefined : JSON.stringify(options.existingPluginData));
-  const adapterExists = vi.fn<DataAdapter['exists']>().mockResolvedValue(existingData !== undefined);
+  const checkAdapterExists = vi.fn<DataAdapter['exists']>().mockResolvedValue(existingData !== undefined);
   const adapterRead = vi.fn<DataAdapter['read']>().mockResolvedValue(existingData ?? '{}');
   const adapterWrite = vi.fn<DataAdapter['write']>().mockResolvedValue();
 
@@ -140,7 +140,7 @@ function createApp(options: CreateAppOptions = {}): AppMock {
     plugins: strictProxy<App['plugins']>({
       disablePluginAndSave,
       enabledPlugins,
-      enablePluginAndSave,
+      enablePluginAndSave: checkEnablePluginAndSave,
       installPlugin,
       manifests,
       plugins,
@@ -148,7 +148,7 @@ function createApp(options: CreateAppOptions = {}): AppMock {
     }),
     vault: strictProxy<Vault>({
       adapter: strictProxy<DataAdapter>({
-        exists: adapterExists,
+        exists: checkAdapterExists,
         read: adapterRead,
         write: adapterWrite
       }),
@@ -161,7 +161,7 @@ function createApp(options: CreateAppOptions = {}): AppMock {
     adapterWrite,
     app,
     disablePluginAndSave,
-    enablePluginAndSave,
+    enablePluginAndSave: checkEnablePluginAndSave,
     installPlugin,
     manifests,
     uninstallPlugin

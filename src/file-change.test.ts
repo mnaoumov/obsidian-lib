@@ -89,20 +89,18 @@ beforeEach(() => {
 // --- Helper factories ---
 
 function makeCanvasFileNodeChange(
-  oldContent: string,
-  newContent: string,
   nodeIndex: number
 ): FileChange {
   return {
-    newContent,
-    oldContent,
+    newContent: 'new.md',
+    oldContent: 'old.md',
     reference: {
-      displayText: oldContent,
+      displayText: 'old.md',
       isCanvas: true,
       key: 'file',
-      link: oldContent,
+      link: 'old.md',
       nodeIndex,
-      original: oldContent,
+      original: 'old.md',
       type: 'file'
     } as Reference
   };
@@ -111,7 +109,6 @@ function makeCanvasFileNodeChange(
 function makeCanvasTextNodeChange(
   oldContent: string,
   newContent: string,
-  nodeIndex: number,
   originalReferenceStartOffset: number
 ): FileChange {
   return {
@@ -122,7 +119,7 @@ function makeCanvasTextNodeChange(
       isCanvas: true,
       key: 'text',
       link: oldContent,
-      nodeIndex,
+      nodeIndex: 0,
       original: oldContent,
       originalReference: {
         link: oldContent,
@@ -198,12 +195,12 @@ function makeFrontmatterChangeWithOffsets(
 
 describe('isCanvasChange', () => {
   it('should return true for a canvas file node change', () => {
-    const change = makeCanvasFileNodeChange('old.md', 'new.md', 0);
+    const change = makeCanvasFileNodeChange(0);
     expect(isCanvasChange(change)).toBe(true);
   });
 
   it('should return true for a canvas text node change', () => {
-    const change = makeCanvasTextNodeChange('[[old]]', '[[new]]', 0, 0);
+    const change = makeCanvasTextNodeChange('[[old]]', '[[new]]', 0);
     expect(isCanvasChange(change)).toBe(true);
   });
 
@@ -220,12 +217,12 @@ describe('isCanvasChange', () => {
 
 describe('isCanvasFileNodeChange', () => {
   it('should return true for a canvas file node change', () => {
-    const change = makeCanvasFileNodeChange('old.md', 'new.md', 0);
+    const change = makeCanvasFileNodeChange(0);
     expect(isCanvasFileNodeChange(change)).toBe(true);
   });
 
   it('should return false for a canvas text node change', () => {
-    const change = makeCanvasTextNodeChange('[[old]]', '[[new]]', 0, 0);
+    const change = makeCanvasTextNodeChange('[[old]]', '[[new]]', 0);
     expect(isCanvasFileNodeChange(change)).toBe(false);
   });
 
@@ -237,12 +234,12 @@ describe('isCanvasFileNodeChange', () => {
 
 describe('isCanvasTextNodeChange', () => {
   it('should return true for a canvas text node change', () => {
-    const change = makeCanvasTextNodeChange('[[old]]', '[[new]]', 0, 0);
+    const change = makeCanvasTextNodeChange('[[old]]', '[[new]]', 0);
     expect(isCanvasTextNodeChange(change)).toBe(true);
   });
 
   it('should return false for a canvas file node change', () => {
-    const change = makeCanvasFileNodeChange('old.md', 'new.md', 0);
+    const change = makeCanvasFileNodeChange(0);
     expect(isCanvasTextNodeChange(change)).toBe(false);
   });
 
@@ -264,7 +261,7 @@ describe('isContentChange', () => {
   });
 
   it('should return false for a canvas change', () => {
-    const change = makeCanvasFileNodeChange('old.md', 'new.md', 0);
+    const change = makeCanvasFileNodeChange(0);
     expect(isContentChange(change)).toBe(false);
   });
 });
@@ -559,7 +556,7 @@ describe('applyFileChanges', () => {
       edges: [],
       nodes: [{ file: 'old.md', id: 'node1', type: 'file' }]
     });
-    const changes = [makeCanvasFileNodeChange('old.md', 'new.md', 0)];
+    const changes = [makeCanvasFileNodeChange(0)];
 
     vi.mocked(process).mockImplementation(async ({ newContentProvider }) => {
       const controller = new AbortController();
@@ -583,7 +580,7 @@ describe('canvas changes via applyFileChanges', () => {
       edges: [],
       nodes: [{ file: 'old.md', id: '1', type: 'file' }]
     };
-    const changes = [makeCanvasFileNodeChange('old.md', 'new.md', 0)];
+    const changes = [makeCanvasFileNodeChange(0)];
     let resultContent: null | string = null;
 
     vi.mocked(process).mockImplementation(async ({ newContentProvider }) => {
@@ -608,7 +605,7 @@ describe('canvas changes via applyFileChanges', () => {
       nodes: [{ file: 'different.md', id: '1', type: 'file' }]
     };
     const canvasContent = JSON.stringify(canvasData);
-    const changes = [makeCanvasFileNodeChange('old.md', 'new.md', 0)];
+    const changes = [makeCanvasFileNodeChange(0)];
     let resultContent: null | string = 'sentinel';
 
     vi.mocked(process).mockImplementation(async ({ newContentProvider }) => {
@@ -626,7 +623,7 @@ describe('canvas changes via applyFileChanges', () => {
       nodes: [{ file: 'old.md', id: '1', type: 'file' }]
     };
     const canvasContent = JSON.stringify(canvasData);
-    const changes = [makeCanvasFileNodeChange('old.md', 'new.md', 5)];
+    const changes = [makeCanvasFileNodeChange(5)];
     let resultContent: null | string = 'sentinel';
 
     vi.mocked(process).mockImplementation(async ({ newContentProvider }) => {
@@ -676,7 +673,7 @@ describe('canvas changes via applyFileChanges', () => {
       edges: [],
       nodes: [{ file: 'old.md', id: '1', type: 'file' }]
     };
-    const changes = [makeContentChange('old', 'new', 0), makeCanvasFileNodeChange('old.md', 'new.md', 0)];
+    const changes = [makeContentChange('old', 'new', 0), makeCanvasFileNodeChange(0)];
     let resultContent: null | string = null;
 
     vi.spyOn(console, 'error').mockImplementation(() => {
@@ -722,7 +719,7 @@ describe('canvas changes via applyFileChanges', () => {
     const controller = new AbortController();
     function provider(): FileChange[] {
       controller.abort(new Error('aborted'));
-      return [makeCanvasFileNodeChange('old.md', 'new.md', 0)];
+      return [makeCanvasFileNodeChange(0)];
     }
     let error: unknown = null;
 
@@ -743,7 +740,7 @@ describe('canvas changes via applyFileChanges', () => {
       edges: [],
       nodes: [{ id: '1', text: 'Hello [[old]] world', type: 'text' }]
     };
-    const changes = [makeCanvasTextNodeChange('[[old]]', '[[new]]', 0, 6)];
+    const changes = [makeCanvasTextNodeChange('[[old]]', '[[new]]', 6)];
     let resultContent: null | string = null;
 
     vi.mocked(process).mockImplementation(async ({ newContentProvider }) => {
@@ -768,8 +765,8 @@ describe('canvas changes via applyFileChanges', () => {
       nodes: [{ id: '1', text: 'Hello [[old]] and [[other]]', type: 'text' }]
     };
     const changes = [
-      makeCanvasTextNodeChange('[[old]]', '[[new]]', 0, 6),
-      makeCanvasTextNodeChange('[[other]]', '[[replaced]]', 0, 18)
+      makeCanvasTextNodeChange('[[old]]', '[[new]]', 6),
+      makeCanvasTextNodeChange('[[other]]', '[[replaced]]', 18)
     ];
     let resultContent: null | string = null;
 
@@ -798,7 +795,7 @@ describe('canvas changes via applyFileChanges', () => {
     };
     // The regenerated link uses an unescaped divider; the escaping must be restored so the table
     // and the embed size survive.
-    const changes = [makeCanvasTextNodeChange(String.raw`![[old.png\|500]]`, '![[new.png|500]]', 0, 2)];
+    const changes = [makeCanvasTextNodeChange(String.raw`![[old.png\|500]]`, '![[new.png|500]]', 2)];
     let resultContent: null | string = null;
 
     vi.mocked(process).mockImplementation(async ({ newContentProvider }) => {
@@ -818,7 +815,7 @@ describe('canvas changes via applyFileChanges', () => {
 
   it('should skip the rewrite for invalid JSON canvas content instead of throwing', async () => {
     const canvasContent = 'not valid json';
-    const changes = [makeCanvasFileNodeChange('old.md', 'new.md', 0)];
+    const changes = [makeCanvasFileNodeChange(0)];
     let resultContent: null | string = 'sentinel';
 
     vi.mocked(process).mockImplementation(async ({ newContentProvider }) => {
@@ -835,7 +832,7 @@ describe('canvas changes via applyFileChanges', () => {
   it('should skip the rewrite when the canvas has no edges array', async () => {
     // `nodes` is an array but `edges` is missing (a partial canvas still being initialized).
     const canvasContent = JSON.stringify({ nodes: [{ file: 'old.md', id: '1', type: 'file' }] });
-    const changes = [makeCanvasFileNodeChange('old.md', 'new.md', 0)];
+    const changes = [makeCanvasFileNodeChange(0)];
     let resultContent: null | string = 'sentinel';
 
     vi.mocked(process).mockImplementation(async ({ newContentProvider }) => {
@@ -855,7 +852,7 @@ describe('canvas changes via applyFileChanges', () => {
       nodes: [{ id: '1', text: 123, type: 'text' }]
     };
     const canvasContent = JSON.stringify(canvasData);
-    const changes = [makeCanvasTextNodeChange('[[old]]', '[[new]]', 0, 0)];
+    const changes = [makeCanvasTextNodeChange('[[old]]', '[[new]]', 0)];
     let resultContent: null | string = 'sentinel';
 
     vi.spyOn(console, 'error').mockImplementation(() => {
@@ -881,7 +878,7 @@ describe('canvas changes via applyFileChanges', () => {
     const canvasContent = JSON.stringify(canvasData);
     // `'Hello world'.slice(0, 7)` is `'Hello w'`, not `'[[old]]'`, so the inner `applyContentChanges`
     // rejects the change and returns its retry sentinel.
-    const changes = [makeCanvasTextNodeChange('[[old]]', '[[new]]', 0, 0)];
+    const changes = [makeCanvasTextNodeChange('[[old]]', '[[new]]', 0)];
     let resultContent: null | string = 'sentinel';
 
     vi.mocked(process).mockImplementation(async ({ newContentProvider }) => {

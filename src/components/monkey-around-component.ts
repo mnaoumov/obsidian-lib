@@ -207,8 +207,6 @@ type MethodKeysMap<$Object extends object> = {
   [Key in FunctionKeys<$Object>]: [Exclude<keyof NonNullable<$Object[Key]>, keyof GenericFunction>] extends [never] ? Key : never;
 };
 
-type OriginalFactories<$Object extends GenericObject> = Parameters<typeof originalAround<$Object>>[1];
-
 type Uninstaller = () => void;
 
 /**
@@ -269,13 +267,12 @@ export class MonkeyAroundComponent extends ComponentEx {
   ): void {
     this.ensureLoaded();
 
-    type $Function = ExtractFunction<$Object, MethodName>;
-
     this.registerFunctionPatch({
       $object: params.$object,
       functionName: params.methodName,
       once: params.once ?? false,
       patchHandler: (originalMethodRaw) => {
+        type $Function = ExtractFunction<$Object, MethodName>;
         const originalMethod = originalMethodRaw as $Function;
         params.postPatchHandler?.({ originalMethod });
         return patchedMethod as $Object[MethodName];
@@ -338,6 +335,7 @@ export class MonkeyAroundComponent extends ComponentEx {
  * @returns The uninstaller that removes the patch when called.
  */
 export function around<$Object extends object>($object: $Object, factories: Factories<$Object>): Uninstaller {
+  type OriginalFactories<$Target extends GenericObject> = Parameters<typeof originalAround<$Target>>[1];
   return originalAround($object as GenericObject, factories as OriginalFactories<GenericObject>);
 }
 

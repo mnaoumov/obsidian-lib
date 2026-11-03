@@ -22,8 +22,6 @@ interface FoldArguments {
   readonly libraryStyles: string;
 }
 
-type FoldInput = GenericObject<FoldArguments>;
-
 interface FoldResult {
   readonly blockTexts: readonly string[];
   readonly hiddenAfterHeadingFold: readonly string[];
@@ -107,6 +105,7 @@ describe('rendered markdown', () => {
   });
 
   it('should fold headings and lists of markdown rendered with fold handlers', async () => {
+    type FoldInput = GenericObject<FoldArguments>;
     // The harness bundles this package's sources, whose `LIBRARY_STYLES` is still the unstamped
     // placeholder, and its plugin is a plain `Plugin` that injects nothing. So the stylesheet the list fold
     // depends on is compiled here and handed in.

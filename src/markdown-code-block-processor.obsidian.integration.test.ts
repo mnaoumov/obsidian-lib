@@ -35,10 +35,10 @@ interface DuplicateCodeBlockResult {
 interface ReadNoteContent {
   readonly content: string;
 }
-type ReadNoteContentArguments = GenericObject<ReadNoteContent>;
 
 describe('markdown-code-block-processor', () => {
   it('should read note content with code block from vault', async () => {
+    type ReadNoteContentArguments = GenericObject<ReadNoteContent>;
     const content = `${dedent`
       # Test Note
 

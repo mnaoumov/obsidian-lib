@@ -66,7 +66,7 @@ describe('prompt', () => {
         const WAIT_TIMEOUT_IN_MILLISECONDS = 12_000;
 
         let reportCount = 0;
-        const originalReportValidity = HTMLInputElement.prototype.reportValidity;
+        const checkOriginalReportValidity = HTMLInputElement.prototype.reportValidity;
         HTMLInputElement.prototype.reportValidity = checkValidityAndCountReport;
 
         const resultPromise = prompt({
@@ -110,13 +110,13 @@ describe('prompt', () => {
           };
         } finally {
           // eslint-disable-next-line require-atomic-updates -- Restoring a prototype method patched by this very closure; nothing else writes it.
-          HTMLInputElement.prototype.reportValidity = originalReportValidity;
+          HTMLInputElement.prototype.reportValidity = checkOriginalReportValidity;
           getCancelButton()?.click();
         }
 
         function checkValidityAndCountReport(this: HTMLInputElement): boolean {
           reportCount++;
-          return originalReportValidity.call(this);
+          return checkOriginalReportValidity.call(this);
         }
 
         function getButtons(): HTMLButtonElement[] {

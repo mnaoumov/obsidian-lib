@@ -941,7 +941,7 @@ export async function process(params: ProcessParams): Promise<void> {
         pathOrFile
       });
 
-      return result === InvokeFileActionSafeResult.NotInvoked ? shouldTreatMissingFileAsSuccess() : isSuccess;
+      return (result === InvokeFileActionSafeResult.NotInvoked && shouldTreatMissingFileAsSuccess()) || isSuccess;
 
       // eslint-disable-next-line unicorn/consistent-function-scoping -- Closes over `fullOptions` and `path` from the enclosing scope, so it cannot be hoisted.
       function shouldTreatMissingFileAsSuccess(): boolean {

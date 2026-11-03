@@ -229,7 +229,7 @@ export class BulkOperationGitRepo {
       return null;
     }
     const [isInsideWorkTree, gitDirectory] = result.stdout.split(/\r?\n/, REV_PARSE_OUTPUT_LINE_COUNT);
-    return result.exitCode !== 0 || isInsideWorkTree !== 'true' || !gitDirectory ? null : new BulkOperationGitRepo({ gitDirectory, workingDirectory });
+    return result.exitCode === 0 && isInsideWorkTree === 'true' && gitDirectory ? new BulkOperationGitRepo({ gitDirectory, workingDirectory }) : null;
   }
 
   /**
@@ -286,7 +286,7 @@ export class BulkOperationGitRepo {
    */
   public async recoverStaleLock(): Promise<null | string> {
     const lock = await this.readLock();
-    return !lock || !this.isStale(lock) ? null : (await this.recover(lock));
+    return lock && this.isStale(lock) ? (await this.recover(lock)) : null;
   }
 
   /**
@@ -434,13 +434,13 @@ export class BulkOperationGitRepo {
     };
   }
 
-  private async findNextOperationId(usedOperationId?: string): Promise<string> {
+  private async findNextOperationId(usedOperationId = ''): Promise<string> {
     // `--all` also reads a repository with no commit yet, where a plain `git log` fails.
     const result = await this.runGit({
       gitArguments: ['log', '--all', '--format=%s', '--extended-regexp', '--grep=^(chore: before )?OP[0-9]+']
     });
     // A recovered operation that changed nothing yet left no commit naming its id, so it is passed in explicitly.
-    return getNextOperationId([...result.stdout.split(/\r?\n/), usedOperationId ?? '']);
+    return getNextOperationId([...result.stdout.split(/\r?\n/), usedOperationId]);
   }
 
   private async heartbeat(): Promise<void> {

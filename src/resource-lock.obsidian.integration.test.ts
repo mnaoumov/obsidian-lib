@@ -337,44 +337,44 @@ describe('resource-lock', () => {
 
           // Obsidian binds Shift+Enter to a handler that dispatches a change transaction directly.
           // It slips past the CodeMirror `readOnly` facet, so the lock's change filter must still drop it.
-          const lockedBefore = readValue(lockedLeaf);
-          await pressShiftEnter(lockedLeaf);
+          const lockedBefore = readValue();
+          await pressShiftEnter();
           await settle();
-          const didLockedNoteRejectShiftEnter = readValue(lockedLeaf) === lockedBefore;
+          const didLockedNoteRejectShiftEnter = readValue() === lockedBefore;
 
           // Releasing the lock restores the normal Shift+Enter behavior (a newline is inserted).
           disposable[Symbol.dispose]();
           await settle();
           await reconcile();
-          const unlockedBefore = readValue(lockedLeaf);
-          await pressShiftEnter(lockedLeaf);
+          const unlockedBefore = readValue();
+          await pressShiftEnter();
           await waitUntil({
             message: 'locked note to accept Shift+Enter after unlock',
-            predicate: () => readValue(lockedLeaf) !== unlockedBefore
+            predicate: () => readValue() !== unlockedBefore
           });
-          const didUnlockedNoteAcceptShiftEnter = readValue(lockedLeaf) !== unlockedBefore;
+          const didUnlockedNoteAcceptShiftEnter = readValue() !== unlockedBefore;
 
           return {
             didLockedNoteRejectShiftEnter,
             didUnlockedNoteAcceptShiftEnter
           };
 
-          function getEditor(leaf: unknown): Editor {
-            const editor = (leaf as TypableLeaf).view.editor;
+          function getEditor(): Editor {
+            const editor = (lockedLeaf as TypableLeaf).view.editor;
             if (!editor) {
               throw new Error('no editor on leaf');
             }
             return editor;
           }
 
-          async function pressShiftEnter(leaf: unknown): Promise<void> {
+          async function pressShiftEnter(): Promise<void> {
             // `pressKey` targets the globally-focused element, so focus the editor before pressing.
-            getEditor(leaf).focus();
+            getEditor().focus();
             await pressKey({ key: 'Enter', modifiers: ['Shift'] });
           }
 
-          function readValue(leaf: unknown): string {
-            return getEditor(leaf).getValue();
+          function readValue(): string {
+            return getEditor().getValue();
           }
 
           async function reconcile(): Promise<void> {
@@ -429,19 +429,19 @@ describe('resource-lock', () => {
           const disposable = component.lockForPath({ mode: 'subtree', operationName: 'Integration test', pathOrFile: folderPath });
           await settle();
           await reconcile();
-          const isChildLockedUnderSubtree = isLeafReadOnly(leaf);
+          const isChildLockedUnderSubtree = isLeafReadOnly();
 
           disposable[Symbol.dispose]();
           await settle();
-          const isChildLockedAfterUnlock = isLeafReadOnly(leaf);
+          const isChildLockedAfterUnlock = isLeafReadOnly();
 
           return {
             isChildLockedAfterUnlock,
             isChildLockedUnderSubtree
           };
 
-          function isLeafReadOnly(readLeaf: unknown): boolean {
-            const editor = (readLeaf as ReadableLeaf).view.editor;
+          function isLeafReadOnly(): boolean {
+            const editor = (leaf as ReadableLeaf).view.editor;
             if (!editor) {
               throw new Error('no editor on leaf');
             }
@@ -605,12 +605,12 @@ describe('resource-lock', () => {
           // Re-run the manager's reconcile against the now-settled editor so the read-only re-apply takes hold.
           app.workspace.trigger('layout-change');
           await sleep(SETTLE_DELAY_MILLISECONDS);
-          const isLockedBeforeUnlock = isLeafReadOnly(leaf);
+          const isLockedBeforeUnlock = isLeafReadOnly();
 
           // Force-unlock aborts the controller (cancel) AND removes the lock entry (release).
           component.requestUnlockForPath(lockedFile);
           await sleep(SETTLE_DELAY_MILLISECONDS);
-          const isLockedAfterUnlock = isLeafReadOnly(leaf);
+          const isLockedAfterUnlock = isLeafReadOnly();
           const wasAborted = abortController.signal.aborted;
 
           return {
@@ -619,8 +619,8 @@ describe('resource-lock', () => {
             wasAborted
           };
 
-          function isLeafReadOnly(readLeaf: unknown): boolean {
-            const editor = (readLeaf as ReadableLeaf).view.editor;
+          function isLeafReadOnly(): boolean {
+            const editor = (leaf as ReadableLeaf).view.editor;
             if (!editor) {
               throw new Error('no editor on leaf');
             }

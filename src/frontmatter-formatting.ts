@@ -603,7 +603,7 @@ function normalizeItemIndents(collection: CollectionToken): void {
  * @returns The key, or `null` when the key is a collection rather than a scalar.
  */
 function readItemKey(item: CST.CollectionItem): null | string {
-  return !item.key || !CST.isScalar(item.key) ? null : castTo<ResolvedScalar>(CST.resolveAsScalar(item.key)).value;
+  return item.key && CST.isScalar(item.key) ? castTo<ResolvedScalar>(CST.resolveAsScalar(item.key)).value : null;
 }
 
 function replaceItemValue(item: CST.CollectionItem, newValue: unknown, indent: number, shouldPreferFlow: boolean, isSeqItem: boolean): void {

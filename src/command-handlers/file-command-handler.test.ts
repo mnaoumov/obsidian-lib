@@ -100,12 +100,11 @@ function createMockTFile(path = 'test.md'): TFileOriginal {
   return TFile.create__(castTo(app.vault), path).asOriginalType2__();
 }
 
-function createParams(overrides?: Partial<AbstractFileCommandHandlerConstructorParams>): AbstractFileCommandHandlerConstructorParams {
+function createParams(): AbstractFileCommandHandlerConstructorParams {
   return {
     icon: 'file-icon',
     id: 'test-file-cmd',
-    name: 'Test File Command',
-    ...overrides
+    name: 'Test File Command'
   };
 }
 

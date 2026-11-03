@@ -29,12 +29,11 @@ class TestGlobalHandler extends GlobalCommandHandler {
   }
 }
 
-function createParams(overrides?: Partial<CommandHandlerConstructorParams>): CommandHandlerConstructorParams {
+function createParams(): CommandHandlerConstructorParams {
   return {
     icon: 'test-icon',
     id: 'test-id',
-    name: 'Test Command',
-    ...overrides
+    name: 'Test Command'
   };
 }
 

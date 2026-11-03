@@ -196,8 +196,8 @@ describe('registerVirtualFile', () => {
     const effect = castTo<CapturedDispatch>(dispatch.mock.calls.at(-1)?.[0]);
     expect(effect.effects.value.value()).toBe(false);
     await view.onLoadFile(file);
-    const switchMode = castTo<(mode: Parameters<typeof view.setMode>[0]) => Promise<boolean>>(view.setMode.bind(view));
-    expect(await switchMode(castTo<Parameters<typeof view.setMode>[0]>({}))).toBe(true);
+    const checkSwitchMode = castTo<(mode: Parameters<typeof view.setMode>[0]) => Promise<boolean>>(view.setMode.bind(view));
+    expect(await checkSwitchMode(castTo<Parameters<typeof view.setMode>[0]>({}))).toBe(true);
     setViewFile(view, null);
     expect(effect.effects.value.value()).toBe(true);
     view.setViewData('Real', true);

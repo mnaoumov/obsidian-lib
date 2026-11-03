@@ -289,12 +289,8 @@ function getLanguageFromElement(element: HTMLElement): string {
 }
 
 function getTextSelection(element: Element): null | TextSelection {
-  if (!isTextSelectionElement(element)) {
-    return null;
-  }
-
   // An input type without a text selection (a checkbox, a number field) reads `null` here.
-  if (element.selectionStart === null || element.selectionEnd === null) {
+  if (!isTextSelectionElement(element) || element.selectionStart === null || element.selectionEnd === null) {
     return null;
   }
 

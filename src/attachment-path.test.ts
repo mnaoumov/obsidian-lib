@@ -492,14 +492,14 @@ describe('isAtProperAttachmentPath', () => {
     getDataAdapterEx(app).insensitive = false;
   });
 
-  function stubProperPath(properPath: string): Mock {
-    const extended = vi.fn().mockResolvedValue(properPath);
+  function stubProperPath(): Mock {
+    const extended = vi.fn().mockResolvedValue('attachments/img.png');
     stubCustomAttachmentLocationApi({ getAvailablePathForAttachments: extended });
     return extended;
   }
 
-  async function isAtProperAttachmentPathImpl(attachmentPath: string, properPath: string): Promise<boolean> {
-    stubProperPath(properPath);
+  async function isAtProperAttachmentPathImpl(attachmentPath: string): Promise<boolean> {
+    stubProperPath();
     return await isAtProperAttachmentPath({
       app,
       attachmentPathOrFile: attachmentPath,
@@ -508,40 +508,40 @@ describe('isAtProperAttachmentPath', () => {
   }
 
   it('should return true for an attachment parked with an Obsidian deduplication suffix', async () => {
-    expect(await isAtProperAttachmentPathImpl('attachments/img 1.png', 'attachments/img.png')).toBe(true);
-    expect(await isAtProperAttachmentPathImpl('attachments/img 23.png', 'attachments/img.png')).toBe(true);
+    expect(await isAtProperAttachmentPathImpl('attachments/img 1.png')).toBe(true);
+    expect(await isAtProperAttachmentPathImpl('attachments/img 23.png')).toBe(true);
   });
 
   it('should return true for an attachment already at the exact proper path', async () => {
-    expect(await isAtProperAttachmentPathImpl('attachments/img.png', 'attachments/img.png')).toBe(true);
+    expect(await isAtProperAttachmentPathImpl('attachments/img.png')).toBe(true);
   });
 
   it('should return false for an attachment in the wrong folder', async () => {
-    expect(await isAtProperAttachmentPathImpl('other/img.png', 'attachments/img.png')).toBe(false);
+    expect(await isAtProperAttachmentPathImpl('other/img.png')).toBe(false);
   });
 
   describe('case-variant folder', () => {
     it('should return true on a case-insensitive file system', async () => {
       getDataAdapterEx(app).insensitive = true;
-      expect(await isAtProperAttachmentPathImpl('Attachments/img.png', 'attachments/img.png')).toBe(true);
+      expect(await isAtProperAttachmentPathImpl('Attachments/img.png')).toBe(true);
     });
 
     it('should return false on a case-sensitive file system', async () => {
       getDataAdapterEx(app).insensitive = false;
-      expect(await isAtProperAttachmentPathImpl('Attachments/img.png', 'attachments/img.png')).toBe(false);
+      expect(await isAtProperAttachmentPathImpl('Attachments/img.png')).toBe(false);
     });
   });
 
   it('should reject deduplication-suffix look-alike names', async () => {
-    expect(await isAtProperAttachmentPathImpl('attachments/img-1.png', 'attachments/img.png')).toBe(false); // Hyphen, not a space separator.
-    expect(await isAtProperAttachmentPathImpl('attachments/imgX.png', 'attachments/img.png')).toBe(false); // No separator at all.
-    expect(await isAtProperAttachmentPathImpl('attachments/img .png', 'attachments/img.png')).toBe(false); // Trailing space, empty suffix.
-    expect(await isAtProperAttachmentPathImpl('attachments/img abc.png', 'attachments/img.png')).toBe(false); // Non-numeric suffix.
-    expect(await isAtProperAttachmentPathImpl('attachments/img.pdf', 'attachments/img.png')).toBe(false); // Different extension.
+    expect(await isAtProperAttachmentPathImpl('attachments/img-1.png')).toBe(false); // Hyphen, not a space separator.
+    expect(await isAtProperAttachmentPathImpl('attachments/imgX.png')).toBe(false); // No separator at all.
+    expect(await isAtProperAttachmentPathImpl('attachments/img .png')).toBe(false); // Trailing space, empty suffix.
+    expect(await isAtProperAttachmentPathImpl('attachments/img abc.png')).toBe(false); // Non-numeric suffix.
+    expect(await isAtProperAttachmentPathImpl('attachments/img.pdf')).toBe(false); // Different extension.
   });
 
   it('should forward the note, attachment, and explicit context to the proper-path lookup', async () => {
-    const extended = stubProperPath('attachments/img.png');
+    const extended = stubProperPath();
     const isAtProperPath = await isAtProperAttachmentPath({
       app,
       attachmentPathOrFile: 'attachments/img 1.png',

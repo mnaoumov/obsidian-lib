@@ -1998,13 +1998,13 @@ export async function editBacklinksSnapshot<TPayload>(params: EditBacklinksSnaps
       pathOrFile: backlinkNotePath,
       referenceConverter: (reference) => {
         const referenceIdentityKey = referenceIdentityKeyProvider(reference);
-        return !payloads.has(referenceIdentityKey) && !shouldVisitUnmatchedReferences
-          ? undefined
-          : referenceConverter({
+        return payloads.has(referenceIdentityKey) || shouldVisitUnmatchedReferences
+          ? referenceConverter({
             payload: payloads.get(referenceIdentityKey),
             reference,
             sourcePath: backlinkNotePath
-          });
+          })
+          : undefined;
       },
       ...options
     });
@@ -2305,7 +2305,7 @@ export function shouldResetAlias(params: ShouldResetAliasParams): boolean {
     displayText,
     isWikilink,
     newSourcePathOrFile,
-    oldSourcePathOrFile,
+    oldSourcePathOrFile = newSourcePathOrFile,
     oldTargetPath,
     targetPathOrFile
   } = params;
@@ -2319,7 +2319,7 @@ export function shouldResetAlias(params: ShouldResetAliasParams): boolean {
 
   const targetFile = getFile({ app, pathOrFile: targetPathOrFile, shouldIncludeNonExisting: true });
   const newSourcePath = getPath(app, newSourcePathOrFile);
-  const oldSourcePath = getPath(app, oldSourcePathOrFile ?? newSourcePathOrFile);
+  const oldSourcePath = getPath(app, oldSourcePathOrFile);
   const newSourceFolder = dirname(newSourcePath);
   const oldSourceFolder = dirname(oldSourcePath);
   const aliasesToReset = new Set<string>();
@@ -2445,7 +2445,7 @@ export function updateLink(params: UpdateLinkParams): string {
     newSourcePathOrFile,
     newTargetPathOrFile,
     oldSourcePathOrFile,
-    oldTargetPathOrFile,
+    oldTargetPathOrFile = newTargetPathOrFile,
     reference,
     shouldEscapeAlias,
     shouldIncludeAttachmentExtensionToEmbedAlias,
@@ -2460,7 +2460,7 @@ export function updateLink(params: UpdateLinkParams): string {
   }
   const newTargetFile = getFile({ app, pathOrFile: newTargetPathOrFile, shouldIncludeNonExisting: true });
   const oldSourcePath = getPath(app, oldSourcePathOrFile ?? newSourcePathOrFile);
-  const oldTargetPath = getPath(app, oldTargetPathOrFile ?? newTargetPathOrFile);
+  const oldTargetPath = getPath(app, oldTargetPathOrFile);
   const isWikilink = shouldUseWikilinkStyle(normalizeOptionalProperties<ShouldUseWikilinkStyleParams>({
     app,
     linkStyle,
@@ -2564,9 +2564,8 @@ export async function updateReferencesInContent(params: UpdateReferencesInConten
     offsetRange,
     referenceConverter: (reference) => {
       const isEmbedLink = hasEmbedSyntax(getReferenceLinkText(reference));
-      return shouldUpdateEmbedOnlyLinks !== undefined && shouldUpdateEmbedOnlyLinks !== isEmbedLink
-        ? undefined
-        : convertLink(normalizeOptionalProperties<ConvertLinkParams>({
+      return shouldUpdateEmbedOnlyLinks === undefined || shouldUpdateEmbedOnlyLinks === isEmbedLink
+        ? convertLink(normalizeOptionalProperties<ConvertLinkParams>({
           app,
           isEmptyEmbedAliasAllowed,
           linkPathStyle,
@@ -2580,7 +2579,8 @@ export async function updateReferencesInContent(params: UpdateReferencesInConten
           shouldUseAngleBrackets,
           shouldUseLeadingDotForRelativePaths,
           shouldUseLeadingSlashForAbsolutePaths
-        }));
+        }))
+        : undefined;
     },
     shouldSkipReference,
     shouldSkipReferencesInHeadings
@@ -2625,9 +2625,8 @@ export async function updateReferencesInFile(params: UpdateReferencesInFileParam
     pathOrFile: newSourcePathOrFile,
     referenceConverter: (reference) => {
       const isEmbedLink = hasEmbedSyntax(getReferenceLinkText(reference));
-      return shouldUpdateEmbedOnlyLinks !== undefined && shouldUpdateEmbedOnlyLinks !== isEmbedLink
-        ? undefined
-        : convertLink(normalizeOptionalProperties<ConvertLinkParams>({
+      return shouldUpdateEmbedOnlyLinks === undefined || shouldUpdateEmbedOnlyLinks === isEmbedLink
+        ? convertLink(normalizeOptionalProperties<ConvertLinkParams>({
           app,
           isEmptyEmbedAliasAllowed,
           linkPathStyle,
@@ -2641,7 +2640,8 @@ export async function updateReferencesInFile(params: UpdateReferencesInFileParam
           shouldUseAngleBrackets,
           shouldUseLeadingDotForRelativePaths,
           shouldUseLeadingSlashForAbsolutePaths
-        }));
+        }))
+        : undefined;
     },
     shouldSkipReference,
     shouldSkipReferencesInHeadings
@@ -2871,7 +2871,7 @@ function getFinalLinkPathStyle(app: App, linkPathStyle?: LinkPathStyle): FinalLi
 function getLinkConfig(params: GenerateMarkdownLinkParams): LinkConfig {
   const { app } = params;
   return {
-    isEmbed: params.isEmbed ?? (params.originalLink ? hasEmbedSyntax(params.originalLink) : false),
+    isEmbed: params.isEmbed ?? (!!params.originalLink && hasEmbedSyntax(params.originalLink)),
     isSingleSubpathAllowed: params.isSingleSubpathAllowed ?? true,
     isWikilink: shouldUseWikilinkStyle(normalizeOptionalProperties<ShouldUseWikilinkStyleParams>({
       app,
@@ -3005,6 +3005,7 @@ function resolveSnapshotReferenceIdentityKeyProvider(params: ResolveSnapshotRefe
 
 function shouldEscapeWikilinkDivider(fileChange: FileChange, tablePositions: TablePosition[]): boolean {
   /* v8 ignore start -- getFileChanges only calls this for non-canvas files which always have content changes. */
+  // eslint-disable-next-line unicorn/prefer-ternary -- Keep the unreachable guard separate from the covered content-change branch.
   if (!isContentChange(fileChange)) {
     return false;
   }

@@ -112,12 +112,11 @@ function createMockTFolder(path: string): TFolderOriginal {
   return TFolder.create__(castTo(app.vault), path).asOriginalType2__();
 }
 
-function createParams(overrides?: Partial<AbstractFileCommandHandlerConstructorParams>): AbstractFileCommandHandlerConstructorParams {
+function createParams(): AbstractFileCommandHandlerConstructorParams {
   return {
     icon: 'folder-icon',
     id: 'test-folder-cmd',
-    name: 'Test Folder Command',
-    ...overrides
+    name: 'Test Folder Command'
   };
 }
 

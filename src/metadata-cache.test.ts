@@ -142,7 +142,7 @@ vi.mock('./frontmatter-link-cache-with-offsets.ts', () => ({
     return r['startOffset'] !== undefined && r['endOffset'] !== undefined && r['key'] !== undefined;
   }),
   toFrontmatterLinkCacheWithOffsets: vi.fn((link: GenericObject) => {
-    return link['startOffset'] !== undefined && link['endOffset'] !== undefined ? link : { ...link, endOffset: typeof link['original'] === 'string' ? link['original'].length : 0, startOffset: 0 };
+    return link['startOffset'] === undefined || link['endOffset'] === undefined ? { ...link, endOffset: typeof link['original'] === 'string' ? link['original'].length : 0, startOffset: 0 } : link;
   })
 }));
 
@@ -1013,9 +1013,9 @@ describe('getFrontmatterSafe', () => {
 describe('getBacklinksForFileSafe', () => {
   function setupRetryToInvokeOperationFunction(): void {
     mockedRetryWithTimeoutNotice.mockImplementation(async (params: RetryWithTimeoutNoticeParams) => {
-      const operationFunction = params.operationFunction;
+      const checkOperationFunction = params.operationFunction;
       const abortSignal = strictProxy<AbortSignal>({ throwIfAborted: vi.fn() });
-      await operationFunction(abortSignal);
+      await checkOperationFunction(abortSignal);
     });
   }
 
@@ -1152,9 +1152,9 @@ describe('getBacklinksForFileSafe', () => {
   it('should not parse the frontmatter of a holder with body links only, so invalid YAML there cannot throw', async () => {
     let operationResult: boolean | undefined;
     mockedRetryWithTimeoutNotice.mockImplementation(async (params: RetryWithTimeoutNoticeParams) => {
-      const operationFunction = params.operationFunction;
+      const checkOperationFunction = params.operationFunction;
       const abortSignal = strictProxy<AbortSignal>({ throwIfAborted: vi.fn() });
-      operationResult = await operationFunction(abortSignal);
+      operationResult = await checkOperationFunction(abortSignal);
     });
     const content = '---\nauthor: [x]y\n---\n[[target]]';
     const referenceCache = makeReferenceCache('[[target]]', content.indexOf('[[target]]'));
@@ -1177,9 +1177,9 @@ describe('getBacklinksForFileSafe', () => {
   it('should skip the frontmatter links of a holder whose frontmatter does not parse, parsing it once', async () => {
     let operationResult: boolean | undefined;
     mockedRetryWithTimeoutNotice.mockImplementation(async (params: RetryWithTimeoutNoticeParams) => {
-      const operationFunction = params.operationFunction;
+      const checkOperationFunction = params.operationFunction;
       const abortSignal = strictProxy<AbortSignal>({ throwIfAborted: vi.fn() });
-      operationResult = await operationFunction(abortSignal);
+      operationResult = await checkOperationFunction(abortSignal);
     });
 
     mockedGetIndexedBacklinksForFile.mockReturnValue(
@@ -1215,9 +1215,9 @@ describe('getBacklinksForFileSafe', () => {
   it('should succeed for offset-carrying frontmatter links whose original is the whole multi-link value', async () => {
     let operationResult: boolean | undefined;
     mockedRetryWithTimeoutNotice.mockImplementation(async (params: RetryWithTimeoutNoticeParams) => {
-      const operationFunction = params.operationFunction;
+      const checkOperationFunction = params.operationFunction;
       const abortSignal = strictProxy<AbortSignal>({ throwIfAborted: vi.fn() });
-      operationResult = await operationFunction(abortSignal);
+      operationResult = await checkOperationFunction(abortSignal);
     });
     const value = '[[target]] and [Multi B](<target.md>)';
     const wikilink = '[[target]]';
@@ -1261,9 +1261,9 @@ describe('getBacklinksForFileSafe', () => {
   it('should return false when reference cache link does not match content', async () => {
     let operationResult: boolean | undefined;
     mockedRetryWithTimeoutNotice.mockImplementation(async (params: RetryWithTimeoutNoticeParams) => {
-      const operationFunction = params.operationFunction;
+      const checkOperationFunction = params.operationFunction;
       const abortSignal = strictProxy<AbortSignal>({ throwIfAborted: vi.fn() });
-      operationResult = await operationFunction(abortSignal);
+      operationResult = await checkOperationFunction(abortSignal);
     });
     const content = '0123456789XXMISMATCHX more text';
     const referenceCache = makeReferenceCache('[[target]]', 10);
@@ -1297,9 +1297,9 @@ describe('getBacklinksForFileSafe', () => {
   it('should return false when frontmatter property value is not a string', async () => {
     let operationResult: boolean | undefined;
     mockedRetryWithTimeoutNotice.mockImplementation(async (params: RetryWithTimeoutNoticeParams) => {
-      const operationFunction = params.operationFunction;
+      const checkOperationFunction = params.operationFunction;
       const abortSignal = strictProxy<AbortSignal>({ throwIfAborted: vi.fn() });
-      operationResult = await operationFunction(abortSignal);
+      operationResult = await checkOperationFunction(abortSignal);
     });
     const fmLink = makeFrontmatterLink('target-note', 'aliases');
 
@@ -1317,9 +1317,9 @@ describe('getBacklinksForFileSafe', () => {
   it('should return false when frontmatter link does not match property value', async () => {
     let operationResult: boolean | undefined;
     mockedRetryWithTimeoutNotice.mockImplementation(async (params: RetryWithTimeoutNoticeParams) => {
-      const operationFunction = params.operationFunction;
+      const checkOperationFunction = params.operationFunction;
       const abortSignal = strictProxy<AbortSignal>({ throwIfAborted: vi.fn() });
-      operationResult = await operationFunction(abortSignal);
+      operationResult = await checkOperationFunction(abortSignal);
     });
     const fmLink = makeFrontmatterLink('target-note', 'aliases');
 
@@ -1337,9 +1337,9 @@ describe('getBacklinksForFileSafe', () => {
   it('should succeed without reading a canvas whose text-node reference precedes its file-node one', async () => {
     let operationResult: boolean | undefined;
     mockedRetryWithTimeoutNotice.mockImplementation(async (params: RetryWithTimeoutNoticeParams) => {
-      const operationFunction = params.operationFunction;
+      const checkOperationFunction = params.operationFunction;
       const abortSignal = strictProxy<AbortSignal>({ throwIfAborted: vi.fn() });
-      operationResult = await operationFunction(abortSignal);
+      operationResult = await checkOperationFunction(abortSignal);
     });
     const textNodeReference = makeReferenceCache('![[a/img.png]]', 0);
     const fileNodeReference = { key: 'nodes.1.file', link: 'a/img.png', original: 'a/img.png' };
@@ -1360,9 +1360,9 @@ describe('getBacklinksForFileSafe', () => {
   it('should keep checking later notes after a link that is neither reference nor frontmatter', async () => {
     let operationResult: boolean | undefined;
     mockedRetryWithTimeoutNotice.mockImplementation(async (params: RetryWithTimeoutNoticeParams) => {
-      const operationFunction = params.operationFunction;
+      const checkOperationFunction = params.operationFunction;
       const abortSignal = strictProxy<AbortSignal>({ throwIfAborted: vi.fn() });
-      operationResult = await operationFunction(abortSignal);
+      operationResult = await checkOperationFunction(abortSignal);
     });
     const unknownLink = { link: 'something', original: 'something' };
     const staleReference = makeReferenceCache('[[target]]', 10);

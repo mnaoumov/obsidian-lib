@@ -33,8 +33,6 @@ interface CreateMockAppParams {
   readonly onWindowOpen?: Workspace['on'];
 }
 
-type WindowOpenCallback = (workspaceWindow: WorkspaceWindow) => void;
-
 function createEventRef(): EventRef {
   // eslint-disable-next-line unicorn/name-replacements -- Obsidian's EventRef shape names its emitter `e`, which Component.unload reads.
   return castTo<EventRef>({ e: { offref: vi.fn() } });
@@ -78,6 +76,7 @@ function createMockApp(params: CreateMockAppParams): App {
 }
 
 describe('AllWindowsEventComponent', () => {
+  type WindowOpenCallback = (workspaceWindow: WorkspaceWindow) => void;
   beforeEach(() => {
     vi.useFakeTimers();
   });
