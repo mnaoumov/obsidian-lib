@@ -14,6 +14,8 @@ npm install @mnaoumov/obsidian-lib
 
 The guides and the API reference are at [mnaoumov.dev/obsidian-lib](https://mnaoumov.dev/obsidian-lib/).
 
+Register custom global and instance functions for Bases with the [formula-function helpers](./docs/src/content/docs/guides/bases-formula-functions.md).
+
 ## Where it fits
 
 It is one of five packages that replace [`obsidian-dev-utils`](https://github.com/mnaoumov/obsidian-dev-utils): [`@mnaoumov/typescript-lib`](https://github.com/mnaoumov/typescript-lib), [`@mnaoumov/typescript-test-toolkit`](https://github.com/mnaoumov/typescript-test-toolkit), [`@mnaoumov/typescript-dev-toolkit`](https://github.com/mnaoumov/typescript-dev-toolkit), [`@mnaoumov/obsidian-lib`](https://github.com/mnaoumov/obsidian-lib) and [`@mnaoumov/obsidian-dev-toolkit`](https://github.com/mnaoumov/obsidian-dev-toolkit). It depends on [`@mnaoumov/typescript-lib`](https://github.com/mnaoumov/typescript-lib). It moved here from that repository with its history.
