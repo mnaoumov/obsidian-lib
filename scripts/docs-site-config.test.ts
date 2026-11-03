@@ -4,7 +4,10 @@ import {
   registerMemberPages,
   registerRouteSegments
 } from '@mnaoumov/typescript-dev-toolkit/docs-site/api-doc-link-rendering';
-import { generateOverviewPage } from '@mnaoumov/typescript-dev-toolkit/docs-site/api-doc-page-generation';
+import {
+  renderMethodTableMdx,
+  renderPropertyTableMdx
+} from '@mnaoumov/typescript-dev-toolkit/docs-site/api-doc-page-generation';
 import { configureApiDocs } from '@mnaoumov/typescript-dev-toolkit/docs-site/api-doc-settings';
 import { processSourceFile } from '@mnaoumov/typescript-dev-toolkit/docs-site/api-doc-source-processing';
 import { resolveInheritedMembers } from '@mnaoumov/typescript-dev-toolkit/docs-site/api-doc-type-merging';
@@ -20,7 +23,7 @@ import {
 import { DOCS_SITE_CONFIG } from './docs-site-config.ts';
 
 describe('API documentation links', () => {
-  it.each(['OpenBugReportCommandHandler', 'OpenFeatureRequestCommandHandler'])('links external types and inherited members on %s', async (name) => {
+  it.each(['OpenBugReportCommandHandler', 'OpenFeatureRequestCommandHandler'])('links external types and inherited members on %s', (name) => {
     configureApiDocs({
       basePath: `/${DOCS_SITE_CONFIG.repo}`,
       externalTypeLinks: ensureNonNullable(DOCS_SITE_CONFIG.externalTypeLinks),
@@ -57,14 +60,18 @@ describe('API documentation links', () => {
     resolveInheritedMembers(types);
     registerRouteSegments(types);
     registerMemberPages(types);
-    const page = await generateOverviewPage(name, ensureNonNullable(types.get(`command-handlers#${name}`)), types);
+    const info = ensureNonNullable(types.get(`command-handlers#${name}`));
+    const lines: string[] = [];
+    renderPropertyTableMdx(lines, info, types);
+    renderMethodTableMdx(lines, info, types);
+    const content = lines.join('\n');
 
     for (const type of ['App', 'Command', 'IconName']) {
-      expect(page.content).toContain(JSON.stringify(`<a href="https://docs.obsidian.md/Reference/TypeScript%20API/${type}">${type}</a>`));
+      expect(content).toContain(JSON.stringify(`<a href="https://docs.obsidian.md/Reference/TypeScript%20API/${type}">${type}</a>`));
     }
     for (const member of ['icon', 'id', 'name', 'buildCommand', 'onRegistered']) {
-      expect(page.content).toContain(`href: "/obsidian-lib/api/command-handlers/CommandHandler/${member}/"`);
+      expect(content).toContain(`href: "/obsidian-lib/api/command-handlers/CommandHandler/${member}/"`);
     }
-    expect(page.content).toContain('name: "app", href: "./app/"');
+    expect(content).toContain('name: "app", href: "./app/"');
   });
 });
