@@ -10,12 +10,14 @@ import type { JsonValue } from 'type-fest';
 
 import { ensureNonNullable } from '@mnaoumov/typescript-lib/type-guards';
 
+import type { DataStoreLocation } from './data-store-locations.ts';
 import type {
   DataStoreMergeKind,
   DataStoreOperation
 } from './data-store-replica.ts';
 import type { LocalDataStore } from './local-data-store.ts';
 
+import { DataStoreLocations } from './data-store-locations.ts';
 import {
   DataStoreReplica,
   isDataStoreOperation
@@ -51,6 +53,18 @@ export interface SharedDataStoreOpenParams {
    */
   readonly folder?: string;
   /**
+   * New document encoding at the permanent discovery anchor.
+   *
+   * @default `'markdown'`
+   */
+  readonly format?: 'json' | 'markdown';
+  /**
+   * Enables vault transport. Disabled stores make no adapter calls, including during compaction.
+   *
+   * @default `true`
+   */
+  readonly isSyncEnabled?: boolean;
+  /**
    * Immutable merge rule; changing it requires a new store id.
    */
   readonly kind: DataStoreMergeKind;
@@ -64,6 +78,12 @@ export interface SharedDataStoreOpenParams {
    * @default `1000000`
    */
   readonly maxFileBytes?: number;
+  /**
+   * Maximum UTF-8 bytes in a reconstructed snapshot before JSON parsing.
+   *
+   * @default `64000000`
+   */
+  readonly maxSnapshotBytes?: number;
   /**
    * Plugin manifest id.
    */
@@ -96,16 +116,34 @@ type VersionVector = [string, number][];
  * No timer or event handler outlives the consumer: the consumer schedules synchronization and owns unloading.
  */
 export class SharedDataStore {
+  /**
+  Configured and remembered reader roots, including retained migration sources while disabled.
+   *
+   * @returns Unique roots suitable for metadata exclusion without adapter access.
+   */
+  public get transportRoots(): string[] {
+    return [...new Set([...this.knownTransportRoots, ...this.locations.transports.map((transport) => transport.root)])];
+  }
+
   private readonly activeDeviceMilliseconds: number;
   private counter = 0;
+  private hasUnpublishedChanges = false;
+  private isSyncEnabled: boolean;
+  private readonly knownTransportRoots = new Set<string>();
   private readonly localRecords = new Map<string, string>();
+  private readonly locations: DataStoreLocations;
   private replica: DataStoreReplica;
   private time = 0;
-  private readonly transport: DataStoreTransport;
+
   private readonly vector = new Map<string, number>();
 
+  private get transport(): DataStoreTransport {
+    return ensureNonNullable(this.locations.transports.at(-1));
+  }
+
   private constructor(protected readonly params: SharedDataStoreOpenParams, protected readonly device: string) {
-    this.transport = new DataStoreTransport(params);
+    this.locations = new DataStoreLocations(params);
+    this.isSyncEnabled = params.isSyncEnabled ?? true;
     this.replica = new DataStoreReplica(params.kind);
     this.activeDeviceMilliseconds = params.activeDeviceMilliseconds ?? DEFAULT_ACTIVE_DEVICE_MILLISECONDS;
     if (!Number.isFinite(this.activeDeviceMilliseconds) || this.activeDeviceMilliseconds <= 0) {
@@ -140,6 +178,9 @@ export class SharedDataStore {
       await this.loadLocal();
       await this.mergeFiles();
       await this.persist();
+      if (!this.isSyncEnabled) {
+        return;
+      }
       const files = await this.transport.list();
       const base = `${this.deviceRoot()}/snapshot-${window.crypto.randomUUID()}-manifest`;
       await this.transport.writeSnapshot({ base, payload: this.checkpoint() });
@@ -164,6 +205,16 @@ export class SharedDataStore {
         }
       }
     });
+  }
+
+  /**
+   * Recognizes transport files, roots, and ancestor folder operations for consumer event filters.
+   *
+   * @param path - Vault-relative file or folder path.
+   * @returns Whether the path intersects an active or retained transport root.
+   */
+  public containsTransportPath(path: string): boolean {
+    return this.transportRoots.some((root) => path === root || path.startsWith(`${root}/`) || root.startsWith(`${path}/`));
   }
 
   /**
@@ -196,6 +247,25 @@ export class SharedDataStore {
   }
 
   /**
+   * Relocates only this plugin/store subtree; keep opening with the original anchor parameters.
+   *
+   * @param location - New folder and document format.
+   * @returns A promise that resolves after history has been copied and verified.
+   */
+  public async relocate(location: DataStoreLocation): Promise<void> {
+    await this.params.local.exclusive(async () => {
+      await this.loadLocal();
+      if (!this.isSyncEnabled) {
+        throw new Error('Enable data-store synchronization before relocation');
+      }
+      await this.locations.relocate(location);
+      await this.mergeFiles();
+      this.hasUnpublishedChanges = true;
+      await this.persist();
+    });
+  }
+
+  /**
    * Writes one register value, or adds a member to an observed-remove set.
    *
    * @param key - Record key or set member.
@@ -215,6 +285,22 @@ export class SharedDataStore {
    */
   public async setMany(entries: readonly (readonly [string, JsonValue])[]): Promise<void> {
     await this.change(entries.map(([key, value]) => ({ deleted: false, key, value })));
+  }
+
+  /**
+   * Toggles transport without changing identity or causal state. Persist the preference in consumer settings.
+   * Enabling publishes a complete checkpoint so offline sequences cannot leave gaps.
+   *
+   * @param isEnabled - Whether to use vault transport for subsequent calls on this instance.
+   * @returns A promise that resolves after synchronization when enabling.
+   */
+  public async setSyncEnabled(isEnabled: boolean): Promise<void> {
+    await this.params.local.exclusive(async () => {
+      await this.loadLocal();
+      this.isSyncEnabled = isEnabled;
+      await this.mergeFiles();
+      await this.persist();
+    });
   }
 
   /**
@@ -239,7 +325,7 @@ export class SharedDataStore {
       if (device === this.device) {
         continue;
       }
-      const have = await this.transport.read(`${this.transport.root}/devices/${device}/have.md`);
+      const have = await this.transport.read(`${this.transport.root}/devices/${device}/have${this.transport.extension}`);
       if (!isObject(have) || !isVector(have['vector']) || typeof have['time'] !== 'number') {
         acknowledgements.push(new Map());
       } else if (Date.now() - have['time'] <= this.activeDeviceMilliseconds) {
@@ -280,10 +366,18 @@ export class SharedDataStore {
         candidate.apply(operation);
         operations.push(operation);
       }
+      if (!this.isSyncEnabled) {
+        for (const operation of operations) {
+          this.apply(operation);
+        }
+        this.hasUnpublishedChanges = true;
+        await this.persist();
+        return;
+      }
       // Validate every single operation before publishing any prefix of a batch.
       for (const operation of operations) {
         if (!this.transport.fits([operation])) {
-          await this.transport.write(`${this.deviceRoot()}/log-${String(operation.sequence)}.md`, [operation]);
+          await this.transport.write(`${this.deviceRoot()}/log-${String(operation.sequence)}${this.transport.extension}`, [operation]);
         }
       }
       let batch: DataStoreOperation[] = [];
@@ -315,13 +409,43 @@ export class SharedDataStore {
     this.time = 0;
     this.counter = 0;
     this.localRecords.clear();
+    this.knownTransportRoots.clear();
+    this.hasUnpublishedChanges = false;
     const records = await this.params.local.entries();
     for (const [key, value] of records) {
-      if (key === 'shared-checkpoint-v1') {
-        this.mergeCheckpoint(value);
-      } else if (key.startsWith(RECORD_PREFIX)) {
-        this.replica.apply(value);
-        this.localRecords.set(key, ensureNonNullable(JSON.stringify(value)));
+      switch (key) {
+        case 'shared-checkpoint-v1': {
+          this.mergeCheckpoint(value);
+
+          break;
+        }
+        case 'shared-transport-roots-v1': {
+          if (!Array.isArray(value)) {
+            throw new TypeError('Invalid local data-store transport roots');
+          }
+          const suffix = `/${this.params.pluginId}/${this.params.storeId}`;
+          for (const root of value) {
+            if (typeof root !== 'string' || !root.endsWith(suffix)) {
+              throw new Error('Invalid local data-store transport roots');
+            }
+            // Validate remembered paths without reading the adapter or activating a writer.
+            const transport = new DataStoreTransport({ ...this.params, folder: root.slice(0, -suffix.length) });
+            this.knownTransportRoots.add(transport.root);
+          }
+
+          break;
+        }
+        case 'shared-unpublished-v1': {
+          this.hasUnpublishedChanges = value === true;
+
+          break;
+        }
+        default: {
+          if (key.startsWith(RECORD_PREFIX)) {
+            this.replica.apply(value);
+            this.localRecords.set(key, ensureNonNullable(JSON.stringify(value)));
+          }
+        }
       }
     }
   }
@@ -344,19 +468,29 @@ export class SharedDataStore {
   }
 
   private async mergeFiles(): Promise<void> {
-    const allFiles = await this.transport.list();
-    const files = allFiles.filter((path) => path.startsWith(`${this.transport.root}/devices/`));
-    const manifests = files.filter((file) => /\/snapshot-[\w-]+-manifest\.md$/.test(file));
+    if (!this.isSyncEnabled) {
+      return;
+    }
+    await this.locations.refresh();
+    for (const transport of this.locations.transports) {
+      await this.mergeTransport(transport);
+    }
+  }
+
+  private async mergeTransport(transport: DataStoreTransport): Promise<void> {
+    const allFiles = await transport.list();
+    const files = allFiles.filter((path) => path.startsWith(`${transport.root}/devices/`));
+    const manifests = files.filter((file) => /\/snapshot-[\w-]+-manifest\.(?:md|json)$/.test(file));
     for (const path of manifests) {
-      const snapshot = await this.transport.readSnapshot(path);
+      const snapshot = await transport.readSnapshot(path);
       if (snapshot !== undefined) {
         this.mergeCheckpoint(snapshot);
       }
     }
     const operations: DataStoreOperation[] = [];
-    const segments = files.filter((file) => /\/log-\d+\.md$/.test(file));
+    const segments = files.filter((file) => /\/log-\d+\.(?:md|json)$/.test(file));
     for (const path of segments) {
-      const segment = await this.transport.read(path);
+      const segment = await transport.read(path);
       if (segment === undefined) {
         continue;
       }
@@ -395,14 +529,22 @@ export class SharedDataStore {
     }
     const entries: [string, unknown][] = [...records].filter(([key, value]) => this.localRecords.get(key) !== JSON.stringify(value));
     const removedKeys = [...this.localRecords.keys()].filter((key) => !records.has(key));
-    entries.push(['shared-checkpoint-v1', { ...checkpoint, operations: [] }]);
+    entries.push(['shared-checkpoint-v1', { ...checkpoint, operations: [] }], ['shared-unpublished-v1', this.hasUnpublishedChanges], ['shared-transport-roots-v1', this.transportRoots]);
     await this.params.local.commit({ entries, removedKeys });
-    await this.transport.write(`${this.deviceRoot()}/have.md`, { format: 1, time: Date.now(), vector: [...this.vector] });
+    if (!this.isSyncEnabled) {
+      return;
+    }
+    if (this.hasUnpublishedChanges) {
+      await this.transport.writeSnapshot({ base: `${this.deviceRoot()}/snapshot-${window.crypto.randomUUID()}-manifest`, payload: checkpoint });
+      await this.params.local.set('shared-unpublished-v1', false);
+      this.hasUnpublishedChanges = false;
+    }
+    await this.transport.write(`${this.deviceRoot()}/have${this.transport.extension}`, { format: 1, time: Date.now(), vector: [...this.vector] });
   }
 
   private async publish(operations: DataStoreOperation[]): Promise<void> {
     const first = ensureNonNullable(operations[0]);
-    await this.transport.write(`${this.deviceRoot()}/log-${String(first.sequence)}.md`, operations);
+    await this.transport.writeImmutable(`${this.deviceRoot()}/log-${String(first.sequence)}${this.transport.extension}`, operations);
     for (const operation of operations) {
       this.apply(operation);
     }

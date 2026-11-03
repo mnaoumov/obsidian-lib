@@ -8,6 +8,84 @@ import {
 } from 'vitest';
 
 describe('shared data stores in Obsidian', () => {
+  it('enables local history as JSON and relocates it through the real adapter', async ({ annotate }) => {
+    const result = await evalInObsidian({
+      async callback({ app, lib: { LocalDataStore, SharedDataStore } }) {
+        const storeId = `integration-${window.crypto.randomUUID()}`;
+        const params = { pluginId: 'obsidian-lib-test', storeId, vaultId: app.appId };
+        const local = await LocalDataStore.open(params);
+        const otherLocal = await LocalDataStore.open({ ...params, vaultId: `${app.appId}-other` });
+        const anchor = `Plugin data/${params.pluginId}/${storeId}`;
+        const moved = `.plugin-data/${params.pluginId}/${storeId}`;
+        const shared = { adapter: app.vault.adapter, format: 'json' as const, kind: 'last-write-wins' as const, pluginId: params.pluginId, storeId };
+        try {
+          const first = await SharedDataStore.open({ ...shared, isSyncEnabled: false, local });
+          const started = performance.now();
+          await first.setMany(Array.from({ length: 1000 }, (_, index) => [`key-${String(index)}`, { originalPath: `old-${String(index)}.png`, time: index }]));
+          await first.set('deleted', 1);
+          await first.delete('deleted');
+          await first.compact();
+          const localMilliseconds = performance.now() - started;
+          const isHadLocalFolder = await app.vault.adapter.exists(anchor);
+          const enableStarted = performance.now();
+          await first.setSyncEnabled(true);
+          const enableMilliseconds = performance.now() - enableStarted;
+          const reopenStarted = performance.now();
+          const second = await SharedDataStore.open({ ...shared, local: otherLocal });
+          const bootstrapMilliseconds = performance.now() - reopenStarted;
+          await first.relocate({ folder: '.plugin-data', format: 'json' });
+          await second.synchronize();
+          await second.set('after-move', 2);
+          const reopened = await SharedDataStore.open({ ...shared, local });
+          await reopened.setSyncEnabled(false);
+          const disabled = await SharedDataStore.open({ ...shared, isSyncEnabled: false, local });
+          const files: string[] = [];
+          const pending = [...reopened.transportRoots];
+          while (pending.length > 0) {
+            const path = pending.pop();
+            if (path === undefined) {
+              throw new Error('Expected pending folder');
+            }
+            const children = await app.vault.adapter.list(path);
+            files.push(...children.files);
+            pending.push(...children.folders);
+          }
+          return {
+            afterMove: reopened.get('after-move'),
+            bootstrapMilliseconds,
+            count: reopened.entries().length,
+            deleted: reopened.get('deleted') === undefined,
+            disabledRoots: disabled.transportRoots.length,
+            enableMilliseconds,
+            hadLocalFolder: isHadLocalFolder,
+            isJson: files.every((path) => path.endsWith('.json')),
+            localMilliseconds,
+            roots: reopened.transportRoots.length
+          };
+        } finally {
+          local.close();
+          otherLocal.close();
+          for (const root of [anchor, moved]) {
+            if (await app.vault.adapter.exists(root)) {
+              await app.vault.adapter.rmdir(root, true);
+            }
+          }
+        }
+      }
+    });
+    expect(result.hadLocalFolder).toBe(false);
+    expect(result.isJson).toBe(true);
+    expect(result.count).toBe(1001);
+    expect(result.deleted).toBe(true);
+    expect(result.afterMove).toBe(2);
+    expect(result.roots).toBe(2);
+    expect(result.disabledRoots).toBe(2);
+    expect(result.localMilliseconds).toBeGreaterThanOrEqual(0);
+    expect(result.enableMilliseconds).toBeGreaterThanOrEqual(0);
+    expect(result.bootstrapMilliseconds).toBeGreaterThanOrEqual(0);
+    await annotate(JSON.stringify({ bootstrapMilliseconds: result.bootstrapMilliseconds, enableMilliseconds: result.enableMilliseconds, localMilliseconds: result.localMilliseconds }), 'measurement');
+  });
+
   it.each(['.plugin-data', 'plugin-config'])('round trips hidden storage through the real adapter in %s', async (location) => {
     const result = await evalInObsidian({
       async callback({ app, folderType, lib: { DataStoreTransport, LocalDataStore, SharedDataStore } }) {
