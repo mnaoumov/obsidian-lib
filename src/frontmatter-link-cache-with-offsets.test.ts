@@ -18,10 +18,10 @@ import {
   toFrontmatterLinkCacheWithOffsets
 } from './frontmatter-link-cache-with-offsets.ts';
 
-function makeFrontmatterLink(original: string, key: string): FrontmatterLinkCache {
+function makeFrontmatterLink(original: string): FrontmatterLinkCache {
   return {
     displayText: original,
-    key,
+    key: 'aliases',
     link: original,
     original
   };
@@ -30,7 +30,7 @@ function makeFrontmatterLink(original: string, key: string): FrontmatterLinkCach
 describe('isFrontmatterLinkCacheWithOffsets', () => {
   it('should return true when startOffset and endOffset are present', () => {
     const reference = strictProxy<FrontmatterLinkCacheWithOffsets>({
-      ...makeFrontmatterLink('link', 'aliases'),
+      ...makeFrontmatterLink('link'),
       endOffset: 4,
       startOffset: 0
     });
@@ -38,7 +38,7 @@ describe('isFrontmatterLinkCacheWithOffsets', () => {
   });
 
   it('should return false for a frontmatter link without offsets', () => {
-    const reference = castTo<Reference>(makeFrontmatterLink('link', 'aliases'));
+    const reference = castTo<Reference>(makeFrontmatterLink('link'));
     expect(isFrontmatterLinkCacheWithOffsets(reference)).toBe(false);
   });
 
@@ -53,7 +53,7 @@ describe('isFrontmatterLinkCacheWithOffsets', () => {
 
   it('should return false when only startOffset is present', () => {
     const reference = castTo<Reference>({
-      ...makeFrontmatterLink('link', 'aliases'),
+      ...makeFrontmatterLink('link'),
       startOffset: 0
     });
     expect(isFrontmatterLinkCacheWithOffsets(reference)).toBe(false);
@@ -63,7 +63,7 @@ describe('isFrontmatterLinkCacheWithOffsets', () => {
 describe('toFrontmatterLinkCacheWithOffsets', () => {
   it('should return the same reference if already has offsets', () => {
     const reference = {
-      ...makeFrontmatterLink('link', 'aliases'),
+      ...makeFrontmatterLink('link'),
       endOffset: 4,
       startOffset: 0
     };
@@ -72,14 +72,14 @@ describe('toFrontmatterLinkCacheWithOffsets', () => {
   });
 
   it('should add offsets spanning the full original string when not present', () => {
-    const reference = makeFrontmatterLink('hello', 'aliases');
+    const reference = makeFrontmatterLink('hello');
     const result = toFrontmatterLinkCacheWithOffsets(reference);
     expect(result.startOffset).toBe(0);
     expect(result.endOffset).toBe(5);
   });
 
   it('should preserve all original properties', () => {
-    const reference = makeFrontmatterLink('link', 'aliases');
+    const reference = makeFrontmatterLink('link');
     const result = toFrontmatterLinkCacheWithOffsets(reference);
     expect(result.key).toBe('aliases');
     expect(result.original).toBe('link');

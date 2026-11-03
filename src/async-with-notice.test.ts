@@ -143,12 +143,12 @@ describe('AsyncWithNotice', () => {
 
   describe('retryWithTimeoutNotice', () => {
     it('should call retryWithTimeout with the provided options', async () => {
-      const operationFunction = vi.fn(async () => {
+      const checkOperationFunction = vi.fn(async () => {
         await noopAsync();
         return true;
       });
       await retryWithTimeoutNotice({
-        operationFunction,
+        operationFunction: checkOperationFunction,
         operationName: 'testOp',
         pluginNoticeComponent: strictProxy<PluginNoticeComponent>({})
       });
@@ -156,25 +156,25 @@ describe('AsyncWithNotice', () => {
     });
 
     it('should forward operationFunction to retryWithTimeout', async () => {
-      const operationFunction = vi.fn(async () => {
+      const checkOperationFunction = vi.fn(async () => {
         await noopAsync();
         return true;
       });
       await retryWithTimeoutNotice({
-        operationFunction,
+        operationFunction: checkOperationFunction,
         pluginNoticeComponent: strictProxy<PluginNoticeComponent>({})
       });
       const callArguments = ensureNonNullable(vi.mocked(retryWithTimeout).mock.calls[0])[0];
-      expect(callArguments.operationFunction).toBe(operationFunction);
+      expect(callArguments.operationFunction).toBe(checkOperationFunction);
     });
 
     it('should forward operationName to retryWithTimeout', async () => {
-      const operationFunction = vi.fn(async () => {
+      const checkOperationFunction = vi.fn(async () => {
         await noopAsync();
         return true;
       });
       await retryWithTimeoutNotice({
-        operationFunction,
+        operationFunction: checkOperationFunction,
         operationName: 'myOperation',
         pluginNoticeComponent: strictProxy<PluginNoticeComponent>({})
       });
@@ -183,13 +183,13 @@ describe('AsyncWithNotice', () => {
     });
 
     it('should forward retryOptions to retryWithTimeout', async () => {
-      const operationFunction = vi.fn(async () => {
+      const checkOperationFunction = vi.fn(async () => {
         await noopAsync();
         return true;
       });
       const retryOptions = { retryDelayInMilliseconds: 200, timeoutInMilliseconds: 3000 };
       await retryWithTimeoutNotice({
-        operationFunction,
+        operationFunction: checkOperationFunction,
         pluginNoticeComponent: strictProxy<PluginNoticeComponent>({}),
         retryOptions
       });
@@ -198,12 +198,12 @@ describe('AsyncWithNotice', () => {
     });
 
     it('should forward stackTrace to retryWithTimeout', async () => {
-      const operationFunction = vi.fn(async () => {
+      const checkOperationFunction = vi.fn(async () => {
         await noopAsync();
         return true;
       });
       await retryWithTimeoutNotice({
-        operationFunction,
+        operationFunction: checkOperationFunction,
         pluginNoticeComponent: strictProxy<PluginNoticeComponent>({}),
         stackTrace: 'custom-stack'
       });

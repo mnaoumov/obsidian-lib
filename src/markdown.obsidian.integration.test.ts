@@ -91,8 +91,6 @@ interface WaitArguments {
   readonly nothingHappensTimeoutInMilliseconds: number;
 }
 
-type WaitInput = GenericObject<WaitArguments>;
-
 /**
  * How long to give a click that must NOT open anything. There is no readiness signal for something that
  * never happens, so a negative assertion is the one case a bounded wait is the only option — sized well
@@ -188,6 +186,7 @@ describe('markdown', () => {
 
   describe('registerLinkHandlers', () => {
     it('should create no leaf, disturb no active leaf and write no file', async () => {
+      type WaitInput = GenericObject<WaitArguments>;
       const result = await evalInObsidian<WaitInput, RegisterLinkHandlersResult>({
         async callback({
           app,

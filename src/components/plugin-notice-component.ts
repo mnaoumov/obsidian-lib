@@ -894,11 +894,7 @@ export class PluginNoticeComponent extends ComponentEx {
     this.installUserClickTracking(builtNotice);
     this.wireOnHide(builtNotice, onHide);
 
-    if (shouldRegisterAsPermanent) {
-      this.setPermanentNotice(builtNotice);
-    } else {
-      this.setPermanentNotice(null);
-    }
+    this.setPermanentNotice(shouldRegisterAsPermanent ? builtNotice : null);
     return { contentEl, isNoticeOwned: true, notice: builtNotice };
   }
 

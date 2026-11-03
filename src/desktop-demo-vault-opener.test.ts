@@ -124,7 +124,7 @@ const PLUGIN_NAME = 'My Plugin';
 const REPO = 'owner/my-plugin';
 const CURRENT_VERSION = '1.0.0';
 
-function buildParams(version = CURRENT_VERSION): OpenDemoVaultParams {
+function buildParams(): OpenDemoVaultParams {
   return {
     app: strictProxy<AppOriginal>({}),
     pluginId: PLUGIN_ID,
@@ -133,7 +133,7 @@ function buildParams(version = CURRENT_VERSION): OpenDemoVaultParams {
       showNotice: mockShowNotice,
       showNoticeAfterDelay: mockShowNoticeAfterDelay
     }),
-    pluginVersion: version
+    pluginVersion: CURRENT_VERSION
   };
 }
 
@@ -149,8 +149,8 @@ const DOWNLOADED_VERSION_REG_EXP = /releases\/download\/(?<version>[^/]+)\//;
 
 // The LOCAL cache name, which the opener derives from the version it resolved rather than from the asset
 // name — the reason dropping the version from the asset name costs the cache nothing.
-function archiveFileName(version: string): string {
-  return `${PLUGIN_ID}-${version}.zip`;
+function archiveFileName(): string {
+  return `${PLUGIN_ID}-${CURRENT_VERSION}.zip`;
 }
 
 // A REAL archive, written by the same `fflate` the release path uses, so the opener runs the real
@@ -317,17 +317,17 @@ describe('openDemoVault', () => {
       throw: false,
       url: `https://github.com/${REPO}/releases/download/${CURRENT_VERSION}/${PLUGIN_ID}-demo-vault.zip`
     });
-    expect(mockWriteFileSync).toHaveBeenCalledWith(expect.stringContaining(archiveFileName(CURRENT_VERSION)), expect.any(Buffer));
+    expect(mockWriteFileSync).toHaveBeenCalledWith(expect.stringContaining(archiveFileName()), expect.any(Buffer));
     expect(mockOriginalFsWriteFileSync).toHaveBeenCalledTimes(1);
     expect(basename(getOpenedVaultDirectory())).toBe(demoVaultFolderName(CURRENT_VERSION));
   });
 
   it('should reuse the cached archive without re-downloading it', async () => {
     // The archive is cached; the extracted-vaults root is not (so cleanup is a no-op).
-    mockExistsSync.mockImplementation((path: string) => path.includes(archiveFileName(CURRENT_VERSION)));
+    mockExistsSync.mockImplementation((path: string) => path.includes(archiveFileName()));
     await openDemoVault(buildParams());
     expect(wasAssetDownloaded()).toBe(false);
-    expect(mockReadFileSync).toHaveBeenCalledWith(expect.stringContaining(archiveFileName(CURRENT_VERSION)));
+    expect(mockReadFileSync).toHaveBeenCalledWith(expect.stringContaining(archiveFileName()));
     expect(mockWriteFileSync).not.toHaveBeenCalled();
     expect(mockOriginalFsWriteFileSync).toHaveBeenCalledTimes(1);
   });

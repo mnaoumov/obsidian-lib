@@ -29,8 +29,6 @@ interface MockApp {
   readonly trigger: (name: string, win: Window) => void;
 }
 
-type WindowEventCallback = (workspaceWindow: WorkspaceWindow, win: Window) => void;
-
 class FakeStyleSheet {
   public text = '';
 
@@ -40,6 +38,7 @@ class FakeStyleSheet {
 }
 
 function createMockApp(popoutWindows: Window[] = []): MockApp {
+  type WindowEventCallback = (workspaceWindow: WorkspaceWindow, win: Window) => void;
   const callbacks = new Map<string, WindowEventCallback[]>();
   const leaves = popoutWindows.map((win) =>
     strictProxy<WorkspaceLeaf>({

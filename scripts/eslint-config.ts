@@ -199,7 +199,15 @@ export const configs: Linter.Config[] = defineEslintConfigs({
       ...getIgnoreConfigs(),
       ...getTsdocsConfigs(context),
       ...getJsdocsConfigs(context),
-      ...getObsidianLintConfigs()
+      ...getObsidianLintConfigs(),
+      {
+        files: context.sourceFiles,
+        // The library builder injects ensureDisposeSymbols into every emitted module, including on older runtimes.
+        rules: {
+          'es-x/no-symbol-asyncdispose': 'off',
+          'es-x/no-symbol-dispose': 'off'
+        }
+      }
     ]);
   }
 });

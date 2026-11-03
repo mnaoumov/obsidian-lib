@@ -285,13 +285,13 @@ describe('deleteIfNotUsed', () => {
     mocks.getAbstractFileOrNull.mockReturnValue(file);
     mocks.getBacklinksForFileSafe.mockResolvedValue({ clear: vi.fn(), count: vi.fn(() => 1), keys: vi.fn((): string[] => ['other1.md']) });
     const showNotice = vi.fn();
-    const rescueStillUsedFile = vi.fn<() => Promise<boolean>>().mockResolvedValue(true);
+    const checkRescueStillUsedFile = vi.fn<() => Promise<boolean>>().mockResolvedValue(true);
 
     const result = await deleteIfNotUsed({
       app,
       pathOrFile: file,
       pluginNoticeComponent: strictProxy<PluginNoticeComponent>({ showNotice }),
-      rescueStillUsedFile
+      rescueStillUsedFile: checkRescueStillUsedFile
     });
     expect(result).toBe(DeleteIfNotUsedResult.Rescued);
 
@@ -304,15 +304,15 @@ describe('deleteIfNotUsed', () => {
     const file = TFile.create__(castTo(app.vault), 'folder/attachment.png').asOriginalType2__();
     mocks.getAbstractFileOrNull.mockReturnValue(file);
     mocks.getBacklinksForFileSafe.mockResolvedValue({ clear: vi.fn(), count: vi.fn(() => 2), keys: vi.fn((): string[] => ['other1.md', 'other2.md']) });
-    const rescueStillUsedFile = vi.fn<() => Promise<boolean>>().mockResolvedValue(true);
+    const checkRescueStillUsedFile = vi.fn<() => Promise<boolean>>().mockResolvedValue(true);
 
     await deleteIfNotUsed({
       app,
       pathOrFile: file,
-      rescueStillUsedFile
+      rescueStillUsedFile: checkRescueStillUsedFile
     });
 
-    expect(rescueStillUsedFile).toHaveBeenCalledWith({ file, survivingNotePaths: ['other1.md', 'other2.md'] });
+    expect(checkRescueStillUsedFile).toHaveBeenCalledWith({ file, survivingNotePaths: ['other1.md', 'other2.md'] });
   });
 
   it('should keep a still-used file in place when rescueStillUsedFile declines', async () => {
@@ -320,13 +320,13 @@ describe('deleteIfNotUsed', () => {
     mocks.getAbstractFileOrNull.mockReturnValue(file);
     mocks.getBacklinksForFileSafe.mockResolvedValue({ clear: vi.fn(), count: vi.fn(() => 1), keys: vi.fn((): string[] => ['other1.md']) });
     const showNotice = vi.fn();
-    const rescueStillUsedFile = vi.fn<() => Promise<boolean>>().mockResolvedValue(false);
+    const checkRescueStillUsedFile = vi.fn<() => Promise<boolean>>().mockResolvedValue(false);
 
     const result = await deleteIfNotUsed({
       app,
       pathOrFile: file,
       pluginNoticeComponent: strictProxy<PluginNoticeComponent>({ showNotice }),
-      rescueStillUsedFile
+      rescueStillUsedFile: checkRescueStillUsedFile
     });
     expect(result).toBe(DeleteIfNotUsedResult.NotDeleted);
 
@@ -339,18 +339,18 @@ describe('deleteIfNotUsed', () => {
     const file = TFile.create__(castTo(app.vault), 'folder/note.md').asOriginalType2__();
     mocks.getAbstractFileOrNull.mockReturnValue(file);
     mocks.getBacklinksForFileSafe.mockResolvedValue({ clear: vi.fn(), count: vi.fn(() => 3), keys: vi.fn((): string[] => ['other1.md']) });
-    const rescueStillUsedFile = vi.fn<() => Promise<boolean>>().mockResolvedValue(true);
+    const checkRescueStillUsedFile = vi.fn<() => Promise<boolean>>().mockResolvedValue(true);
 
     const result = await deleteIfNotUsed({
       app,
       pathOrFile: file,
-      rescueStillUsedFile,
+      rescueStillUsedFile: checkRescueStillUsedFile,
       shouldProtectIfStillUsed: () => false
     });
     expect(result).toBe(DeleteIfNotUsedResult.Deleted);
 
     // The rescue sits behind the protection check, so an unprotected file is deleted as before.
-    expect(rescueStillUsedFile).not.toHaveBeenCalled();
+    expect(checkRescueStillUsedFile).not.toHaveBeenCalled();
     expect(mocks.trashSafe).toHaveBeenCalledWith(app, file);
   });
 

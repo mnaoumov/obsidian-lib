@@ -1034,9 +1034,9 @@ describe('processFile', () => {
 
   function setupRetryToInvokeOperationFunction(): void {
     mockedRetryWithTimeoutNotice.mockImplementation(async (params: RetryWithTimeoutNoticeParams) => {
-      const operationFunction = params.operationFunction;
+      const checkOperationFunction = params.operationFunction;
       const abortSignal = strictProxy<AbortSignal>({ throwIfAborted: vi.fn() });
-      await operationFunction(abortSignal);
+      await checkOperationFunction(abortSignal);
     });
   }
 
@@ -1099,9 +1099,9 @@ describe('processFile', () => {
   it('should complete without writing when the provider returns the old content', async () => {
     let operationResult: boolean | undefined;
     mockedRetryWithTimeoutNotice.mockImplementation(async (params: RetryWithTimeoutNoticeParams) => {
-      const operationFunction = params.operationFunction;
+      const checkOperationFunction = params.operationFunction;
       const abortSignal = strictProxy<AbortSignal>({ throwIfAborted: vi.fn() });
-      operationResult = await operationFunction(abortSignal);
+      operationResult = await checkOperationFunction(abortSignal);
     });
     vi.spyOn(app.vault, 'process');
 
@@ -1115,9 +1115,9 @@ describe('processFile', () => {
   it('should return false when content changed between read and write', async () => {
     let operationResult: boolean | undefined;
     mockedRetryWithTimeoutNotice.mockImplementation(async (params: RetryWithTimeoutNoticeParams) => {
-      const operationFunction = params.operationFunction;
+      const checkOperationFunction = params.operationFunction;
       const abortSignal = strictProxy<AbortSignal>({ throwIfAborted: vi.fn() });
-      operationResult = await operationFunction(abortSignal);
+      operationResult = await checkOperationFunction(abortSignal);
     });
     // Vault.read returns 'old content' but vault.process sees 'changed content'
     vi.spyOn(app.vault, 'process').mockImplementation(async (_file, $function) => {
@@ -1148,9 +1148,9 @@ describe('processFile', () => {
   it('should return false when newContentProvider returns null', async () => {
     let operationResult: boolean | undefined;
     mockedRetryWithTimeoutNotice.mockImplementation(async (params: RetryWithTimeoutNoticeParams) => {
-      const operationFunction = params.operationFunction;
+      const checkOperationFunction = params.operationFunction;
       const abortSignal = strictProxy<AbortSignal>({ throwIfAborted: vi.fn() });
-      operationResult = await operationFunction(abortSignal);
+      operationResult = await checkOperationFunction(abortSignal);
     });
 
     await processFile({ app, newContentProvider: () => null, pathOrFile: 'note.md', pluginNoticeComponent: null, resourceLockComponent: defaultResourceLockComponent });

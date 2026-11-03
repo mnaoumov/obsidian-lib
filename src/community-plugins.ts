@@ -428,7 +428,7 @@ export async function installCommunityPlugin(params: InstallCommunityPluginParam
 export async function installConfigureEnableCommunityPlugin(params: InstallConfigureEnableCommunityPluginParams): Promise<void> {
   const { app, settings } = params;
   await installCommunityPlugin(params);
-  const didSettingsChange = settings ? await configureCommunityPlugin({ ...params, settings }) === ConfigureCommunityPluginResult.Success : false;
+  const didSettingsChange = !!settings && await configureCommunityPlugin({ ...params, settings }) === ConfigureCommunityPluginResult.Success;
   const pluginId = await resolveCommunityPluginId(params);
   if (!app.plugins.enabledPlugins.has(pluginId)) {
     await enableCommunityPlugin(params);

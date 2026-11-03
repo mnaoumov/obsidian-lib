@@ -175,10 +175,10 @@ describe('VaultTransaction', () => {
       await app.vault.create('a.md', 'A');
       const vaultTransaction = new VaultTransaction({ app });
       await vaultTransaction.trash('a.md');
-      const trashSystemSpy = vi.spyOn(app.vault.adapter, 'trashSystem');
+      const checkTrashSystemSpy = vi.spyOn(app.vault.adapter, 'trashSystem');
 
       await vaultTransaction.commit();
-      expect(trashSystemSpy).toHaveBeenCalledWith(RETIRED_STAGING_FOLDER_PATH);
+      expect(checkTrashSystemSpy).toHaveBeenCalledWith(RETIRED_STAGING_FOLDER_PATH);
       expect(await exists(RETIRED_STAGING_FOLDER_PATH)).toBe(false);
     });
 

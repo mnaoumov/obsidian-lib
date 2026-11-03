@@ -50,12 +50,6 @@ interface OffsetRangeFromEditorResult {
 }
 
 /**
- * Input of the heading-skipping test.
- */
-// A type alias rather than an interface, because the harness input must satisfy an index-signature constraint.
-type SkipLinksInHeadingsInput = Readonly<Record<'shouldSkipReferencesInHeadings', boolean>>;
-
-/**
  * Result of the heading-skipping test.
  */
 interface SkipLinksInHeadingsResult {
@@ -138,6 +132,8 @@ describe('angle-bracket heading destinations', () => {
  */
 describe('links inside headings', () => {
   async function convertNote(shouldSkipReferencesInHeadings: boolean): Promise<SkipLinksInHeadingsResult> {
+    // A type alias rather than an interface, because the harness input must satisfy an index-signature constraint.
+    type SkipLinksInHeadingsInput = Readonly<Record<'shouldSkipReferencesInHeadings', boolean>>;
     return await evalInObsidian<SkipLinksInHeadingsInput, SkipLinksInHeadingsResult>({
       async callback({ app, lib: { LinkStyle, updateReferencesInFile, waitUntil }, obsidianModule, shouldSkipReferencesInHeadings: shouldSkip }) {
         const { resolveSubpath } = obsidianModule;

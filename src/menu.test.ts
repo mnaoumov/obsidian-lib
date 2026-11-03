@@ -17,8 +17,8 @@ const OPTIONS = [
   { icon: 'align-right', title: 'Right', value: 'right' }
 ] as const;
 
-function click(menu: Menu, index: number): void {
-  const onClick = menu.menuItems__[index]?.onClick__;
+function click(menu: Menu): void {
+  const onClick = menu.menuItems__[2]?.onClick__;
   assertNonNullable(onClick);
   onClick(new MouseEvent('click'));
 }
@@ -63,7 +63,7 @@ describe('addSingleChoiceMenuItems', () => {
       options: OPTIONS
     });
 
-    click(menu, 2);
+    click(menu);
 
     expect(menu.menuItems__.map((item) => item.checked)).toEqual([false, false, true]);
     expect(onChange).toHaveBeenCalledExactlyOnceWith('right');
@@ -79,7 +79,7 @@ describe('addSingleChoiceMenuItems', () => {
       options: OPTIONS
     });
 
-    click(menu, 2);
+    click(menu);
 
     expect(menu.menuItems__[0]?.checked).toBe(true);
   });

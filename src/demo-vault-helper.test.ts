@@ -158,7 +158,7 @@ function createApp(options: CreateAppOptions = {}): AppMock {
     ...options.isFolderNotesEnabled ? [FOLDER_NOTES_PLUGIN_ID] : []
   ]);
   const installPlugin = vi.fn<App['plugins']['installPlugin']>().mockResolvedValue();
-  const enablePluginAndSave = vi.fn<App['plugins']['enablePluginAndSave']>().mockImplementation((id: string) => {
+  const checkEnablePluginAndSave = vi.fn<App['plugins']['enablePluginAndSave']>().mockImplementation((id: string) => {
     enabledPlugins.add(id);
     return Promise.resolve(true);
   });
@@ -169,7 +169,7 @@ function createApp(options: CreateAppOptions = {}): AppMock {
 
   const helperSettingsJson = options.helperSettingsJson === undefined ? HELPER_SETTINGS_JSON : options.helperSettingsJson;
 
-  const adapterExists = vi.fn<DataAdapter['exists']>().mockImplementation((path: string) => {
+  const checkAdapterExists = vi.fn<DataAdapter['exists']>().mockImplementation((path: string) => {
     switch (path) {
       case FOLDER_NOTES_DATA_PATH: {
         return Promise.resolve(options.existingFolderNotesData !== undefined);
@@ -220,7 +220,7 @@ function createApp(options: CreateAppOptions = {}): AppMock {
   const plugins = castTo<App['plugins']['plugins']>({});
   Object.setPrototypeOf(plugins, null);
 
-  const adapterMembers: AdapterMembers = { exists: adapterExists, mkdir: adapterMkdir, read: adapterRead, write: adapterWrite };
+  const adapterMembers: AdapterMembers = { exists: checkAdapterExists, mkdir: adapterMkdir, read: adapterRead, write: adapterWrite };
 
   const settingClose = vi.fn<App['setting']['close']>();
 
@@ -228,7 +228,7 @@ function createApp(options: CreateAppOptions = {}): AppMock {
     plugins: strictProxy<App['plugins']>({
       disablePluginAndSave,
       enabledPlugins,
-      enablePluginAndSave,
+      enablePluginAndSave: checkEnablePluginAndSave,
       installPlugin,
       manifests,
       plugins
@@ -246,7 +246,7 @@ function createApp(options: CreateAppOptions = {}): AppMock {
     adapterWrite,
     app,
     disablePluginAndSave,
-    enablePluginAndSave,
+    enablePluginAndSave: checkEnablePluginAndSave,
     installPlugin,
     settingClose
   };

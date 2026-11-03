@@ -27,8 +27,8 @@ function createFinder(params: Partial<BrokenLinkCandidateFinderConstructorParams
   });
 }
 
-function find(finder: BrokenLinkCandidateFinder, missingPath: string, otherMissingPaths: string[] = []): BrokenLinkCandidate[] {
-  return finder.findAll([missingPath, ...otherMissingPaths]).get(missingPath) ?? [];
+function find(finder: BrokenLinkCandidateFinder, missingPath: string): BrokenLinkCandidate[] {
+  return finder.findAll([missingPath]).get(missingPath) ?? [];
 }
 
 function kinds(candidate: BrokenLinkCandidate | undefined): BrokenLinkEvidenceKind[] {

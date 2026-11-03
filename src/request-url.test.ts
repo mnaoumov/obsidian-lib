@@ -56,12 +56,12 @@ function createResponse(status: number, text: string, headers: Record<string, st
   };
 }
 
-function getRequestUrlParameter(callIndex = 0): RequestUrlParam {
-  return mockRequestUrl.mock.calls[callIndex]?.[0] as RequestUrlParam;
+function getRequestUrlParameter(): RequestUrlParam {
+  return mockRequestUrl.mock.calls[0]?.[0] as RequestUrlParam;
 }
 
-function getSentText(callIndex = 0): string {
-  const body = getRequestUrlParameter(callIndex).body;
+function getSentText(): string {
+  const body = getRequestUrlParameter().body;
   return typeof body === 'string' ? body : new TextDecoder().decode(body);
 }
 

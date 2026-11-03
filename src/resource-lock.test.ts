@@ -1696,8 +1696,8 @@ describe('rename re-keying', () => {
     return file;
   }
 
-  function folderAt(path: string): TFolderOriginal {
-    const folder = app.vault.getFolderByPath(path);
+  function folderAt(): TFolderOriginal {
+    const folder = app.vault.getFolderByPath('folder');
     assertNonNullable(folder);
     return folder;
   }
@@ -1706,7 +1706,7 @@ describe('rename re-keying', () => {
     const component = new ResourceLockComponent(app, 'test-plugin');
     using _lock = component.lockForPath({ mode: 'subtree', operationName: 'Test operation', pathOrFile: 'folder' });
 
-    await app.vault.rename(folderAt('folder'), 'renamed');
+    await app.vault.rename(folderAt(), 'renamed');
 
     expect(component.isLockedForPath('renamed')).toBe(true);
     expect(component.isLockedByAncestorForPath('renamed/a.md')).toBe(true);
@@ -1730,7 +1730,7 @@ describe('rename re-keying', () => {
     const component = new ResourceLockComponent(app, 'test-plugin');
     using _lock = component.lockForPath({ operationName: 'Test operation', pathOrFile: 'folder/sub/b.md' });
 
-    await app.vault.rename(folderAt('folder'), 'renamed');
+    await app.vault.rename(folderAt(), 'renamed');
 
     expect(component.isLockedForPath('renamed/sub/b.md')).toBe(true);
     expect(component.isLockedForPath('folder/sub/b.md')).toBe(false);
@@ -1740,7 +1740,7 @@ describe('rename re-keying', () => {
     const component = new ResourceLockComponent(app, 'test-plugin');
     const disposable = component.lockForPath({ mode: 'subtree', operationName: 'Test operation', pathOrFile: 'folder' });
 
-    await app.vault.rename(folderAt('folder'), 'renamed');
+    await app.vault.rename(folderAt(), 'renamed');
     // The `Disposable` captured the pre-rename path, so this is where a re-keyed lock leaks if release is path-keyed.
     expect(component.isLockedForPath('renamed')).toBe(true);
     dispose(disposable);
@@ -1754,7 +1754,7 @@ describe('rename re-keying', () => {
     const component = new ResourceLockComponent(app, 'test-plugin');
     component.lockForPath({ abortController, mode: 'subtree', operationName: 'Test operation', pathOrFile: 'folder', shouldReleaseOnAbort: true });
 
-    await app.vault.rename(folderAt('folder'), 'renamed');
+    await app.vault.rename(folderAt(), 'renamed');
     expect(component.isLockedForPath('renamed')).toBe(true);
     abortController.abort();
 
@@ -1768,7 +1768,7 @@ describe('rename re-keying', () => {
     using _bypass = component.bypassBlockedMutations(['folder']);
 
     // The owner renames the folder it locked — the rename itself passes the blocker via the bypass.
-    await app.vault.rename(folderAt('folder'), 'renamed');
+    await app.vault.rename(folderAt(), 'renamed');
 
     // The moved subtree is still the owner's own, so its further mutations are neither blocked nor read as an intruder.
     expect(component.isMutationBlockedByAncestorForPath('renamed/a.md')).toBe(true);
@@ -1780,7 +1780,7 @@ describe('rename re-keying', () => {
     const component = new ResourceLockComponent(app, 'test-plugin');
     using _lock = component.lockForPath({ mode: 'subtree', operationName: 'Test operation', pathOrFile: 'folder', shouldBlockMutations: true });
     const bypass = component.bypassBlockedMutations(['folder']);
-    await app.vault.rename(folderAt('folder'), 'renamed');
+    await app.vault.rename(folderAt(), 'renamed');
     dispose(bypass);
 
     const file = fileAt('renamed/a.md');
@@ -1804,7 +1804,7 @@ describe('rename re-keying', () => {
     const folderLock = component.lockForPath({ mode: 'subtree', operationName: 'Test operation', pathOrFile: 'folder' });
     const destinationLock = component.lockForPath({ operationName: 'Test operation', pathOrFile: 'renamed' });
 
-    await app.vault.rename(folderAt('folder'), 'renamed');
+    await app.vault.rename(folderAt(), 'renamed');
 
     // Both entry lists now sit at `renamed`: the moved subtree lock covers descendants, the destination's own lock does not.
     expect(component.isLockedByAncestorForPath('renamed/a.md')).toBe(true);
@@ -1848,7 +1848,7 @@ describe('rename re-keying', () => {
 
     const component = new ResourceLockComponent(app, 'test-plugin');
     component.lockForPath({ mode: 'subtree', operationName: 'Test operation', pathOrFile: 'folder' });
-    await app.vault.rename(folderAt('folder'), 'renamed');
+    await app.vault.rename(folderAt(), 'renamed');
     expect(component.isLockedForPath('renamed')).toBe(true);
 
     dispatchContextMenu(iconEl);
@@ -1869,7 +1869,7 @@ describe('rename re-keying', () => {
     using _bypass = component.bypassBlockedMutations(['outside.md']);
 
     // An unrelated folder moves; the bypass still covers the path it was opened for.
-    await app.vault.rename(folderAt('folder'), 'renamed');
+    await app.vault.rename(folderAt(), 'renamed');
 
     await expect(app.vault.modify(fileAt('outside.md'), 'new content')).resolves.toBeUndefined();
   });

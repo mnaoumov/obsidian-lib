@@ -163,13 +163,13 @@ function getTestFile(path: string): TFile {
   return file;
 }
 
-function link(text: string, start = 0): ReferenceCache {
+function link(text: string): ReferenceCache {
   return {
     link: text,
     original: `[[${text}]]`,
     position: {
-      end: { col: start + text.length + 4, line: 0, offset: start + text.length + 4 },
-      start: { col: start, line: 0, offset: start }
+      end: { col: 0 + text.length + 4, line: 0, offset: 0 + text.length + 4 },
+      start: { col: 0, line: 0, offset: 0 }
     }
   };
 }
