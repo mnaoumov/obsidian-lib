@@ -22,6 +22,12 @@ import {
 
 import { DOCS_SITE_CONFIG } from './docs-site-config.ts';
 
+/**
+ * Each case builds a ts-morph project and renders API tables: ~0.7 s on an idle machine, but 5.4-7.4 s with
+ * five bulk items sharing two processors, which overran the 5 s default and failed the gate.
+ */
+const RENDER_TIMEOUT_IN_MILLISECONDS = 60_000;
+
 describe('API documentation links', () => {
   it.each(['OpenBugReportCommandHandler', 'OpenFeatureRequestCommandHandler'])('links external types and inherited members on %s', (name) => {
     configureApiDocs({
@@ -73,5 +79,5 @@ describe('API documentation links', () => {
       expect(content).toContain(`href: "/obsidian-lib/api/command-handlers/CommandHandler/${member}/"`);
     }
     expect(content).toContain('name: "app", href: "./app/"');
-  });
+  }, RENDER_TIMEOUT_IN_MILLISECONDS);
 });
