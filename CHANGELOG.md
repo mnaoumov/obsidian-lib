@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## 10.9.0
+
+- test(docs): give the API link render cases a load-proof timeout
+- fix: re #1
+- test(docs): render link tables without filesystem writes
+- docs: restore external type and inherited member links
+- feat: add disposable read-only virtual files
+- feat: add window helpers with automatic cleanup
+- feat: add Bases formula function helpers
+
 ## 10.8.0
 
 1. Keep a shared data store entirely local with `isSyncEnabled: false`, then enable synchronization without resetting identity, causal history or deletions.
