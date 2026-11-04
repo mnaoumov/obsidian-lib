@@ -43,7 +43,7 @@ await local.commit({
 
 ## Shared authoritative state
 
-Every writer owns its own folder under `Plugin data/<plugin id>/<store id>/devices/<device id>/`. Device identity lives exclusively in IndexedDB, so copying plugin settings or synchronizing a vault does not clone a writer. Calls from several library copies or windows serialize through a Web Lock named after the dedicated local database. Do not reuse that local database for another shared store.
+Every writer owns its own folder under `Plugin data/<plugin id>/<store id>/devices/<device id>/`. Device identity lives exclusively in IndexedDB, so copying plugin settings or synchronizing a vault does not clone a writer. Only a folder under `devices/` whose name is a valid device id (letters, digits, `_` and `-`) counts as a device; anything else there, such as the `.DS_Store` file macOS Finder writes, is ignored, so it never holds back compaction. Calls from several library copies or windows serialize through a Web Lock named after the dedicated local database. Do not reuse that local database for another shared store.
 
 ```typescript
 import { LocalDataStore } from '@mnaoumov/obsidian-lib/data-stores/local-data-store';

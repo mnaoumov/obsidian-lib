@@ -30,6 +30,7 @@ const OWNER_PATH_INDEX = -2;
 
 const VECTOR_ENTRY_LENGTH = 2;
 const DEVICE_PATH_PARTS = 2;
+const DEVICE_ID_REG_EXP = /^[\w-]+$/;
 const RECORD_PREFIX = 'shared-record-v1:';
 
 /**
@@ -159,7 +160,7 @@ export class SharedDataStore {
    */
   public static async open(params: SharedDataStoreOpenParams): Promise<SharedDataStore> {
     const device = await params.local.getOrCreate('shared-device-v1', window.crypto.randomUUID());
-    if (typeof device !== 'string' || !/^[\w-]+$/.test(device)) {
+    if (typeof device !== 'string' || !DEVICE_ID_REG_EXP.test(device)) {
       throw new Error('Invalid local data-store identity');
     }
     const store = new SharedDataStore(params, device);
@@ -319,8 +320,21 @@ export class SharedDataStore {
 
   private async acknowledgements(files: readonly string[]): Promise<Map<string, number>[]> {
     const acknowledgements = [new Map(this.vector)];
-    const deviceFiles = files.filter((path) => path.startsWith(`${this.transport.root}/devices/`));
-    const devices = new Set(deviceFiles.map((path) => path.slice(this.transport.root.length + 1).split('/', DEVICE_PATH_PARTS)[1]).filter((device) => device !== undefined));
+    const devicesPrefix = `${this.transport.root}/devices/`;
+    const devices = new Set<string>();
+    for (const path of files) {
+      if (!path.startsWith(devicesPrefix)) {
+        continue;
+      }
+      // Only a folder under `devices/` is a device; a stray file there (such as macOS `.DS_Store`) or a folder whose
+      // name is not a valid device id is not one, and counting it would block every trim behind an acknowledgement
+      // that never arrives.
+      const parts = path.slice(devicesPrefix.length).split('/');
+      const device = parts[0];
+      if (parts.length >= DEVICE_PATH_PARTS && device !== undefined && DEVICE_ID_REG_EXP.test(device)) {
+        devices.add(device);
+      }
+    }
     for (const device of devices) {
       if (device === this.device) {
         continue;
