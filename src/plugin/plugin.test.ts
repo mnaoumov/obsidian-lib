@@ -4,6 +4,7 @@ import type {
   PluginManifest
 } from 'obsidian';
 
+import { setTimeoutAsync } from '@mnaoumov/typescript-lib/async';
 import { noopAsync } from '@mnaoumov/typescript-lib/function';
 import { castTo } from '@mnaoumov/typescript-lib/object-utils';
 import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
@@ -34,6 +35,7 @@ import { PluginNoticeComponent } from '../components/plugin-notice-component.ts'
 import { PluginSettingsComponentBase } from '../components/plugin-settings-component.ts';
 import { PluginDataHandler } from '../data-handler.ts';
 import { initI18N } from '../i18n/i18n.ts';
+import { didPluginAsyncCleanupsSettle } from './plugin-async-cleanup.ts';
 import { PluginEventSourceImpl } from './plugin-event-source.ts';
 import {
   PLUGIN_LOADED_EVENT_NAME,
@@ -185,6 +187,11 @@ vi.mock('@mnaoumov/typescript-lib/async', async (importOriginal) => {
 interface AppSettingHolder {
   // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Tests install the settings manager on the app mock.
   setting: unknown;
+}
+
+interface Deferred {
+  readonly promise: Promise<void>;
+  readonly resolve: () => void;
 }
 
 interface PublishedPluginApiParams {
@@ -932,4 +939,107 @@ describe('the dependency gate', () => {
     expect(gatedAddCount).toBe(2);
     expect(gatedRemoveCount).toBe(2);
   });
+
+  it('should wait for the cleanups of the previous surface before reopening the gate', async () => {
+    const deferred = createDeferred();
+    const cleanup = vi.fn(() => deferred.promise);
+
+    class CleanupDependentPlugin extends DependentPlugin {
+      protected override onloadImpl(): void {
+        super.onloadImpl();
+        this.registerAsyncCleanup(cleanup);
+      }
+    }
+
+    const plugin = new CleanupDependentPlugin(app, manifest);
+    await plugin.onload();
+
+    apiRefValue = null;
+    await fireApiRefChange();
+    expect(cleanup).toHaveBeenCalledOnce();
+
+    apiRefValue = {};
+    const reopenPromise = fireApiRefChange();
+    await setTimeoutAsync(0);
+    expect(plugin.featureComponent._loaded).toBe(false);
+
+    deferred.resolve();
+    await reopenPromise;
+    expect(plugin.featureComponent._loaded).toBe(true);
+  });
 });
+
+describe('async cleanup', () => {
+  const cleanupManifest: PluginManifest = {
+    ...manifest,
+    id: 'cleanup-plugin'
+  };
+
+  class CleanupPlugin extends TestPlugin {
+    public readonly cleanup = vi.fn<() => Promise<void>>(noopAsync);
+    public readonly featureComponent = new ComponentEx();
+
+    protected override onloadImpl(): void {
+      this.addChild(this.featureComponent);
+      this.registerAsyncCleanup(this.cleanup);
+    }
+  }
+
+  class ShortTimeoutCleanupPlugin extends CleanupPlugin {
+    protected override getAsyncCleanupTimeoutInMilliseconds(): number {
+      return 10;
+    }
+  }
+
+  it('should start the cleanup on unload and make the next instance wait for it', async () => {
+    const deferred = createDeferred();
+    const first = new CleanupPlugin(app, cleanupManifest);
+    first.cleanup.mockReturnValue(deferred.promise);
+    first.load();
+    await vi.waitFor(() => {
+      expect(first.featureComponent._loaded).toBe(true);
+    });
+    expect(first.cleanup).not.toHaveBeenCalled();
+
+    first.unload();
+    expect(first.cleanup).toHaveBeenCalledOnce();
+
+    const second = new CleanupPlugin(app, cleanupManifest);
+    const loadPromise = second.onload();
+    await setTimeoutAsync(0);
+    expect(second.featureComponent._loaded).toBe(false);
+
+    deferred.resolve();
+    await loadPromise;
+    expect(second.featureComponent._loaded).toBe(true);
+  });
+
+  it('should load anyway, with a warning, when the previous cleanup outlives the timeout', async () => {
+    const deferred = createDeferred();
+    const warnSpy = vi.spyOn(console, 'warn');
+    const first = new CleanupPlugin(app, cleanupManifest);
+    first.cleanup.mockReturnValue(deferred.promise);
+    first.load();
+    await vi.waitFor(() => {
+      expect(first.featureComponent._loaded).toBe(true);
+    });
+    first.unload();
+
+    const second = new ShortTimeoutCleanupPlugin(app, cleanupManifest);
+    await second.onload();
+
+    expect(second.featureComponent._loaded).toBe(true);
+    expect(warnSpy).toHaveBeenCalledWith('Plugin cleanup-plugin: the previous instance\'s async cleanups did not finish in 10 ms; loading anyway.');
+
+    deferred.resolve();
+    await expect(didPluginAsyncCleanupsSettle({ pluginId: 'cleanup-plugin' })).resolves.toBe(true);
+  });
+});
+
+function createDeferred(): Deferred {
+  let resolve!: () => void;
+  const promise = new Promise<void>((innerResolve) => {
+    resolve = innerResolve;
+  });
+  return { promise, resolve };
+}

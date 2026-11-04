@@ -50,6 +50,12 @@ import { initI18N } from '../i18n/i18n.ts';
 import { defaultTranslationsMap } from '../i18n/locales/translations-map.ts';
 import { ResourceLockComponent } from '../resource-lock.ts';
 import { publishPluginApi } from './plugin-api.ts';
+import {
+  DEFAULT_PLUGIN_ASYNC_CLEANUP_TIMEOUT_IN_MILLISECONDS,
+  didPluginAsyncCleanupsSettle,
+  hasPendingPluginAsyncCleanups,
+  registerPluginAsyncCleanup
+} from './plugin-async-cleanup.ts';
 import { PluginEventSourceImpl } from './plugin-event-source.ts';
 import {
   PLUGIN_LOADED_EVENT_NAME,
@@ -328,6 +334,13 @@ export abstract class PluginBase extends mixinAsyncEvents<PluginEventMap>()(Plug
    */
   public override async onload(): Promise<void> {
     try {
+      // Before anything else: the previous instance of this plugin may still be closing what this one is about to
+      // open, because Obsidian runs `onunload` synchronously and awaits nothing it started. Awaited only when some are
+      // pending, so a plugin with none attaches its wrapper below without yielding first.
+      if (hasPendingPluginAsyncCleanups(this.manifest.id)) {
+        await this.waitForPreviousAsyncCleanups();
+      }
+
       // The wrapper is attached and loaded before anything is wired up, so every `addChild` below
       // loads its child straight away rather than queuing it.
       // That is what lets a command handler register its menu events from `onRegistered`, which
@@ -478,6 +491,17 @@ export abstract class PluginBase extends mixinAsyncEvents<PluginEventMap>()(Plug
   }
 
   /**
+   * Provides how long a new instance waits for the previous instance's async cleanups before loading anyway.
+   *
+   * Override in subclass to change it. The default is 10 seconds.
+   *
+   * @returns The timeout in milliseconds.
+   */
+  protected getAsyncCleanupTimeoutInMilliseconds(): number {
+    return DEFAULT_PLUGIN_ASYNC_CLEANUP_TIMEOUT_IN_MILLISECONDS;
+  }
+
+  /**
    * Provides the icon shown on the plugin's parent entry in `Notebook Navigator`'s context menus.
    *
    * Override in subclass to brand that entry; the default leaves it without an icon. The entry is
@@ -568,6 +592,27 @@ export abstract class PluginBase extends mixinAsyncEvents<PluginEventMap>()(Plug
   }
 
   /**
+   * Registers an async cleanup that the next instance of this plugin awaits before it starts.
+   *
+   * Use it for teardown that cannot finish synchronously and must finish before the resource is opened again, such
+   * as closing an IndexedDB connection. Obsidian's `onunload` is synchronous and awaits nothing, so without this a
+   * reload starts the new instance while the old one still holds the database.
+   *
+   * Scoped like {@link addChild}: the cleanup starts when the plugin's feature surface unloads, which is on plugin
+   * unload and whenever the gate closes. The next load of the plugin, and the next opening of the gate, await it,
+   * bounded by {@link getAsyncCleanupTimeoutInMilliseconds}. A cleanup that throws is printed, never rethrown.
+   *
+   * @param cleanup - The cleanup to run.
+   */
+  protected registerAsyncCleanup(cleanup: () => Promisable<void>): void {
+    registerPluginAsyncCleanup({
+      cleanup,
+      component: this.gatedWrapperComponent,
+      pluginId: this.manifest.id
+    });
+  }
+
+  /**
    * Stores a universal component, unloading whichever component the key held before.
    *
    * Keyed by name rather than handed the previous value because `keyof this` excludes private
@@ -647,6 +692,12 @@ export abstract class PluginBase extends mixinAsyncEvents<PluginEventMap>()(Plug
     this.universalWrapperComponent.addChild(gatedWrapperComponent);
     gatedWrapperComponent.load();
 
+    // A surface reopened after the gate closed waits for the cleanups the previous surface started. Only when some
+    // are pending, so a first load, where `onload` already waited, still runs `onloadImpl` synchronously.
+    if (hasPendingPluginAsyncCleanups(this.manifest.id)) {
+      await this.waitForPreviousAsyncCleanups();
+    }
+
     await this.onloadImpl();
     await gatedWrapperComponent.loadWithPromises();
 
@@ -685,6 +736,15 @@ export abstract class PluginBase extends mixinAsyncEvents<PluginEventMap>()(Plug
     this.universalWrapperComponent.removeChild(gatedWrapperComponent);
 
     this.broadcastUnloaded();
+  }
+
+  private async waitForPreviousAsyncCleanups(): Promise<void> {
+    const timeoutInMilliseconds = this.getAsyncCleanupTimeoutInMilliseconds();
+    if (await didPluginAsyncCleanupsSettle({ pluginId: this.manifest.id, timeoutInMilliseconds })) {
+      return;
+    }
+
+    console.warn(`Plugin ${this.manifest.id}: the previous instance's async cleanups did not finish in ${String(timeoutInMilliseconds)} ms; loading anyway.`);
   }
 }
 
