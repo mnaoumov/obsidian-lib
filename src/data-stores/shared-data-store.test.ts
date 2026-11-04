@@ -438,6 +438,19 @@ describe('SharedDataStore', () => {
     expect([...files.keys()].some((path) => path.includes('/log-'))).toBe(true);
   });
 
+  it('ignores stray files and invalid device folders under devices when trimming', async () => {
+    const files = new Map<string, string>();
+    const writer = await openDevice(files);
+    files.set('Plugin data/test/shared/devices/.DS_Store', 'finder metadata');
+    files.set('Plugin data/test/shared/devices/.hidden/have.md', 'partial');
+    files.set('Plugin data/test/shared/devices/bad.name/have.md', 'partial');
+    await writer.set('key', 'value');
+    await writer.compact();
+    expect([...files.keys()].some((path) => path.includes('/log-'))).toBe(false);
+    expect([...files.keys()].filter((path) => path.endsWith('-manifest.md'))).toHaveLength(1);
+    expect(files.has('Plugin data/test/shared/devices/.DS_Store')).toBe(true);
+  });
+
   it('preserves tombstones through compaction and delivery of an old snapshot', async () => {
     const files = new Map<string, string>();
     const first = await openDevice(files);
