@@ -79,6 +79,31 @@ The most important methods to override:
 
 Three are public Obsidian methods that `PluginBase` already implements, so you rarely override them: `onload()`, `onExternalSettingsChange()` and `onunload()`. Settings are loaded and saved by the plugin's settings component, whose `onLoadSettings()` and `onSaveSettings()` hooks you override there; see the `PluginSettingsComponentBase` section below.
 
+### Async cleanup across a reload
+
+Obsidian's `onunload` is synchronous, and nothing awaits the work it starts. When a plugin is disabled and enabled again, reloaded, or updated while enabled, Obsidian unloads the old instance and immediately loads the new one. So teardown that finishes asynchronously, such as closing an IndexedDB connection, may still be running when the new instance opens the same database.
+
+`registerAsyncCleanup()` solves that inside the ordinary lifecycle. The cleanup starts when the plugin's feature surface unloads. The next instance of the same plugin waits for it before it loads, and so does the feature surface when the dependency gate opens again. The wait is bounded by `getAsyncCleanupTimeoutInMilliseconds()`, 10 seconds by default; after that the plugin loads anyway and logs a warning. A cleanup that throws is printed and never stops the next load.
+
+<!-- snippet-check: context declare function openDatabase(): Promise<IDBDatabase>; -->
+<!-- snippet-check: context declare function waitForPendingTransactions(database: IDBDatabase): Promise<void>; -->
+
+```ts
+import { PluginBase } from '@mnaoumov/obsidian-lib/plugin/plugin';
+
+export class FooPlugin extends PluginBase {
+  protected override async onloadImpl(): Promise<void> {
+    const database = await openDatabase();
+    this.registerAsyncCleanup(async () => {
+      await waitForPendingTransactions(database);
+      database.close();
+    });
+  }
+}
+```
+
+The pending cleanups are kept in the realm-wide shared state under the plugin id, so the wait works even when the old and new instances bundle different versions of this library. Outside `PluginBase`, `registerPluginAsyncCleanup({ component, pluginId, cleanup })` and `didPluginAsyncCleanupsSettle({ pluginId })` from `@mnaoumov/obsidian-lib/plugin/plugin-async-cleanup` are the two halves. An app restart needs neither, since the whole renderer goes away.
+
 ## [PluginNoticeComponent](https://github.com/mnaoumov/obsidian-lib/blob/main/src/components/plugin-notice-component.ts)
 
 `this.pluginNoticeComponent` shows notices prefixed with the plugin name and tied to the plugin lifecycle. Prefer it over constructing an Obsidian `Notice` directly. It is a `protected` member of `PluginBase`, so reach it from inside your plugin class, or pass it to the components that need it.
