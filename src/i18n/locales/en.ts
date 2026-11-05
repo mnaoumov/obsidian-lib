@@ -33,6 +33,18 @@ export const en = {
     callout: {
       loadContent: 'Load content for callout'
     },
+    codeBlockBuilder: {
+      copied: 'Code block copied to the clipboard.',
+      copy: 'Copy the code block',
+      copyFailed: 'Failed to copy the code block to the clipboard.',
+      insert: 'Insert into the note',
+      insertUnavailable: 'Open a note in an editor to insert the code block.',
+      invalidValue: 'The value does not match the expected pattern.',
+      output: 'Output',
+      reset: 'Reset to {{value}}',
+      rootFolder: '(vault root)',
+      title: 'Code block builder'
+    },
     dataview: {
       itemsPerPage: 'Items per page:',
       jumpToPage: 'Jump to page:',
