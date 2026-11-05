@@ -1,6 +1,6 @@
 ---
 title: Modals
-description: Promise-returning `alert`, `confirm`, `prompt`, and item-selection modals for your plugin.
+description: Promise-returning `alert`, `confirm`, `prompt`, item-selection and code block builder modals for your plugin.
 ---
 
 `@mnaoumov/obsidian-lib` provides some modals that you can use in your plugin.
@@ -90,3 +90,35 @@ const chosen = await selectOption({
   title: 'Sample select option title'
 });
 ```
+
+## Code Block Builder
+
+<!-- cspell:words altarok -->
+
+`showCodeBlockBuilder` builds a plugin's code block from a declarative list of fields: toggles, color pickers, text with an optional validation pattern, sliders, single and multiple-choice dropdowns, cascading dropdowns, vault folders, and collapsible groups of fields. A field whose value differs from its default writes one `key: value` line into the block, and a required field always does. The modal shows the block live, lets your plugin draw a preview of it, and offers Copy and Insert into the note. It resolves with the inserted block, or `null` if the user closed it without inserting.
+
+```ts
+import { showCodeBlockBuilder } from '@mnaoumov/obsidian-lib/modals/code-block-builder';
+
+const codeBlock = await showCodeBlockBuilder({
+  app,
+  fields: [
+    { defaultValue: 'chart', isRequired: true, key: 'type', name: 'Type', type: 'text' },
+    { defaultValue: false, key: 'grid', name: 'Show grid', type: 'boolean' },
+    {
+      fields: [
+        { defaultValue: 400, key: 'width', max: 1000, min: 100, name: 'Width', step: 50, type: 'slider' },
+        { defaultValue: 'blue', key: 'palette', name: 'Palette', options: ['blue', 'green'], type: 'dropdown' }
+      ],
+      name: 'Layout',
+      type: 'group'
+    }
+  ],
+  language: 'my-chart',
+  onUpdatePreview({ codeBlock, previewEl }): void {
+    previewEl.setText(codeBlock);
+  }
+});
+```
+
+The fence is one backtick longer than the longest backtick run in the values, so a value holding a fence never ends the block early. The modal was adapted, with credit, from the code block creator in [altarok's `obsidian-dev-utils`](https://github.com/altarok/obsidian-dev-utils).

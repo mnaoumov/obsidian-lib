@@ -34,6 +34,31 @@ export enum CssClass {
   Code = 'code',
 
   /**
+   * A CSS class for a collapsible field group of the code block builder modal.
+   */
+  CodeBlockBuilderGroup = 'code-block-builder-group',
+
+  /**
+   * A CSS class for the field container of a collapsible group of the code block builder modal.
+   */
+  CodeBlockBuilderGroupBody = 'code-block-builder-group-body',
+
+  /**
+   * A CSS class for the code block builder modal.
+   */
+  CodeBlockBuilderModal = 'code-block-builder-modal',
+
+  /**
+   * A CSS class for the output row of the code block builder modal.
+   */
+  CodeBlockBuilderOutput = 'code-block-builder-output',
+
+  /**
+   * A CSS class for the live preview container of the code block builder modal.
+   */
+  CodeBlockBuilderPreview = 'code-block-builder-preview',
+
+  /**
    * A CSS class for the code highlighter component.
    */
   CodeHighlighterComponent = 'code-highlighter-component',
@@ -87,6 +112,11 @@ export enum CssClass {
    * app's own toggled controls.
    */
   IsActive = 'is-active',
+
+  /**
+   * Obsidian's class for a collapsed element, reused for a collapsed group of the code block builder modal.
+   */
+  IsCollapsed = 'is-collapsed',
 
   /**
    * A CSS class for the placeholder.

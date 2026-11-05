@@ -1,0 +1,40 @@
+.obsidian-lib {
+  &.code-block-builder-modal {
+    .code-block-builder-group {
+      margin-bottom: var(--size-4-3);
+      border-radius: var(--radius-m);
+
+      &:not(.is-collapsed) {
+        background-color: var(--background-modifier-hover);
+      }
+
+      &.is-collapsed .code-block-builder-group-body {
+        display: none;
+      }
+
+      .code-block-builder-group-body .setting-item {
+        padding-inline: var(--size-4-3);
+      }
+    }
+
+    .code-block-builder-preview {
+      display: flex;
+      justify-content: center;
+    }
+
+    .code-block-builder-output {
+      flex-direction: column;
+      align-items: stretch;
+
+      .setting-item-control {
+        width: 100%;
+      }
+
+      textarea {
+        flex-grow: 1;
+        font-family: var(--font-monospace);
+        resize: vertical;
+      }
+    }
+  }
+}
