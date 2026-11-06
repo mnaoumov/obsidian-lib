@@ -32,17 +32,14 @@ import {
   WidgetType
 } from '@codemirror/view';
 import { castTo } from '@mnaoumov/typescript-lib/object-utils';
-import {
-  editorInfoField,
-  editorLivePreviewField
-} from 'obsidian';
+import { editorInfoField } from 'obsidian';
 
 import { CssClass } from '../css-class.ts';
+import { isLivePreview } from './editor-mode-extension.ts';
 
 // Obsidian.d.ts reaches @codemirror/state through its CommonJS declarations and this module through the ES ones, and
 // StateField has private members, so the two declarations of one runtime class do not type-check against each other.
 const editorInfoStateField = castTo<StateField<MarkdownFileInfo>>(editorInfoField);
-const editorLivePreviewStateField = castTo<StateField<boolean>>(editorLivePreviewField);
 
 /**
  * Parameters for {@link createInlineTokenWidgetsExtension}.
@@ -292,8 +289,4 @@ export function toGlobalRegExp(regExp: RegExp): RegExp {
 
 function areMatchesEqual(a: RegExpExecArray, b: RegExpExecArray): boolean {
   return a.length === b.length && a.every((value, index) => value === b[index]);
-}
-
-function isLivePreview(state: EditorState): boolean {
-  return state.field(editorLivePreviewStateField, false) ?? true;
 }
