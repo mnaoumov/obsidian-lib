@@ -75,7 +75,7 @@ The most important methods to override:
 
 - `onloadImpl()` - your load logic. Add child components here with `addChild()`; the universal components, such as `pluginNoticeComponent` and `consoleDebugComponent`, are already available.
 - `getPluginApis()`, `getPluginDependencies()`, `getPluginConflicts()` - declare the APIs the plugin publishes and the plugins it needs or conflicts with. See [Cross-plugin APIs](/obsidian-lib/guides/cross-plugin-apis/).
-- `createTranslationsMap()` - supply the plugin's own translations.
+- `createTranslationsMap()` - supply the plugin's own translations, each language as an object or as a loader that is called only when that language is shown. See [Translations](/obsidian-lib/guides/translations/).
 
 Three are public Obsidian methods that `PluginBase` already implements, so you rarely override them: `onload()`, `onExternalSettingsChange()` and `onunload()`. Settings are loaded and saved by the plugin's settings component, whose `onLoadSettings()` and `onSaveSettings()` hooks you override there; see the `PluginSettingsComponentBase` section below.
 

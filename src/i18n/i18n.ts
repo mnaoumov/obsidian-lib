@@ -12,6 +12,10 @@ import type {
 import type { ReadonlyDeep } from 'type-fest';
 
 import { invokeAsyncSafely } from '@mnaoumov/typescript-lib/async';
+import {
+  ensureGenericObject,
+  isObject
+} from '@mnaoumov/typescript-lib/type-guards';
 import i18next, {
   init,
   t as tLib
@@ -33,12 +37,40 @@ import {
 export const DEFAULT_NS = 'translation';
 
 /**
- * The translations map.
+ * Loads the translations of one language on demand.
+ *
+ * {@link initI18N} calls a loader only when its language can be shown: Obsidian's current language, that language's
+ * base language (`pt` for `pt-BR`), or the default language. A plugin bundles every locale into its one `main.js`,
+ * so a loader saves startup work, not download bytes. The usual loader is
+ * `async () => (await import('./locales/de.ts')).de`, which esbuild bundles inline as a module that is initialized
+ * only when the loader runs. See {@link https://mnaoumov.dev/obsidian-lib/guides/translations/}.
  */
-export type TranslationsMap = Record<string, Record<string, unknown>>;
+export type LocaleLoader = () => Promise<Translations> | Translations;
+
+/**
+ * The translations of one language, in the shape of the default (English) translations.
+ */
+export type Translations = Record<string, unknown>;
+
+/**
+ * The translations map: each language maps to its translations, or to a {@link LocaleLoader} for them.
+ */
+export type TranslationsMap = Record<string, LocaleLoader | Translations>;
 
 interface TOptions extends SelectorOptions<[typeof DEFAULT_NS]> {
   readonly ns: [typeof DEFAULT_NS];
+}
+
+/**
+ * Gets the languages whose {@link LocaleLoader} {@link initI18N} calls for a given Obsidian language: the language
+ * itself, its base language when it has a region or script part, and the default language.
+ *
+ * @param language - The Obsidian language, as `getLanguage()` returns it.
+ * @returns The languages to load, without duplicates.
+ */
+export function getLanguagesToLoad(language: string): string[] {
+  const baseLanguage = language.replace(/-.*$/u, '');
+  return [...new Set([baseLanguage, DEFAULT_LANGUAGE, language])];
 }
 
 /**
@@ -48,31 +80,64 @@ interface TOptions extends SelectorOptions<[typeof DEFAULT_NS]> {
  * up a changed language or translations map. The lazy fallback in {@link t} and external callers rely on
  * `i18next.isInitialized` (set by `i18next.init()`) as the single source of truth, so no separate guard is kept here.
  *
+ * A {@link LocaleLoader} entry is called only for a language that can be shown (see {@link getLanguagesToLoad}), and
+ * the loaders run one after another, before `i18next.init()`. A loader that throws, rejects or returns something
+ * other than an object is reported with `console.error` and skipped, so that language falls back to the default
+ * language rather than failing the plugin's load. A language with no entry falls back the same way.
+ *
  * @param translationsMap - The translations map.
  * @param isAsync - Whether the initialization is asynchronous.
  * @returns A {@link Promise} that resolves when the `i18n` module is initialized.
  */
 export async function initI18N(translationsMap: TranslationsMap, isAsync = true): Promise<void> {
+  const language = getLanguage();
+  const languagesToLoad = getLanguagesToLoad(language);
+  const resources: Record<string, Record<typeof DEFAULT_NS, Translations>> = {};
+
+  for (const [entryLanguage, entry] of Object.entries(translationsMap)) {
+    if (typeof entry !== 'function') {
+      resources[entryLanguage] = { [DEFAULT_NS]: entry };
+      continue;
+    }
+
+    if (!languagesToLoad.includes(entryLanguage)) {
+      continue;
+    }
+
+    const translations = await loadLocale(entryLanguage, entry);
+    if (translations) {
+      resources[entryLanguage] = { [DEFAULT_NS]: translations };
+    }
+  }
+
   await init({
     fallbackLng: DEFAULT_LANGUAGE,
     initAsync: isAsync,
     interpolation: {
       escapeValue: false
     },
-    lng: getLanguage(),
-    resources: Object.fromEntries(
-      Object.entries(translationsMap).map(([language, translations]) => [
-        language,
-        {
-          [DEFAULT_NS]: translations
-        }
-      ])
-    ),
+    lng: language,
+    resources,
     returnEmptyString: false,
     returnNull: false
   });
 
   i18next.addResourceBundle(DEFAULT_LANGUAGE, DEFAULT_NS, en, true, false);
+}
+
+async function loadLocale(language: string, loader: LocaleLoader): Promise<null | Translations> {
+  try {
+    const translations: unknown = await loader();
+    if (isObject(translations) && !Array.isArray(translations)) {
+      return ensureGenericObject(translations);
+    }
+
+    console.error(`The translations loader for the language '${language}' returned no translations object`, { translations });
+  } catch (error) {
+    console.error(`The translations loader for the language '${language}' failed`, error);
+  }
+
+  return null;
 }
 
 function tImpl(
