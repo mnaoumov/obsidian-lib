@@ -1,6 +1,6 @@
 ---
 title: CodeMirror helpers
-description: Reach every open editor, swap an editor extension at runtime, feed settings to extensions through a facet, render inline tokens in Reading view and Live Preview from one definition, list a RangeSet, and keep an incremental Lezer parse of the document.
+description: Reach every open editor, swap an editor extension at runtime, keep an extension to Live Preview or Source mode, feed settings to extensions through a facet, render inline tokens in Reading view and Live Preview from one definition, list a RangeSet, and keep an incremental Lezer parse of the document.
 ---
 
 ## Every open editor
@@ -49,6 +49,27 @@ class MyPlugin extends Plugin {
 ```
 
 The extension lives in a CodeMirror `Compartment`. A reconfigure dispatches the compartment's reconfigure effect to the open editors and swaps the entry in the registered array, which new editors read. That avoids `workspace.updateOptions()`, which Obsidian describes as fairly expensive. Obsidian cannot unregister an editor extension, so unloading the component empties the compartment instead.
+
+## An extension for one editor mode
+
+`createLivePreviewOnlyExtension` from `@mnaoumov/obsidian-lib/codemirror/editor-mode-extension` wraps any extension so it is active in Live Preview and switched off in Source mode, and `createSourceModeOnlyExtension` does the opposite. The extension needs no mode check of its own: its decorations, view plugins and state fields come and go as a whole.
+
+```ts
+import type { Extension } from '@codemirror/state';
+
+import { createLivePreviewOnlyExtension } from '@mnaoumov/obsidian-lib/codemirror/editor-mode-extension';
+import { Plugin } from 'obsidian';
+
+declare const myDecorations: Extension;
+
+class MyPlugin extends Plugin {
+  public override onload(): void {
+    this.registerEditorExtension(createLivePreviewOnlyExtension(myDecorations));
+  }
+}
+```
+
+Each call keeps the extension in a `Compartment` of its own, and a transaction extender reconfigures it in the same transaction that switches the mode, so no update renders with the wrong content. An editor whose state is built in the other mode is corrected in a microtask, before the browser paints. `isLivePreview(state)` reads the mode the helpers go by: Obsidian's `editorLivePreviewField`, and Live Preview where the field is missing, as in an editor outside a Markdown view.
 
 ## Settings through a facet
 
