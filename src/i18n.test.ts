@@ -220,6 +220,126 @@ describe('i18n module', { timeout: HEAVY_IMPORT_TIMEOUT }, () => {
     });
   });
 
+  describe('initI18N with locale loaders', () => {
+    beforeEach(() => {
+      vi.resetModules();
+      vi.clearAllMocks();
+    });
+
+    async function initWithLanguage(language: string, translationsMap: Parameters<Awaited<ReturnType<typeof reloadI18N>>['initI18N']>[0]): Promise<GenericObject> {
+      const { initI18N } = await reloadI18N();
+      const { getLanguage } = await import('obsidian');
+      vi.mocked(getLanguage).mockReturnValue(language);
+      await initI18N(translationsMap, false);
+      const callArguments = ensureGenericObject((mockInitFunction.mock.calls[0] as unknown[])[0]);
+      expect(callArguments['lng']).toBe(language);
+      return ensureGenericObject(callArguments['resources']);
+    }
+
+    it('should call only the loader of the current language', async () => {
+      const deLoader = vi.fn(() => ({ greeting: 'Hallo' }));
+      const frLoader = vi.fn(() => ({ greeting: 'Bonjour' }));
+
+      const resources = await initWithLanguage('de', { de: deLoader, en: { greeting: 'Hello' }, fr: frLoader });
+
+      expect(deLoader).toHaveBeenCalledTimes(1);
+      expect(frLoader).not.toHaveBeenCalled();
+      expect(resources).toEqual({
+        de: { translation: { greeting: 'Hallo' } },
+        en: { translation: { greeting: 'Hello' } }
+      });
+    });
+
+    it('should await an async loader, such as a dynamic import', async () => {
+      const resources = await initWithLanguage('fr', {
+        en: { greeting: 'Hello' },
+        fr: async () => {
+          await noopAsync();
+          return { greeting: 'Bonjour' };
+        }
+      });
+
+      expect(resources['fr']).toEqual({ translation: { greeting: 'Bonjour' } });
+    });
+
+    it('should load the base language of a regional language', async () => {
+      const ptLoader = vi.fn(() => ({ greeting: 'Olá' }));
+      const ptBrLoader = vi.fn(() => ({ greeting: 'Oi' }));
+      const zhLoader = vi.fn(() => ({ greeting: '你好' }));
+
+      const resources = await initWithLanguage('pt-BR', { 'en': { greeting: 'Hello' }, 'pt': ptLoader, 'pt-BR': ptBrLoader, 'zh': zhLoader });
+
+      expect(ptLoader).toHaveBeenCalledTimes(1);
+      expect(ptBrLoader).toHaveBeenCalledTimes(1);
+      expect(zhLoader).not.toHaveBeenCalled();
+      expect(Object.keys(resources).sort()).toEqual(['en', 'pt', 'pt-BR']);
+    });
+
+    it('should load a default-language loader whatever the current language', async () => {
+      const enLoader = vi.fn(() => ({ greeting: 'Hello' }));
+
+      const resources = await initWithLanguage('ja', { en: enLoader });
+
+      expect(enLoader).toHaveBeenCalledTimes(1);
+      expect(resources).toEqual({ en: { translation: { greeting: 'Hello' } } });
+    });
+
+    it('should leave an unknown language to the default-language fallback', async () => {
+      const deLoader = vi.fn(() => ({ greeting: 'Hallo' }));
+
+      const resources = await initWithLanguage('xx', { de: deLoader, en: { greeting: 'Hello' } });
+
+      expect(deLoader).not.toHaveBeenCalled();
+      expect(resources).toEqual({ en: { translation: { greeting: 'Hello' } } });
+    });
+
+    it('should report a failing loader and fall back to the default language', async () => {
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(noop);
+      const loadError = new Error('load failed');
+
+      const resources = await initWithLanguage('de', {
+        de: () => Promise.reject(loadError),
+        en: { greeting: 'Hello' }
+      });
+
+      expect(resources).toEqual({ en: { translation: { greeting: 'Hello' } } });
+      expect(consoleErrorSpy).toHaveBeenCalledWith('The translations loader for the language \'de\' failed', loadError);
+      consoleErrorSpy.mockRestore();
+    });
+
+    it('should report a loader that returns no translations object', async () => {
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(noop);
+
+      const resources = await initWithLanguage('de', {
+        de: () => castTo<GenericObject>(['not', 'an', 'object']),
+        en: { greeting: 'Hello' }
+      });
+
+      expect(resources).toEqual({ en: { translation: { greeting: 'Hello' } } });
+      expect(consoleErrorSpy).toHaveBeenCalledWith('The translations loader for the language \'de\' returned no translations object', {
+        translations: ['not', 'an', 'object']
+      });
+      consoleErrorSpy.mockRestore();
+    });
+  });
+
+  describe('getLanguagesToLoad', () => {
+    it('should return the language and the default language', async () => {
+      const { getLanguagesToLoad } = await reloadI18N();
+      expect(getLanguagesToLoad('de')).toEqual(['de', 'en']);
+    });
+
+    it('should add the base language of a regional language', async () => {
+      const { getLanguagesToLoad } = await reloadI18N();
+      expect(getLanguagesToLoad('zh-TW')).toEqual(['zh', 'en', 'zh-TW']);
+    });
+
+    it('should not repeat the default language', async () => {
+      const { getLanguagesToLoad } = await reloadI18N();
+      expect(getLanguagesToLoad('en')).toEqual(['en']);
+    });
+  });
+
   describe('t function', () => {
     beforeEach(() => {
       vi.resetModules();
