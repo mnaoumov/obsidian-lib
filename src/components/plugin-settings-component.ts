@@ -319,7 +319,8 @@ export class PluginSettingsComponentBase<PluginSettings extends object> extends 
   /**
    * Loads the plugin settings from the file.
    *
-   * @param isInitialLoad - Whether the settings are being loaded for the first time.
+   * @param isInitialLoad - Whether the settings are being loaded for the first time. Only the initial load
+   * writes the normalized record back to `data.json`; a reload applies it in memory only.
    * @returns A {@link Promise} that resolves when the settings are loaded.
    */
   public async loadFromFile(isInitialLoad: boolean): Promise<void> {
@@ -356,7 +357,14 @@ export class PluginSettingsComponentBase<PluginSettings extends object> extends 
       // `PluginBase` adds a placeholder `PluginSettingsComponentBase<object>` before `onloadImpl()` swaps
       // in the plugin's own component, and that placeholder is exactly this case: it read every real
       // setting, kept none of them, and saved the difference back over the file.
-      if (this.propertyNames.length === 0) {
+      //
+      // A reload caused by an external change (a sync tool, another device) applies the normalized
+      // settings in memory and never writes them back. Two synced devices whose normalization differs
+      // (different plugin versions, or any normalization that is not a fixed point) would otherwise
+      // rewrite each other's `data.json` on every reload, and the sync tool would carry each rewrite
+      // back, forever (`obsidian-custom-attachment-location` #102). The initial load still writes:
+      // the default record and the legacy migrations depend on it.
+      if (this.propertyNames.length === 0 || !isInitialLoad) {
         return;
       }
 
