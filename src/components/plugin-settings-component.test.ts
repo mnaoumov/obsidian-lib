@@ -484,6 +484,29 @@ describe('PluginSettingsComponentBase', () => {
     expect(params.saveData).toHaveBeenCalled();
   });
 
+  it('should not write data.json back on an external reload of a record that is not normalized', async () => {
+    const dataHandler = new MockDataHandler({ count: 1, name: 'initial' });
+    const component = createComponent(dataHandler);
+    await component.loadWithPromises();
+    expect(dataHandler.saveData).not.toHaveBeenCalled();
+
+    const externalRecord = { count: 2, extraField: 'from another version', name: 'external' };
+    vi.mocked(dataHandler.loadData).mockResolvedValue(externalRecord);
+    await component.onExternalSettingsChange();
+
+    expect(dataHandler.saveData).not.toHaveBeenCalled();
+    expect(component.settings).toEqual({ count: 2, name: 'external' });
+  });
+
+  it('should still write data.json on the initial load of a record that is not normalized', async () => {
+    const dataHandler = new MockDataHandler({ count: 2, extraField: 'from another version', name: 'external' });
+    const component = createComponent(dataHandler);
+    await component.loadWithPromises();
+
+    expect(dataHandler.saveData).toHaveBeenCalledOnce();
+    expect(dataHandler.data).toStrictEqual({ count: 2, name: 'external' });
+  });
+
   it('should validate with empty validators returning no errors', async () => {
     const component = createComponent(new MockDataHandler({}));
     const result = await component.validate({ count: 1, name: 'valid' });
