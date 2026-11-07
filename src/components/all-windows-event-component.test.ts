@@ -4,6 +4,7 @@ import type {
   Workspace,
   WorkspaceContainer,
   WorkspaceLeaf,
+  WorkspaceRoot,
   WorkspaceWindow
 } from 'obsidian';
 
@@ -28,7 +29,8 @@ import {
 
 interface CreateMockAppParams {
   readonly domWindows?: Window[];
-  readonly mainWindow?: Window;
+  // `null` stands for the startup state before `workspace.loadLayout()` builds the root split.
+  readonly mainWindow?: null | Window;
   readonly onLayoutReady?: (callback: () => void) => void;
   readonly onWindowOpen?: Workspace['on'];
 }
@@ -70,7 +72,8 @@ function createMockApp(params: CreateMockAppParams): App {
       },
       on: onWindowOpen,
       onLayoutReady,
-      rootSplit: { win: mainWindow }
+      // `obsidian.d.ts` declares `rootSplit` non-null, which is not true before the layout loads.
+      rootSplit: mainWindow === null ? castTo<WorkspaceRoot>(null) : { win: mainWindow }
     }
   });
 }
@@ -93,6 +96,26 @@ describe('AllWindowsEventComponent', () => {
     createLoadedComponent(app).registerAllWindowsHandler(handler);
 
     expect(handler).toHaveBeenCalledExactlyOnceWith(mainWindow);
+  });
+
+  it('should attach the global window when registered at startup, before the layout builds the root split', () => {
+    let layoutReadyCallback: (() => void) | null = null;
+    const app = createMockApp({
+      domWindows: [window],
+      mainWindow: null,
+      onLayoutReady: (callback: () => void): void => {
+        layoutReadyCallback = callback;
+      }
+    });
+    const handler = vi.fn();
+
+    createLoadedComponent(app).registerAllWindowsHandler(handler);
+    expect(handler).toHaveBeenCalledExactlyOnceWith(window);
+
+    // Once the layout is ready, the main window is found again among the leaves and is not attached twice.
+    castTo<(() => void) | null>(layoutReadyCallback)?.();
+    vi.runAllTimers();
+    expect(handler).toHaveBeenCalledExactlyOnceWith(window);
   });
 
   it('should visit each window once and release closed-window resources before owner unload', () => {

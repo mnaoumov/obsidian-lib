@@ -5,6 +5,7 @@ import type {
   WorkspaceRoot
 } from 'obsidian';
 
+import { castTo } from '@mnaoumov/typescript-lib/object-utils';
 import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import {
   describe,
@@ -136,6 +137,17 @@ describe('getMainWindow', () => {
   it('should return the root split window', () => {
     const mainWindow = createMockWindow();
     expect(getMainWindow(createMockAppWithMainWindow(mainWindow))).toBe(mainWindow);
+  });
+
+  it('should return the global window before the layout builds the root split', () => {
+    // Obsidian loads plugins enabled at startup before `workspace.loadLayout()` sets `rootSplit`.
+    const app = strictProxy<App>({
+      workspace: {
+        // `obsidian.d.ts` declares `rootSplit` non-null, which is not true before the layout loads.
+        rootSplit: castTo<WorkspaceRoot>(null)
+      }
+    });
+    expect(getMainWindow(app)).toBe(window);
   });
 });
 
