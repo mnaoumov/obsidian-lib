@@ -7,6 +7,7 @@ import type {
   FrontmatterLinkCache,
   Pos,
   Reference,
+  ReferenceLinkCache,
   TFile as TFileOriginal
 } from 'obsidian';
 
@@ -2823,6 +2824,125 @@ describe('app-dependent functions', () => {
 
         expect(changes.map((change) => change.oldContent)).toEqual(['[[a]]', '[[b]]', '[[c]]']);
       });
+    });
+  });
+
+  describe('reference definitions', () => {
+    /**
+     * `[[t]]` spans 0-5; the definitions `[a]: A.md` (6-15), `[b]: B.md` (16-25) and `[c]: C.md` (26-35) follow,
+     * one per line, and the metadata of `c` is stale.
+     */
+    const DEFINITIONS_CONTENT = '[[t]]\n[a]: A.md\n[b]: B.md\n[c]: C.md';
+
+    function createDefinition(id: string, link: string, line: number): ReferenceLinkCache {
+      const startOffset = 6 + (line - 1) * 10;
+      return {
+        id,
+        link,
+        position: {
+          end: { col: 9, line, offset: startOffset + 9 },
+          start: { col: 0, line, offset: startOffset }
+        }
+      };
+    }
+
+    function createDefinitionsCache(): CachedMetadataEx {
+      return castTo<CachedMetadataEx>({
+        embeds: undefined,
+        frontmatterLinks: undefined,
+        links: [{
+          displayText: 't',
+          link: 't',
+          original: '[[t]]',
+          position: { end: { col: 5, line: 0, offset: 5 }, start: { col: 0, line: 0, offset: 0 } }
+        }],
+        referenceLinks: [
+          createDefinition('a', 'A.md', 1),
+          createDefinition('b', 'B.md', 2),
+          createDefinition('c', 'Stale.md', 3)
+        ],
+        sections: undefined
+      });
+    }
+
+    function createDefinitionConverter(): ReturnType<typeof vi.fn<(definition: ReferenceLinkCache) => string | undefined>> {
+      return vi.fn((definition: ReferenceLinkCache) => definition.id === 'b' ? undefined : `New ${definition.link}`);
+    }
+
+    function captureContentChanges(): FileChange[] {
+      const capturedChanges: FileChange[] = [];
+      vi.mocked(applyContentChanges).mockImplementation(async ({ changesProvider, content }) => {
+        if (typeof changesProvider === 'function') {
+          capturedChanges.push(...await (changesProvider as () => Promise<FileChange[]>)());
+        }
+        return content;
+      });
+      return capturedChanges;
+    }
+
+    it('should leave every definition unchanged without a definition converter', async () => {
+      vi.mocked(parseMetadata).mockResolvedValue(createDefinitionsCache());
+      const capturedChanges = captureContentChanges();
+
+      await editReferencesInContent({ app, content: DEFINITIONS_CONTENT, referenceConverter: () => '[[u]]' });
+
+      expect(capturedChanges.map((change) => change.oldContent)).toEqual(['[[t]]']);
+    });
+
+    it('should rewrite the destinations the converter returns, skipping undefined and stale ones', async () => {
+      vi.mocked(parseMetadata).mockResolvedValue(createDefinitionsCache());
+      const capturedChanges = captureContentChanges();
+      const referenceDefinitionConverter = createDefinitionConverter();
+
+      await editReferencesInContent({
+        app,
+        content: DEFINITIONS_CONTENT,
+        referenceConverter: () => '[[u]]',
+        referenceDefinitionConverter
+      });
+
+      expect(referenceDefinitionConverter.mock.calls.map((call) => call[0].id)).toEqual(['a', 'b', 'c']);
+      expect(capturedChanges.map((change) => [change.oldContent, change.newContent])).toEqual([
+        ['[[t]]', '[[u]]'],
+        ['A.md', '<New A.md>']
+      ]);
+    });
+
+    it('should skip a definition outside the offset range without calling the converter', async () => {
+      vi.mocked(parseMetadata).mockResolvedValue(createDefinitionsCache());
+      captureContentChanges();
+      const referenceDefinitionConverter = createDefinitionConverter();
+
+      await editReferencesInContent({
+        app,
+        content: DEFINITIONS_CONTENT,
+        offsetRange: { endOffset: 25, startOffset: 6 },
+        referenceConverter: () => '[[u]]',
+        referenceDefinitionConverter
+      });
+
+      expect(referenceDefinitionConverter.mock.calls.map((call) => call[0].id)).toEqual(['a', 'b']);
+    });
+
+    it('should rewrite definitions through editReferences against the content it reads', async () => {
+      vi.mocked(getCacheSafe).mockResolvedValue(createDefinitionsCache());
+      await app.vault.create('definitions.md', DEFINITIONS_CONTENT);
+      let capturedChanges: FileChange[] | null = null;
+      vi.mocked(applyFileChanges).mockImplementation(async ({ changesProvider }) => {
+        const abortSignal = strictProxy<AbortSignal>({ throwIfAborted: vi.fn() });
+        capturedChanges = await resolveValue(changesProvider, { abortSignal, content: DEFINITIONS_CONTENT });
+      });
+
+      await editReferences({
+        app,
+        pathOrFile: 'definitions.md',
+        pluginNoticeComponent: null,
+        referenceConverter: () => undefined,
+        referenceDefinitionConverter: createDefinitionConverter(),
+        resourceLockComponent
+      });
+
+      expect(castTo<FileChange[]>(capturedChanges).map((change) => change.newContent)).toEqual(['<New A.md>']);
     });
   });
 
