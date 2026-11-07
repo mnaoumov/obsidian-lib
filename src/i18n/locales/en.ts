@@ -110,6 +110,12 @@ export const en = {
     queue: {
       flushQueue: 'Flush queue'
     },
+    releaseAsset: {
+      consentMessage: '{{fileName}} ({{size}}) will be downloaded from {{host}} and kept on this device, so it is downloaded only once.',
+      consentMessageUnknownSize: '{{fileName}} will be downloaded from {{host}} and kept on this device, so it is downloaded only once.',
+      consentTitle: 'Download {{fileName}}?',
+      download: 'Download'
+    },
     releaseNotes: {
       title: '{{pluginName}} release notes'
     },
