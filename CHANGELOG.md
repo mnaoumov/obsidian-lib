@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## 10.10.0
+
+- fix(settings): stop rewriting data.json on an external settings reload (<https://github.com/mnaoumov/obsidian-custom-attachment-location/issues/102>)
+- feat(codemirror): add Live Preview only and Source mode only extensions
+- feat(i18n): load locale translations on demand
+- feat(modals): add the code block builder modal
+- feat(plugin): await the previous instance's async cleanups on reload
+
 ## 10.9.0
 
 - test(docs): give the API link render cases a load-proof timeout
