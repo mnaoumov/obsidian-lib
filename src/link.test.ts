@@ -2908,6 +2908,15 @@ describe('app-dependent functions', () => {
       ]);
     });
 
+    it('should not call the definition converter for a note without definitions', async () => {
+      vi.mocked(parseMetadata).mockResolvedValue(castTo<CachedMetadataEx>({ links: undefined }));
+      const referenceDefinitionConverter = createDefinitionConverter();
+
+      await editReferencesInContent({ app, content: 'no links', referenceConverter: () => undefined, referenceDefinitionConverter });
+
+      expect(referenceDefinitionConverter).not.toHaveBeenCalled();
+    });
+
     it('should skip a definition outside the offset range without calling the converter', async () => {
       vi.mocked(parseMetadata).mockResolvedValue(createDefinitionsCache());
       captureContentChanges();
