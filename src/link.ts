@@ -1645,7 +1645,7 @@ interface GetFileChangesParams {
 }
 
 /**
- * Params for {@link refreshFileNameAlias}.
+ * Params for {@link getReferenceDefinitionFileChanges}.
  */
 interface GetReferenceDefinitionFileChangesParams {
   /**
@@ -1679,6 +1679,9 @@ interface LinkConfig {
   readonly shouldUseLeadingSlashForAbsolutePaths: boolean;
 }
 
+/**
+ * The content of a note together with the converter of its reference-style link definitions.
+ */
 interface ReferenceDefinitionConversion {
   /**
    * The content the definitions' positions refer to.
@@ -1691,6 +1694,9 @@ interface ReferenceDefinitionConversion {
   readonly converter: (definition: ReferenceLinkCache, abortSignal: AbortSignal) => Promisable<MaybeReturn<string>>;
 }
 
+/**
+ * Params for {@link refreshFileNameAlias}.
+ */
 interface RefreshFileNameAliasParams {
   /**
    * The alias the link carries, if any.
