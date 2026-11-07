@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 10.11.0
+
+- fix(workspace): load plugins enabled at Obsidian startup again
+- feat(link): edit reference-style link definition destinations
+- feat(release-asset): download optional plugin release assets on demand with consent and checksum
+
 ## 10.10.0
 
 - fix(settings): stop rewriting data.json on an external settings reload (<https://github.com/mnaoumov/obsidian-custom-attachment-location/issues/102>)
