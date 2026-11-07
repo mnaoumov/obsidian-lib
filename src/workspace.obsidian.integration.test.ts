@@ -30,6 +30,14 @@ interface NoticeWindowsResult {
   readonly wasMainWindowRestored: boolean;
 }
 
+// What the library did with the workspace in its startup state, before the layout loads.
+interface StartupMainWindowResult {
+  readonly error: null | string;
+  readonly isMainWindowAttached: boolean;
+  readonly isMainWindowReturned: boolean;
+  readonly isRootSplitRestored: boolean;
+}
+
 const TEST_TIMEOUT_IN_MILLISECONDS = 60_000;
 
 describe('switchToMainWindow', () => {
@@ -107,4 +115,58 @@ describe('switchToMainWindow', () => {
     // The switch is scoped to what it wraps: the settings window is active again once it is disposed.
     expect(result.wasMainWindowRestored).toBe(true);
   }, TEST_TIMEOUT_IN_MILLISECONDS);
+});
+
+describe('getMainWindow', () => {
+  it('should return the main window to a plugin loaded at startup, before the layout builds the root split', async () => {
+    /*
+     * Obsidian `1.15.1` loads the community plugins enabled at startup (`app.plugins.initialize()`) before
+     * `workspace.loadLayout()` sets `rootSplit`, so such a plugin's `onload` sees `rootSplit === null`.
+     * The harness cannot load a plugin at that point on desktop: a fresh profile starts in restricted
+     * mode, so `Plugins.initialize` returns before loading anything and the harness enables its plugin
+     * after the layout. So the closure puts the live workspace back into the startup state for one
+     * synchronous span, restoring it before anything else can run, and drives the path every `PluginBase`
+     * takes first there: `PluginContextComponent` registers an all-windows handler.
+     */
+    const result = await evalInObsidian<Record<string, never>, StartupMainWindowResult>({
+      callback({ app, lib: { forEachWindow, getMainWindow }, obsidianModule: { Component } }): StartupMainWindowResult {
+        const rootSplit: unknown = Reflect.get(app.workspace, 'rootSplit');
+        let error: null | string = null;
+        let isMainWindowAttached = false;
+        let isMainWindowReturned = false;
+        const owner = new Component();
+        owner.load();
+        Reflect.set(app.workspace, 'rootSplit', null);
+        try {
+          isMainWindowReturned = getMainWindow(app) === window;
+          forEachWindow({
+            app,
+            callback: (win) => {
+              if (win === window) {
+                isMainWindowAttached = true;
+              }
+            },
+            component: owner
+          });
+        } catch (error_) {
+          error = String(error_);
+        } finally {
+          Reflect.set(app.workspace, 'rootSplit', rootSplit);
+          owner.unload();
+        }
+
+        return {
+          error,
+          isMainWindowAttached,
+          isMainWindowReturned,
+          isRootSplitRestored: app.workspace.rootSplit === rootSplit
+        };
+      }
+    });
+
+    expect(result.error).toBeNull();
+    expect(result.isMainWindowReturned).toBe(true);
+    expect(result.isMainWindowAttached).toBe(true);
+    expect(result.isRootSplitRestored).toBe(true);
+  });
 });

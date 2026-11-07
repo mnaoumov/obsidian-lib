@@ -10,6 +10,7 @@ import type {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars -- We need to import `Workspace` to use it in the tsdocs.
   Workspace,
   WorkspaceContainer,
+  WorkspaceRoot,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars -- We need to import `WorkspaceWindow` to use it in the tsdocs.
   WorkspaceWindow
 } from 'obsidian';
@@ -62,11 +63,19 @@ export function getAllDomWindows(app: App): Window[] {
  * (every popout is a {@link WorkspaceWindow} under `floatingSplit`). Prefer this over the global
  * `window`, which only happens to be the main window because plugin code runs in its context.
  *
+ * Before the workspace layout loads, there is no root split yet: Obsidian `1.15.1` loads community
+ * plugins (`app.plugins.initialize()`) before `workspace.loadLayout()` builds `rootSplit`, so a plugin
+ * enabled at startup runs its `onload` while `rootSplit` is still `null`. No popout exists at that
+ * point either, so the global `window`, the window plugin code runs in, is the main window, and that
+ * is what is returned then. `WorkspaceRoot` itself is built with that same `window`.
+ *
  * @param app - The Obsidian app.
  * @returns The app's main window.
  */
 export function getMainWindow(app: App): Window {
-  return app.workspace.rootSplit.win;
+  // `obsidian.d.ts` declares `rootSplit` non-null, which is not true before the layout loads.
+  const rootSplit = app.workspace.rootSplit as null | WorkspaceRoot;
+  return rootSplit?.win ?? window;
 }
 
 /**
