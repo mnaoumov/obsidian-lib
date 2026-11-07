@@ -10,6 +10,7 @@ import type {
   App,
   CachedMetadata,
   Reference,
+  ReferenceLinkCache,
   TFile
 } from 'obsidian';
 import type { Promisable } from 'type-fest';
@@ -96,6 +97,8 @@ import {
   isParseLinkReference,
   parseLink
 } from './parse-link.ts';
+import { isPositionInOffsetRange } from './position.ts';
+import { referenceDefinitionToFileChange } from './reference-definition.ts';
 import {
   getReferenceLinkText,
   isCanvasFileNodeReference,
@@ -561,6 +564,25 @@ export interface EditReferencesInContentParams {
   readonly referenceConverter: (reference: Reference) => Promisable<MaybeReturn<string>>;
 
   /**
+   * The function that returns the new destination of each reference-style link definition
+   * (`[id]: destination "title"`). Obsidian reports those in `CachedMetadata.referenceLinks`, not among the
+   * references {@link EditReferencesInContentParams.referenceConverter} receives, so without this function they
+   * are never edited.
+   *
+   * It returns the destination unescaped, in the form of `ReferenceLinkCache.link`, or `undefined` to leave the
+   * definition unchanged. Only the destination is rewritten: the id, the title, the angle brackets and every use
+   * of the definition (`[text][id]`, `[id]`) stay as written. A definition whose content no longer matches its
+   * metadata is left unchanged. See {@link referenceDefinitionToFileChange}.
+   *
+   * The offset range applies to the definition's whole position. The heading skip and
+   * {@link EditReferencesInContentParams.shouldSkipReference} do not apply, since a definition is never in a
+   * heading and is not a `Reference`.
+   *
+   * @default `undefined`, which leaves every definition unchanged
+   */
+  readonly referenceDefinitionConverter?: (definition: ReferenceLinkCache) => Promisable<MaybeReturn<string>>;
+
+  /**
    * Whether to also edit external links parsed from the note body. When `true`, the converter also
    * receives references for external links.
    *
@@ -653,6 +675,25 @@ export interface EditReferencesParams extends EditReferencesOptions {
    * The function that converts each reference.
    */
   readonly referenceConverter: (reference: Reference) => Promisable<MaybeReturn<string>>;
+
+  /**
+   * The function that returns the new destination of each reference-style link definition
+   * (`[id]: destination "title"`). Obsidian reports those in `CachedMetadata.referenceLinks`, not among the
+   * references {@link EditReferencesParams.referenceConverter} receives, so without this function they are never
+   * edited.
+   *
+   * It returns the destination unescaped, in the form of `ReferenceLinkCache.link`, or `undefined` to leave the
+   * definition unchanged. Only the destination is rewritten: the id, the title, the angle brackets and every use
+   * of the definition (`[text][id]`, `[id]`) stay as written. A definition whose content no longer matches its
+   * metadata is left unchanged. See {@link referenceDefinitionToFileChange}. A canvas file has no definitions.
+   *
+   * The offset range applies to the definition's whole position. The heading skip and
+   * {@link EditReferencesParams.shouldSkipReference} do not apply, since a definition is never in a heading and is
+   * not a `Reference`.
+   *
+   * @default `undefined`, which leaves every definition unchanged
+   */
+  readonly referenceDefinitionConverter?: (definition: ReferenceLinkCache) => Promisable<MaybeReturn<string>>;
 
   /**
    * Whether to also edit external links parsed from the note body. When `true`, the converter also
@@ -1555,6 +1596,12 @@ interface GetFileChangesParams {
   readonly referenceConverter: (reference: Reference, abortSignal: AbortSignal) => Promisable<MaybeReturn<string>>;
 
   /**
+   * A function that returns the new destination of each reference-style link definition, given together with the
+   * content the definitions' positions refer to.
+   */
+  readonly referenceDefinitionConversion?: ReferenceDefinitionConversion;
+
+  /**
    * Whether to include external links (parsed from the note body) in the changes.
    *
    * @default `false`
@@ -1597,6 +1644,31 @@ interface GetFileChangesParams {
   readonly shouldSkipReferencesInHeadings?: boolean;
 }
 
+/**
+ * Params for {@link getReferenceDefinitionFileChanges}.
+ */
+interface GetReferenceDefinitionFileChangesParams {
+  /**
+   * An abort signal to control the execution of the function.
+   */
+  readonly abortSignal: AbortSignal;
+
+  /**
+   * A metadata cache to read the definitions from.
+   */
+  readonly cache: CachedMetadata;
+
+  /**
+   * A range restricting the changes to the definitions fully contained in it.
+   */
+  readonly offsetRange: OffsetRange | undefined;
+
+  /**
+   * The content and the converter of the definitions, or `undefined` to leave every definition unchanged.
+   */
+  readonly referenceDefinitionConversion: ReferenceDefinitionConversion | undefined;
+}
+
 interface LinkConfig {
   readonly isEmbed: boolean;
   readonly isSingleSubpathAllowed: boolean;
@@ -1605,6 +1677,21 @@ interface LinkConfig {
   readonly shouldUseAngleBrackets: boolean;
   readonly shouldUseLeadingDotForRelativePaths: boolean;
   readonly shouldUseLeadingSlashForAbsolutePaths: boolean;
+}
+
+/**
+ * The content of a note together with the converter of its reference-style link definitions.
+ */
+interface ReferenceDefinitionConversion {
+  /**
+   * The content the definitions' positions refer to.
+   */
+  readonly content: string;
+
+  /**
+   * The function that returns the new destination of a definition, or `undefined` to leave it unchanged.
+   */
+  readonly converter: (definition: ReferenceLinkCache, abortSignal: AbortSignal) => Promisable<MaybeReturn<string>>;
 }
 
 /**
@@ -2029,6 +2116,7 @@ export async function editReferences(params: EditReferencesParams): Promise<void
     offsetRange,
     pathOrFile,
     referenceConverter,
+    referenceDefinitionConverter,
     shouldEditExternalLinks = false,
     shouldEditFrontmatterExternalLinks = false,
     shouldEditMultiValueFrontmatterExternalLinks = false,
@@ -2060,6 +2148,7 @@ export async function editReferences(params: EditReferencesParams): Promise<void
           isCanvasFileCache: isCanvasFile(pathOrFile),
           offsetRange,
           referenceConverter,
+          referenceDefinitionConversion: toReferenceDefinitionConversion(content, referenceDefinitionConverter),
           shouldIncludeExternalLinks: shouldEditExternalLinks,
           shouldIncludeFrontmatterExternalLinks: shouldEditFrontmatterExternalLinks,
           shouldIncludeMultiValueFrontmatterExternalLinks: shouldEditMultiValueFrontmatterExternalLinks,
@@ -2085,6 +2174,7 @@ export async function editReferencesInContent(params: EditReferencesInContentPar
     content,
     offsetRange,
     referenceConverter,
+    referenceDefinitionConverter,
     shouldEditExternalLinks = false,
     shouldEditFrontmatterExternalLinks = false,
     shouldEditMultiValueFrontmatterExternalLinks = false,
@@ -2114,6 +2204,7 @@ export async function editReferencesInContent(params: EditReferencesInContentPar
         isCanvasFileCache: false,
         offsetRange,
         referenceConverter,
+        referenceDefinitionConversion: toReferenceDefinitionConversion(content, referenceDefinitionConverter),
         shouldIncludeExternalLinks: shouldEditExternalLinks,
         shouldIncludeFrontmatterExternalLinks: shouldEditFrontmatterExternalLinks,
         shouldIncludeMultiValueFrontmatterExternalLinks: shouldEditMultiValueFrontmatterExternalLinks,
@@ -2776,6 +2867,7 @@ async function getFileChanges(params: GetFileChangesParams): Promise<FileChange[
     isCanvasFileCache,
     offsetRange,
     referenceConverter,
+    referenceDefinitionConversion,
     shouldIncludeExternalLinks = false,
     shouldIncludeFrontmatterExternalLinks = false,
     shouldIncludeMultiValueFrontmatterExternalLinks = false,
@@ -2844,6 +2936,9 @@ async function getFileChanges(params: GetFileChangesParams): Promise<FileChange[
       changes.push(fileChange);
     }
   }
+
+  changes.push(...await getReferenceDefinitionFileChanges({ abortSignal, cache, offsetRange, referenceDefinitionConversion }));
+
   return changes;
 }
 
@@ -2903,6 +2998,42 @@ function getLinkDisplayName(params: GetFolderNoteFolderParams): string {
   }
 
   return file.basename;
+}
+
+async function getReferenceDefinitionFileChanges(params: GetReferenceDefinitionFileChangesParams): Promise<FileChange[]> {
+  const { abortSignal, cache, offsetRange, referenceDefinitionConversion } = params;
+  const changes: FileChange[] = [];
+  if (!referenceDefinitionConversion) {
+    return changes;
+  }
+
+  const getReferenceDefinitionFileChangesDebugger = getObsidianLibDebugger('Link:getReferenceDefinitionFileChanges');
+
+  // A canvas cache carries no `referenceLinks`, so this loop only ever visits a note's definitions.
+  for (const definition of cache.referenceLinks ?? []) {
+    abortSignal.throwIfAborted();
+
+    if (offsetRange !== undefined && !isPositionInOffsetRange(definition.position, offsetRange)) {
+      getReferenceDefinitionFileChangesDebugger('Skipping a reference definition that is not fully contained in the offset range', {
+        definition,
+        offsetRange
+      });
+      continue;
+    }
+
+    const newDestination = await referenceDefinitionConversion.converter(definition, abortSignal);
+    abortSignal.throwIfAborted();
+    if (newDestination === undefined) {
+      continue;
+    }
+
+    const fileChange = referenceDefinitionToFileChange({ content: referenceDefinitionConversion.content, definition, newDestination });
+    if (fileChange) {
+      changes.push(fileChange);
+    }
+  }
+
+  return changes;
 }
 
 function getUndefinedPayload(): undefined {
@@ -3034,6 +3165,15 @@ function shouldUseWikilinkStyle(params: ShouldUseWikilinkStyleParams): boolean {
       assertNever(resolvedStyle);
     }
   }
+}
+
+function toReferenceDefinitionConversion(
+  content: string,
+  referenceDefinitionConverter: ((definition: ReferenceLinkCache) => Promisable<MaybeReturn<string>>) | undefined
+): ReferenceDefinitionConversion | undefined {
+  return referenceDefinitionConverter
+    ? { content, converter: referenceDefinitionConverter }
+    : undefined;
 }
 
 function validateOffsetRange(offsetRange: OffsetRange): void {

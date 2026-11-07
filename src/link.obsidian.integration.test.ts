@@ -49,6 +49,11 @@ interface OffsetRangeFromEditorResult {
   readonly selectedStartOffset: number;
 }
 
+interface ReferenceDefinitionsResult {
+  readonly edited: string;
+  readonly parsedAgainDefinitions: string[];
+}
+
 /**
  * Result of the heading-skipping test.
  */
@@ -266,6 +271,81 @@ describe('file:// link normalization', () => {
     expect(result).toContain('file:///F:/a/x.txt');
     expect(result).toContain('file:///F:/b/y.txt');
     expect(result).not.toContain('%5C');
+  });
+});
+
+describe('reference definitions', () => {
+  it('should rewrite only the destinations of reference definitions parsed by Obsidian, keeping ids, titles and uses', async () => {
+    const result = await evalInObsidian<Record<string, never>, ReferenceDefinitionsResult>({
+      async callback({ app, lib: { editReferencesInContent, parseMetadata } }) {
+        const content = [
+          'Use [a], [Text][b], [c][] and [[Wiki]].',
+          '',
+          '[a]: Target.md#Old "Title"',
+          '[b]: <Target Note.md#Old> \'T\'',
+          '[c]:',
+          '  Target\\#Escaped.md',
+          '  (Paren title)',
+          '> [d]: Quoted.md',
+          '[e]: Keep.md'
+        ].join('\n');
+        const newDestinations = new Map([
+          ['a', 'Target.md#New'],
+          ['b', 'Other Note.md#New'],
+          ['c', 'Renamed Note.md'],
+          ['d', 'Moved/Quoted.md']
+        ]);
+        const edited = await editReferencesInContent({
+          app,
+          content,
+          referenceConverter: (reference) => reference.link === 'Wiki' ? '[[Wiki New]]' : undefined,
+          referenceDefinitionConverter: (definition) => newDestinations.get(definition.id)
+        });
+        const parsedAgain = await parseMetadata(app, edited);
+        return {
+          edited,
+          parsedAgainDefinitions: (parsedAgain.referenceLinks ?? []).map((definition) => `${definition.id}=${definition.link}`)
+        };
+      }
+    });
+
+    expect(result.edited).toBe(dedent`
+      Use [a], [Text][b], [c][] and [[Wiki New]].
+
+      [a]: Target.md#New "Title"
+      [b]: <Other Note.md#New> 'T'
+      [c]:
+        <Renamed Note.md>
+        (Paren title)
+      > [d]: Moved/Quoted.md
+      [e]: Keep.md
+    `);
+    expect(result.parsedAgainDefinitions).toEqual([
+      'a=Target.md#New',
+      'b=Other Note.md#New',
+      'c=Renamed Note.md',
+      'd=Moved/Quoted.md',
+      'e=Keep.md'
+    ]);
+  });
+
+  it('should rewrite a reference definition in a vault file through editReferences', async () => {
+    const { result } = await evalInObsidian<Record<string, never>, NormalizeResult>({
+      async callback({ app, lib: { editReferences } }) {
+        const file = await app.vault.create('reference-definitions.md', 'See [a].\n\n[a]: Old.md "Title"\n');
+        await editReferences({
+          app,
+          pathOrFile: file,
+          pluginNoticeComponent: null,
+          referenceConverter: () => undefined,
+          referenceDefinitionConverter: () => 'New.md',
+          resourceLockComponent: null
+        });
+        return { result: await app.vault.read(file) };
+      }
+    });
+
+    expect(result).toBe('See [a].\n\n[a]: New.md "Title"\n');
   });
 });
 
