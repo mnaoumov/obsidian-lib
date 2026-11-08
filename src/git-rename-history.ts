@@ -3,8 +3,8 @@
  *
  * The renames a vault's git history records, the strongest evidence of where a missing link target went.
  *
- * Cross-platform: it only parses. Running `git` belongs to `desktop-git-runner.ts`, whose Node imports are
- * deferred until a command runs. Call that runner only behind `Platform.isDesktopApp`.
+ * Cross-platform: it only parses. Running `git` belongs to `desktop-git-runner.ts`, which reads Node only
+ * when a command runs. Call that runner only behind `Platform.isDesktopApp`.
  */
 
 import type { GitRename } from './broken-link-candidates.ts';

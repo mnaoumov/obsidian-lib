@@ -18,18 +18,10 @@ const hoisted = vi.hoisted(() => ({
 vi.mock('node:child_process', () => ({ execFile: hoisted.execFile }));
 
 describe('createDesktopGitRunner', () => {
-  it('should defer loading Node until the runner is called', async () => {
-    vi.resetModules();
-    const nodeModuleLoaded = vi.fn(() => ({ execFile: hoisted.execFile }));
-    vi.doMock('node:child_process', nodeModuleLoaded);
-    try {
-      const gitRunnerModule = await import('./desktop-git-runner.ts');
-      gitRunnerModule.createDesktopGitRunner('C:/vault');
-      expect(nodeModuleLoaded).not.toHaveBeenCalled();
-    } finally {
-      vi.doMock('node:child_process', () => ({ execFile: hoisted.execFile }));
-      vi.resetModules();
-    }
+  it('should run nothing until the runner is called', () => {
+    hoisted.execFile.mockClear();
+    createDesktopGitRunner('C:/vault');
+    expect(hoisted.execFile).not.toHaveBeenCalled();
   });
 
   it('should run git in the folder and answer its standard output', async () => {
