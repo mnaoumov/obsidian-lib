@@ -14,6 +14,16 @@ export enum CssClass {
   AlertModal = 'alert-modal',
 
   /**
+   * A CSS class for the preview of the bug-report diagnostics review modal.
+   */
+  BugReportPreview = 'bug-report-preview',
+
+  /**
+   * A CSS class for the bug-report diagnostics review modal.
+   */
+  BugReportReviewModal = 'bug-report-review-modal',
+
+  /**
    * A CSS class for the cancel button.
    */
   CancelButton = 'cancel-button',
@@ -67,6 +77,16 @@ export enum CssClass {
    * A CSS class for the confirm modal.
    */
   ConfirmModal = 'confirm-modal',
+
+  /**
+   * A CSS class for the copy-text-manually modal.
+   */
+  CopyTextManuallyModal = 'copy-text-manually-modal',
+
+  /**
+   * A CSS class for the text area of the copy-text-manually modal.
+   */
+  CopyTextManuallyText = 'copy-text-manually-text',
 
   /**
    * A CSS class for the date component.

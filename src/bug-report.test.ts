@@ -9,8 +9,13 @@ import {
   vi
 } from 'vitest';
 
+import type { BugReportEnvironment } from './bug-report.ts';
+
 import {
   BUG_REPORT_ISSUE_FORM_TEMPLATE,
+  BUG_REPORT_PASTE_INSTRUCTIONS,
+  buildBugReportIssueFormLink,
+  DEFAULT_BUG_REPORT_MAX_URL_LENGTH,
   formatBugReportEnvironment,
   getBugReportEnvironment,
   getBugReportIssueFormUrl,
@@ -234,5 +239,124 @@ describe('getBugReportIssueFormUrl', () => {
     );
     expect(url.searchParams.get('title')).toBe('Broken');
     expect(url.searchParams.get('plugin-version')).toBe('unknown');
+  });
+
+  it('should never fall back to the clipboard, however long the environment', async () => {
+    const app = createApp();
+    for (let index = 0; index < 400; index++) {
+      const id = `plugin-${String(index).padStart(3, '0')}-with-a-long-identifier`;
+      app.plugins.plugins[id] = strictProxy<AppOriginal['plugins']['plugins'][string]>({});
+      app.plugins.manifests[id] = strictProxy<AppOriginal['plugins']['manifests'][string]>({ version: '1.0.0' });
+    }
+    const url = await getBugReportIssueFormUrl({ app, gitHubRepo: 'owner/repo', pluginId: PLUGIN_ID });
+    expect(url.length).toBeGreaterThan(DEFAULT_BUG_REPORT_MAX_URL_LENGTH);
+    expect(new URL(url).searchParams.get('environment')).toContain('plugin-399-with-a-long-identifier');
+  });
+});
+
+describe('buildBugReportIssueFormLink', () => {
+  const environment: BugReportEnvironment = {
+    enabledPlugins: [{ id: 'alpha', version: '2.0.0' }],
+    installerVersion: '1.8.10',
+    obsidianVersion: '1.15.0',
+    operatingSystem: 'Windows 11',
+    platform: 'Windows',
+    plugin: { id: PLUGIN_ID, version: '1.2.3' }
+  };
+
+  function getEnvironmentField(url: string): null | string {
+    return new URL(url).searchParams.get('environment');
+  }
+
+  it('should prefill the environment alone when there are no diagnostics', () => {
+    const link = buildBugReportIssueFormLink({ environment, gitHubRepo: 'owner/repo' });
+    expect(link.clipboardText).toBeNull();
+    expect(getEnvironmentField(link.url)).toBe(formatBugReportEnvironment(environment));
+  });
+
+  it('should append the diagnostics to the environment field and keep the other fields', () => {
+    const link = buildBugReportIssueFormLink({
+      diagnostics: [{ content: 'line 1\nline 2', id: 'logs', title: 'Logs' }],
+      environment,
+      gitHubRepo: 'owner/repo',
+      title: 'Broken'
+    });
+    expect(link.clipboardText).toBeNull();
+    const url = new URL(link.url);
+    expect(url.searchParams.get('environment')).toBe(`${formatBugReportEnvironment(environment)}\n\n### Logs\n\n\`\`\`\nline 1\nline 2\n\`\`\``);
+    expect(url.searchParams.get('title')).toBe('Broken');
+    expect(url.searchParams.get('plugin-version')).toBe('1.2.3');
+    expect(url.searchParams.get('obsidian-version')).toBe('1.15.0');
+    expect(url.searchParams.get('operating-system')).toBe('Windows 11');
+  });
+
+  it('should use the default budget', () => {
+    const link = buildBugReportIssueFormLink({
+      diagnostics: [{ content: 'x'.repeat(DEFAULT_BUG_REPORT_MAX_URL_LENGTH), id: 'logs', title: 'Logs' }],
+      environment,
+      gitHubRepo: 'owner/repo'
+    });
+    expect(link.clipboardText).not.toBeNull();
+    expect(link.url.length).toBeLessThanOrEqual(DEFAULT_BUG_REPORT_MAX_URL_LENGTH);
+  });
+
+  it('should keep a link exactly at the budget and move one character over it to the clipboard', () => {
+    const diagnostics = [{ content: 'abc', id: 'logs', title: 'Logs' }];
+    const fullLength = buildBugReportIssueFormLink({ diagnostics, environment, gitHubRepo: 'owner/repo', maxUrlLength: Infinity }).url.length;
+
+    const atBudget = buildBugReportIssueFormLink({ diagnostics, environment, gitHubRepo: 'owner/repo', maxUrlLength: fullLength });
+    expect(atBudget.clipboardText).toBeNull();
+    expect(atBudget.url.length).toBe(fullLength);
+
+    const overBudget = buildBugReportIssueFormLink({ diagnostics, environment, gitHubRepo: 'owner/repo', maxUrlLength: fullLength - 1 });
+    expect(overBudget.clipboardText).not.toBeNull();
+  });
+
+  it('should measure the encoded length, so non-ASCII text counts by its percent-encoded UTF-8', () => {
+    // 'Ж' is 2 bytes of UTF-8 (6 encoded characters); '😀' is 4 bytes (12 encoded characters).
+    const ascii = buildBugReportIssueFormLink({
+      diagnostics: [{ content: 'ab', id: 'a', title: 'A' }],
+      environment,
+      gitHubRepo: 'owner/repo',
+      maxUrlLength: Infinity
+    }).url.length;
+    const cyrillic = buildBugReportIssueFormLink({
+      diagnostics: [{ content: 'ЖЖ', id: 'a', title: 'A' }],
+      environment,
+      gitHubRepo: 'owner/repo',
+      maxUrlLength: Infinity
+    }).url.length;
+    const emoji = buildBugReportIssueFormLink({
+      diagnostics: [{ content: '😀', id: 'a', title: 'A' }],
+      environment,
+      gitHubRepo: 'owner/repo',
+      maxUrlLength: Infinity
+    }).url.length;
+    expect(cyrillic - ascii).toBe(10);
+    expect(emoji - ascii).toBe(10);
+
+    const fallback = buildBugReportIssueFormLink({
+      diagnostics: [{ content: '😀', id: 'a', title: 'A' }],
+      environment,
+      gitHubRepo: 'owner/repo',
+      maxUrlLength: emoji - 1
+    });
+    expect(fallback.clipboardText).toContain('😀');
+  });
+
+  it('should move an oversized report to the clipboard whole and point the form at it', () => {
+    const content = Array.from({ length: 2000 }, (_, index) => `entry ${String(index)} ✓`).join('\n');
+    const link = buildBugReportIssueFormLink({
+      diagnostics: [{ content, id: 'logs', title: 'Logs' }],
+      environment,
+      gitHubRepo: 'owner/repo',
+      title: 'Broken'
+    });
+    expect(link.clipboardText).toBe(`${formatBugReportEnvironment(environment)}\n\n### Logs\n\n\`\`\`\n${content}\n\`\`\``);
+    const url = new URL(link.url);
+    expect(url.searchParams.get('environment')).toBe(BUG_REPORT_PASTE_INSTRUCTIONS);
+    expect(url.searchParams.get('title')).toBe('Broken');
+    expect(url.searchParams.get('plugin-version')).toBe('1.2.3');
+    expect(link.url.length).toBeLessThanOrEqual(DEFAULT_BUG_REPORT_MAX_URL_LENGTH);
   });
 });

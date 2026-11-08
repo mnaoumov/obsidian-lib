@@ -19,6 +19,9 @@ import {
   Platform
 } from 'obsidian';
 
+import type { BugReportDiagnosticSection } from './bug-report-diagnostics.ts';
+
+import { formatBugReportDiagnostics } from './bug-report-diagnostics.ts';
 import { getMobileAppInfo } from './mobile-app-info.ts';
 
 /**
@@ -52,6 +55,68 @@ export enum BugReportIssueFormFieldId {
  * The file name of the bug-report issue form, under `.github/ISSUE_TEMPLATE`.
  */
 export const BUG_REPORT_ISSUE_FORM_TEMPLATE = 'bug_report.yml';
+
+/**
+ * The default budget, in characters of the encoded URL, of a prefilled bug-report link.
+ *
+ * Measured against `github.com` on 2026-11-07, signed out: an issue-form URL up to about 6,540 characters
+ * was answered with the usual redirect to the form, about 8,088 with a 502, and 8,288 and more with a 414.
+ * 6,000 leaves room for a longer repository name and for a signed-in session's own limits.
+ */
+export const DEFAULT_BUG_REPORT_MAX_URL_LENGTH = 6000;
+
+/**
+ * A link to a bug-report issue form, as {@link buildBugReportIssueFormLink} builds it.
+ */
+export interface BugReportIssueFormLink {
+  /**
+   * The text the user must paste into the form's environment field, when the full report did not fit the
+   * URL budget; `null` when the URL carries the whole report.
+   */
+  readonly clipboardText: null | string;
+
+  /**
+   * The link.
+   */
+  readonly url: string;
+}
+
+/**
+ * Parameters for {@link buildBugReportIssueFormLink}.
+ */
+export interface BuildBugReportIssueFormLinkParams {
+  /**
+   * The diagnostics the user agreed to include, appended to the environment field.
+   */
+  readonly diagnostics?: readonly BugReportDiagnosticSection[];
+
+  /**
+   * The environment, from {@link getBugReportEnvironment}.
+   */
+  readonly environment: BugReportEnvironment;
+
+  /**
+   * The plugin's GitHub repository, as `owner/name`.
+   */
+  readonly gitHubRepo: string;
+
+  /**
+   * The most characters the encoded URL may have before the report moves to the clipboard.
+   *
+   * @default {@link DEFAULT_BUG_REPORT_MAX_URL_LENGTH}
+   */
+  readonly maxUrlLength?: number;
+
+  /**
+   * The issue's title. Leave it out to keep the form's own default title.
+   */
+  readonly title?: string;
+}
+
+/**
+ * The text the environment field holds when the report moved to the clipboard.
+ */
+export const BUG_REPORT_PASTE_INSTRUCTIONS = 'The full environment and diagnostics were copied to your clipboard because they are too long for a link. Replace this text by pasting them here.';
 
 /**
  * The environment a bug report needs.
@@ -170,6 +235,41 @@ interface PlatformWithBuild {
 const UNKNOWN = 'unknown';
 
 /**
+ * Builds a link to a plugin's bug-report issue form, prefilled with the environment and the given
+ * diagnostics. When the encoded link would be longer than
+ * {@link BuildBugReportIssueFormLinkParams.maxUrlLength}, the environment field gets
+ * {@link BUG_REPORT_PASTE_INSTRUCTIONS} instead, and the full text is returned as
+ * {@link BugReportIssueFormLink.clipboardText} for the caller to copy. Nothing is cut.
+ *
+ * @param params - The parameters.
+ * @returns The link, and the text to paste when it did not fit.
+ */
+export function buildBugReportIssueFormLink(params: BuildBugReportIssueFormLinkParams): BugReportIssueFormLink {
+  const { environment } = params;
+  const diagnosticsMarkdown = formatBugReportDiagnostics(params.diagnostics ?? []);
+  const environmentText = diagnosticsMarkdown === ''
+    ? formatBugReportEnvironment(environment)
+    : `${formatBugReportEnvironment(environment)}\n\n${diagnosticsMarkdown}`;
+
+  function buildUrl(environmentFieldValue: string): string {
+    return getGitHubIssueFormUrl({
+      fields: {
+        [BugReportIssueFormFieldId.Environment]: environmentFieldValue,
+        [BugReportIssueFormFieldId.ObsidianVersion]: environment.obsidianVersion,
+        [BugReportIssueFormFieldId.OperatingSystem]: environment.operatingSystem,
+        [BugReportIssueFormFieldId.PluginVersion]: environment.plugin.version ?? UNKNOWN
+      },
+      gitHubRepo: params.gitHubRepo,
+      template: BUG_REPORT_ISSUE_FORM_TEMPLATE,
+      ...params.title !== undefined && { title: params.title }
+    });
+  }
+
+  const fullUrl = buildUrl(environmentText);
+  return fullUrl.length <= (params.maxUrlLength ?? DEFAULT_BUG_REPORT_MAX_URL_LENGTH) ? { clipboardText: null, url: fullUrl } : { clipboardText: environmentText, url: buildUrl(BUG_REPORT_PASTE_INSTRUCTIONS) };
+}
+
+/**
  * Renders a bug report's environment as a Markdown list.
  *
  * @param environment - The environment.
@@ -223,17 +323,12 @@ export async function getBugReportEnvironment(params: GetBugReportEnvironmentPar
 export async function getBugReportIssueFormUrl(params: GetBugReportIssueFormUrlParams): Promise<string> {
   const environment = await getBugReportEnvironment(params);
 
-  return getGitHubIssueFormUrl({
-    fields: {
-      [BugReportIssueFormFieldId.Environment]: formatBugReportEnvironment(environment),
-      [BugReportIssueFormFieldId.ObsidianVersion]: environment.obsidianVersion,
-      [BugReportIssueFormFieldId.OperatingSystem]: environment.operatingSystem,
-      [BugReportIssueFormFieldId.PluginVersion]: environment.plugin.version ?? UNKNOWN
-    },
+  return buildBugReportIssueFormLink({
+    environment,
     gitHubRepo: params.gitHubRepo,
-    template: BUG_REPORT_ISSUE_FORM_TEMPLATE,
+    maxUrlLength: Infinity,
     ...params.title !== undefined && { title: params.title }
-  });
+  }).url;
 }
 
 /**
