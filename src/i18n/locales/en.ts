@@ -16,6 +16,17 @@ export const en = {
       terminateOperation: 'You can terminate the operation by clicking the button below, but be aware it might leave the vault in an inconsistent state.',
       timedOut: 'The operation timed out after {{duration, number}} milliseconds.'
     },
+    bugReport: {
+      clipboardCopied: 'The bug report is too long for a link, so it was copied to your clipboard. Paste it into the Environment field of the form that opens.',
+      continue: 'Continue',
+      copyManuallyMessage: 'The bug report is too long for a link, and it could not be copied to your clipboard. Copy the text below, then paste it into the Environment field of the form that opens.',
+      copyManuallyTitle: 'Copy the bug report',
+      openIssueForm: 'Open the issue form',
+      potentiallyPrivate: 'Can contain private data, such as file names, notes or secrets. Left out unless you switch it on.',
+      previewHeading: 'This exact text will be put into the issue form. Nothing is sent until you submit the form on GitHub.',
+      reviewMessage: 'Choose which diagnostics to include in the bug report. Logs and settings can contain private data, such as file names, note content, tokens or passwords: check the preview before you continue.',
+      reviewTitle: 'Review the bug report'
+    },
     bulkOperation: {
       noOperations: 'No bulk operation of this plugin was found in the vault repository.',
       notActive: 'Bulk operation commits are off, or the vault is not in a git repository.',
