@@ -208,6 +208,215 @@ The one-shot lookup does exist, as `findPluginApi`, for code that has no compone
 
 Note that a re-enabled provider publishes a **new** record, so an old handle stays dead forever. This is exactly why the watch, and not a one-shot "give me the API" call, is the entire consumer surface: `ref.value` recovers, a cached handle does not.
 
+## Provider events
+
+The ref's `change` event says one thing only: whether the API is there. A provider often has news of its own as well, such as "this file was re-indexed" or "this note was removed". A consumer would otherwise have to poll for that. These are **application events**, and they belong in the contract like any method. Their lifecycle is harder, though, because each subscription outlives the call that made it and has to be torn down and made again around the provider being turned off and on.
+
+The example below is a link index. It is modelled on a real provider, [Advanced Metadata Cache](https://github.com/mnaoumov/obsidian-advanced-metadata-cache), whose answers change as notes are re-indexed. That plugin publishes its API through this registry and ships it as a self-contained `api.d.ts`. Its predecessor, Backlink Cache, is the pattern this registry replaced: it attached extra functions (`.safe`, `.originalFn`) to Obsidian's own `getBacklinksForFile`, with no version, no revocation and no events, and its current release only points to its successor. Neither plugin publishes events today, so the event half below is the shape to copy, not a quote.
+
+### The event map is part of the contract
+
+Declare the events as a map from event name to argument tuple, the same shape `AsyncEvents` from `@mnaoumov/typescript-lib/async-events` takes. Then expose ONE `on` method that returns an unsubscribe function:
+
+```typescript
+import type { ApiContract } from '@mnaoumov/typescript-lib/api-contract';
+
+import {
+  createArgumentsSchema,
+  createExpectedTypeGuard,
+  createTypeGuardSchema,
+  literalGuard,
+  NUMBER_GUARD,
+  STRING_GUARD
+} from '@mnaoumov/typescript-lib/api-contract';
+
+export interface LinkIndexEventMap {
+  'file-indexed': [path: string, linkCount: number];
+  'file-removed': [path: string];
+}
+
+export type LinkIndexEventName = keyof LinkIndexEventMap;
+
+export type LinkIndexListener<EventName extends LinkIndexEventName> = (...payload: LinkIndexEventMap[EventName]) => void;
+
+export interface LinkIndexApi {
+  getLinkCount(path: string): number;
+  on<EventName extends LinkIndexEventName>(name: EventName, listener: LinkIndexListener<EventName>): () => void;
+}
+
+const FUNCTION_GUARD = createExpectedTypeGuard('a function', (value: unknown): value is () => void => typeof value === 'function');
+
+export const LINK_INDEX_CONTRACT: ApiContract<LinkIndexApi> = {
+  getLinkCount: {
+    input: createArgumentsSchema([STRING_GUARD]),
+    output: createTypeGuardSchema(NUMBER_GUARD)
+  },
+  on: {
+    // A record rather than an array, so a new event name that is missing here does not compile.
+    input: createArgumentsSchema([
+      literalGuard<LinkIndexEventName>({ 'file-indexed': true, 'file-removed': true }),
+      FUNCTION_GUARD
+    ]),
+    output: createTypeGuardSchema(FUNCTION_GUARD)
+  }
+};
+```
+
+`on` returns a plain function instead of an `AsyncEventRef` with an `off` method beside it. There are two reasons:
+
+- **Teardown must not go through the handle.** Once the provider is disabled, `ref.value` is `null` and a cached handle throws `PluginApiRevokedError` on every property read. So an `offref` reached through the API cannot run at the very moment a consumer most needs to clean up. The unsubscribe function `on` returns is the provider's own closure, not a property of the handle, so calling it after revocation is safe.
+- **What crosses the registry is plain functions and plain data.** An `AsyncEventRef` carries the provider's emitter, a class instance from the provider's copy of this library. The consumer may run a different copy, which is exactly what [A note on library copies](#a-note-on-library-copies) rules out.
+
+The contract checks the `on` call itself while the validation debug switch is on: an unknown event name fails at the call site. It does **not** check the event payloads, because a payload travels into the consumer's listener and is never a value the handle returns. A listener that does not trust its provider validates the payload itself.
+
+### Emitting from the feature surface
+
+The emitter has to live and die with the published record, so put it in a child component. On a `PluginBase`, `addChild` attaches to the plugin's feature surface, the half that is torn down while a dependency is missing and rebuilt when the dependency comes back. `registerEvent` and `register` called on the plugin itself attach to the plugin. A listener registered that way in `onloadImpl` keeps firing after the surface is gone, and each rebuild adds another.
+
+<!-- snippet-check: context interface LinkIndexEventMap { 'file-indexed': [path: string, linkCount: number]; 'file-removed': [path: string]; } -->
+<!-- snippet-check: context type LinkIndexEventName = keyof LinkIndexEventMap; -->
+<!-- snippet-check: context type LinkIndexListener<EventName extends LinkIndexEventName> = (...payload: LinkIndexEventMap[EventName]) => void; -->
+<!-- snippet-check: context interface LinkIndexApi { getLinkCount(path: string): number; on<EventName extends LinkIndexEventName>(name: EventName, listener: LinkIndexListener<EventName>): () => void; } -->
+<!-- snippet-check: context declare const LINK_INDEX_CONTRACT: import('@mnaoumov/typescript-lib/api-contract').ApiContract<LinkIndexApi>; -->
+```typescript
+import type { PluginApiDeclaration } from '@mnaoumov/obsidian-lib/plugin/plugin-api';
+import type { App } from 'obsidian';
+
+import { PluginBase } from '@mnaoumov/obsidian-lib/plugin/plugin';
+import { AsyncEvents } from '@mnaoumov/typescript-lib/async-events';
+import { castTo } from '@mnaoumov/typescript-lib/object-utils';
+import { Component } from 'obsidian';
+
+class LinkIndexComponent extends Component {
+  public readonly api: LinkIndexApi;
+  private readonly events = new AsyncEvents<LinkIndexEventMap>();
+  private readonly linkCounts = new Map<string, number>();
+
+  public constructor(private readonly app: App) {
+    super();
+    // The published object holds the two API methods and nothing else, so a consumer holding
+    // the handle cannot reach `trigger` or the index.
+    this.api = {
+      getLinkCount: (path) => this.linkCounts.get(path) ?? 0,
+      on: (name, listener) => {
+        // `AsyncEvents.on` cannot carry a generic event name through to its listener type, so the listener is
+        // widened to every event's payload. `name` still picks the one event it is called for.
+        const eventRef = this.events.on<LinkIndexEventName, LinkIndexEventMap[LinkIndexEventName]>(
+          name,
+          castTo<(...payload: LinkIndexEventMap[LinkIndexEventName]) => void>(listener)
+        );
+        return () => {
+          this.events.offref(eventRef);
+        };
+      }
+    };
+  }
+
+  public override onload(): void {
+    this.registerEvent(this.app.metadataCache.on('resolve', (resolvedFile) => {
+      const linkCount = this.app.metadataCache.getFileCache(resolvedFile)?.links?.length ?? 0;
+      this.linkCounts.set(resolvedFile.path, linkCount);
+      this.events.trigger('file-indexed', resolvedFile.path, linkCount);
+    }));
+    this.registerEvent(this.app.metadataCache.on('deleted', (deletedFile) => {
+      this.linkCounts.delete(deletedFile.path);
+      this.events.trigger('file-removed', deletedFile.path);
+    }));
+  }
+}
+
+export class Plugin extends PluginBase {
+  private linkIndexComponent: LinkIndexComponent | null = null;
+
+  protected override getPluginApis(): PluginApiDeclaration[] {
+    if (this.linkIndexComponent === null) {
+      return [];
+    }
+
+    return [{
+      api: this.linkIndexComponent.api,
+      apiVersion: '1.0.0',
+      contract: LINK_INDEX_CONTRACT
+    }];
+  }
+
+  protected override onloadImpl(): void {
+    // `addChild` on a `PluginBase` attaches to the feature surface, so the index and its Obsidian
+    // listeners go down with the published record and come back with the next one.
+    this.linkIndexComponent = this.addChild(new LinkIndexComponent(this.app));
+  }
+}
+```
+
+`onloadImpl` runs again on every rebuild of the surface, so each published record gets its own emitter. A listener added to the old record's emitter is never called again. That is what the consumer side below relies on.
+
+`AsyncEvents.trigger` calls every listener in order, even after one of them throws. So one consumer's broken listener cannot keep the provider's other consumers from hearing the event.
+
+### Subscribing for as long as the provider is there
+
+The consumer subscribes whenever the ref gains a value and unsubscribes whenever it loses one. The ref's `change` event marks both edges:
+
+<!-- snippet-check: context interface LinkIndexEventMap { 'file-indexed': [path: string, linkCount: number]; 'file-removed': [path: string]; } -->
+<!-- snippet-check: context type LinkIndexEventName = keyof LinkIndexEventMap; -->
+<!-- snippet-check: context type LinkIndexListener<EventName extends LinkIndexEventName> = (...payload: LinkIndexEventMap[EventName]) => void; -->
+<!-- snippet-check: context interface LinkIndexApi { getLinkCount(path: string): number; on<EventName extends LinkIndexEventName>(name: EventName, listener: LinkIndexListener<EventName>): () => void; } -->
+<!-- snippet-check: context declare const LINK_INDEX_CONTRACT: import('@mnaoumov/typescript-lib/api-contract').ApiContract<LinkIndexApi>; -->
+```typescript
+import { watchPluginApi } from '@mnaoumov/obsidian-lib/plugin/plugin-api';
+import { Plugin } from 'obsidian';
+
+export default class MyConsumerPlugin extends Plugin {
+  private unsubscribeFromLinkIndex: (() => void) | null = null;
+
+  public override onload(): void {
+    const ref = watchPluginApi<LinkIndexApi>({
+      apiVersionRange: '^1',
+      app: this.app,
+      component: this,
+      contract: LINK_INDEX_CONTRACT,
+      pluginId: 'link-index'
+    });
+
+    const rebind = (): void => {
+      // Drop the subscription on the previous record first. The unsubscribe function is the
+      // provider's own closure, not a property of the revoked handle, so it does not throw.
+      this.unsubscribeFromLinkIndex?.();
+      this.unsubscribeFromLinkIndex = ref.value?.on('file-indexed', (path, linkCount) => {
+        console.log(`${path} now has ${String(linkCount)} links`);
+      }) ?? null;
+    };
+
+    ref.on('change', rebind);
+    // `watchPluginApi` has already read the registry once, so a provider that loaded first is
+    // available now and fires no `change` until it goes away.
+    rebind();
+
+    this.register(() => {
+      this.unsubscribeFromLinkIndex?.();
+      this.unsubscribeFromLinkIndex = null;
+    });
+  }
+}
+```
+
+The listener's arguments are typed from the event name: `path` is a `string` and `linkCount` a `number`, and a misspelled event name does not compile.
+
+What happens across a provider's lifecycle:
+
+| Moment | What the consumer sees |
+| --- | --- |
+| The consumer loads first | `ref.value` is `null`, `rebind` subscribes to nothing, and the first `change` subscribes. |
+| The provider loads first | `rebind()` in `onload` subscribes straight away. |
+| The provider is disabled, or loses a dependency of its own | Its surface unloads and its record is revoked. `change` fires, `rebind` calls the old unsubscribe and leaves nothing subscribed. |
+| The provider is enabled again | A new record with a new emitter is published. `change` fires and `rebind` subscribes to the new emitter. |
+| The consumer unloads | The watch stops, and the `register` callback drops the live subscription so the provider stops calling into an unloaded plugin. |
+
+Three shortcuts look right and are wrong:
+
+- **Subscribing once in `onload`.** It subscribes to nothing when the provider loads second, and it never hears from a re-enabled provider, whose emitter is a new one.
+- **Subscribing on `change` without unsubscribing first.** Every disable-and-enable cycle of the provider then leaves one more subscription behind on an emitter that is never called again, and each one holds your listener in memory. Because `rebind` unsubscribes before it subscribes, there is never more than one.
+- **Reading `ref.value` inside the teardown.** By then it is `null` or revoked. Keep the unsubscribe function you were given instead.
+
 ## When it is not available
 
 `whenAvailable()` waits (10 seconds by default, configurable via `timeoutInMilliseconds`) and then rejects with a `PluginApiUnavailableError` carrying the reason:
