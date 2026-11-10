@@ -111,6 +111,17 @@ export const en = {
       updateFailed: 'Failed to update {{dependencyPluginName}}. Check the console for more information.',
       versionMismatchNotice: '{{pluginName}} needs a newer version of {{dependencyPluginName}}. Update it to resume.'
     },
+    pluginRequirement: {
+      enable: 'Enable {{requiredPluginName}}',
+      enableFailed: 'Failed to enable {{requiredPluginName}}. Check the console for more information.',
+      invalidVersionNotice: '{{pluginName}} needs {{requiredPluginName}} {{minPluginVersion}} or newer, and the installed version cannot be read. Update {{requiredPluginName}}.',
+      notEnabledNotice: '{{pluginName}} needs {{requiredPluginName}}, which is installed but not enabled.',
+      notInstalledNotice: '{{pluginName}} needs {{requiredPluginName}}, which is not installed.',
+      notLoadedNotice: '{{pluginName}} needs {{requiredPluginName}}, which is enabled but did not load. Enable it again, or check the console for its error.',
+      openCommunityPlugins: 'Open community plugins',
+      outdatedNotice: '{{pluginName}} needs {{requiredPluginName}} {{minPluginVersion}} or newer. Update {{requiredPluginName}}.',
+      shapeMismatchNotice: '{{requiredPluginName}} is running, but not in a form {{pluginName}} can use. Update {{requiredPluginName}}.'
+    },
     pluginSuggestion: {
       enable: 'Enable',
       install: 'Install and enable',

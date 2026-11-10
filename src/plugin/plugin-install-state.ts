@@ -11,6 +11,8 @@
 
 import type { App } from 'obsidian';
 
+import { compare as compareVersions } from 'compare-versions';
+
 import type { PluginNoticeComponent } from '../components/plugin-notice-component.ts';
 
 import {
@@ -43,6 +45,28 @@ export enum InstalledPluginState {
    * Not installed at all.
    */
   NotInstalled = 'notInstalled'
+}
+
+/**
+ * How an installed plugin's release compares with the oldest release another plugin works with.
+ */
+export enum PluginVersionComparison {
+  /**
+   * The release is the minimum or newer.
+   */
+  AtLeastMinimum = 'atLeastMinimum',
+
+  /**
+   * The release is older than the minimum.
+   */
+  BelowMinimum = 'belowMinimum',
+
+  /**
+   * The release, or the minimum, is not a version `compare-versions` can parse — an empty `manifest.version`
+   * among them. A caller deciding whether to run should treat it like {@link PluginVersionComparison.BelowMinimum}
+   * (fail closed); it is a separate member so a caller explaining the problem can say which one it is.
+   */
+  Invalid = 'invalid'
 }
 
 /**
@@ -128,6 +152,24 @@ export interface UpdatePluginParams {
    * The display name of the plugin doing the asking, named when the update cannot help it.
    */
   readonly requestingPluginName: string;
+}
+
+/**
+ * Compares a plugin release with the oldest release another plugin works with.
+ *
+ * The one comparison `PluginGateComponent`'s `minPluginVersion` and `requirePlugin` share, so a
+ * dependency declared through either reads a version the same way.
+ *
+ * @param version - The installed release, usually `manifest.version`.
+ * @param minVersion - The oldest release that is acceptable.
+ * @returns The {@link PluginVersionComparison}.
+ */
+export function comparePluginVersionWithMinimum(version: string, minVersion: string): PluginVersionComparison {
+  try {
+    return compareVersions(version, minVersion, '>=') ? PluginVersionComparison.AtLeastMinimum : PluginVersionComparison.BelowMinimum;
+  } catch {
+    return PluginVersionComparison.Invalid;
+  }
 }
 
 /**
