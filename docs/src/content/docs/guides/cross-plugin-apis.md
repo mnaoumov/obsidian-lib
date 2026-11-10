@@ -680,3 +680,76 @@ It deliberately carries **no API handle**. A handle delivered by a one-shot even
 Because it rides Obsidian's own event source rather than anything belonging to this library, a plugin that does not use this library at all can still listen. A `trigger` has no replay, though, so a listener that starts late reads the current state once and uses the events for the transitions after that.
 
 Those two names, their payload, and the registry the APIs themselves sit in are a frozen, documented protocol. [Plugin API protocol](/obsidian-lib/guides/plugin-api-protocol/) writes all of it down for a consumer who will never install this library — including the part `watchPluginApi` hides from you, which is how a published API is actually located and which version wins.
+
+## Plugins that publish no API
+
+Most plugins publish nothing through the registry, so everything above has nothing to watch. For those, `@mnaoumov/obsidian-lib/plugin/plugin-instance` reaches the plugin INSTANCE instead:
+
+```typescript
+import type { Plugin } from 'obsidian';
+
+import {
+  getLoadedPlugin,
+  getPluginAvailability,
+  waitForPlugin
+} from '@mnaoumov/obsidian-lib/plugin/plugin-instance';
+import { Plugin as ObsidianPlugin } from 'obsidian';
+
+interface DataviewPlugin extends Plugin {
+  readonly api: object;
+}
+
+function isDataviewPlugin(plugin: Plugin): plugin is DataviewPlugin {
+  return 'api' in plugin;
+}
+
+export default class MyPlugin extends ObsidianPlugin {
+  public override async onload(): Promise<void> {
+    // Synchronous: the instance, or `null` while it is missing, disabled or still loading.
+    const dataview = getLoadedPlugin<DataviewPlugin>({ app: this.app, isPlugin: isDataviewPlugin, pluginId: 'dataview' });
+
+    // Why it is not there: 'notInstalled', 'notEnabled', 'notLoaded', 'loading', 'outdated', ...
+    console.log(getPluginAvailability({ app: this.app, minPluginVersion: '0.5.0', pluginId: 'dataview' }));
+
+    // Waits for it, by default for 10 seconds; ends early when this plugin unloads.
+    const waited = await waitForPlugin<DataviewPlugin>({ app: this.app, component: this, isPlugin: isDataviewPlugin, pluginId: 'dataview' });
+    console.log(dataview, waited.api);
+  }
+}
+```
+
+What "loaded" means here, read from Obsidian `1.15.1`: Obsidian stores a plugin's instance before it awaits its `onload`, so `app.plugins.getPlugin` can hand you a plugin that is still loading. These helpers count it as available only once `onload` has settled. That is the most anything can promise: a plugin that starts more work without awaiting it, or waits for layout-ready, is "loaded" before that work is done, and Obsidian has no hook saying every plugin has finished initializing.
+
+The type argument alone is your assertion, not a check. Pass `isPlugin` and an instance that fails it reads as `shapeMismatch`, the usual sign of a release that renamed what you use. `minPluginVersion` is a plugin RELEASE compared with its `manifest.version`; it is not the API contract version `apiVersionRange` negotiates.
+
+`waitForPlugin` resolves at once when the plugin is already there, which covers your plugin being reloaded after its dependency. Otherwise it listens to `app.plugins`, which triggers `changed` after every enable, disable, install and uninstall, and to the `obsidian-lib:plugin-loaded` broadcast, so nothing polls. It subscribes before it first looks, so a change in between cannot be missed, and it removes every listener when it settles. A timeout rejects with `PluginInstanceUnavailableError`, whose `availability` says what was wrong at that moment; an `abortSignal` or the unload of `component` rejects with the abort reason.
+
+When your plugin cannot go on without the other one, ask the user:
+
+```typescript
+import { PluginNoticeComponent } from '@mnaoumov/obsidian-lib/components/plugin-notice-component';
+import { requirePlugin } from '@mnaoumov/obsidian-lib/plugin/plugin-instance';
+import { Plugin } from 'obsidian';
+
+export default class MyPlugin extends Plugin {
+  public override async onload(): Promise<void> {
+    const pluginNoticeComponent = new PluginNoticeComponent({ app: this.app, pluginName: this.manifest.name });
+    this.addChild(pluginNoticeComponent);
+
+    const dataview = await requirePlugin({
+      app: this.app,
+      component: this,
+      minPluginVersion: '0.5.0',
+      pluginId: 'dataview',
+      pluginName: 'Dataview',
+      pluginNoticeComponent,
+      requestingPluginName: this.manifest.name
+    });
+    console.log(dataview.manifest.version);
+  }
+}
+```
+
+`requirePlugin` waits like `waitForPlugin`, with no timeout unless you pass one. Once the layout is ready (before that, a plugin Obsidian has not reached yet looks exactly like a missing one), it shows a notice saying what is wrong, with the button that fixes it: install, enable, or update, plus a way to the community plugins list. The notice follows the state as it changes and goes away when the plugin arrives. A repair that fails is reported and the wait goes on, so the user can try again. A `PluginBase` plugin passes its own `pluginNoticeComponent` and `this`.
+
+It settles once, and that is the line between it and [Requiring another plugin](#requiring-another-plugin). `requirePlugin` is for an optional feature, or a one-time step, that needs the other plugin when it runs. A plugin that must stop working whenever the other one goes away declares a `PluginDependency` instead, which owns that teardown; a second teardown mechanism beside it would only conflict with it.

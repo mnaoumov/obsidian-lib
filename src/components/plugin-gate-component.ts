@@ -89,10 +89,7 @@ import type {
 } from 'obsidian';
 
 import { convertAsyncToSync } from '@mnaoumov/typescript-lib/async';
-import {
-  compare as compareVersions,
-  satisfies as satisfiesVersion
-} from 'compare-versions';
+import { satisfies as satisfiesVersion } from 'compare-versions';
 import {
   ButtonComponent,
   PluginSettingTab
@@ -118,10 +115,12 @@ import {
   watchPluginApi
 } from '../plugin/plugin-api.ts';
 import {
+  comparePluginVersionWithMinimum,
   getInstalledPluginState,
   getInstalledPluginVersion,
   installAndEnablePlugin,
   InstalledPluginState,
+  PluginVersionComparison,
   updatePlugin
 } from '../plugin/plugin-install-state.ts';
 import {
@@ -622,15 +621,7 @@ export class PluginGateComponent extends ComponentEx {
       pluginId: dependency.pluginId
     });
 
-    if (installedVersion === null) {
-      return false;
-    }
-
-    try {
-      return !compareVersions(installedVersion, dependency.minPluginVersion, '>=');
-    } catch {
-      return true;
-    }
+    return installedVersion !== null && comparePluginVersionWithMinimum(installedVersion, dependency.minPluginVersion) !== PluginVersionComparison.AtLeastMinimum;
   }
 
   /**

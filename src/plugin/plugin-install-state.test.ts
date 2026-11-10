@@ -25,10 +25,12 @@ import type { PluginNoticeComponent } from '../components/plugin-notice-componen
 
 import { UpdateCommunityPluginResult } from '../community-plugins.ts';
 import {
+  comparePluginVersionWithMinimum,
   getInstalledPluginState,
   getInstalledPluginVersion,
   installAndEnablePlugin,
   InstalledPluginState,
+  PluginVersionComparison,
   updatePlugin
 } from './plugin-install-state.ts';
 
@@ -80,6 +82,22 @@ beforeEach(() => {
   showNotice = vi.fn();
   mockEnableCommunityPlugin.mockResolvedValue(undefined);
   mockInstallConfigureEnableCommunityPlugin.mockResolvedValue(undefined);
+});
+
+describe('comparePluginVersionWithMinimum', () => {
+  it('should accept the minimum itself and anything newer', () => {
+    expect(comparePluginVersionWithMinimum('2.0.0', '2.0.0')).toBe(PluginVersionComparison.AtLeastMinimum);
+    expect(comparePluginVersionWithMinimum('2.10.0', '2.9.0')).toBe(PluginVersionComparison.AtLeastMinimum);
+  });
+
+  it('should report an older release', () => {
+    expect(comparePluginVersionWithMinimum('1.9.9', '2.0.0')).toBe(PluginVersionComparison.BelowMinimum);
+  });
+
+  it('should report a version it cannot parse as invalid', () => {
+    expect(comparePluginVersionWithMinimum('', '2.0.0')).toBe(PluginVersionComparison.Invalid);
+    expect(comparePluginVersionWithMinimum('not-a-version', '2.0.0')).toBe(PluginVersionComparison.Invalid);
+  });
 });
 
 describe('getInstalledPluginState', () => {
