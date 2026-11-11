@@ -205,6 +205,24 @@ describe('PluginSettingsComponentBase', () => {
     expect(dataHandler.saveData).toHaveBeenCalled();
   });
 
+  it('should restore the last saved settings in memory when a save is refused, and rethrow', async () => {
+    const dataHandler = new MockDataHandler({ count: 1, name: 'saved' });
+    const component = createComponent(dataHandler);
+    await component.loadWithPromises();
+
+    const refusal = new Error('refused');
+    vi.mocked(dataHandler.saveData).mockRejectedValueOnce(refusal);
+    await component.setProperty('name', 'rejected');
+    await expect(component.saveToFile()).rejects.toBe(refusal);
+
+    expect(component.settings.name).toBe('saved');
+    expect(dataHandler.data).toStrictEqual({ count: 1, name: 'saved' });
+
+    await component.setProperty('count', 2);
+    await component.saveToFile();
+    expect(dataHandler.data).toStrictEqual({ count: 2, name: 'saved' });
+  });
+
   it('should not save to file when settings unchanged', async () => {
     const dataHandler = new MockDataHandler({ count: 0, name: 'default' });
     const component = createComponent(dataHandler);

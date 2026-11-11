@@ -536,7 +536,15 @@ export class PluginSettingsComponentBase<PluginSettings extends object> extends 
       return;
     }
 
-    await this.saveToFileImpl();
+    try {
+      await this.saveToFileImpl();
+    } catch (error) {
+      // A refused save (an oversized `data.json`, see `PluginDataHandler`) wrote nothing, so the file still holds
+      // the last saved settings. Put memory back to match it: otherwise every later save would carry the rejected
+      // edit again and fail the same way, and the plugin would run on settings that exist nowhere on disk.
+      this.currentState = await this.cloneState(this.lastSavedState);
+      throw error;
+    }
     await this.asyncEvents.triggerAsync(
       'saveSettings',
       this.currentState as ReadonlyPluginSettingsState<PluginSettings>,

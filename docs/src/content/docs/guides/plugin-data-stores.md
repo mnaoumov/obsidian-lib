@@ -5,6 +5,10 @@ description: Device-local records, validated cache seeds, and mergeable shared p
 
 Choose persistence by what the records mean. Device-specific state belongs in `LocalDataStore`. Expensive derived caches can use `DataStoreSeeds` to bootstrap another device, with per-file validation before reuse. Authoritative state that must survive concurrent device edits belongs in `SharedDataStore`.
 
+## Moving out of `data.json`
+
+A plugin's `data.json` is for small settings. `PluginDataHandler` refuses one larger than 16 MiB, in both directions, and leaves the file untouched (see [the `data.json` size limit](/obsidian-lib/guides/plugin-helpers/#the-datajson-size-limit)). State that grows with the vault, or records each device keeps for itself, belongs in the stores below. To migrate, read the old field once from the loaded settings and write it into the store. Confirm the store holds it. Only then drop the field from the settings class, so the next save shrinks `data.json`. If some users' files are already over the limit, the plugin cannot load them. Ship one release that raises `maxSizeInBytes` and performs the migration.
+
 ## Local records
 
 `LocalDataStore` uses IndexedDB and never writes to the vault. Scope it by the device-local vault identity (`app.appId`), plugin manifest id and a store id including your schema version. A vault display name is insufficient: two vaults can have the same name. Close every connection when its owner unloads.

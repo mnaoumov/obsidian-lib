@@ -152,6 +152,24 @@ The most important methods in the execution order:
 - `onLoadRecord()`
 - `onSavingRecord()`
 
+### The `data.json` size limit
+
+`PluginDataHandler`, the `dataHandler` a settings component reads and writes through, refuses a `data.json` larger than `DEFAULT_PLUGIN_DATA_MAX_SIZE_IN_BYTES` (16 MiB). Obsidian sets no limit of its own. It reads and parses the whole file on every startup, and it swallows a failed read or write. So the guard runs before Obsidian is called:
+
+- **Load.** The handler reads the file's size through `app.vault.adapter.stat` before `Plugin.loadData` reads it. An oversized file throws `PluginDataSizeLimitExceededError` and is never read, so the plugin fails to load. The file stays as it is and is never replaced with defaults.
+- **Save.** The handler serializes the data the way Obsidian writes it (`JSON.stringify(data, undefined, 2)`) and counts the UTF-8 bytes, so indentation and multi-byte text count. An oversized save throws before anything is written. `saveToFile()` then puts the in-memory settings back to the last saved ones, so the file and memory still agree, and rethrows the error. A value that JSON cannot serialize, such as a cyclic object, also throws instead of being dropped silently.
+
+The error names the plugin, the path, the size and the limit (`pluginId`, `pluginName`, `path`, `sizeInBytes`, `maxSizeInBytes`, `operation`). Change the limit per plugin:
+
+<!-- snippet-check: context declare const plugin: import('obsidian').Plugin; -->
+```ts
+import { PluginDataHandler } from '@mnaoumov/obsidian-lib/data-handler';
+
+const dataHandler = new PluginDataHandler(plugin, { maxSizeInBytes: 1024 * 1024 });
+```
+
+`Infinity` turns the guard off. The limit protects startup and is not an Obsidian Sync quota, which depends on the plan. Keep `data.json` for small settings. If it grows with the vault, move the growing part to the [plugin data stores](/obsidian-lib/guides/plugin-data-stores/).
+
 ## [PluginSettingsTabBase](https://github.com/mnaoumov/obsidian-lib/blob/main/src/plugin/plugin-settings-tab.ts)
 
 <!-- snippet-check: context declare class FooPluginSettings { invalidCharacterAction: 'Remove' | 'Replace'; replacementCharacter: string; } -->
