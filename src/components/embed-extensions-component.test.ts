@@ -19,58 +19,93 @@ import { EmbedExtensionsComponent } from './embed-extensions-component.ts';
 
 interface Mocks {
   readonly app: AppOriginal;
-  readonly registerExtensions: ReturnType<typeof vi.fn>;
+  readonly embedByExtension: Map<string, EmbedCreator>;
+  readonly registerExtension: ReturnType<typeof vi.fn>;
   readonly unregisterExtensions: ReturnType<typeof vi.fn>;
 }
 
 describe('EmbedExtensionsComponent', () => {
-  it('should register extensions with the embed registry after loading', () => {
-    const { app, registerExtensions } = createMocks();
+  it('should register each extension with the embed registry after loading', () => {
+    const { app, embedByExtension, registerExtension } = createMocks();
     const component = new EmbedExtensionsComponent(app);
     component.load();
     const registerSpy = vi.spyOn(component, 'register');
     const embedCreator = vi.fn<EmbedCreator>();
 
-    component.registerExtensions(['ext1', 'ext2'], embedCreator);
+    component.registerExtensions(['alpha', 'beta'], embedCreator);
 
-    expect(registerExtensions).toHaveBeenCalledWith(['ext1', 'ext2'], embedCreator);
+    expect(registerExtension).toHaveBeenNthCalledWith(1, 'alpha', embedCreator);
+    expect(registerExtension).toHaveBeenNthCalledWith(2, 'beta', embedCreator);
+    expect(Object.fromEntries(embedByExtension)).toEqual({ alpha: embedCreator, beta: embedCreator });
     expect(registerSpy).toHaveBeenCalledOnce();
   });
 
   it('should unregister the extensions when unloaded', () => {
-    const { app, unregisterExtensions } = createMocks();
+    const { app, embedByExtension, unregisterExtensions } = createMocks();
     const component = new EmbedExtensionsComponent(app);
     component.load();
 
-    component.registerExtensions(['ext1', 'ext2'], vi.fn<EmbedCreator>());
+    component.registerExtensions(['alpha', 'beta'], vi.fn<EmbedCreator>());
     expect(unregisterExtensions).not.toHaveBeenCalled();
 
     component.unload();
 
-    expect(unregisterExtensions).toHaveBeenCalledWith(['ext1', 'ext2']);
+    expect(unregisterExtensions).toHaveBeenCalledWith(['alpha', 'beta']);
+    expect(Object.fromEntries(embedByExtension)).toEqual({});
+  });
+
+  it('should unregister the extensions it registered and keep the conflicting one when an extension is taken', () => {
+    const { app, embedByExtension } = createMocks();
+    const ownerCreator = vi.fn<EmbedCreator>();
+    embedByExtension.set('taken', ownerCreator);
+    const component = new EmbedExtensionsComponent(app);
+    component.load();
+    const registerSpy = vi.spyOn(component, 'register');
+
+    expect(() => {
+      component.registerExtensions(['free', 'taken', 'later'], vi.fn<EmbedCreator>());
+    }).toThrow('Attempting to register an embed for an already registered extension "taken"');
+
+    expect(Object.fromEntries(embedByExtension)).toEqual({ taken: ownerCreator });
+    expect(registerSpy).not.toHaveBeenCalled();
+
+    component.unload();
+
+    expect(Object.fromEntries(embedByExtension)).toEqual({ taken: ownerCreator });
   });
 
   it('should throw when registering extensions before the component is loaded', () => {
-    const { app, registerExtensions } = createMocks();
+    const { app, registerExtension } = createMocks();
     const component = new EmbedExtensionsComponent(app);
 
     expect(() => {
-      component.registerExtensions(['ext1'], vi.fn<EmbedCreator>());
+      component.registerExtensions(['alpha'], vi.fn<EmbedCreator>());
     }).toThrow('Component is not loaded');
-    expect(registerExtensions).not.toHaveBeenCalled();
+    expect(registerExtension).not.toHaveBeenCalled();
   });
 });
 
 function createMocks(): Mocks {
-  const registerExtensions = vi.fn();
-  const unregisterExtensions = vi.fn();
+  const embedByExtension = new Map<string, EmbedCreator>();
+  // Mirrors Obsidian 1.15.1's `EmbedRegistry.registerExtension`, which throws for a registered extension.
+  const registerExtension = vi.fn((extension: string, embedCreator: EmbedCreator) => {
+    if (embedByExtension.has(extension)) {
+      throw new Error(`Attempting to register an embed for an already registered extension "${extension}"`);
+    }
+    embedByExtension.set(extension, embedCreator);
+  });
+  const unregisterExtensions = vi.fn((extensions: string[]) => {
+    for (const extension of extensions) {
+      embedByExtension.delete(extension);
+    }
+  });
 
   const app = strictProxy<AppOriginal>({
     embedRegistry: {
-      registerExtensions,
+      registerExtension,
       unregisterExtensions
     }
   });
 
-  return { app, registerExtensions, unregisterExtensions };
+  return { app, embedByExtension, registerExtension, unregisterExtensions };
 }

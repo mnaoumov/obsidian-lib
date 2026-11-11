@@ -30,6 +30,14 @@ export class EmbedExtensionsComponent extends ComponentEx {
    * Registers the specified file extensions with the given embed type in the Obsidian app.
    * The extensions will be automatically unregistered when the component is unloaded.
    *
+   * The registration is all or nothing: Obsidian throws for an extension that is already registered (by the core or by
+   * another plugin), and in that case every extension this call registered before the conflict is unregistered again
+   * before the error is rethrown. An extension registered by someone else is never unregistered.
+   *
+   * The creator serves every surface that loads an embed: `![[file.ext#subpath]]` in Reading view and Live Preview,
+   * canvas file nodes and the page-preview hover popover. It receives the link's subpath with its leading `#`, or an
+   * empty string. Returning `null` makes Obsidian fall back to its generic file embed.
+   *
    * @param extensions - An array of file extensions to register.
    * @param embedCreator - The embed creator function to associate with the extensions.
    *
@@ -41,9 +49,19 @@ export class EmbedExtensionsComponent extends ComponentEx {
   public registerExtensions(extensions: string[], embedCreator: EmbedCreator): void {
     this.ensureLoaded();
 
-    this.app.embedRegistry.registerExtensions(extensions, embedCreator);
+    const registeredExtensions: string[] = [];
+    try {
+      for (const extension of extensions) {
+        this.app.embedRegistry.registerExtension(extension, embedCreator);
+        registeredExtensions.push(extension);
+      }
+    } catch (error) {
+      this.app.embedRegistry.unregisterExtensions(registeredExtensions);
+      throw error;
+    }
+
     this.register(() => {
-      this.app.embedRegistry.unregisterExtensions(extensions);
+      this.app.embedRegistry.unregisterExtensions(registeredExtensions);
     });
   }
 }
