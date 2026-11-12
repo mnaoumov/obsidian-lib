@@ -29,6 +29,21 @@ const OBSIDIAN_INTEGRATION_TEST_FILES = 'src/**/*.obsidian.integration.test.ts';
 const DEMO_VAULT_HELPER_INTEGRATION_TEST_FILE = 'src/demo-vault-helper.obsidian.integration.test.ts';
 const CONSUMER_LIB_INTEGRATION_TEST_FILE = 'src/integration-test-lib.obsidian.integration.test.ts';
 const PLUGIN_API_INTEGRATION_TEST_FILE = 'src/plugin/plugin-api.obsidian.integration.test.ts';
+const ANDROID_ONLY_INTEGRATION_TEST_FILES = 'src/**/*.android.obsidian.integration.test.ts';
+
+// The Android project runs the mobile-only files and the cross-platform files verified on the emulator, not every
+// cross-platform file: most were written against desktop only and have never run on a phone. Add a file here once
+// it passes on Android.
+const ANDROID_INTEGRATION_TEST_FILES = [
+  ANDROID_ONLY_INTEGRATION_TEST_FILES,
+  'src/command-handlers/open-bug-report-command-handler.obsidian.integration.test.ts',
+  'src/components/embeddable-markdown-editor-component.obsidian.integration.test.ts'
+];
+
+// The same budget `defineObsidianPluginVitestConfig` gives every plugin's Android project: double the Appium transport's
+// per-eval cap, so an over-long closure reports itself.
+const ANDROID_TEST_TIMEOUT_IN_MILLISECONDS = 60_000;
+const ANDROID_HOOK_TIMEOUT_MULTIPLIER = 4;
 
 // The only file here that `vi.stubGlobal`s a DOM global the VM pool cannot redefine. See AGENTS.md.
 const GLOBAL_STUB_TEST_FILES = ['src/is-in-obsidian.test.ts'];
@@ -47,6 +62,7 @@ const OBSIDIAN_SHARED_INSTANCE_GROUP_ORDER = 2;
 const OBSIDIAN_DEMO_VAULT_HELPER_GROUP_ORDER = 3;
 const OBSIDIAN_CONSUMER_LIB_GROUP_ORDER = 4;
 const OBSIDIAN_PLUGIN_API_GROUP_ORDER = 5;
+const OBSIDIAN_ANDROID_GROUP_ORDER = 6;
 
 export default defineLibraryVitestConfig({
   plugins: [selfSourcePlugin('@mnaoumov/obsidian-lib')],
@@ -104,7 +120,8 @@ export default defineLibraryVitestConfig({
           ...DEFAULT_VITEST_TEST_EXCLUDE,
           DEMO_VAULT_HELPER_INTEGRATION_TEST_FILE,
           CONSUMER_LIB_INTEGRATION_TEST_FILE,
-          PLUGIN_API_INTEGRATION_TEST_FILE
+          PLUGIN_API_INTEGRATION_TEST_FILE,
+          ANDROID_ONLY_INTEGRATION_TEST_FILES
         ],
         fileParallelism: false,
         globalSetup: ['./scripts/integration-test-obsidian-global-setup.ts'],
@@ -163,6 +180,31 @@ export default defineLibraryVitestConfig({
         sequence: { groupOrder: OBSIDIAN_PLUGIN_API_GROUP_ORDER },
         setupFiles: ['obsidian-integration-testing/vitest-setup'],
         testTimeout: INTEGRATION_TEST_TIMEOUT_IN_MILLISECONDS
+      }
+    },
+    {
+      test: {
+        environment: 'node',
+        // The shared harness plugin on the Android emulator, driven through Appium. See AGENTS.md.
+        environmentOptions: {
+          obsidianTransport: {
+            appiumUrl: 'http://localhost:4723',
+            avdName: 'obsidian_test',
+            type: 'obsidian-android-appium'
+          }
+        },
+        fileParallelism: false,
+        globalSetup: ['./scripts/integration-test-obsidian-global-setup.ts'],
+        hookTimeout: ANDROID_TEST_TIMEOUT_IN_MILLISECONDS * ANDROID_HOOK_TIMEOUT_MULTIPLIER,
+        include: ANDROID_INTEGRATION_TEST_FILES,
+        maxWorkers: 1,
+        name: 'obsidian-integration-tests:android',
+        sequence: { groupOrder: OBSIDIAN_ANDROID_GROUP_ORDER },
+        setupFiles: [
+          'obsidian-integration-testing/vitest-setup',
+          './scripts/integration-test-obsidian-setup.ts'
+        ],
+        testTimeout: ANDROID_TEST_TIMEOUT_IN_MILLISECONDS
       }
     }
   ],
