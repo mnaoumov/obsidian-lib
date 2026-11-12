@@ -110,6 +110,12 @@ import {
   referenceToFileChange
 } from './reference.ts';
 
+/**
+ * Matches the Obsidian size an embed alias ends in (`<name>|532`, `<name>|532x400`, or `<name>\|532` inside a table),
+ * divider included. The first position where it matches up to the end is the LAST divider followed by a size.
+ */
+const EMBED_ALIAS_SIZE_SUFFIX_REG_EXP = /\\?\|\d+(?:x\d+)?$/;
+
 const ESCAPED_WIKILINK_DIVIDER = String.raw`\|`;
 
 /**
@@ -3126,16 +3132,29 @@ function refreshFileNameAlias(params: RefreshFileNameAliasParams): string | unde
     ? basename(dirname(oldTargetPath))
     : null;
 
-  if (alias === oldBaseName || alias === oldFolderNoteDisplayName) {
-    return displayName;
+  function refreshName(name: string): string {
+    if (name === oldBaseName || name === oldFolderNoteDisplayName) {
+      return displayName;
+    }
+
+    if (name === basename(oldTargetPath)) {
+      return isFolderNote ? `${displayName}.${newTargetFile.extension}` : newTargetFile.name;
+    }
+
+    return name;
   }
 
-  if (alias === basename(oldTargetPath)) {
-    return isFolderNote ? `${displayName}.${newTargetFile.extension}` : newTargetFile.name;
+  if (alias === undefined) {
+    // An alias-less wikilink to `charlie/!` would display `!`, so it takes the folder's name as its alias.
+    return isFolderNote && canAddAlias ? displayName : undefined;
   }
 
-  // An alias-less wikilink to `charlie/!` would display `!`, so it takes the folder's name as its alias.
-  return alias === undefined && isFolderNote && canAddAlias ? displayName : alias;
+  // An embed alias may end in a size (`photo|532`, `photo.png|532x400`): refresh the name before it and keep the size.
+  // A custom alias such as `caption|532` is kept, because its name part is not a file name.
+  const sizeSuffixMatch = EMBED_ALIAS_SIZE_SUFFIX_REG_EXP.exec(alias);
+  return sizeSuffixMatch
+    ? refreshName(alias.slice(0, sizeSuffixMatch.index)) + sizeSuffixMatch[0]
+    : refreshName(alias);
 }
 
 function resolveFinalLinkPathStyleFromObsidianSettings(app: App): FinalLinkPathStyle {
