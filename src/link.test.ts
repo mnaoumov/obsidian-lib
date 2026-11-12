@@ -1553,6 +1553,52 @@ describe('app-dependent functions', () => {
       expect(result).toContain('[other.md]');
     });
 
+    describe('file-name embed alias with a size suffix', () => {
+      function updateEmbed(original: string, displayText: string, linkStyle: LinkStyle): string {
+        return updateLink({
+          app,
+          linkStyle,
+          newSourcePathOrFile: 'note.md',
+          newTargetPathOrFile: 'assets/renamed.png',
+          oldTargetPathOrFile: 'assets/photo.png',
+          reference: castTo<Reference>({ displayText, link: 'assets/photo.png', original }),
+          shouldUpdateFileNameAlias: true
+        });
+      }
+
+      it('should refresh the name of a markdown embed alias and keep its size', () => {
+        expect(updateEmbed('![photo|532](assets/photo.png)', 'photo|532', LinkStyle.Markdown)).toBe('![renamed|532](assets/renamed.png)');
+      });
+
+      it('should refresh the name with extension of a markdown embed alias and keep its size', () => {
+        expect(updateEmbed('![photo.png|532x400](assets/photo.png)', 'photo.png|532x400', LinkStyle.Markdown)).toBe(
+          '![renamed.png|532x400](assets/renamed.png)'
+        );
+      });
+
+      it('should keep a custom markdown embed alias with a size', () => {
+        expect(updateEmbed('![caption|532](assets/photo.png)', 'caption|532', LinkStyle.Markdown)).toBe('![caption|532](assets/renamed.png)');
+      });
+
+      it('should refresh the name of a wikilink embed alias and keep its size', () => {
+        expect(updateEmbed('![[assets/photo.png|photo|532]]', 'photo|532', LinkStyle.Wikilink)).toBe('![[assets/renamed.png|renamed|532]]');
+      });
+
+      it('should refresh the name with extension of a wikilink embed alias and keep its size', () => {
+        expect(updateEmbed('![[assets/photo.png|photo.png|532]]', 'photo.png|532', LinkStyle.Wikilink)).toBe(
+          '![[assets/renamed.png|renamed.png|532]]'
+        );
+      });
+
+      it('should keep a custom wikilink embed alias with a size', () => {
+        expect(updateEmbed('![[assets/photo.png|caption|532]]', 'caption|532', LinkStyle.Wikilink)).toBe('![[assets/renamed.png|caption|532]]');
+      });
+
+      it('should keep a size-only wikilink embed alias', () => {
+        expect(updateEmbed('![[assets/photo.png|532]]', '532', LinkStyle.Wikilink)).toBe('![[assets/renamed.png|532]]');
+      });
+    });
+
     it('should set isSingleSubpathAllowed when old source equals old target and alias exists', () => {
       const reference = {
         displayText: 'alias',
