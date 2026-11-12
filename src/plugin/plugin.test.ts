@@ -654,6 +654,67 @@ describe('lifecycle broadcast', () => {
     expect(castTo<PublishedPluginApiParams>(publishedParams).component).toBeInstanceOf(ComponentEx);
   });
 
+  it('should neither publish nor announce when the plugin unloads during its own load', async () => {
+    const deferred = createDeferred();
+    let hasOnloadImplStarted = false;
+
+    class SlowPublishingPlugin extends PublishingPlugin {
+      protected override async onloadImpl(): Promise<void> {
+        hasOnloadImplStarted = true;
+        await deferred.promise;
+      }
+    }
+
+    const callback = vi.fn<(payload: PluginLifecycleEventPayload) => void>();
+    app.workspace.on(PLUGIN_LOADED_EVENT_NAME, callback);
+
+    const plugin = new SlowPublishingPlugin(app, manifest);
+    plugin.load();
+    await vi.waitFor(() => {
+      expect(hasOnloadImplStarted).toBe(true);
+    });
+
+    // An update or Hot Reload disables the plugin while `onloadImpl` is still awaiting.
+    plugin.unload();
+    deferred.resolve();
+    await setTimeoutAsync(0);
+
+    // A publish now would register its revoke on the unloaded surface, so the record would outlive this instance
+    // and the next instance's publish of the same version would throw.
+    expect(mockPublishPluginApi).not.toHaveBeenCalled();
+    expect(callback).not.toHaveBeenCalled();
+  });
+
+  it('should neither publish nor announce when the plugin unloads while its surface children are still loading', async () => {
+    const deferred = createDeferred();
+    let hasChildLoadStarted = false;
+
+    class SlowChildComponent extends ComponentEx {
+      public override async onloadAsync(): Promise<void> {
+        hasChildLoadStarted = true;
+        await deferred.promise;
+      }
+    }
+
+    class SlowChildPublishingPlugin extends PublishingPlugin {
+      protected override onloadImpl(): void {
+        this.addChild(new SlowChildComponent());
+      }
+    }
+
+    const plugin = new SlowChildPublishingPlugin(app, manifest);
+    plugin.load();
+    await vi.waitFor(() => {
+      expect(hasChildLoadStarted).toBe(true);
+    });
+
+    plugin.unload();
+    deferred.resolve();
+    await setTimeoutAsync(0);
+
+    expect(mockPublishPluginApi).not.toHaveBeenCalled();
+  });
+
   it('should announce the departure when the plugin unloads', async () => {
     const callback = vi.fn<(payload: PluginLifecycleEventPayload) => void>();
     app.workspace.on(PLUGIN_UNLOADED_EVENT_NAME, callback);

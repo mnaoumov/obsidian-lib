@@ -25,6 +25,7 @@ import {
 import { nextTickAsync } from '@mnaoumov/typescript-lib/async';
 import { getDebugController } from '@mnaoumov/typescript-lib/debug';
 import { getDebugSwitch } from '@mnaoumov/typescript-lib/debug-switches';
+import { noop } from '@mnaoumov/typescript-lib/function';
 import {
   castTo,
   normalizeOptionalProperties
@@ -101,6 +102,14 @@ interface PublishOptions {
   readonly api?: object;
   readonly apiVersion?: string;
   readonly contract?: ApiContract;
+  /**
+   * Registers the publishing plugin as the instance Obsidian currently holds for its id.
+   */
+  readonly isLiveInstance?: boolean;
+  /**
+   * Publishes as this plugin instance instead of a fresh one.
+   */
+  readonly plugin?: Plugin;
   readonly pluginId?: string;
 }
 
@@ -182,6 +191,33 @@ describe('plugin-api', () => {
       const harness = createHarness();
       harness.publish({ apiVersion: '1.0.0' });
       expect(() => harness.publish({ apiVersion: '1.0.0' })).toThrow(
+        'The plugin "provider-plugin" has already published the API version "1.0.0".'
+      );
+    });
+
+    it('should replace a record left behind by a previous instance when the live instance publishes', () => {
+      const harness = createHarness();
+      // The previous instance published, but its revoke never runs: it unloaded before publishing finished.
+      harness.publish({ api: createGreeterApi('Old'), apiVersion: '1.0.0' });
+      const { ref } = harness.watch<GreeterApi>();
+      const staleApi = ref.value;
+
+      harness.publish({ api: createGreeterApi('New'), apiVersion: '1.0.0', isLiveInstance: true });
+
+      expect(ref.value?.greet('x')).toBe('New, x!');
+      expect(() => staleApi?.greet('x')).toThrow(PluginApiRevokedError);
+      expect(getRegistry().records[PROVIDER_ID]).toHaveLength(1);
+    });
+
+    it('should reject a second publish of the same API version by the same live instance, even from another owner', () => {
+      const harness = createHarness();
+      const plugin = strictProxy<Plugin>({
+        app: harness.app,
+        manifest: strictProxy<PluginManifest>({ id: PROVIDER_ID }),
+        register: noop
+      });
+      harness.publish({ isLiveInstance: true, plugin });
+      expect(() => harness.publish({ isLiveInstance: true, plugin })).toThrow(
         'The plugin "provider-plugin" has already published the API version "1.0.0".'
       );
     });
@@ -797,10 +833,14 @@ function createHarness(options: CreateHarnessOptions = {}): TestHarness {
     manifests[PROVIDER_ID] = strictProxy<PluginManifest>({ id: PROVIDER_ID });
   }
 
+  const livePlugins: App['plugins']['plugins'] = {};
+  Object.setPrototypeOf(livePlugins, null);
+
   const app = strictProxy<App>({
     plugins: strictProxy<App['plugins']>({
       enabledPlugins: new Set<string>(isEnabled ? [PROVIDER_ID] : []),
-      manifests
+      manifests,
+      plugins: livePlugins
     })
   });
 
@@ -808,16 +848,28 @@ function createHarness(options: CreateHarnessOptions = {}): TestHarness {
     app,
     publish(publishOptions: PublishOptions = {}): () => void {
       const unloadCallbacks: (() => void)[] = [];
+      const pluginId = publishOptions.pluginId ?? PROVIDER_ID;
+      const plugin = publishOptions.plugin ?? strictProxy<Plugin>({
+        app,
+        manifest: strictProxy<PluginManifest>({ id: pluginId }),
+        register: (callback: () => void): void => {
+          unloadCallbacks.push(callback);
+        }
+      });
+      if (publishOptions.isLiveInstance) {
+        livePlugins[pluginId] = plugin;
+      }
+
       publishPluginApi(normalizeOptionalProperties<PublishPluginApiParams<object>>({
         api: publishOptions.api ?? createGreeterApi('Hello'),
         apiVersion: publishOptions.apiVersion ?? '1.0.0',
-        contract: publishOptions.contract,
-        plugin: strictProxy<Plugin>({
-          manifest: strictProxy<PluginManifest>({ id: publishOptions.pluginId ?? PROVIDER_ID }),
+        component: strictProxy<Component>({
           register: (callback: () => void): void => {
             unloadCallbacks.push(callback);
           }
-        })
+        }),
+        contract: publishOptions.contract,
+        plugin
       }));
 
       return (): void => {
