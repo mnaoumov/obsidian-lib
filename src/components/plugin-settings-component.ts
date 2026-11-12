@@ -149,7 +149,7 @@ export type ReadonlyPluginSettingsState<PluginSettings extends object> = Readonl
 export type SettingsValidator<PluginSettings extends object, PropertyName extends StringKeys<PluginSettings> = StringKeys<PluginSettings>> = (
   value: PluginSettings[PropertyName],
   settings: PluginSettings
-) => Promisable<MaybeReturn<string>>;
+) => Promisable<MaybeReturn<null | string>>;
 
 interface PluginSettingsComponentBaseEventMap<PluginSettings extends object> {
   readonly loadSettings: [
