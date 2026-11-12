@@ -21,10 +21,6 @@ import type { BugReportDiagnosticSection } from '../bug-report-diagnostics.ts';
 
 type ClipboardOutcome = 'rejected' | 'resolved';
 
-interface ClipboardState {
-  readonly clipboardOutcome: ClipboardOutcome | null;
-}
-
 interface RealClipboardRunResult {
   readonly clipboardOutcome: ClipboardOutcome | null;
   readonly clipboardReadBack: null | string;
@@ -40,7 +36,8 @@ describe('OpenBugReportCommandHandler on Android', () => {
         const SETTLE_DELAY_IN_MILLISECONDS = 300;
         const MAX_URL_LENGTH = 400;
         const urls: string[] = [];
-        const state: ClipboardState = { clipboardOutcome: null };
+        // The outcome of each real clipboard call, in order; the handler makes exactly one.
+        const clipboardOutcomes: ClipboardOutcome[] = [];
         const originalOpen = window.open;
         // Capture the external-navigation boundary, so the test does not leave Obsidian for the browser.
         window.open = (url): null => {
@@ -73,12 +70,12 @@ describe('OpenBugReportCommandHandler on Android', () => {
           await clickTarget(reviewModal?.querySelector<HTMLElement>('.ok-button'));
           await waitUntil({
             message: 'The clipboard is tried',
-            predicate: () => state.clipboardOutcome !== null,
+            predicate: () => getClipboardOutcome() !== null,
             timeoutInMilliseconds: 5000
           });
 
           let manualCopyText: null | string = null;
-          if (state.clipboardOutcome === 'rejected') {
+          if (getClipboardOutcome() === 'rejected') {
             await waitUntil({
               message: 'The manual-copy modal opens',
               predicate: () => activeDocument.querySelector('.copy-text-manually-modal') !== null
@@ -97,7 +94,7 @@ describe('OpenBugReportCommandHandler on Android', () => {
           await executePromise;
 
           let clipboardReadBack: null | string = null;
-          if (state.clipboardOutcome === 'resolved') {
+          if (getClipboardOutcome() === 'resolved') {
             try {
               clipboardReadBack = await clipboard.readText();
             } catch {
@@ -105,7 +102,7 @@ describe('OpenBugReportCommandHandler on Android', () => {
             }
           }
 
-          return { clipboardOutcome: state.clipboardOutcome, clipboardReadBack, manualCopyText, previewText, urls };
+          return { clipboardOutcome: getClipboardOutcome(), clipboardReadBack, manualCopyText, previewText, urls };
         } finally {
           restoreBoundaries();
           for (let attempt = 0; attempt < 2 && activeDocument.querySelector('.bug-report-review-modal, .copy-text-manually-modal'); attempt++) {
@@ -128,11 +125,15 @@ describe('OpenBugReportCommandHandler on Android', () => {
         async function observeWriteText(text: string): Promise<void> {
           try {
             await originalWriteText.call(clipboard, text);
-            state.clipboardOutcome = 'resolved';
+            clipboardOutcomes.push('resolved');
           } catch (error) {
-            state.clipboardOutcome = 'rejected';
+            clipboardOutcomes.push('rejected');
             throw error;
           }
+        }
+
+        function getClipboardOutcome(): ClipboardOutcome | null {
+          return clipboardOutcomes[0] ?? null;
         }
 
         function restoreBoundaries(): void {
