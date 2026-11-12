@@ -4,7 +4,6 @@
 import type { InternalPlugins } from '@obsidian-typings/obsidian-public-latest';
 import type {
   App as AppOriginal,
-  FrontmatterLinkCache,
   Pos,
   Reference,
   ReferenceLinkCache,
@@ -3861,11 +3860,15 @@ describe('app-dependent functions', () => {
   });
 
   describe('getFileChanges canvas path', () => {
-    it('should handle canvas file changes through editReferences', async () => {
+    const CANVAS_CONTENT = JSON.stringify({ edges: [], nodes: [{ file: 'target.md', id: '1', type: 'file' }] });
+
+    async function collectCanvasChanges(params: Partial<Parameters<typeof editReferences>[0]>): Promise<null | readonly FileChange[]> {
       const canvasApp = (
         App.createConfigured__({
           files: {
             'target.md': '# Target',
+            // The file on disk is deliberately NOT what the changes provider is handed: the references must come from
+            // the content `applyFileChanges` passes, never from a separate read.
             'test.canvas': '{"nodes":[]}'
           }
         })
@@ -3873,89 +3876,52 @@ describe('app-dependent functions', () => {
       const canvasFile = ensureNonNullable(canvasApp.vault.getFileByPath('test.canvas'));
       canvasFile.extension = 'canvas';
 
+      let changes: null | readonly FileChange[] = null;
       vi.mocked(applyFileChanges).mockImplementation(
         async ({ changesProvider }) => {
-          if (typeof changesProvider !== 'function') {
-            return;
-          }
-
           const abortSignal = strictProxy<AbortSignal>({ throwIfAborted: vi.fn() });
-          await resolveValue(changesProvider, { abortSignal, content: '{"nodes":[]}' });
+          changes = await resolveValue(changesProvider, { abortSignal, content: CANVAS_CONTENT });
         }
       );
-
-      vi.mocked(getCacheSafe).mockResolvedValue(castTo<CachedMetadataEx>({
-        embeds: undefined,
-        frontmatterLinks: [castTo<FrontmatterLinkCache>({
-          isCanvas: true,
-          key: 'file',
-          link: 'target.md',
-          nodeIndex: 0,
-          original: 'target.md',
-          type: 'file'
-        })],
-        links: undefined,
-        sections: undefined
-      }));
 
       await editReferences({
         app: canvasApp,
         pathOrFile: canvasFile,
         pluginNoticeComponent: null,
         referenceConverter: () => 'new-target.md',
-        resourceLockComponent
+        resourceLockComponent,
+        ...params
       });
 
-      expect(applyFileChanges).toHaveBeenCalled();
+      return changes;
+    }
+
+    it('should read a canvas holder\'s references from the content, not from the metadata cache', async () => {
+      const referenceConverter = vi.fn(() => 'new-target.md');
+      const changes = await collectCanvasChanges({ referenceConverter });
+
+      expect(getCacheSafe).not.toHaveBeenCalled();
+      expect(referenceConverter).toHaveBeenCalledWith(
+        expect.objectContaining({ isCanvas: true, key: 'nodes.0.file', link: 'target.md', nodeIndex: 0, type: 'file' }),
+        expect.anything()
+      );
+      expect(changes).toEqual([expect.objectContaining({ newContent: 'new-target.md', oldContent: 'target.md' })]);
     });
 
-    it('should log error for non-canvas change in canvas file', async () => {
-      const canvasApp = (
-        App.createConfigured__({
-          files: {
-            'target.md': '# Target',
-            'test.canvas': '{"nodes":[]}'
-          }
-        })
-      ).asOriginalType__();
-      const canvasFile = ensureNonNullable(canvasApp.vault.getFileByPath('test.canvas'));
-      canvasFile.extension = 'canvas';
+    it('should skip a canvas reference the caller excludes', async () => {
+      const referenceConverter = vi.fn(() => 'new-target.md');
+      const changes = await collectCanvasChanges({ referenceConverter, shouldSkipReference: () => true });
 
-      vi.mocked(applyFileChanges).mockImplementation(
-        async ({ changesProvider }) => {
-          if (typeof changesProvider !== 'function') {
-            return;
-          }
+      expect(referenceConverter).not.toHaveBeenCalled();
+      expect(changes).toEqual([]);
+    });
 
-          const abortSignal = strictProxy<AbortSignal>({ throwIfAborted: vi.fn() });
-          await resolveValue(changesProvider, { abortSignal, content: '{"nodes":[]}' });
-        }
-      );
+    it('should skip every canvas reference when an offset range is given, since none carries a position', async () => {
+      const referenceConverter = vi.fn(() => 'new-target.md');
+      const changes = await collectCanvasChanges({ offsetRange: { endOffset: 1000, startOffset: 0 }, referenceConverter });
 
-      vi.mocked(getCacheSafe).mockResolvedValue(castTo<CachedMetadataEx>({
-        embeds: undefined,
-        frontmatterLinks: undefined,
-        links: [{
-          displayText: 'target',
-          link: 'target',
-          original: '[[target]]',
-          position: { end: { col: 10, line: 0, offset: 10 }, start: { col: 0, line: 0, offset: 0 } }
-        }],
-        sections: undefined
-      }));
-
-      vi.spyOn(console, 'error').mockImplementation(() => undefined);
-
-      await editReferences({
-        app: canvasApp,
-        pathOrFile: canvasFile,
-        pluginNoticeComponent: null,
-        referenceConverter: () => '[[new-target]]',
-        resourceLockComponent
-      });
-
-      expect(vi.mocked(console.error)).toHaveBeenCalledWith('Unsupported file change', expect.anything());
-      vi.mocked(console.error).mockRestore();
+      expect(referenceConverter).not.toHaveBeenCalled();
+      expect(changes).toEqual([]);
     });
   });
 });

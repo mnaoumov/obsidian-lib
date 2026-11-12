@@ -57,14 +57,17 @@ import type {
 } from './file-system.ts';
 import type { GetFolderNoteFolderParams } from './folder-note.ts';
 import type { LinkUpdateProgressReporter } from './link-update-progress.ts';
-import type { OffsetRange } from './reference.ts';
+import type {
+  CanvasReference,
+  OffsetRange
+} from './reference.ts';
 import type { ProcessOptions } from './vault.ts';
 
+import { getCanvasReferencesFromContent } from './canvas.ts';
 import { getObsidianLibDebugger } from './debug.ts';
 import {
   applyContentChanges,
   applyFileChanges,
-  isCanvasChange,
   isContentChange
 } from './file-change.ts';
 import {
@@ -1573,14 +1576,18 @@ interface GetFileChangesParams {
   readonly abortSignal?: AbortSignal;
 
   /**
-   * A metadata cache to extract the links from.
+   * A metadata cache to extract the links from, or `null` for a canvas file, whose links come from
+   * {@link GetFileChangesParams.canvasReferences}.
    */
   readonly cache: CachedMetadata | null;
 
   /**
-   * Whether the cache belongs to a canvas file.
+   * The references of a canvas file, read from its content. Obsidian's metadata cache holds nothing for a canvas,
+   * so when this is set the references are taken from here instead of from {@link GetFileChangesParams.cache}.
+   *
+   * @default `undefined`
    */
-  readonly isCanvasFileCache: boolean;
+  readonly canvasReferences?: readonly CanvasReference[];
 
   /**
    * A range within the content, in character offsets, restricting the changes to the links fully contained
@@ -2107,6 +2114,12 @@ export async function editBacklinksSnapshot<TPayload>(params: EditBacklinksSnaps
 /**
  * Edits the links for a file or path.
  *
+ * A canvas (`.canvas`) holder is covered too. Obsidian's metadata cache holds an empty record for a canvas, so its
+ * file-node and text-node links are read from the canvas content being rewritten (as `getCanvasReferences` reads them),
+ * and the converter receives them as {@link CanvasReference}s. Options that only describe a note (external links,
+ * links in headings, reference-style definitions) do not apply to a canvas, and a canvas reference carries no
+ * position, so an `offsetRange` excludes every one of them.
+ *
  * @param params - The parameters for editing the links.
  * @returns A {@link Promise} that resolves when the links have been edited.
  */
@@ -2132,6 +2145,21 @@ export async function editReferences(params: EditReferencesParams): Promise<void
   await applyFileChanges({
     app,
     changesProvider: async ({ abortSignal, content }) => {
+      if (isCanvasFile(pathOrFile)) {
+        // Obsidian's metadata cache holds an empty record for a canvas, so its links are read from the very content
+        // the changes will be applied to. That content is never stale, so no cache comparison is needed.
+        const canvasReferences = await getCanvasReferencesFromContent(app, content);
+        abortSignal.throwIfAborted();
+        return await getFileChanges(normalizeOptionalProperties<GetFileChangesParams>({
+          abortSignal,
+          cache: null,
+          canvasReferences,
+          offsetRange,
+          referenceConverter,
+          shouldSkipReference
+        }));
+      }
+
       const cache = await getCacheSafe(app, pathOrFile, {
         shouldParseExternalLinks: shouldEditExternalLinks,
         shouldParseFrontmatterExternalLinks: shouldEditFrontmatterExternalLinks,
@@ -2145,7 +2173,6 @@ export async function editReferences(params: EditReferencesParams): Promise<void
         ? (await getFileChanges(normalizeOptionalProperties<GetFileChangesParams>({
           abortSignal,
           cache,
-          isCanvasFileCache: isCanvasFile(pathOrFile),
           offsetRange,
           referenceConverter,
           referenceDefinitionConversion: toReferenceDefinitionConversion(content, referenceDefinitionConverter),
@@ -2201,7 +2228,6 @@ export async function editReferencesInContent(params: EditReferencesInContentPar
       const changes = await getFileChanges(normalizeOptionalProperties<GetFileChangesParams>({
         abortSignal,
         cache,
-        isCanvasFileCache: false,
         offsetRange,
         referenceConverter,
         referenceDefinitionConversion: toReferenceDefinitionConversion(content, referenceDefinitionConverter),
@@ -2864,13 +2890,9 @@ function generateWikiLink(params: GenerateWikiLinkParams): string {
 async function getFileChanges(params: GetFileChangesParams): Promise<FileChange[]> {
   const {
     cache,
-    isCanvasFileCache,
     offsetRange,
     referenceConverter,
     referenceDefinitionConversion,
-    shouldIncludeExternalLinks = false,
-    shouldIncludeFrontmatterExternalLinks = false,
-    shouldIncludeMultiValueFrontmatterExternalLinks = false,
     shouldSkipReference,
     shouldSkipReferencesInHeadings = false
   } = params;
@@ -2878,20 +2900,21 @@ async function getFileChanges(params: GetFileChangesParams): Promise<FileChange[
   abortSignal ??= abortSignalNever();
   abortSignal.throwIfAborted();
 
-  if (!cache) {
+  const references = getFileChangesReferences(params);
+  if (references === null) {
     return [];
   }
 
   const changes: FileChange[] = [];
 
-  const tablePositions: TablePosition[] = (cache.sections ?? []).filter((section) => section.type === 'table').map((section) => ({
+  const tablePositions: TablePosition[] = (cache?.sections ?? []).filter((section) => section.type === 'table').map((section) => ({
     end: section.position.end.offset,
     start: section.position.start.offset
   }));
 
   const getFileChangesDebugger = getObsidianLibDebugger('Link:getFileChanges');
 
-  for (const reference of getReferences({ cache, shouldIncludeExternalLinks, shouldIncludeFrontmatterExternalLinks, shouldIncludeMultiValueFrontmatterExternalLinks })) {
+  for (const reference of references) {
     abortSignal.throwIfAborted();
 
     if (offsetRange !== undefined && !isReferenceInOffsetRange(reference, offsetRange)) {
@@ -2922,24 +2945,38 @@ async function getFileChanges(params: GetFileChangesParams): Promise<FileChange[
 
     const fileChange = referenceToFileChange(reference, newContent);
 
-    if (isCanvasFileCache) {
-      if (isCanvasChange(fileChange)) {
-        changes.push(fileChange);
-      } else {
-        console.error('Unsupported file change', fileChange);
-      }
-    } else {
-      if (shouldEscapeWikilinkDivider(fileChange, tablePositions)) {
-        fileChange.newContent = fileChange.newContent.replaceAll(OPTIONALLY_ESCAPED_WIKILINK_DIVIDER_REGEXP, () => ESCAPED_WIKILINK_DIVIDER);
-      }
-
-      changes.push(fileChange);
+    // A canvas text-node change restores its own escaped divider in `applyCanvasChanges`, and a canvas has no
+    // top-level table sections, so only a note's change needs this.
+    if (shouldEscapeWikilinkDivider(fileChange, tablePositions)) {
+      fileChange.newContent = fileChange.newContent.replaceAll(OPTIONALLY_ESCAPED_WIKILINK_DIVIDER_REGEXP, () => ESCAPED_WIKILINK_DIVIDER);
     }
+
+    changes.push(fileChange);
   }
 
-  changes.push(...await getReferenceDefinitionFileChanges({ abortSignal, cache, offsetRange, referenceDefinitionConversion }));
+  if (cache) {
+    changes.push(...await getReferenceDefinitionFileChanges({ abortSignal, cache, offsetRange, referenceDefinitionConversion }));
+  }
 
   return changes;
+}
+
+function getFileChangesReferences(params: GetFileChangesParams): null | readonly Reference[] {
+  const {
+    cache,
+    canvasReferences,
+    shouldIncludeExternalLinks = false,
+    shouldIncludeFrontmatterExternalLinks = false,
+    shouldIncludeMultiValueFrontmatterExternalLinks = false
+  } = params;
+
+  if (canvasReferences) {
+    return canvasReferences;
+  }
+
+  return cache
+    ? getReferences({ cache, shouldIncludeExternalLinks, shouldIncludeFrontmatterExternalLinks, shouldIncludeMultiValueFrontmatterExternalLinks })
+    : null;
 }
 
 function getFinalLinkPathStyle(app: App, linkPathStyle?: LinkPathStyle): FinalLinkPathStyle {
@@ -3135,14 +3172,8 @@ function resolveSnapshotReferenceIdentityKeyProvider(params: ResolveSnapshotRefe
 }
 
 function shouldEscapeWikilinkDivider(fileChange: FileChange, tablePositions: TablePosition[]): boolean {
-  /* v8 ignore start -- getFileChanges only calls this for non-canvas files which always have content changes. */
-  // eslint-disable-next-line unicorn/prefer-ternary -- Keep the unreachable guard separate from the covered content-change branch.
-  if (!isContentChange(fileChange)) {
-    return false;
-  }
-  /* v8 ignore stop */
-
-  return UNESCAPED_WIKILINK_DIVIDER_REGEXP.test(fileChange.newContent) && tablePositions.some((tablePosition) => tablePosition.start <= fileChange.reference.position.start.offset && fileChange.reference.position.end.offset <= tablePosition.end);
+  // A frontmatter or canvas change carries no position within the content, so it is never inside a table.
+  return isContentChange(fileChange) && UNESCAPED_WIKILINK_DIVIDER_REGEXP.test(fileChange.newContent) && tablePositions.some((tablePosition) => tablePosition.start <= fileChange.reference.position.start.offset && fileChange.reference.position.end.offset <= tablePosition.end);
 }
 
 function shouldUseWikilinkStyle(params: ShouldUseWikilinkStyleParams): boolean {

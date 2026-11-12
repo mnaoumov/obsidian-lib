@@ -12,6 +12,9 @@
  * from an UNSAVED editor buffer is valid, because the buffer is flushed to disk before the content is
  * read. The last of them pins the range reaching `editReferences` through `updateReferencesInFile`, the wrapper a
  * plugin actually calls, so an out-of-range link is proved to survive a real conversion.
+ *
+ * The canvas case pins that Obsidian indexes nothing for a canvas, and that `editReferences` still reaches every
+ * file-node and text-node link of a canvas holder by reading the canvas content itself.
  */
 
 /// <reference types="obsidian-integration-testing/vitest/typings" />
@@ -34,6 +37,16 @@ interface AngleDestinationResult {
 }
 
 /**
+ * Result of the canvas-holder test.
+ */
+interface CanvasEditResult {
+  readonly cacheKeys: string[];
+  readonly convertedLinks: string[];
+  readonly fileNodeFile: string;
+  readonly textNodeText: string;
+}
+
+/**
  * Result of the `file://` normalization test.
  */
 interface NormalizeResult {
@@ -47,6 +60,15 @@ interface OffsetRangeFromEditorResult {
   readonly diskAfterEdit: string;
   readonly selectedEndOffset: number;
   readonly selectedStartOffset: number;
+}
+
+interface ParsedCanvas {
+  readonly nodes: ParsedCanvasNode[];
+}
+
+interface ParsedCanvasNode {
+  readonly file?: string;
+  readonly text?: string;
 }
 
 interface ReferenceDefinitionsResult {
@@ -346,6 +368,53 @@ describe('reference definitions', () => {
     });
 
     expect(result).toBe('See [a].\n\n[a]: New.md "Title"\n');
+  });
+});
+
+describe('canvas holders', () => {
+  it('should call the converter for a canvas holder\'s file-node and text-node links and rewrite them', async () => {
+    const result = await evalInObsidian<Record<string, never>, CanvasEditResult>({
+      async callback({ app, lib: { editReferences } }) {
+        const canvas = await app.vault.create(
+          'link-canvas-holder.canvas',
+          JSON.stringify({
+            edges: [],
+            nodes: [
+              { file: 'Old note.md', height: 100, id: 'a', type: 'file', width: 100, x: 0, y: 0 },
+              { height: 100, id: 'b', text: 'See ![[old.png]] and [[Keep]]', type: 'text', width: 100, x: 200, y: 0 }
+            ]
+          })
+        );
+        // The premise: Obsidian indexes nothing for a canvas, which is why the links come from its content.
+        const cacheKeys = Object.keys(app.metadataCache.getFileCache(canvas) ?? {});
+        const convertedLinks: string[] = [];
+        await editReferences({
+          app,
+          pathOrFile: canvas,
+          pluginNoticeComponent: null,
+          referenceConverter: (reference) => {
+            convertedLinks.push(reference.link);
+            if (reference.link === 'Old note.md') {
+              return 'New note.md';
+            }
+            return reference.link === 'old.png' ? '![[new.png]]' : undefined;
+          },
+          resourceLockComponent: null
+        });
+        const data = JSON.parse(await app.vault.read(canvas)) as ParsedCanvas;
+        return {
+          cacheKeys,
+          convertedLinks,
+          fileNodeFile: data.nodes[0]?.file ?? '',
+          textNodeText: data.nodes[1]?.text ?? ''
+        };
+      }
+    });
+
+    expect(result.cacheKeys).toEqual([]);
+    expect(result.convertedLinks).toEqual(['Old note.md', 'old.png', 'Keep']);
+    expect(result.fileNodeFile).toBe('New note.md');
+    expect(result.textNodeText).toBe('See ![[new.png]] and [[Keep]]');
   });
 });
 

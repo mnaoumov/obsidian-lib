@@ -20,6 +20,7 @@ import type { ResourceLockComponent } from './resource-lock.ts';
 
 import { getCanvasReferences } from './canvas.ts';
 import { applyFileChanges } from './file-change.ts';
+import { editReferences } from './link.ts';
 import { referenceToFileChange } from './reference.ts';
 import { readSafe } from './vault.ts';
 
@@ -245,5 +246,60 @@ describe('getCanvasReferences rewrite round-trip via applyFileChanges', () => {
     assertNonNullable(updatedContent);
     const updated = JSON.parse(updatedContent) as ParsedCanvas;
     expect(updated.nodes[0]?.text).toContain('[[a]] and [B](c.md)');
+  });
+});
+
+describe('editReferences on a canvas holder', () => {
+  const resourceLockComponent = strictProxy<ResourceLockComponent>({
+    lockForPath: () => ({ [Symbol.dispose]: noop })
+  });
+
+  it('should call the converter for every file-node and text-node link and rewrite the canvas', async () => {
+    const app = createApp(toCanvasJson([
+      { file: 'old.md', id: '1', type: 'file' },
+      { id: '2', text: 'See ![[old.png]] and [[keep]]', type: 'text' }
+    ]));
+
+    const replacements = new Map([
+      ['old.md', 'new.md'],
+      ['old.png', '![[new.png]]']
+    ]);
+    const seenLinks: string[] = [];
+    await editReferences({
+      app,
+      pathOrFile: CANVAS_PATH,
+      pluginNoticeComponent: null,
+      referenceConverter: (reference) => {
+        seenLinks.push(reference.link);
+        return replacements.get(reference.link);
+      },
+      resourceLockComponent
+    });
+
+    expect(seenLinks).toEqual(['old.md', 'old.png', 'keep']);
+    const updatedContent = await readSafe(app, CANVAS_PATH);
+    assertNonNullable(updatedContent);
+    const updated = JSON.parse(updatedContent) as ParsedCanvas;
+    expect(updated.nodes[0]?.file).toBe('new.md');
+    expect(updated.nodes[1]?.text).toBe('See ![[new.png]] and [[keep]]');
+  });
+
+  it('should keep the escaped divider of a sized embed inside a text-node table', async () => {
+    const app = createApp(toCanvasJson([
+      { id: '1', text: '| a |\n| --- |\n| ![[old.png\\|500]] |', type: 'text' }
+    ]));
+
+    await editReferences({
+      app,
+      pathOrFile: CANVAS_PATH,
+      pluginNoticeComponent: null,
+      referenceConverter: () => '![[new.png|500]]',
+      resourceLockComponent
+    });
+
+    const updatedContent = await readSafe(app, CANVAS_PATH);
+    assertNonNullable(updatedContent);
+    const updated = JSON.parse(updatedContent) as ParsedCanvas;
+    expect(updated.nodes[0]?.text).toBe('| a |\n| --- |\n| ![[new.png\\|500]] |');
   });
 });

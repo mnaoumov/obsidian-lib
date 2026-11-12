@@ -43,10 +43,22 @@ import { readSafe } from './vault.ts';
  */
 export async function getCanvasReferences(app: App, pathOrFile: PathOrFile): Promise<CanvasReference[]> {
   const content = await readSafe(app, pathOrFile);
-  if (content === null) {
-    return [];
-  }
+  return content === null ? [] : await getCanvasReferencesFromContent(app, content);
+}
 
+/**
+ * Extracts the outgoing references of a canvas from its JSON content.
+ *
+ * This is {@link getCanvasReferences} without the read: use it when the content is already in hand, for example
+ * inside an `applyFileChanges` changes provider, so the references describe exactly the content the changes will be
+ * applied to.
+ *
+ * @param app - The Obsidian app instance.
+ * @param content - The canvas JSON content.
+ * @returns A {@link Promise} that resolves to the canvas references, or an empty array when the content is not valid
+ * canvas JSON.
+ */
+export async function getCanvasReferencesFromContent(app: App, content: string): Promise<CanvasReference[]> {
   let partialCanvasData: null | Partial<CanvasData>;
   try {
     partialCanvasData = JSON.parse(content) as null | Partial<CanvasData>;
