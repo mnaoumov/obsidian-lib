@@ -241,6 +241,18 @@ export class EmbeddableMarkdownEditorComponent extends ComponentEx {
   }
 
   /**
+   * Whether the editor holds the focus within its window.
+   *
+   * Unlike CodeMirror's `EditorView.hasFocus`, this does not also require the window to have the operating system's
+   * focus, so it stays `true` while the user is in another application or another Obsidian window is in front.
+   *
+   * @returns `true` when the editor's content element is its document's active element.
+   */
+  public get hasFocus(): boolean {
+    return isEditorViewFocusedInItsWindow(this.getScrollableEditor().activeCM);
+  }
+
+  /**
    * The current document.
    *
    * @returns The document text.
@@ -354,7 +366,9 @@ export class EmbeddableMarkdownEditorComponent extends ComponentEx {
       methodName: 'setActiveLeaf',
       patchHandler: ({ fallback }) => {
         // A focused editor that belongs to no leaf would otherwise lose its focus to the leaf the workspace activates.
-        if (scrollableEditor.activeCM.hasFocus) {
+        // CodeMirror's own `hasFocus` is `false` whenever the window lacks the operating system's focus, which would let
+        // the workspace take the focus away while another window is in front, so the guard reads the DOM focus instead.
+        if (isEditorViewFocusedInItsWindow(scrollableEditor.activeCM)) {
           return;
         }
         fallback();
@@ -494,6 +508,10 @@ function getScrollableMarkdownEditorConstructor(app: App): ScrollableMarkdownEdi
   } finally {
     widgetEditorView.unload();
   }
+}
+
+function isEditorViewFocusedInItsWindow(editorView: EditorView): boolean {
+  return editorView.root.activeElement === editorView.contentDOM;
 }
 
 /* v8 ignore stop */

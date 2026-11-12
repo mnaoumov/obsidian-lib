@@ -36,7 +36,7 @@ describe('EmbeddableMarkdownEditorComponent on desktop', () => {
           component.focus();
           await waitUntil({
             message: 'the editor takes the focus',
-            predicate: () => component.editorView.hasFocus
+            predicate: () => component.hasFocus
           });
 
           // Without the component's keymap scope, Obsidian's `Mod+Enter` hotkey takes the key and the editor never
@@ -58,5 +58,54 @@ describe('EmbeddableMarkdownEditorComponent on desktop', () => {
 
     expect(result.enterCalls).toEqual(['mod=true shift=false', 'mod=true shift=true']);
     expect(result.value).toBe('line');
+  });
+
+  // CodeMirror's `EditorView.hasFocus` also requires `document.hasFocus()`, which is the operating system's window focus,
+  // so a guard reading it stood down whenever another window was in front, and the workspace took the focus away.
+  it('should keep its focus when the workspace activates a leaf while another window has the operating system focus', async () => {
+    const result = await evalInObsidian({
+      async callback({ app, lib: { EmbeddableMarkdownEditorComponent, waitUntil } }) {
+        const containerEl = activeDocument.body.createDiv();
+        const component = new EmbeddableMarkdownEditorComponent({ app, containerEl });
+        const { remote } = window.electron;
+        const displays = remote.screen.getAllDisplays();
+        const maxRight = Math.max(...displays.map((display) => display.bounds.x + display.bounds.width));
+        // Off-screen, like the owned instance itself, so nothing appears on the user's display.
+        const otherWindow = new remote.BrowserWindow({ height: 100, show: false, width: 100, x: maxRight + 200, y: 0 });
+
+        try {
+          component.load();
+          component.focus();
+          await waitUntil({
+            message: 'the editor takes the focus',
+            predicate: () => component.hasFocus
+          });
+
+          otherWindow.show();
+          otherWindow.focus();
+          await waitUntil({
+            message: 'the other window takes the operating system focus',
+            predicate: () => !activeDocument.hasFocus()
+          });
+
+          const leaf = app.workspace.getMostRecentLeaf();
+          if (leaf) {
+            app.workspace.setActiveLeaf(leaf, { focus: true });
+          }
+
+          return {
+            hasFocus: component.hasFocus,
+            hasLeaf: Boolean(leaf),
+            isCodeMirrorFocused: component.editorView.hasFocus
+          };
+        } finally {
+          otherWindow.destroy();
+          component.unload();
+          containerEl.remove();
+        }
+      }
+    });
+
+    expect(result).toEqual({ hasFocus: true, hasLeaf: true, isCodeMirrorFocused: false });
   });
 });
