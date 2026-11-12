@@ -112,7 +112,7 @@ describe('EmbeddableMarkdownEditorComponent', () => {
           component.focus();
           await waitUntil({
             message: 'the editor takes the focus',
-            predicate: () => component.editorView.hasFocus
+            predicate: () => component.hasFocus
           });
           await typeIntoEditor({ editor: component.editor, text: 'hello' });
           await waitUntil({
@@ -177,7 +177,7 @@ describe('EmbeddableMarkdownEditorComponent', () => {
           component.focus();
           await waitUntil({
             message: 'the editor takes the focus',
-            predicate: () => component.editorView.hasFocus
+            predicate: () => component.hasFocus
           });
 
           await pressKey({ key: 'Enter' });
@@ -218,7 +218,7 @@ describe('EmbeddableMarkdownEditorComponent', () => {
           component.focus();
           await waitUntil({
             message: 'the editor takes the focus',
-            predicate: () => component.editorView.hasFocus
+            predicate: () => component.hasFocus
           });
 
           const leaf = app.workspace.getMostRecentLeaf();
@@ -226,7 +226,7 @@ describe('EmbeddableMarkdownEditorComponent', () => {
             app.workspace.setActiveLeaf(leaf, { focus: true });
           }
 
-          return { hasFocus: component.editorView.hasFocus, hasLeaf: Boolean(leaf) };
+          return { hasFocus: component.hasFocus, hasLeaf: Boolean(leaf) };
         } finally {
           component.unload();
           containerEl.remove();
