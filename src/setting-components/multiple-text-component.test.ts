@@ -38,7 +38,22 @@ describe('MultipleTextComponent', () => {
   it('should return empty array for empty value', () => {
     const comp = createComponent();
     comp.setValue([]);
-    expect(comp.getValue()).toEqual(['']);
+    expect(comp.getValue()).toEqual([]);
+  });
+
+  it('should skip blank and whitespace-only lines', () => {
+    const comp = createComponent();
+    comp.inputEl.value = '\nline1\n\n  \n line2 \n';
+    expect(comp.getValue()).toEqual(['line1', ' line2 ']);
+  });
+
+  it('should forward an empty array to onChange for an empty textarea', () => {
+    const comp = createComponent();
+    const callback = vi.fn();
+    comp.onChange(callback);
+    // eslint-disable-next-line @typescript-eslint/no-deprecated -- simulateChange is intended for test use.
+    comp.simulateChange__();
+    expect(callback).toHaveBeenCalledWith([]);
   });
 
   it('should set and get multiple values', () => {

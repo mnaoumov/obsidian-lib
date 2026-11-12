@@ -76,12 +76,15 @@ export class MultipleTextComponent extends ValueComponent<readonly string[]> imp
   }
 
   /**
-   * Gets the value of the component.
+   * Gets the value of the component: one entry per line of the text area.
+   *
+   * Blank and whitespace-only lines are skipped, so an empty text area reads as `[]` rather than `['']`. Every other
+   * line is kept exactly as typed.
    *
    * @returns The value of the component.
    */
   public override getValue(): readonly string[] {
-    return this.textAreaComponent.getValue().split('\n');
+    return this.textAreaComponent.getValue().split('\n').filter((line) => line.trim() !== '');
   }
 
   /**
