@@ -129,6 +129,15 @@ const VALIDATE_PLUGIN_API_PAYLOADS_DEBUG_SWITCH_DEFINITION: DebugSwitchDefinitio
 const DEFAULT_WHEN_AVAILABLE_TIMEOUT_IN_MILLISECONDS = 10_000;
 
 /**
+ * The plugin instance that published each record through THIS copy of the library.
+ *
+ * Module-private rather than a record field, so the wire format stays unchanged. A record another copy published
+ * is absent here, which is still enough to judge it: one plugin instance bundles one copy, so a record this copy
+ * does not know was published by a different instance.
+ */
+const recordPublishers = new WeakMap<PublishedPluginApiRecord, Plugin>();
+
+/**
  * Which half of a method call a validation failure came from.
  */
 export enum PluginApiPayloadKind {
@@ -720,18 +729,27 @@ export function getValidatePluginApiPayloadsDebugSwitch(): DebugSwitch {
  *
  * @typeParam TApi - The API type being published.
  * @param params - The parameters for publishing.
- * @throws An {@link Error} if this plugin has already published this exact `apiVersion`.
+ * A record of the same `apiVersion` left behind by a previous instance of the same plugin is revoked and replaced
+ * when the publishing instance is the one Obsidian currently holds for that id.
+ *
+ * @throws An {@link Error} if this plugin instance has already published this exact `apiVersion`, or another
+ * instance holds it while this one is not the live instance.
  */
 export function publishPluginApi<TApi extends object>(params: PublishPluginApiParams<TApi>): void {
   getValidatePluginApiPayloadsDebugSwitch();
   const pluginId = params.plugin.manifest.id;
   const registry = getRegistry();
+  const existingRecord = registry.records[pluginId]?.find((record) => record.apiVersion === params.apiVersion);
+  if (existingRecord) {
+    if (!isStaleRecord(existingRecord, params.plugin)) {
+      throw new Error(`The plugin "${pluginId}" has already published the API version "${params.apiVersion}".`);
+    }
+
+    revokeRecord(existingRecord);
+  }
+
   const records = registry.records[pluginId] ?? [];
   registry.records[pluginId] = records;
-
-  if (records.some((record) => record.apiVersion === params.apiVersion)) {
-    throw new Error(`The plugin "${pluginId}" has already published the API version "${params.apiVersion}".`);
-  }
 
   const record: PublishedPluginApiRecord = {
     api: params.api,
@@ -741,6 +759,7 @@ export function publishPluginApi<TApi extends object>(params: PublishPluginApiPa
     pluginId
   };
   records.push(record);
+  recordPublishers.set(record, params.plugin);
   notifySubscribers();
 
   (params.component ?? params.plugin).register(() => {
@@ -966,6 +985,27 @@ function getRegistry(): PluginApiRegistry {
   registry.records ??= {};
   registry.subscribers ??= [];
   return castTo<PluginApiRegistry>(registry);
+}
+
+/**
+ * Decides whether a record that blocks a publish was left behind by a previous instance of the same plugin.
+ *
+ * A record outlives its instance when that instance published after it had already been unloaded, for example a
+ * load resumed after the plugin was disabled mid-load by an update or by Hot Reload: its revoke was registered on
+ * a dead component and never runs. Read from Obsidian `1.15.1`, `Plugins.loadPlugin` stores the new instance in
+ * `app.plugins.plugins` before it awaits `plugin.load()`, so the publishing instance is the live one exactly when
+ * that map holds it. A live instance cannot share the plugin id with another live publisher, so the earlier record
+ * is stale whenever another instance published it.
+ *
+ * A second publish by the SAME instance is still a programming error, and so is one from an instance Obsidian no
+ * longer holds.
+ *
+ * @param record - The record already published under the same id and version.
+ * @param plugin - The plugin publishing now.
+ * @returns `true` when the record belongs to a previous instance and may be replaced.
+ */
+function isStaleRecord(record: PublishedPluginApiRecord, plugin: Plugin): boolean {
+  return recordPublishers.get(record) !== plugin && plugin.app.plugins.plugins[plugin.manifest.id] === plugin;
 }
 
 /**

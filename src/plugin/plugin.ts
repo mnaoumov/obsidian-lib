@@ -678,6 +678,16 @@ export abstract class PluginBase extends mixinAsyncEvents<PluginEventMap>()(Plug
   }
 
   /**
+   * Checks whether a feature surface whose load is in progress has since been torn down or replaced.
+   *
+   * @param gatedWrapperComponent - The surface being loaded.
+   * @returns `true` when the surface is no longer the plugin's live one.
+   */
+  private isFeatureSurfaceGone(gatedWrapperComponent: ComponentEx): boolean {
+    return !gatedWrapperComponent._loaded || this.gatedWrapperComponent !== gatedWrapperComponent;
+  }
+
+  /**
    * Builds and loads the subclass's feature surface, then publishes its APIs and announces itself.
    *
    * NOT idempotent, deliberately. `PluginGateComponent` owns the up/down state machine and calls
@@ -700,7 +710,22 @@ export abstract class PluginBase extends mixinAsyncEvents<PluginEventMap>()(Plug
     }
 
     await this.onloadImpl();
+
+    // The surface may have been torn down while an await was suspended: the plugin unloaded in the middle of its
+    // own load (an update, or Hot Reload, disables and re-enables it while `onloadImpl` is still awaiting), or the
+    // gate closed. Checked before `loadWithPromises`, which would otherwise LOAD the unloaded surface again, and
+    // after it. Publishing then registers each record's revoke on a component that has already unloaded, so the
+    // revoke never runs, and the record outlives this instance and blocks the next one from publishing the same API
+    // version. Announcing a load that no longer holds would be just as wrong.
+    if (this.isFeatureSurfaceGone(gatedWrapperComponent)) {
+      return;
+    }
+
     await gatedWrapperComponent.loadWithPromises();
+
+    if (this.isFeatureSurfaceGone(gatedWrapperComponent)) {
+      return;
+    }
 
     for (const declaration of this.getPluginApis()) {
       publishPluginApi({
