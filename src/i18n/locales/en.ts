@@ -84,6 +84,8 @@ export const en = {
       attachmentRescued: 'Attachment {{attachmentPath}} is still used by other notes. It was moved to {{newAttachmentPath}}.',
       closeAriaLabel: 'Close',
       failedToOpenUrl: 'Failed to open {{url}}',
+      pluginLoadPaused: 'Loading is paused until the previous unload of this plugin finishes. Please wait...',
+      pluginLoadPauseTimedOut: 'The previous unload of this plugin did not finish in time, so the plugin is loading anyway.',
       unhandledError: 'An unhandled error occurred. Please check the console for more information.'
     },
     pathSettings: {

@@ -43,14 +43,21 @@ import { MenuEventRegistrarComponent } from '../components/menu-event-registrar-
 import { NotebookNavigatorMenuEventRegistrarComponent } from '../components/notebook-navigator-menu-event-registrar-component.ts';
 import { PluginContextComponent } from '../components/plugin-context-component.ts';
 import { PluginGateComponent } from '../components/plugin-gate-component.ts';
-import { PluginNoticeComponent } from '../components/plugin-notice-component.ts';
+import {
+  PluginNoticeComponent,
+  PluginNoticeMode
+} from '../components/plugin-notice-component.ts';
 import { PluginSettingsComponentBase } from '../components/plugin-settings-component.ts';
 import { PluginDataHandler } from '../data-handler.ts';
-import { initI18N } from '../i18n/i18n.ts';
+import {
+  initI18N,
+  t
+} from '../i18n/i18n.ts';
 import { defaultTranslationsMap } from '../i18n/locales/translations-map.ts';
 import { ResourceLockComponent } from '../resource-lock.ts';
 import { publishPluginApi } from './plugin-api.ts';
 import {
+  DEFAULT_PLUGIN_ASYNC_CLEANUP_NOTICE_DELAY_IN_MILLISECONDS,
   DEFAULT_PLUGIN_ASYNC_CLEANUP_TIMEOUT_IN_MILLISECONDS,
   didPluginAsyncCleanupsSettle,
   hasPendingPluginAsyncCleanups,
@@ -277,6 +284,12 @@ export abstract class PluginBase extends mixinAsyncEvents<PluginEventMap>()(Plug
   // already does for any child added to a not-yet-loaded component.
   private gatedWrapperComponent = new ComponentEx();
 
+  // Whether a feature surface of this instance has ever been torn down. Until one has, every cleanup still pending
+  // under this plugin id belongs to the PREVIOUS instance, which `onload` has already waited for, so the first surface
+  // load must not wait for it a second time. After a timeout it is still pending, and a second wait doubled the
+  // timeout and showed its notices twice.
+  private hasUnloadedFeatureSurface = false;
+
   // The payload broadcast when this plugin finished loading, kept so the matching unloaded broadcast
   // describes the same plugin without re-deriving it from a surface that has since been torn down. Null
   // whenever no loaded broadcast is outstanding, which is what keeps the two events paired.
@@ -492,6 +505,19 @@ export abstract class PluginBase extends mixinAsyncEvents<PluginEventMap>()(Plug
   }
 
   /**
+   * Provides how long a new instance waits for the previous instance's async cleanups before it tells the user that
+   * its load is paused.
+   *
+   * Most cleanups settle within milliseconds, so a notice on every reload would only flash. Override in subclass to
+   * change it. The default is 500 milliseconds.
+   *
+   * @returns The delay in milliseconds.
+   */
+  protected getAsyncCleanupNoticeDelayInMilliseconds(): number {
+    return DEFAULT_PLUGIN_ASYNC_CLEANUP_NOTICE_DELAY_IN_MILLISECONDS;
+  }
+
+  /**
    * Provides how long a new instance waits for the previous instance's async cleanups before loading anyway.
    *
    * Override in subclass to change it. The default is 10 seconds.
@@ -678,6 +704,29 @@ export abstract class PluginBase extends mixinAsyncEvents<PluginEventMap>()(Plug
   }
 
   /**
+   * Provides the notice component for the cleanup wait.
+   *
+   * The wait in {@link onload} runs before the universal notice component exists, so that path gets a standalone
+   * one. It is never unloaded, because unloading hides its notice, and the timeout notice must stay readable after the
+   * wait. It holds nothing but the notices it shows, which hide themselves.
+   *
+   * @returns The notice component.
+   */
+  private getAsyncCleanupNoticeComponent(): PluginNoticeComponent {
+    const pluginNoticeComponent = this.components.pluginNoticeComponent;
+    if (pluginNoticeComponent) {
+      return pluginNoticeComponent;
+    }
+
+    const standalonePluginNoticeComponent = new PluginNoticeComponent({
+      app: this.app,
+      pluginName: this.manifest.name
+    });
+    standalonePluginNoticeComponent.load();
+    return standalonePluginNoticeComponent;
+  }
+
+  /**
    * Checks whether a feature surface whose load is in progress has since been torn down or replaced.
    *
    * @param gatedWrapperComponent - The surface being loaded.
@@ -704,8 +753,9 @@ export abstract class PluginBase extends mixinAsyncEvents<PluginEventMap>()(Plug
     gatedWrapperComponent.load();
 
     // A surface reopened after the gate closed waits for the cleanups the previous surface started. Only when some
-    // are pending, so a first load, where `onload` already waited, still runs `onloadImpl` synchronously.
-    if (hasPendingPluginAsyncCleanups(this.manifest.id)) {
+    // are pending, so a surface with nothing to wait for still runs `onloadImpl` synchronously. Never on the first
+    // load, where anything pending is the previous instance's and `onload` already waited for it.
+    if (this.hasUnloadedFeatureSurface && hasPendingPluginAsyncCleanups(this.manifest.id)) {
       await this.waitForPreviousAsyncCleanups();
     }
 
@@ -759,6 +809,7 @@ export abstract class PluginBase extends mixinAsyncEvents<PluginEventMap>()(Plug
     // parks its child on the fresh surface rather than on the one being torn down — where `ComponentEx`
     // would refuse it outright, since it refuses children added to an already-unloaded component.
     this.gatedWrapperComponent = new ComponentEx();
+    this.hasUnloadedFeatureSurface = true;
     this.universalWrapperComponent.removeChild(gatedWrapperComponent);
 
     this.broadcastUnloaded();
@@ -766,11 +817,28 @@ export abstract class PluginBase extends mixinAsyncEvents<PluginEventMap>()(Plug
 
   private async waitForPreviousAsyncCleanups(): Promise<void> {
     const timeoutInMilliseconds = this.getAsyncCleanupTimeoutInMilliseconds();
-    if (await didPluginAsyncCleanupsSettle({ pluginId: this.manifest.id, timeoutInMilliseconds })) {
+    const pluginNoticeComponent = this.getAsyncCleanupNoticeComponent();
+    // Shown only once the wait outlasts the delay, so the usual wait of a few milliseconds shows nothing. Separate, so
+    // it never takes the slot of a notice the gate shows about the same plugin.
+    const pausedNotice = pluginNoticeComponent.showNoticeAfterDelay({
+      content: () => t(($) => $.obsidianLib.notices.pluginLoadPaused),
+      delayInMilliseconds: this.getAsyncCleanupNoticeDelayInMilliseconds(),
+      mode: PluginNoticeMode.Separate
+    });
+
+    let didSettle: boolean;
+    try {
+      didSettle = await didPluginAsyncCleanupsSettle({ pluginId: this.manifest.id, timeoutInMilliseconds });
+    } finally {
+      pausedNotice[Symbol.dispose]();
+    }
+
+    if (didSettle) {
       return;
     }
 
     console.warn(`Plugin ${this.manifest.id}: the previous instance's async cleanups did not finish in ${String(timeoutInMilliseconds)} ms; loading anyway.`);
+    pluginNoticeComponent.showNotice(t(($) => $.obsidianLib.notices.pluginLoadPauseTimedOut), { mode: PluginNoticeMode.Separate });
   }
 }
 
