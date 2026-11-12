@@ -36,6 +36,12 @@ export const PLUGIN_ASYNC_CLEANUPS_STATE_KEY = 'pluginAsyncCleanupsV1';
 export const DEFAULT_PLUGIN_ASYNC_CLEANUP_TIMEOUT_IN_MILLISECONDS = 10_000;
 
 /**
+ * How long a new plugin instance waits for the previous instance's cleanups, by default, before it shows a notice that
+ * its load is paused. Shorter waits show nothing, so the usual few milliseconds never flash a notice.
+ */
+export const DEFAULT_PLUGIN_ASYNC_CLEANUP_NOTICE_DELAY_IN_MILLISECONDS = 500;
+
+/**
  * Parameters for {@link didPluginAsyncCleanupsSettle}.
  */
 export interface DidPluginAsyncCleanupsSettleParams {

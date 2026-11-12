@@ -9,7 +9,10 @@ import { noopAsync } from '@mnaoumov/typescript-lib/function';
 import { castTo } from '@mnaoumov/typescript-lib/object-utils';
 import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import { Component } from 'obsidian';
-import { App } from 'obsidian-test-mocks/obsidian';
+import {
+  App,
+  Notice
+} from 'obsidian-test-mocks/obsidian';
 import {
   beforeEach,
   describe,
@@ -35,7 +38,10 @@ import { PluginNoticeComponent } from '../components/plugin-notice-component.ts'
 import { PluginSettingsComponentBase } from '../components/plugin-settings-component.ts';
 import { PluginDataHandler } from '../data-handler.ts';
 import { initI18N } from '../i18n/i18n.ts';
-import { didPluginAsyncCleanupsSettle } from './plugin-async-cleanup.ts';
+import {
+  DEFAULT_PLUGIN_ASYNC_CLEANUP_NOTICE_DELAY_IN_MILLISECONDS,
+  didPluginAsyncCleanupsSettle
+} from './plugin-async-cleanup.ts';
 import { PluginEventSourceImpl } from './plugin-event-source.ts';
 import {
   PLUGIN_LOADED_EVENT_NAME,
@@ -61,7 +67,11 @@ vi.mock('../i18n/i18n.ts', () => ({
   t: vi.fn(($function: (t: unknown) => string) =>
     $function({
       obsidianLib: {
-        notices: { unhandledError: 'error' },
+        notices: {
+          pluginLoadPaused: 'load paused',
+          pluginLoadPauseTimedOut: 'load pause timed out',
+          unhandledError: 'error'
+        },
         pluginConflict: {
           blockedNotice: 'conflict blocked',
           conflictAppearedNotice: 'conflict appeared',
@@ -1090,10 +1100,107 @@ describe('async cleanup', () => {
     await second.onload();
 
     expect(second.featureComponent._loaded).toBe(true);
-    expect(warnSpy).toHaveBeenCalledWith('Plugin cleanup-plugin: the previous instance\'s async cleanups did not finish in 10 ms; loading anyway.');
+    // Once: the first feature-surface load must not wait a second time for the cleanup `onload` already timed out on.
+    expect(warnSpy.mock.calls.filter(([message]) => String(message).includes('did not finish'))).toEqual([
+      ['Plugin cleanup-plugin: the previous instance\'s async cleanups did not finish in 10 ms; loading anyway.']
+    ]);
 
     deferred.resolve();
     await expect(didPluginAsyncCleanupsSettle({ pluginId: 'cleanup-plugin' })).resolves.toBe(true);
+  });
+
+  describe('notices', () => {
+    class NoDelayCleanupPlugin extends CleanupPlugin {
+      protected override getAsyncCleanupNoticeDelayInMilliseconds(): number {
+        return 0;
+      }
+    }
+
+    class NoDelayShortTimeoutCleanupPlugin extends NoDelayCleanupPlugin {
+      protected override getAsyncCleanupTimeoutInMilliseconds(): number {
+        return 50;
+      }
+    }
+
+    async function unloadWithPendingCleanup(cleanupPromise: Promise<void>): Promise<void> {
+      const first = new CleanupPlugin(app, cleanupManifest);
+      first.cleanup.mockReturnValue(cleanupPromise);
+      first.load();
+      await vi.waitFor(() => {
+        expect(first.featureComponent._loaded).toBe(true);
+      });
+      first.unload();
+    }
+
+    interface NoticeRecorder {
+      readonly hidden: string[];
+      readonly shown: string[];
+    }
+
+    function spyOnNotices(): NoticeRecorder {
+      const constructorSpy = vi.spyOn(Notice.prototype, 'constructor__');
+      const hideSpy = vi.spyOn(Notice.prototype, 'hide');
+      return {
+        get hidden(): string[] {
+          return castTo<Notice[]>(hideSpy.mock.contexts).map((notice) => notice.messageEl.textContent);
+        },
+        get shown(): string[] {
+          return castTo<Notice[]>(constructorSpy.mock.contexts).map((notice) => notice.messageEl.textContent);
+        }
+      };
+    }
+
+    it('should show no notice when the previous cleanup settles before the delay', async () => {
+      const deferred = createDeferred();
+      await unloadWithPendingCleanup(deferred.promise);
+      const notices = spyOnNotices();
+
+      const second = new CleanupPlugin(app, cleanupManifest);
+      const loadPromise = second.onload();
+      await setTimeoutAsync(0);
+      deferred.resolve();
+      await loadPromise;
+      await setTimeoutAsync(DEFAULT_PLUGIN_ASYNC_CLEANUP_NOTICE_DELAY_IN_MILLISECONDS + 50);
+
+      expect(notices.shown.filter((text) => text.includes('load paused'))).toEqual([]);
+    });
+
+    it('should show the paused notice past the delay and hide it once the cleanup settles', async () => {
+      const deferred = createDeferred();
+      await unloadWithPendingCleanup(deferred.promise);
+      const notices = spyOnNotices();
+
+      const second = new NoDelayCleanupPlugin(app, cleanupManifest);
+      const loadPromise = second.onload();
+      await vi.waitFor(() => {
+        expect(notices.shown).toEqual([expect.stringContaining('load paused')]);
+      });
+      expect(notices.shown[0]).toContain(cleanupManifest.name);
+      expect(second.featureComponent._loaded).toBe(false);
+
+      deferred.resolve();
+      await loadPromise;
+
+      expect(notices.hidden).toEqual([expect.stringContaining('load paused')]);
+      expect(notices.shown.some((text) => text.includes('load pause timed out'))).toBe(false);
+      expect(second.featureComponent._loaded).toBe(true);
+    });
+
+    it('should replace the paused notice with a timeout notice when the previous cleanup outlives the timeout', async () => {
+      const deferred = createDeferred();
+      await unloadWithPendingCleanup(deferred.promise);
+      const notices = spyOnNotices();
+
+      const second = new NoDelayShortTimeoutCleanupPlugin(app, cleanupManifest);
+      await second.onload();
+
+      expect(notices.hidden).toEqual([expect.stringContaining('load paused')]);
+      expect(notices.shown.at(-1)).toContain('load pause timed out');
+      expect(second.featureComponent._loaded).toBe(true);
+
+      deferred.resolve();
+      await expect(didPluginAsyncCleanupsSettle({ pluginId: 'cleanup-plugin' })).resolves.toBe(true);
+    });
   });
 });
 
