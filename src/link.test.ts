@@ -34,6 +34,7 @@ import {
 
 import type { FileChange } from './file-change.ts';
 import type {
+  BacklinkConversionParams,
   ConvertLinkParams,
   GenerateMarkdownLinkParams,
   UpdateLinkParams,
@@ -2953,6 +2954,22 @@ describe('app-dependent functions', () => {
       ]);
     });
 
+    it('should leave a link and a definition unchanged when their converters return null', async () => {
+      vi.mocked(parseMetadata).mockResolvedValue(createDefinitionsCache());
+      const capturedChanges = captureContentChanges();
+
+      await editReferencesInContent({
+        app,
+        content: DEFINITIONS_CONTENT,
+        referenceConverter: () => null,
+        referenceDefinitionConverter: (definition) => definition.id === 'a' ? null : `New ${definition.link}`
+      });
+
+      expect(capturedChanges.map((change) => [change.oldContent, change.newContent])).toEqual([
+        ['B.md', '<New B.md>']
+      ]);
+    });
+
     it('should not call the definition converter for a note without definitions', async () => {
       vi.mocked(parseMetadata).mockResolvedValue(castTo<CachedMetadataEx>({ links: undefined }));
       const referenceDefinitionConverter = createDefinitionConverter();
@@ -3366,6 +3383,37 @@ describe('app-dependent functions', () => {
 
       expect(referenceConverter).toHaveBeenCalledTimes(2);
       expect(referenceConverter).toHaveBeenCalledWith({ payload: undefined, reference: linkToB, sourcePath: 'note.md' });
+    });
+
+    it('should leave a link unchanged when the converter returns null', async () => {
+      let capturedChanges: FileChange[] | null = null;
+      vi.mocked(applyFileChanges).mockImplementation(async ({ changesProvider }) => {
+        const abortSignal = strictProxy<AbortSignal>({ throwIfAborted: vi.fn() });
+        capturedChanges = await resolveValue(changesProvider, { abortSignal, content: '# Note\n[[target]]' });
+      });
+      vi.mocked(getCacheSafe).mockResolvedValue(castTo<CachedMetadataEx>({
+        embeds: undefined,
+        frontmatterLinks: undefined,
+        links: [linkToA, linkToB],
+        sections: undefined
+      }));
+      const referenceConverter = vi.fn(({ reference }: BacklinkConversionParams<string>) => reference === linkToA ? null : '[[b-new]]');
+
+      await editBacklinksSnapshot<string>({
+        app,
+        pluginNoticeComponent: null,
+        referenceConverter,
+        resourceLockComponent,
+        snapshot: buildBacklinksSnapshot<string>({
+          backlinks: new Map([['note.md', [linkToA, linkToB]]]),
+          payloadProvider: () => 'payload'
+        })
+      });
+
+      expect(referenceConverter).toHaveBeenCalledTimes(2);
+      expect(castTo<FileChange[]>(capturedChanges).map((change) => [change.oldContent, change.newContent])).toEqual([
+        ['[[b]]', '[[b-new]]']
+      ]);
     });
 
     it('should match links through a custom referenceIdentityKeyProvider', async () => {

@@ -470,9 +470,9 @@ export interface EditBacklinksParams extends EditBacklinksOptions {
   readonly pathOrFile: PathOrFile;
 
   /**
-   * The function that converts each reference.
+   * The function that converts each reference: it returns the new link text, or `null` (or nothing) to leave the link unchanged.
    */
-  readonly referenceConverter: (reference: Reference) => Promisable<MaybeReturn<string>>;
+  readonly referenceConverter: (reference: Reference) => Promisable<MaybeReturn<null | string>>;
 }
 
 /**
@@ -498,9 +498,9 @@ export interface EditBacklinksSnapshotParams<TPayload> extends EditBacklinksSnap
   readonly linkUpdateProgressReporter?: LinkUpdateProgressReporter;
 
   /**
-   * The function that converts each reference.
+   * The function that converts each reference: it returns the new link text, or `null` (or nothing) to leave the link unchanged.
    */
-  readonly referenceConverter: (params: BacklinkConversionParams<TPayload>) => Promisable<MaybeReturn<string>>;
+  readonly referenceConverter: (params: BacklinkConversionParams<TPayload>) => Promisable<MaybeReturn<null | string>>;
 
   /**
    * Computes the identity key of a link.
@@ -568,9 +568,9 @@ export interface EditReferencesInContentParams {
   readonly offsetRange?: OffsetRange;
 
   /**
-   * The function that converts each reference.
+   * The function that converts each reference: it returns the new link text, or `null` (or nothing) to leave the link unchanged.
    */
-  readonly referenceConverter: (reference: Reference) => Promisable<MaybeReturn<string>>;
+  readonly referenceConverter: (reference: Reference) => Promisable<MaybeReturn<null | string>>;
 
   /**
    * The function that returns the new destination of each reference-style link definition
@@ -589,7 +589,7 @@ export interface EditReferencesInContentParams {
    *
    * @default `undefined`, which leaves every definition unchanged
    */
-  readonly referenceDefinitionConverter?: (definition: ReferenceLinkCache) => Promisable<MaybeReturn<string>>;
+  readonly referenceDefinitionConverter?: (definition: ReferenceLinkCache) => Promisable<MaybeReturn<null | string>>;
 
   /**
    * Whether to also edit external links parsed from the note body. When `true`, the converter also
@@ -681,9 +681,9 @@ export interface EditReferencesParams extends EditReferencesOptions {
   readonly pathOrFile: PathOrFile;
 
   /**
-   * The function that converts each reference.
+   * The function that converts each reference: it returns the new link text, or `null` (or nothing) to leave the link unchanged.
    */
-  readonly referenceConverter: (reference: Reference) => Promisable<MaybeReturn<string>>;
+  readonly referenceConverter: (reference: Reference) => Promisable<MaybeReturn<null | string>>;
 
   /**
    * The function that returns the new destination of each reference-style link definition
@@ -702,7 +702,7 @@ export interface EditReferencesParams extends EditReferencesOptions {
    *
    * @default `undefined`, which leaves every definition unchanged
    */
-  readonly referenceDefinitionConverter?: (definition: ReferenceLinkCache) => Promisable<MaybeReturn<string>>;
+  readonly referenceDefinitionConverter?: (definition: ReferenceLinkCache) => Promisable<MaybeReturn<null | string>>;
 
   /**
    * Whether to also edit external links parsed from the note body. When `true`, the converter also
@@ -1604,9 +1604,9 @@ interface GetFileChangesParams {
   readonly offsetRange?: OffsetRange;
 
   /**
-   * A function that converts each reference.
+   * A function that converts each reference: it returns the new link text, or `null` (or nothing) to leave the link unchanged.
    */
-  readonly referenceConverter: (reference: Reference, abortSignal: AbortSignal) => Promisable<MaybeReturn<string>>;
+  readonly referenceConverter: (reference: Reference, abortSignal: AbortSignal) => Promisable<MaybeReturn<null | string>>;
 
   /**
    * A function that returns the new destination of each reference-style link definition, given together with the
@@ -1702,9 +1702,9 @@ interface ReferenceDefinitionConversion {
   readonly content: string;
 
   /**
-   * The function that returns the new destination of a definition, or `undefined` to leave it unchanged.
+   * The function that returns the new destination of a definition, or `null` (or nothing) to leave it unchanged.
    */
-  readonly converter: (definition: ReferenceLinkCache, abortSignal: AbortSignal) => Promisable<MaybeReturn<string>>;
+  readonly converter: (definition: ReferenceLinkCache, abortSignal: AbortSignal) => Promisable<MaybeReturn<null | string>>;
 }
 
 /**
@@ -2945,7 +2945,7 @@ async function getFileChanges(params: GetFileChangesParams): Promise<FileChange[
 
     const newContent = await referenceConverter(reference, abortSignal);
     abortSignal.throwIfAborted();
-    if (newContent === undefined) {
+    if (newContent === undefined || newContent === null) {
       continue;
     }
 
@@ -3066,7 +3066,7 @@ async function getReferenceDefinitionFileChanges(params: GetReferenceDefinitionF
 
     const newDestination = await referenceDefinitionConversion.converter(definition, abortSignal);
     abortSignal.throwIfAborted();
-    if (newDestination === undefined) {
+    if (newDestination === undefined || newDestination === null) {
       continue;
     }
 
@@ -3219,7 +3219,7 @@ function shouldUseWikilinkStyle(params: ShouldUseWikilinkStyleParams): boolean {
 
 function toReferenceDefinitionConversion(
   content: string,
-  referenceDefinitionConverter: ((definition: ReferenceLinkCache) => Promisable<MaybeReturn<string>>) | undefined
+  referenceDefinitionConverter: ((definition: ReferenceLinkCache) => Promisable<MaybeReturn<null | string>>) | undefined
 ): ReferenceDefinitionConversion | undefined {
   return referenceDefinitionConverter
     ? { content, converter: referenceDefinitionConverter }

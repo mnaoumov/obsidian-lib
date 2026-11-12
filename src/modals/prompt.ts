@@ -108,7 +108,7 @@ export interface PromptParams extends ModalParamsBase {
    * @param value - The input value to validate.
    * @returns an error message if the value is invalid, or `null` if the value is valid.
    */
-  readonly valueValidator?: (value: string) => Promisable<MaybeReturn<string>>;
+  readonly valueValidator?: (value: string) => Promisable<MaybeReturn<null | string>>;
 }
 
 type PromptModalConstructorParams = ModalBaseConstructorParams<null | string> & PromptParams;
@@ -124,7 +124,7 @@ class PromptModal extends ModalBase<null | string> {
   private readonly spellcheckMode: SpellcheckMode;
   private readonly title: DocumentFragment | string;
   private value: string;
-  private readonly valueValidator: (value: string) => Promisable<MaybeReturn<string>>;
+  private readonly valueValidator: (value: string) => Promisable<MaybeReturn<null | string>>;
 
   public constructor(params: PromptModalConstructorParams) {
     super(params);
@@ -157,7 +157,7 @@ class PromptModal extends ModalBase<null | string> {
     });
 
     const validate = async (shouldReport: boolean): Promise<void> => {
-      const errorMessage = await this.valueValidator(inputEl.value) as string | undefined;
+      const errorMessage = await this.valueValidator(inputEl.value) as null | string | undefined;
       inputEl.setCustomValidity(errorMessage ?? '');
       if (shouldReport) {
         inputEl.reportValidity();
