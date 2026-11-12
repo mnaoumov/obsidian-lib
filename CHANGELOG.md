@@ -1,5 +1,23 @@
 # CHANGELOG
 
+## 10.12.0
+
+- fix(plugin): keep a plugin unloaded mid-load from blocking its API republish
+- fix(components): keep the embeddable editor focused while another window is in front
+- docs(readme): link the changelog from README and the docs site
+- docs(readme): compare similar runtime libraries in See also
+- feat(components): support custom subpaths for non-Markdown embeds
+- feat(components): add status-bar items for existing and future popout windows
+- feat(components): add lifecycle-managed shared component resources
+- feat(data-handler): guard plugin data.json size before loading and saving
+- feat(workspace-layout-state): add optional workspace layout state for plugin views
+- build(deps): clear the glob and fast-xml-parser audit advisories
+- feat(plugin-instance): add waitForPlugin, getLoadedPlugin and requirePlugin for plugins that publish no API
+- feat(markdown-view): add rerenderPreviews to refresh open Reading views
+- docs(cross-plugin-apis): document typed provider events with lifecycle-safe subscriptions
+- feat(bug-report): add reviewed diagnostics and a clipboard fallback for long reports
+- fix(git-rename-history): read git renames from a plugin bundle again
+
 ## 10.11.0
 
 - fix(workspace): load plugins enabled at Obsidian startup again
