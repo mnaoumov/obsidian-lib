@@ -5,6 +5,10 @@ import type {
 } from 'obsidian';
 
 import { setTimeoutAsync } from '@mnaoumov/typescript-lib/async';
+import {
+  printError,
+  SilentError
+} from '@mnaoumov/typescript-lib/error';
 import { noopAsync } from '@mnaoumov/typescript-lib/function';
 import { castTo } from '@mnaoumov/typescript-lib/object-utils';
 import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
@@ -107,6 +111,21 @@ vi.mock('../generated-during-build.ts', () => ({
   LIBRARY_STYLES: '',
   LIBRARY_VERSION: '1.0.0'
 }));
+
+/**
+ * A plugin's protected `addChild`, reached from outside the class.
+ */
+interface ChildAddingPlugin {
+  readonly addChild: (component: Component) => Component;
+}
+
+/**
+ * What a load interrupted by an unload leaves for a test to assert on.
+ */
+interface MidLoadUnloadResult {
+  readonly loadedCallback: (payload: PluginLifecycleEventPayload) => void;
+  readonly onloadPromise: Promise<void>;
+}
 
 /**
  * A shared-state wrapper, as the mocked bag below hands it out.
@@ -723,6 +742,99 @@ describe('lifecycle broadcast', () => {
     await setTimeoutAsync(0);
 
     expect(mockPublishPluginApi).not.toHaveBeenCalled();
+  });
+
+  describe('a plugin unloaded during its own load', () => {
+    /**
+     * Loads a plugin whose `onloadImpl` awaits, unloads it during that await, then lets `onloadImpl` resume and run
+     * `afterResume`.
+     *
+     * @param afterResume - What the resumed `onloadImpl` does.
+     * @param shouldUnload - Whether to unload the plugin before resuming.
+     * @returns The loaded-broadcast listener and the plugin's `onload` promise, settled or not.
+     */
+    async function loadAndUnloadMidLoad(afterResume: (plugin: PluginBase) => void, shouldUnload = true): Promise<MidLoadUnloadResult> {
+      const deferred = createDeferred();
+      let hasOnloadImplStarted = false;
+
+      class ResumingPlugin extends PublishingPlugin {
+        protected override async onloadImpl(): Promise<void> {
+          hasOnloadImplStarted = true;
+          await deferred.promise;
+          afterResume(this);
+        }
+      }
+
+      const loadedCallback = vi.fn<(payload: PluginLifecycleEventPayload) => void>();
+      app.workspace.on(PLUGIN_LOADED_EVENT_NAME, loadedCallback);
+
+      const plugin = new ResumingPlugin(app, manifest);
+      const onloadSpy = vi.spyOn(plugin, 'onload');
+      plugin.load();
+      const onloadPromise = onloadSpy.mock.results[0]?.value as Promise<void>;
+      // Observed straight away, so a rejection the case expects is never reported as unhandled.
+      onloadPromise.catch(noopAsync);
+      await vi.waitFor(() => {
+        expect(hasOnloadImplStarted).toBe(true);
+      });
+
+      if (shouldUnload) {
+        // An update or Hot Reload disables the plugin while `onloadImpl` is still awaiting.
+        plugin.unload();
+      }
+      deferred.resolve();
+      await setTimeoutAsync(0);
+      return { loadedCallback, onloadPromise };
+    }
+
+    it('should load quietly when the resumed onloadImpl adds a child to the torn-down surface', async () => {
+      const { loadedCallback, onloadPromise } = await loadAndUnloadMidLoad((plugin) => {
+        castTo<ChildAddingPlugin>(plugin).addChild(new Component());
+      });
+
+      // The `SilentError` the unloaded surface throws unwinds the resumed load, and nothing reports it: no
+      // `Error loading plugin`, so Obsidian logs no `Plugin failure` for an instance it already replaced.
+      await expect(onloadPromise).resolves.toBeUndefined();
+      expect(printError).not.toHaveBeenCalled();
+      expect(mockPublishPluginApi).not.toHaveBeenCalled();
+      expect(loadedCallback).not.toHaveBeenCalled();
+    });
+
+    it('should load quietly when the silent error arrives wrapped as a cause', async () => {
+      const { onloadPromise } = await loadAndUnloadMidLoad(() => {
+        throw new Error('wrapped', { cause: new SilentError('Component is already unloaded') });
+      });
+
+      await expect(onloadPromise).resolves.toBeUndefined();
+      expect(printError).not.toHaveBeenCalled();
+    });
+
+    it('should still report a real failure of a plugin unloaded during its own load', async () => {
+      const { onloadPromise } = await loadAndUnloadMidLoad(() => {
+        throw new Error('real failure');
+      });
+
+      await expect(onloadPromise).rejects.toThrow('real failure');
+      expect(printError).toHaveBeenCalledOnce();
+    });
+
+    it('should still report an empty aggregate failure of a plugin unloaded during its own load', async () => {
+      const { onloadPromise } = await loadAndUnloadMidLoad(() => {
+        throw new AggregateError([], 'nothing named');
+      });
+
+      await expect(onloadPromise).rejects.toThrow();
+      expect(printError).toHaveBeenCalledOnce();
+    });
+
+    it('should still report a silent error of a plugin that was NOT unloaded', async () => {
+      const { onloadPromise } = await loadAndUnloadMidLoad(() => {
+        throw new SilentError('not from an unload');
+      }, false);
+
+      await expect(onloadPromise).rejects.toThrow();
+      expect(printError).toHaveBeenCalledOnce();
+    });
   });
 
   it('should announce the departure when the plugin unloads', async () => {

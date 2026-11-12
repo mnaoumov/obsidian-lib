@@ -13,7 +13,10 @@ import type {
 import type { Promisable } from 'type-fest';
 
 import { mixinAsyncEvents } from '@mnaoumov/typescript-lib/async-events';
-import { printError } from '@mnaoumov/typescript-lib/error';
+import {
+  printError,
+  SilentError
+} from '@mnaoumov/typescript-lib/error';
 import { noopAsync } from '@mnaoumov/typescript-lib/function';
 import { ensureNonNullable } from '@mnaoumov/typescript-lib/type-guards';
 import { Plugin } from 'obsidian';
@@ -49,6 +52,7 @@ import {
 } from '../components/plugin-notice-component.ts';
 import { PluginSettingsComponentBase } from '../components/plugin-settings-component.ts';
 import { PluginDataHandler } from '../data-handler.ts';
+import { getObsidianLibDebugger } from '../debug.ts';
 import {
   initI18N,
   t
@@ -346,6 +350,7 @@ export abstract class PluginBase extends mixinAsyncEvents<PluginEventMap>()(Plug
    * Do NOT override this method. Override {@link onloadImpl} instead.
    */
   public override async onload(): Promise<void> {
+    let hasLoadedUniversalWrapper = false;
     try {
       // Before anything else: the previous instance of this plugin may still be closing what this one is about to
       // open, because Obsidian runs `onunload` synchronously and awaits nothing it started. Awaited only when some are
@@ -364,6 +369,7 @@ export abstract class PluginBase extends mixinAsyncEvents<PluginEventMap>()(Plug
       // `onload()` directly.
       super.addChild(this.universalWrapperComponent);
       this.universalWrapperComponent.load();
+      hasLoadedUniversalWrapper = true;
 
       await initI18N(this.createTranslationsMap());
       this.pluginContextComponent = this.addUniversalChild(
@@ -459,6 +465,15 @@ export abstract class PluginBase extends mixinAsyncEvents<PluginEventMap>()(Plug
       // reports any failure as a single `AggregateError`.
       await this.universalWrapperComponent.loadWithPromises();
     } catch (error) {
+      // The plugin was unloaded while its own load was suspended on an await (an update, or Hot Reload, disables and
+      // re-enables it), and the resumed load unwound on the `SilentError` an unloaded component throws, which is that
+      // error's purpose. Reporting it would make Obsidian log `Plugin failure` and show `Failed to load plugin` for an
+      // instance that was torn down correctly and is already replaced. Any other failure in the tree still reports.
+      if (hasLoadedUniversalWrapper && !this.universalWrapperComponent._loaded && isSilentErrorTree(error)) {
+        getObsidianLibDebugger('PluginBase:onload')(`Plugin ${this.manifest.name} (${this.manifest.id}) was unloaded during its own load`);
+        return;
+      }
+
       printError(new Error(`Error loading plugin ${this.manifest.name} (${this.manifest.id})`, { cause: error }));
       throw error;
     }
@@ -874,4 +889,45 @@ export async function showErrorAndDisablePlugin(plugin: Plugin, message: string)
   pluginNoticeComponent.showNotice(message);
   printError(new Error(message));
   await plugin.app.plugins.disablePlugin(plugin.manifest.id);
+}
+
+/**
+ * Checks whether every failure in an error tree is a {@link SilentError}.
+ *
+ * Walks `AggregateError.errors` and `cause`, so the `AggregateError` nesting that the component loads wrap a single
+ * throw in is seen through. An error that is neither a {@link SilentError}, an aggregate nor a wrapper with a cause is
+ * a real failure, and so is an empty aggregate, which says nothing about what went wrong.
+ *
+ * @param error - The error to check.
+ * @returns `true` when the tree holds at least one {@link SilentError} and nothing else.
+ */
+function isSilentErrorTree(error: unknown): boolean {
+  const pendingErrors: unknown[] = [error];
+
+  while (pendingErrors.length > 0) {
+    const pendingError = pendingErrors.pop();
+    if (pendingError instanceof SilentError) {
+      continue;
+    }
+
+    if (pendingError instanceof AggregateError) {
+      const errors: unknown[] = pendingError.errors;
+      if (errors.length === 0) {
+        return false;
+      }
+      pendingErrors.push(...errors);
+      continue;
+    }
+
+    if (pendingError instanceof Error && pendingError.cause !== undefined) {
+      pendingErrors.push(pendingError.cause);
+      continue;
+    }
+
+    return false;
+  }
+
+  // Every leaf was a `SilentError`, and there was at least one, since the walk starts from one error and an empty
+  // aggregate returns above.
+  return true;
 }
