@@ -347,6 +347,7 @@
     "test": "jiti scripts/test.ts",
     "test:coverage": "jiti scripts/test-coverage.ts",
     "test:integration": "jiti scripts/test-integration.ts integration-tests obsidian-integration-tests",
+    "test:integration:android": "jiti scripts/test-integration.ts obsidian-integration-tests:android",
     "test:mutation": "jiti scripts/test-mutation.ts",
     "test:watch": "jiti scripts/test-watch.ts",
     "version": "jiti scripts/version.ts"
