@@ -2,45 +2,76 @@
 
 ## 10.12.0
 
-- fix(plugin): keep a plugin unloaded mid-load from blocking its API republish
-- fix(components): keep the embeddable editor focused while another window is in front
-- docs(readme): link the changelog from README and the docs site
-- docs(readme): compare similar runtime libraries in See also
-- feat(components): support custom subpaths for non-Markdown embeds
-- feat(components): add status-bar items for existing and future popout windows
-- feat(components): add lifecycle-managed shared component resources
-- feat(data-handler): guard plugin data.json size before loading and saving
-- feat(workspace-layout-state): add optional workspace layout state for plugin views
-- build(deps): clear the glob and fast-xml-parser audit advisories
-- feat(plugin-instance): add waitForPlugin, getLoadedPlugin and requirePlugin for plugins that publish no API
-- feat(markdown-view): add rerenderPreviews to refresh open Reading views
-- docs(cross-plugin-apis): document typed provider events with lifecycle-safe subscriptions
-- feat(bug-report): add reviewed diagnostics and a clipboard fallback for long reports
-- fix(git-rename-history): read git renames from a plugin bundle again
+This release has 8 new features, 3 fixes and 3 documentation changes. 1 maintenance commit (tests, build, CI, refactoring, dependencies) is not listed.
+
+### New
+
+- **components:** support custom subpaths for non-Markdown embeds
+- **components:** add status-bar items for existing and future popout windows
+- **components:** add lifecycle-managed shared component resources
+- **data-handler:** guard plugin data.json size before loading and saving
+- **workspace-layout-state:** add optional workspace layout state for plugin views
+- **plugin-instance:** add waitForPlugin, getLoadedPlugin and requirePlugin for plugins that publish no API
+- **markdown-view:** add rerenderPreviews to refresh open Reading views
+- **bug-report:** add reviewed diagnostics and a clipboard fallback for long reports
+
+### Fixed
+
+- **plugin:** keep a plugin unloaded mid-load from blocking its API republish
+- **components:** keep the embeddable editor focused while another window is in front
+- **git-rename-history:** read git renames from a plugin bundle again
+
+### Documentation
+
+- **readme:** link the changelog from README and the docs site
+- **readme:** compare similar runtime libraries in See also
+- **cross-plugin-apis:** document typed provider events with lifecycle-safe subscriptions
 
 ## 10.11.0
 
-- fix(workspace): load plugins enabled at Obsidian startup again
-- feat(link): edit reference-style link definition destinations
-- feat(release-asset): download optional plugin release assets on demand with consent and checksum
+This release has 2 new features and 1 fix.
+
+### New
+
+- **link:** edit reference-style link definition destinations
+- **release-asset:** download optional plugin release assets on demand with consent and checksum
+
+### Fixed
+
+- **workspace:** load plugins enabled at Obsidian startup again
 
 ## 10.10.0
 
-- fix(settings): stop rewriting data.json on an external settings reload (<https://github.com/mnaoumov/obsidian-custom-attachment-location/issues/102>)
-- feat(codemirror): add Live Preview only and Source mode only extensions
-- feat(i18n): load locale translations on demand
-- feat(modals): add the code block builder modal
-- feat(plugin): await the previous instance's async cleanups on reload
+This release has 4 new features and 1 fix.
+
+### New
+
+- **codemirror:** add Live Preview only and Source mode only extensions
+- **i18n:** load locale translations on demand
+- **modals:** add the code block builder modal
+- **plugin:** await the previous instance's async cleanups on reload
+
+### Fixed
+
+- **settings:** stop rewriting data.json on an external settings reload (<https://github.com/mnaoumov/obsidian-custom-attachment-location/issues/102>)
 
 ## 10.9.0
 
-- test(docs): give the API link render cases a load-proof timeout
-- fix: re #1
-- test(docs): render link tables without filesystem writes
-- docs: restore external type and inherited member links
-- feat: add disposable read-only virtual files
-- feat: add window helpers with automatic cleanup
-- feat: add Bases formula function helpers
+This release has 3 new features, 1 fix and 1 documentation change. 2 maintenance commits (tests, build, CI, refactoring, dependencies) are not listed.
+
+### New
+
+- add disposable read-only virtual files
+- add window helpers with automatic cleanup
+- add Bases formula function helpers
+
+### Fixed
+
+- SharedDataStore.acknowledgements treats a stray file in devices/ as a device, and compaction then fails with "Data-store path leaves its configured folder" (#1)
+
+### Documentation
+
+- restore external type and inherited member links
 
 ## 10.8.0
 
@@ -53,34 +84,60 @@ This library prerequisite supports the configurable/local-only storage work in [
 
 ## 10.7.0
 
-- feat: add broken-link candidate discovery and git rename evidence
-- feat: add feature request and discussion commands
-- feat(data-stores): allow explicit hidden vault folders (<https://github.com/mnaoumov/obsidian-custom-attachment-location/issues/99>)
-- feat(components): add registerStyle for plugin stylesheets in every window
-- docs(changelog): credit the embeddable editor gist authors in 10.5.0
-- refactor(editor-suggest): pass a null file straight to EditorSuggest.trigger
-- perf(vault): remove an emptied folder outright instead of trashing it
+This release has 4 new features, 1 improvement and 1 documentation change. 1 maintenance commit (tests, build, CI, refactoring, dependencies) is not listed.
+
+### New
+
+- add broken-link candidate discovery and git rename evidence
+- add feature request and discussion commands
+- **data-stores:** allow explicit hidden vault folders (<https://github.com/mnaoumov/obsidian-custom-attachment-location/issues/99>)
+- **components:** add registerStyle for plugin stylesheets in every window
+
+### Improved
+
+- **vault:** remove an emptied folder outright instead of trashing it
+
+### Documentation
+
+- **changelog:** credit the embeddable editor gist authors in 10.5.0
 
 ## 10.6.0
 
-- fix(bug-report): list only the loaded plugins, as Show debug info does (<https://github.com/mnaoumov/obsidian-advanced-debug-mode/issues/5>)
-- feat(request-url): add a requestUrl wrapper with abort, timeout, FormData, rich errors and streaming
-- feat(input): open suggests at an anchor or from a command, edit lists and tabs
-- feat(input): complete links and tags in any input, and record hotkeys
-- feat(codemirror): add inline token renderer and settings facet
-- feat(markdown): carry focus and state across a self-editing code block's re-render
-- docs: add a fresh data reads guide
-- feat(markdown): footnote clicks and folding in rendered markdown
+This release has 6 new features, 1 fix and 1 documentation change.
+
+### New
+
+- **request-url:** add a requestUrl wrapper with abort, timeout, FormData, rich errors and streaming
+- **input:** open suggests at an anchor or from a command, edit lists and tabs
+- **input:** complete links and tags in any input, and record hotkeys
+- **codemirror:** add inline token renderer and settings facet
+- **markdown:** carry focus and state across a self-editing code block's re-render
+- **markdown:** footnote clicks and folding in rendered markdown
+
+### Fixed
+
+- **bug-report:** list only the loaded plugins, as Show debug info does (<https://github.com/mnaoumov/obsidian-advanced-debug-mode/issues/5>)
+
+### Documentation
+
+- add a fresh data reads guide
 
 ## 10.5.1
 
-- test(backlink-index): cover a file cache key that is only inherited
-- perf(rename): narrow the rename link snapshot and speed up the backlink and path indexes
-- fix: keep a bulk operation fresh while it waits on a dialog
-- docs: add issue-filing instructions for AI agents
-- chore: add issue forms
-- test: assert the embeddable editor's exact Enter on Android too
-- fix: throw PluginEnableRefusedError when Obsidian refuses to enable a plugin
+This release has 2 fixes, 1 improvement and 1 documentation change. 3 maintenance commits (tests, build, CI, refactoring, dependencies) are not listed.
+
+### Fixed
+
+- keep a bulk operation fresh while it waits on a dialog
+- throw PluginEnableRefusedError when Obsidian refuses to enable a plugin
+
+### Improved
+
+- **rename:** narrow the rename link snapshot and speed up the backlink and path indexes
+
+### Documentation
+
+- add issue-filing instructions for AI agents
 
 ## 10.5.0
 
@@ -95,118 +152,208 @@ This library prerequisite supports the configurable/local-only storage work in [
 
 ## 10.4.1
 
-- perf(data-stores): commit local data-store writes without a whole-store count
-- build(deps): override re2js to ^2.9.1 for GHSA-gg6h-894w-4m9c
+This release has 1 improvement. 1 maintenance commit (tests, build, CI, refactoring, dependencies) is not listed.
+
+### Improved
+
+- **data-stores:** commit local data-store writes without a whole-store count
 
 ## 10.4.0
 
-- feat(bulk-operation): wrap bulk operations in git commits, undone by revert
+This release has 1 new feature.
+
+### New
+
+- **bulk-operation:** wrap bulk operations in git commits, undone by revert
 
 ## 10.3.0
 
-- feat(link): let shouldSkipReference accept null like an absent key
+This release has 1 new feature.
+
+### New
+
+- **link:** let shouldSkipReference accept null like an absent key
 
 ## 10.2.0
 
-- feat(attachment-path): let folder-only callers skip the generated attachment name
-- build(deps): bump typescript-dev-toolkit to ^5.2.0 and apply prefer-dedent
+This release has 1 new feature. 1 maintenance commit (tests, build, CI, refactoring, dependencies) is not listed.
+
+### New
+
+- **attachment-path:** let folder-only callers skip the generated attachment name
 
 ## 10.1.1
 
-- fix(link): stop reporting bare URLs in code and wrapping bare file: URLs as empty links
+This release has 1 fix.
+
+### Fixed
+
+- **link:** stop reporting bare URLs in code and wrapping bare file: URLs as empty links
 
 ## 10.1.0
 
-- feat(link): let callers exclude chosen links from the reference-editing passes (<https://github.com/mnaoumov/obsidian-better-markdown-links/issues/45>)
-- chore(scripts): forward CLI arguments from the test scripts to vitest
-- fix(resource-lock): match ResourceLockedError thrown by any library copy
+This release has 1 new feature and 1 fix. 1 maintenance commit (tests, build, CI, refactoring, dependencies) is not listed.
+
+### New
+
+- **link:** let callers exclude chosen links from the reference-editing passes (<https://github.com/mnaoumov/obsidian-better-markdown-links/issues/45>)
+
+### Fixed
+
+- **resource-lock:** match ResourceLockedError thrown by any library copy
 
 ## 10.0.0
 
-- refactor!: rename isPositionInsideAnyOf to isPositionInsideSome
-- refactor: name Reference-typed locals and parameters reference
+This release has 1 breaking change. 1 maintenance commit (tests, build, CI, refactoring, dependencies) is not listed.
+
+### Breaking changes
+
+- rename isPositionInsideAnyOf to isPositionInsideSome
 
 ## 9.0.0
 
-- refactor!: name the Reference-typed API after Reference
-- feat(position): add Pos containment helpers and use them in reference checks
-- build(deps): bump @mnaoumov/typescript-dev-toolkit to ^5.1.0
+This release has 1 breaking change and 1 new feature. 1 maintenance commit (tests, build, CI, refactoring, dependencies) is not listed.
+
+### Breaking changes
+
+- name the Reference-typed API after Reference
+
+### New
+
+- **position:** add Pos containment helpers and use them in reference checks
 
 ## 8.1.0
 
-- test(integration): keep VITEST_MAX_WORKERS from running shared-instance files at once
-- test(integration): keep a leaked minimized modal from failing unrelated suites
-- feat(components): let an incremental file index await metadata changes and move records on rename
-- feat(data-stores): clear and reseed a local store in one commit
-- docs: re-derive the bundled @lezer/common against Obsidian 1.15.0 and 1.5.4
-- feat(link): leave links inside headings unchanged on request (<https://github.com/mnaoumov/obsidian-better-markdown-links/issues/44>)
-- fix: run each integration project in its own vitest invocation
+This release has 3 new features, 1 fix and 1 documentation change. 2 maintenance commits (tests, build, CI, refactoring, dependencies) are not listed.
+
+### New
+
+- **components:** let an incremental file index await metadata changes and move records on rename
+- **data-stores:** clear and reseed a local store in one commit
+- **link:** leave links inside headings unchanged on request (<https://github.com/mnaoumov/obsidian-better-markdown-links/issues/44>)
+
+### Fixed
+
+- run each integration project in its own vitest invocation
+
+### Documentation
+
+- re-derive the bundled @lezer/common against Obsidian 1.15.0 and 1.5.4
 
 ## 8.0.0
 
-- fix: escape angle-bracket Markdown link destinations (<https://github.com/mnaoumov/obsidian-better-markdown-links/issues/43>)
-- fix: preserve active modal toggle colors on hover
-- chore: adopt keyword identifier lint rule
-- refactor!: make interface members readonly by default
-- chore(deps): clear development dependency audit findings
-- refactor: store app-wide state once per renderer realm
+This release has 1 breaking change and 2 fixes. 3 maintenance commits (tests, build, CI, refactoring, dependencies) are not listed.
+
+### Breaking changes
+
+- make interface members readonly by default
+
+### Fixed
+
+- escape angle-bracket Markdown link destinations (<https://github.com/mnaoumov/obsidian-better-markdown-links/issues/43>)
+- preserve active modal toggle colors on hover
 
 ## 7.1.0
 
-- docs(indexing): link to the published data-store guide route
-- feat(indexing): share incremental file projections and Obsidian word matching
+This release has 1 new feature and 1 documentation change.
+
+### New
+
+- **indexing:** share incremental file projections and Obsidian word matching
+
+### Documentation
+
+- **indexing:** link to the published data-store guide route
 
 ## 7.0.0
 
-- feat(data-stores): add local and shared plugin persistence
-- chore(test): remove the typescript-lib dedupe workaround
-- revert: restore the previous library module layout
-- refactor!: organize library modules by subject
+This release has 1 breaking change, 1 new feature and 1 other change. 1 maintenance commit (tests, build, CI, refactoring, dependencies) is not listed.
+
+### Breaking changes
+
+- organize library modules by subject
+
+### New
+
+- **data-stores:** add local and shared plugin persistence
+
+### Other changes
+
+- restore the previous library module layout
 
 ## 6.3.0
 
-- feat(components): share the File Explorer vault-root menu across plugins
+This release has 1 new feature.
+
+### New
+
+- **components:** share the File Explorer vault-root menu across plugins
 
 ## 6.2.1
 
-- build(deps): bump @mnaoumov/typescript-lib to 2.0.0
-- fix(link): keep a folder note's folder name as its link caption
-- fix(settings): detect text-based components without reading unmocked members
+This release has 2 fixes. 1 maintenance commit (tests, build, CI, refactoring, dependencies) is not listed.
+
+### Fixed
+
+- **link:** keep a folder note's folder name as its link caption
+- **settings:** detect text-based components without reading unmocked members
 
 ## 6.2.0
 
-- feat(debug): own showInitialDebugMessage in obsidian-lib
-- feat(validation): refuse the file name characters Obsidian refuses off Windows
+This release has 2 new features.
+
+### New
+
+- **debug:** own showInitialDebugMessage in obsidian-lib
+- **validation:** refuse the file name characters Obsidian refuses off Windows
 
 ## 6.1.0
 
-- feat(validation): validate a whole file name or path against every naming rule
+This release has 1 new feature.
+
+### New
+
+- **validation:** validate a whole file name or path against every naming rule
 
 ## 6.0.4
 
-- fix(plugin-gate): announce an unloaded dependency as lost, not as publishing no readable API
-- fix(deps): stop logging the initial debug line while debug messages are disabled
-- fix(plugin-gate): ask to update an enabled dependency that publishes no readable API
-- build(test): add the on-demand Stryker mutation run
+This release has 3 fixes. 1 maintenance commit (tests, build, CI, refactoring, dependencies) is not listed.
+
+### Fixed
+
+- **plugin-gate:** announce an unloaded dependency as lost, not as publishing no readable API
+- **deps:** stop logging the initial debug line while debug messages are disabled
+- **plugin-gate:** ask to update an enabled dependency that publishes no readable API
 
 ## 6.0.3
 
-- fix(parse-link): read a frontmatter caption with an unbalanced [ as one link, as Obsidian does
-- chore(lint): keep the two deliberate code elements past no-bare-code-element
-- docs: name obsidian-lib where comments said dev-utils
-- test: re-enable the demo-vault-helper reading-view case
-- docs: give the Advanced Debug Mode route in the debugging guide
+This release has 1 fix and 2 documentation changes. 2 maintenance commits (tests, build, CI, refactoring, dependencies) are not listed.
+
+### Fixed
+
+- **parse-link:** read a frontmatter caption with an unbalanced [ as one link, as Obsidian does
+
+### Documentation
+
+- name obsidian-lib where comments said dev-utils
+- give the Advanced Debug Mode route in the debugging guide
 
 ## 6.0.2
 
-- fix: close Settings right before each demo-vault plugin enable
-- test: re-enable the demo-vault-helper reading-view regression test
-- chore(deps): move to obsidian-dev-toolkit 5
+This release has 1 fix. 2 maintenance commits (tests, build, CI, refactoring, dependencies) are not listed.
+
+### Fixed
+
+- close Settings right before each demo-vault plugin enable
 
 ## 6.0.1
 
-- fix: close Settings before the demo-vault bootstrap enables plugins
-- fix: read the link span of an offset-carrying frontmatter link
+This release has 2 fixes.
+
+### Fixed
+
+- close Settings before the demo-vault bootstrap enables plugins
+- read the link span of an offset-carrying frontmatter link
 
 ## 6.0.0
 
@@ -224,20 +371,32 @@ Migration: this release drops every name the library kept from the retired `obsi
 
 ## 5.2.1
 
-- fix(plugin-notice): drop a leading plugin name and colon from a notice message
-- test(docs): give the outdated-reference check a timeout sized for the full gate's load
-- chore(deps): float brace-expansion, sharp and fast-uri past their advisories
-- fix(plugin-suggestion): space the notice's action and decline buttons apart
+This release has 2 fixes. 2 maintenance commits (tests, build, CI, refactoring, dependencies) are not listed.
+
+### Fixed
+
+- **plugin-notice:** drop a leading plugin name and colon from a notice message
+- **plugin-suggestion:** space the notice's action and decline buttons apart
 
 ## 5.2.0
 
-- feat(debug): log the generic typescript-lib modules under obsidian-lib
+This release has 1 new feature.
+
+### New
+
+- **debug:** log the generic typescript-lib modules under obsidian-lib
 
 ## 5.1.0
 
-- feat: publish the wire names under obsidian-lib, keeping the legacy ones
-- chore(build): drop the duplicate build:compile:typescript script
-- docs(changelog): add the 5.0.0 path settings migration note
+This release has 1 new feature and 1 documentation change. 1 maintenance commit (tests, build, CI, refactoring, dependencies) is not listed.
+
+### New
+
+- publish the wire names under obsidian-lib, keeping the legacy ones
+
+### Documentation
+
+- **changelog:** add the 5.0.0 path settings migration note
 
 ## 5.0.0
 
@@ -253,58 +412,105 @@ Migration: `PathSettings` entries now all match case-insensitively, whether they
 
 ## 4.3.0
 
-- chore(deps): bump obsidian-test-mocks to 7.2.3 and pin the root path answers
-- fix(vault): treat a file gone from disk as not read in readSafe and process
-- feat(plugin-api): gate payload validation on the obsidian-lib:validate-plugin-api-payloads debug switch
-- feat(link): decide the link style per reference when updating links
+This release has 2 new features and 1 fix. 1 maintenance commit (tests, build, CI, refactoring, dependencies) is not listed.
+
+### New
+
+- **plugin-api:** gate payload validation on the obsidian-lib:validate-plugin-api-payloads debug switch
+- **link:** decide the link style per reference when updating links
+
+### Fixed
+
+- **vault:** treat a file gone from disk as not read in readSafe and process
 
 ## 4.2.1
 
-- fix(metadata-cache): skip a backlink holder's unparseable frontmatter instead of throwing
+This release has 1 fix.
+
+### Fixed
+
+- **metadata-cache:** skip a backlink holder's unparseable frontmatter instead of throwing
 
 ## 4.2.0
 
-- build(deps): take obsidian-dev-toolkit 3.2.1 for the guarded require patch
-- build: run validate-dependencies in the build
-- build: declare the integration harness as an optional peer and add validate-dependencies
-- ci(docs-site): set the repository homepage from the docs site build
-- feat(plugin-gate): offer an update for an enabled dependency that is too old
+This release has 1 new feature. 4 maintenance commits (tests, build, CI, refactoring, dependencies) are not listed.
+
+### New
+
+- **plugin-gate:** offer an update for an enabled dependency that is too old
 
 ## 4.1.0
 
-- feat(plugin-gate): let a dependency require a minimum plugin version
+This release has 1 new feature.
+
+### New
+
+- **plugin-gate:** let a dependency require a minimum plugin version
 
 ## 4.0.0
 
-- feat!: narrow postPatchHandler so a patch cannot graft members
-- docs: merge showing the package logo as the home page hero image
-- build(docs): merge taking the external type links from obsidian-dev-toolkit
+This release has 1 breaking change and 1 documentation change. 1 maintenance commit (tests, build, CI, refactoring, dependencies) is not listed.
+
+### Breaking changes
+
+- narrow postPatchHandler so a patch cannot graft members
+
+### Documentation
+
+- merge showing the package logo as the home page hero image
 
 ## 3.4.0
 
-- build(deps): merge taking obsidian and its type packages as peer dependencies
-- fix: merge pointing the debugging guide links at this package's site
-- docs: merge linking the documentation site from the README
+This release has 1 fix and 1 documentation change. 1 maintenance commit (tests, build, CI, refactoring, dependencies) is not listed.
+
+### Fixed
+
+- merge pointing the debugging guide links at this package's site
+
+### Documentation
+
+- merge linking the documentation site from the README
 
 ## 3.3.1
 
-- docs: merge publishing this package's documentation site
-- build(deps): merge taking the typescript-dev-toolkit and obsidian-dev-toolkit 2.0.0 majors
+This release has 1 documentation change. 1 maintenance commit (tests, build, CI, refactoring, dependencies) is not listed.
+
+### Documentation
+
+- merge publishing this package's documentation site
 
 ## 3.3.0
 
-- feat(plugin-api): merge building the contract on @mnaoumov/typescript-lib/api-contract
+This release has 1 new feature.
+
+### New
+
+- **plugin-api:** merge building the contract on @mnaoumov/typescript-lib/api-contract
 
 ## 3.2.0
 
-- feat: merge letting loop's progressBarTitle be a DocumentFragment
+This release has 1 new feature.
+
+### New
+
+- merge letting loop's progressBarTitle be a DocumentFragment
 
 ## 3.1.0
 
-- feat: merge letting plugin suggestion and gate reasons be a DocumentFragment
-- fix(plugin-api): merge making the copied provider contracts agree with the providers' own
-- docs: mark plugin names as code in comments and AGENTS.md
-- docs: name the `Dataview` import replacement in the 3.0.0 changelog
+This release has 1 new feature, 1 fix and 2 documentation changes.
+
+### New
+
+- merge letting plugin suggestion and gate reasons be a DocumentFragment
+
+### Fixed
+
+- **plugin-api:** merge making the copied provider contracts agree with the providers' own
+
+### Documentation
+
+- mark plugin names as code in comments and AGENTS.md
+- name the `Dataview` import replacement in the 3.0.0 changelog
 
 ## 3.0.0
 
@@ -313,19 +519,30 @@ Migration: `PathSettings` entries now all match case-insensitively, whether they
 
 ## 2.0.0
 
-- feat: render plugin names in notices and dialogs as inline code
-- feat!: type plugin API contracts over their APIs, with full payload schemas
-- feat!: merge finding `Custom Attachment Location` through its plugin API, not grafted members
-- build: drop stale workspace sibling includes from tsconfig.types.json
-- refactor: read the global app through obsidian-typings' declaration
-- feat!: merge finding `Advanced Metadata Cache` through its plugin API, not a grafted .safe
+This release has 3 breaking changes and 1 new feature. 2 maintenance commits (tests, build, CI, refactoring, dependencies) are not listed.
+
+### Breaking changes
+
+- type plugin API contracts over their APIs, with full payload schemas
+- merge finding `Custom Attachment Location` through its plugin API, not grafted members
+- merge finding `Advanced Metadata Cache` through its plugin API, not a grafted .safe
+
+### New
+
+- render plugin names in notices and dialogs as inline code
 
 ## 1.0.1
 
-- fix: declare LIBRARY_VERSION and LIBRARY_STYLES as string in the published types
-- docs: stop saying the lookbehind regexes still carry disable comments
-- build(deps): merge the lockfile resolved on obsidian 1.14.4
-- fix: drop the regex lookbehinds iOS 15 cannot parse, and move to obsidian 1.14.4
+This release has 2 fixes and 1 documentation change. 1 maintenance commit (tests, build, CI, refactoring, dependencies) is not listed.
+
+### Fixed
+
+- declare LIBRARY_VERSION and LIBRARY_STYLES as string in the published types
+- drop the regex lookbehinds iOS 15 cannot parse, and move to obsidian 1.14.4
+
+### Documentation
+
+- stop saying the lookbehind regexes still carry disable comments
 
 ## 1.0.0
 
