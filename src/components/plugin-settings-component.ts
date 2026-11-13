@@ -10,7 +10,8 @@
 
 import type {
   AsyncEventRef,
-  AsyncEventSource
+  AsyncEventSource,
+  CallbackArguments
 } from '@mnaoumov/typescript-lib/async-events';
 import type { Transformer } from '@mnaoumov/typescript-lib/transformers/transformer';
 import type {
@@ -388,10 +389,9 @@ export class PluginSettingsComponentBase<PluginSettings extends object> extends 
    * @param callback - The callback to remove.
    */
   public off<
-    EventName extends keyof PluginSettingsComponentBaseEventMap<PluginSettings>,
+    EventName extends StringKeys<PluginSettingsComponentBaseEventMap<PluginSettings>>,
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters -- We need to use the dummy parameter to get type inference.
-    Arguments extends EventName extends keyof PluginSettingsComponentBaseEventMap<PluginSettings> ? PluginSettingsComponentBaseEventMap<PluginSettings>[EventName]
-      : unknown[]
+    Arguments extends CallbackArguments<PluginSettingsComponentBaseEventMap<PluginSettings>, EventName>
   >(name: EventName, callback: (...$arguments: Arguments) => Promisable<void>): void {
     this.asyncEvents.off(name, callback);
   }
@@ -418,10 +418,9 @@ export class PluginSettingsComponentBase<PluginSettings extends object> extends 
    * @remarks Not refactored to parameter-object pattern, to keep the parity with {@link obsidian#Events#on} (or once, correspondingly).
    */
   public on<
-    EventName extends keyof PluginSettingsComponentBaseEventMap<PluginSettings>,
+    EventName extends StringKeys<PluginSettingsComponentBaseEventMap<PluginSettings>>,
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters -- We need to use the dummy parameter to get type inference.
-    Arguments extends EventName extends keyof PluginSettingsComponentBaseEventMap<PluginSettings> ? PluginSettingsComponentBaseEventMap<PluginSettings>[EventName]
-      : unknown[]
+    Arguments extends CallbackArguments<PluginSettingsComponentBaseEventMap<PluginSettings>, EventName>
   >(name: EventName, callback: (...$arguments: Arguments) => Promisable<void>, thisArgument?: unknown): AsyncEventRef {
     return this.asyncEvents.on(name, callback, thisArgument);
   }
@@ -441,10 +440,9 @@ export class PluginSettingsComponentBase<PluginSettings extends object> extends 
    * @remarks Not refactored to parameter-object pattern, to keep the parity with {@link obsidian#Events#on} (or once, correspondingly).
    */
   public once<
-    EventName extends keyof PluginSettingsComponentBaseEventMap<PluginSettings>,
+    EventName extends StringKeys<PluginSettingsComponentBaseEventMap<PluginSettings>>,
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters -- We need to use the dummy parameter to get type inference.
-    Arguments extends EventName extends keyof PluginSettingsComponentBaseEventMap<PluginSettings> ? PluginSettingsComponentBaseEventMap<PluginSettings>[EventName]
-      : unknown[]
+    Arguments extends CallbackArguments<PluginSettingsComponentBaseEventMap<PluginSettings>, EventName>
   >(name: EventName, callback: (...$arguments: Arguments) => Promisable<void>, thisArgument?: unknown): AsyncEventRef {
     return this.asyncEvents.once(name, callback, thisArgument);
   }
