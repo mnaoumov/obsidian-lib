@@ -337,7 +337,7 @@ interface FeatureLinkSelector {
   /**
    * Selects the links for this category from the cache.
    */
-  readonly select: (cache: CachedMetadataEx) => Reference[] | undefined;
+  readonly select: (cache: CachedMetadataEx) => Reference[];
 
   /**
    * Whether to include this category.
@@ -637,25 +637,25 @@ export function getReferences(params: GetReferencesParams): Reference[] {
     {
       description: 'body external links',
       feature: CachedMetadataExFeature.ExternalLinks,
-      select: (cacheEx) => cacheEx.externalLinks,
+      select: (cacheEx) => ensureNonNullable(cacheEx.externalLinks),
       shouldInclude: shouldIncludeExternalLinks
     },
     {
       description: 'frontmatter external links',
       feature: CachedMetadataExFeature.FrontmatterExternalLinks,
-      select: (cacheEx) => cacheEx.frontmatterExternalLinks,
+      select: (cacheEx) => ensureNonNullable(cacheEx.frontmatterExternalLinks),
       shouldInclude: shouldIncludeFrontmatterExternalLinks
     },
     {
       description: 'multi-value frontmatter external links',
       feature: CachedMetadataExFeature.MultiValueFrontmatterExternalLinks,
-      select: (cacheEx) => cacheEx.multiValueFrontmatterExternalLinks,
+      select: (cacheEx) => ensureNonNullable(cacheEx.multiValueFrontmatterExternalLinks),
       shouldInclude: shouldIncludeMultiValueFrontmatterExternalLinks
     },
     {
       description: 'multi-value frontmatter links',
       feature: CachedMetadataExFeature.MultiValueFrontmatterLinks,
-      select: (cacheEx) => cacheEx.multiValueFrontmatterLinks,
+      select: (cacheEx) => ensureNonNullable(cacheEx.multiValueFrontmatterLinks),
       shouldInclude: shouldIncludeMultiValueFrontmatterLinks
     }
   ];
@@ -669,7 +669,7 @@ export function getReferences(params: GetReferencesParams): Reference[] {
       throw new Error(`Cannot include ${featureLinkSelector.description}: the cache was not computed with the ${featureLinkSelector.feature} feature.`);
     }
 
-    references.push(...ensureNonNullable(featureLinkSelector.select(cache)));
+    references.push(...featureLinkSelector.select(cache));
   }
 
   sortReferences(references);

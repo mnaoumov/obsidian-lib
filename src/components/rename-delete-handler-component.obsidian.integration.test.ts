@@ -95,7 +95,6 @@ describe('rename-delete-handler', () => {
             const f = app.vault.getAbstractFileByPath('rdh-renamed-test.md')
               ?? app.vault.getAbstractFileByPath('rdh-rename-test.md');
             if (f) {
-              // eslint-disable-next-line obsidianmd/prefer-file-manager-trash-file -- Permanent cleanup in tests.
               await app.vault.delete(f);
             }
           }
@@ -110,7 +109,6 @@ describe('rename-delete-handler', () => {
       const isFileGone = await evalInObsidian<Record<string, never>, boolean>({
         async callback({ app }) {
           const file = await app.vault.create('rdh-delete-test.md', '# Delete test\n');
-          // eslint-disable-next-line obsidianmd/prefer-file-manager-trash-file -- Permanent cleanup in tests.
           await app.vault.delete(file);
           return app.vault.getAbstractFileByPath('rdh-delete-test.md') === null;
         }
@@ -123,7 +121,6 @@ describe('rename-delete-handler', () => {
       const isFolderGone = await evalInObsidian<Record<string, never>, boolean>({
         async callback({ app }) {
           const folder = await app.vault.createFolder('rdh-test-folder');
-          // eslint-disable-next-line obsidianmd/prefer-file-manager-trash-file -- Permanent cleanup in tests.
           await app.vault.delete(folder, true);
           return app.vault.getAbstractFileByPath('rdh-test-folder') === null;
         }
@@ -198,7 +195,6 @@ describe('rename-delete-handler', () => {
             for (const folderPath of [SRC_FOLDER, DST_FOLDER]) {
               const folder = app.vault.getAbstractFileByPath(folderPath);
               if (folder) {
-                // eslint-disable-next-line obsidianmd/prefer-file-manager-trash-file -- Permanent cleanup in tests.
                 await app.vault.delete(folder, true);
               }
             }
@@ -286,7 +282,6 @@ describe('rename-delete-handler', () => {
             for (const folderPath of [SRC_FOLDER, DST_FOLDER]) {
               const folder = app.vault.getAbstractFileByPath(folderPath);
               if (folder) {
-                // eslint-disable-next-line obsidianmd/prefer-file-manager-trash-file -- Permanent cleanup in tests.
                 await app.vault.delete(folder, true);
               }
             }
@@ -364,7 +359,6 @@ describe('rename-delete-handler', () => {
             app.vault.setConfig('alwaysUpdateLinks', originalAlwaysUpdateLinks);
             const folder = app.vault.getAbstractFileByPath(FOLDER);
             if (folder) {
-              // eslint-disable-next-line obsidianmd/prefer-file-manager-trash-file -- Permanent cleanup in tests.
               await app.vault.delete(folder, true);
             }
           }
@@ -436,7 +430,6 @@ describe('rename-delete-handler', () => {
             app.vault.setConfig('alwaysUpdateLinks', originalAlwaysUpdateLinks);
             const folder = app.vault.getAbstractFileByPath(FOLDER);
             if (folder) {
-              // eslint-disable-next-line obsidianmd/prefer-file-manager-trash-file -- Permanent cleanup in tests.
               await app.vault.delete(folder, true);
             }
           }
@@ -508,12 +501,10 @@ describe('rename-delete-handler', () => {
                   break;
                 }
                 case 'vaultDelete': {
-                  // eslint-disable-next-line obsidianmd/prefer-file-manager-trash-file -- The point of this case is that the raw primitive is protected too.
                   await app.vault.delete(srcFolder, true);
                   break;
                 }
                 case 'vaultTrash': {
-                  // eslint-disable-next-line obsidianmd/prefer-file-manager-trash-file -- The point of this case is that the raw primitive is protected too.
                   await app.vault.trash(srcFolder, false);
                   break;
                 }
@@ -539,7 +530,6 @@ describe('rename-delete-handler', () => {
               for (const folderPath of [SRC_FOLDER, OTHER_FOLDER]) {
                 const folder = app.vault.getAbstractFileByPath(folderPath);
                 if (folder) {
-                  // eslint-disable-next-line obsidianmd/prefer-file-manager-trash-file -- Permanent cleanup in tests.
                   await app.vault.delete(folder, true);
                 }
               }
@@ -619,7 +609,6 @@ describe('rename-delete-handler', () => {
             handlerComponent.unload();
             const folder = app.vault.getAbstractFileByPath(SRC_FOLDER);
             if (folder) {
-              // eslint-disable-next-line obsidianmd/prefer-file-manager-trash-file -- Permanent cleanup in tests.
               await app.vault.delete(folder, true);
             }
           }
@@ -658,7 +647,6 @@ describe('rename-delete-handler', () => {
             for (const folderPath of [SRC_FOLDER, OTHER_FOLDER]) {
               const staleFolder = app.vault.getAbstractFileByPath(folderPath);
               if (staleFolder) {
-                // eslint-disable-next-line obsidianmd/prefer-file-manager-trash-file -- Permanent cleanup in tests.
                 await app.vault.delete(staleFolder, true);
               }
             }
@@ -739,12 +727,10 @@ describe('rename-delete-handler', () => {
                   break;
                 }
                 case 'vaultDelete': {
-                  // eslint-disable-next-line obsidianmd/prefer-file-manager-trash-file -- The point of this case is that the raw primitive is rescued too.
                   await app.vault.delete(srcFolder, true);
                   break;
                 }
                 case 'vaultTrash': {
-                  // eslint-disable-next-line obsidianmd/prefer-file-manager-trash-file -- The point of this case is that the raw primitive is rescued too.
                   await app.vault.trash(srcFolder, false);
                   break;
                 }
@@ -783,7 +769,6 @@ describe('rename-delete-handler', () => {
               for (const folderPath of [SRC_FOLDER, OTHER_FOLDER]) {
                 const folder = app.vault.getAbstractFileByPath(folderPath);
                 if (folder) {
-                  // eslint-disable-next-line obsidianmd/prefer-file-manager-trash-file -- Permanent cleanup in tests.
                   await app.vault.delete(folder, true);
                 }
               }
@@ -823,7 +808,6 @@ describe('rename-delete-handler', () => {
           for (const folderPath of [SRC_FOLDER, OTHER_FOLDER]) {
             const staleFolder = app.vault.getAbstractFileByPath(folderPath);
             if (staleFolder) {
-              // eslint-disable-next-line obsidianmd/prefer-file-manager-trash-file -- Permanent cleanup in tests.
               await app.vault.delete(staleFolder, true);
             }
           }
@@ -925,7 +909,6 @@ describe('rename-delete-handler', () => {
             for (const folderPath of [SRC_FOLDER, OTHER_FOLDER]) {
               const folder = app.vault.getAbstractFileByPath(folderPath);
               if (folder) {
-                // eslint-disable-next-line obsidianmd/prefer-file-manager-trash-file -- Permanent cleanup in tests.
                 await app.vault.delete(folder, true);
               }
             }
@@ -958,7 +941,6 @@ describe('rename-delete-handler', () => {
           for (const folderPath of [SRC_FOLDER, OTHER_FOLDER]) {
             const staleFolder = app.vault.getAbstractFileByPath(folderPath);
             if (staleFolder) {
-              // eslint-disable-next-line obsidianmd/prefer-file-manager-trash-file -- Permanent cleanup in tests.
               await app.vault.delete(staleFolder, true);
             }
           }
@@ -1013,7 +995,6 @@ describe('rename-delete-handler', () => {
             for (const folderPath of [SRC_FOLDER, OTHER_FOLDER]) {
               const folder = app.vault.getAbstractFileByPath(folderPath);
               if (folder) {
-                // eslint-disable-next-line obsidianmd/prefer-file-manager-trash-file -- Permanent cleanup in tests.
                 await app.vault.delete(folder, true);
               }
             }

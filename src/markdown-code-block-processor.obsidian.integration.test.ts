@@ -52,7 +52,6 @@ describe('markdown-code-block-processor', () => {
         try {
           return await app.vault.read(file);
         } finally {
-          // eslint-disable-next-line obsidianmd/prefer-file-manager-trash-file -- Permanent cleanup in tests.
           await app.vault.delete(file);
         }
       },

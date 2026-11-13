@@ -87,7 +87,6 @@ describe('attachment-path', () => {
             app.vault.setConfig('attachmentFolderPath', originalAttachmentFolderPath);
             const rootFolder = app.vault.getAbstractFileByPath(ROOT_FOLDER);
             if (rootFolder) {
-              // eslint-disable-next-line obsidianmd/prefer-file-manager-trash-file -- Permanent cleanup in tests.
               await app.vault.delete(rootFolder, true);
             }
           }
@@ -143,7 +142,6 @@ describe('attachment-path', () => {
             app.vault.setConfig('attachmentFolderPath', originalAttachmentFolderPath);
             const rootFolder = app.vault.getAbstractFileByPath(ROOT_FOLDER);
             if (rootFolder) {
-              // eslint-disable-next-line obsidianmd/prefer-file-manager-trash-file -- Permanent cleanup in tests.
               await app.vault.delete(rootFolder, true);
             }
           }

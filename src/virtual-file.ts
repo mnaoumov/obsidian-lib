@@ -117,7 +117,6 @@ function installVirtualFile(params: InstallVirtualFileParams): VirtualFile {
   const file = getFile({ app, pathOrFile: path, shouldIncludeNonExisting: true });
   const bytes = new TextEncoder().encode(content);
   file.stat = { ctime: Date.now(), mtime: Date.now(), size: bytes.byteLength };
-  // eslint-disable-next-line n/no-unsupported-features/node-builtins -- This is the browser's Blob URL API in Obsidian, not Node's implementation.
   const url = window.URL.createObjectURL(new Blob([bytes], { type: path.endsWith('.md') ? 'text/markdown;charset=utf-8' : 'text/plain;charset=utf-8' }));
   const patches = new MonkeyAroundComponent();
   patches.load();
@@ -260,7 +259,6 @@ function installVirtualFile(params: InstallVirtualFileParams): VirtualFile {
         metadata.dispose();
       }
       patches.unload();
-      // eslint-disable-next-line n/no-unsupported-features/node-builtins -- The URL belongs to the browser realm that created it.
       window.URL.revokeObjectURL(url);
       reservations.delete(path.toLowerCase());
     },

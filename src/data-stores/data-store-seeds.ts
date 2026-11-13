@@ -1,4 +1,3 @@
-/* eslint-disable n/no-unsupported-features/node-builtins -- These are Obsidian renderer Web APIs, not Node builtins. */
 /**
  * @file
  *
@@ -161,15 +160,15 @@ export class DataStoreSeeds {
   /**
    * Reads the newest complete seed for this transport's schema.
    *
-   * @returns Seed records, or `undefined` if sharing is disabled or no complete seed is available yet.
+   * @returns Seed records, or `null` if sharing is disabled or no complete seed is available yet.
    */
-  public async readLatest(): Promise<DataStoreSeedEntry[] | undefined> {
+  public async readLatest(): Promise<DataStoreSeedEntry[] | null> {
     if (!this.share) {
-      return undefined;
+      return null;
     }
     const files = await this.transport.list();
     let newest = -Infinity;
-    let entries: DataStoreSeedEntry[] | undefined;
+    let entries: DataStoreSeedEntry[] | null = null;
     for (const path of files) {
       if (!/\/seed-[\w-]+-manifest\.(?:md|json)$/.test(path)) {
         continue;
@@ -226,5 +225,3 @@ function isSeed(value: unknown): value is Seed {
       && 'hash' in entry && typeof entry.hash === 'string' && 'value' in entry && isDataStoreJsonValue(entry.value)
     );
 }
-
-/* eslint-enable n/no-unsupported-features/node-builtins -- These are Obsidian renderer Web APIs, not Node builtins. */

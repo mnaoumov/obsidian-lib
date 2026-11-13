@@ -161,9 +161,9 @@ function getBacklinkIndexData(): BacklinkIndexData {
     sourcePathNameKeys: new Map<string, Set<string>>()
   }).value;
 }
-function getCachedMetadata(app: App, sourcePath: string): CachedMetadata | undefined {
+function getCachedMetadata(app: App, sourcePath: string): CachedMetadata | null {
   const hash = app.metadataCache.fileCache[sourcePath]?.hash;
-  return hash === undefined ? undefined : app.metadataCache.metadataCache[hash];
+  return hash === undefined ? null : app.metadataCache.metadataCache[hash] ?? null;
 }
 
 /**
@@ -173,7 +173,7 @@ function getCachedMetadata(app: App, sourcePath: string): CachedMetadata | undef
  * @param cache - The note's cached metadata.
  * @returns The note's references.
  */
-function getCacheReferences(cache: CachedMetadata | undefined): Reference[] {
+function getCacheReferences(cache: CachedMetadata | null): Reference[] {
   return cache ? [...cache.frontmatterLinks ?? [], ...cache.links ?? [], ...cache.embeds ?? []] : [];
 }
 

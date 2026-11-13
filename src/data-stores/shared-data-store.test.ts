@@ -653,7 +653,7 @@ describe('SharedDataStore', () => {
     const transport = new DataStoreTransport({ adapter: createAdapter(files), pluginId: 'test', storeId: 'seeds' });
     const seeds = new DataStoreSeeds({ local, share: true, transport });
     const entries = [{ hash: 'hash', mtime: 1, path: 'note.md', size: 10, value: { index: [1, 2] } }];
-    expect(await seeds.readLatest()).toBeUndefined();
+    expect(await seeds.readLatest()).toBeNull();
     expect(await seeds.publish(entries)).toBe(true);
     expect(await seeds.readLatest()).toEqual(entries);
     const other = new DataStoreSeeds({ local: await openLocal(), share: true, transport });
@@ -662,7 +662,7 @@ describe('SharedDataStore', () => {
     expect([...files.keys()].filter((path) => path.endsWith('-manifest.md'))).toHaveLength(2);
     const disabled = new DataStoreSeeds({ local, share: false, transport });
     expect(await disabled.publish(entries)).toBe(false);
-    expect(await disabled.readLatest()).toBeUndefined();
+    expect(await disabled.readLatest()).toBeNull();
     await local.set('seed-device-v1', '../bad');
     await expect(seeds.publish(entries)).rejects.toThrow('identity');
   });
@@ -831,11 +831,11 @@ describe('SharedDataStore', () => {
     const local = await openLocal();
     const seeds = new DataStoreSeeds({ local, share: true, transport });
     await transport.writeSnapshot({ base: path.slice(0, -3), payload: { entries: [], format: 2, time: 1 } });
-    expect(await seeds.readLatest()).toBeUndefined();
+    expect(await seeds.readLatest()).toBeNull();
     await transport.writeSnapshot({ base: path.slice(0, -3), payload: { entries: [], format: 1, time: 1 } });
     expect(await seeds.readLatest()).toEqual([]);
     files.set(path, '```json\ninvalid json\n```\n');
-    expect(await seeds.readLatest()).toBeUndefined();
+    expect(await seeds.readLatest()).toBeNull();
     vi.spyOn(transport, 'readSnapshot').mockRejectedValue(new Error('Disk unavailable'));
     await expect(seeds.readLatest()).rejects.toThrow('Disk unavailable');
   });

@@ -177,55 +177,55 @@ export abstract class AbstractFileCommandHandler extends GlobalCommandHandler {
   /**
    * Gets the item name to use in the single-file menu.
    *
-   * @returns The item name, or `undefined` to use the command name.
+   * @returns The item name, or `null` to use the command name.
    */
-  protected get fileMenuItemName(): string | undefined {
-    return this._fileMenuItemName;
+  protected get fileMenuItemName(): null | string {
+    return this._fileMenuItemName ?? null;
   }
 
   /**
    * Gets the section to use in the single-file menu.
    *
-   * @returns The section name, or `undefined` to use the plugin name.
+   * @returns The section name, or `null` to use the plugin name.
    */
-  protected get fileMenuSection(): string | undefined {
-    return this._fileMenuSection;
+  protected get fileMenuSection(): null | string {
+    return this._fileMenuSection ?? null;
   }
 
   /**
    * Gets the icon to use in the single-file menu submenu.
    *
-   * @returns The icon, or `undefined` for no icon.
+   * @returns The icon, or `null` for no icon.
    */
-  protected get fileMenuSubmenuIcon(): IconName | undefined {
-    return this._fileMenuSubmenuIcon;
+  protected get fileMenuSubmenuIcon(): IconName | null {
+    return this._fileMenuSubmenuIcon ?? null;
   }
 
   /**
    * Gets the item name to use in the multi-file menu.
    *
-   * @returns The item name, or `undefined` to fall back to single-file item name.
+   * @returns The item name, or `null` to fall back to single-file item name.
    */
-  protected get filesMenuItemName(): string | undefined {
-    return this._filesMenuItemName;
+  protected get filesMenuItemName(): null | string {
+    return this._filesMenuItemName ?? null;
   }
 
   /**
    * Gets the section to use in the multi-file menu.
    *
-   * @returns The section name, or `undefined` to fall back to single-file section.
+   * @returns The section name, or `null` to fall back to single-file section.
    */
-  protected get filesMenuSection(): string | undefined {
-    return this._filesMenuSection;
+  protected get filesMenuSection(): null | string {
+    return this._filesMenuSection ?? null;
   }
 
   /**
    * Gets the icon to use in the multi-file menu submenu.
    *
-   * @returns The icon, or `undefined` to fall back to single-file submenu icon.
+   * @returns The icon, or `null` to fall back to single-file submenu icon.
    */
-  protected get filesMenuSubmenuIcon(): IconName | undefined {
-    return this._filesMenuSubmenuIcon;
+  protected get filesMenuSubmenuIcon(): IconName | null {
+    return this._filesMenuSubmenuIcon ?? null;
   }
 
   private _activeFileProvider?: ActiveFileProvider;
@@ -373,8 +373,8 @@ export abstract class AbstractFileCommandHandler extends GlobalCommandHandler {
    *
    * @returns Whether to add to a submenu.
    */
-  protected shouldAddCommandToSubmenu(): boolean | undefined {
-    return this._registrationShouldAddCommandToSubmenu ?? this._shouldAddCommandToSubmenu;
+  protected shouldAddCommandToSubmenu(): boolean {
+    return this._registrationShouldAddCommandToSubmenu ?? this._shouldAddCommandToSubmenu ?? false;
   }
 
   /**

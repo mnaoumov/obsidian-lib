@@ -11,7 +11,10 @@ import type { Promisable } from 'type-fest';
 
 import { snapshot } from '@mnaoumov/typescript-lib/array';
 import { invokeAsyncSafely } from '@mnaoumov/typescript-lib/async';
-import { normalizeOptionalProperties } from '@mnaoumov/typescript-lib/object-utils';
+import {
+  castTo,
+  normalizeOptionalProperties
+} from '@mnaoumov/typescript-lib/object-utils';
 import { ensureNonNullable } from '@mnaoumov/typescript-lib/type-guards';
 import { resolveValue } from '@mnaoumov/typescript-lib/value-provider';
 import {
@@ -713,7 +716,7 @@ export class PluginNoticeComponent extends ComponentEx {
         $event.stopPropagation();
         return;
       }
-      if ($event.target instanceof Element && $event.target.closest(INTERACTIVE_ELEMENT_SELECTOR)) {
+      if (isInteractiveClickTarget($event.target)) {
         $event.stopPropagation();
       }
     });
@@ -803,7 +806,7 @@ export class PluginNoticeComponent extends ComponentEx {
     // its own handler working; the bubble-phase guard on the content wrapper then stops that click from
     // bubbling up to Obsidian's dismiss handler, so the notice still stays open.
     notice.containerEl.addEventListener('click', ($event) => {
-      if ($event.target instanceof Element && $event.target.closest(INTERACTIVE_ELEMENT_SELECTOR)) {
+      if (isInteractiveClickTarget($event.target)) {
         return;
       }
       $event.stopPropagation();
@@ -995,6 +998,18 @@ function getTextNodes(node: Node): Text[] {
     }
   }
   return textNodes;
+}
+
+/**
+ * Checks whether a click landed on an interactive element of a notice, or inside one. It uses Obsidian's
+ * cross-window `instanceOf`, since `instanceof Element` is false for a node of a popout window.
+ *
+ * @param target - The click target, which is always a node of the notice the listener sits on.
+ * @returns Whether the target is an interactive element or inside one.
+ */
+function isInteractiveClickTarget(target: EventTarget | null): boolean {
+  const node = castTo<Node | null>(target);
+  return node?.instanceOf(Element) === true && node.closest(INTERACTIVE_ELEMENT_SELECTOR) !== null;
 }
 
 /**

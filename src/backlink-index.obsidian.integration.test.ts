@@ -77,7 +77,6 @@ describe('getIndexedBacklinksForFile', () => {
         } finally {
           const folder = app.vault.getFolderByPath(ROOT);
           if (folder) {
-            // eslint-disable-next-line obsidianmd/prefer-file-manager-trash-file -- Permanent cleanup in tests.
             await app.vault.delete(folder, true);
           }
         }

@@ -296,7 +296,6 @@ describe('VaultTransaction', () => {
     it('should skip the delete on rollback when the created file was externally removed', async () => {
       const vaultTransaction = new VaultTransaction({ app });
       const file = await vaultTransaction.create('new.md', 'NEW');
-      // eslint-disable-next-line obsidianmd/prefer-file-manager-trash-file -- Simulating an external permanent removal.
       await app.vault.delete(file);
 
       await vaultTransaction.rollback();

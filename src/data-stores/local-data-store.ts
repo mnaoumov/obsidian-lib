@@ -1,4 +1,3 @@
-/* eslint-disable n/no-unsupported-features/node-builtins -- These are Obsidian renderer Web APIs, not Node builtins. */
 /**
  * @file
  *
@@ -208,6 +207,7 @@ export class LocalDataStore {
     await this.run('readwrite', (store) => store.put(value, key));
   }
 
+  // eslint-disable-next-line typescript-dev-toolkit/no-undefined-return-type -- Mirrors IndexedDB: a missing record reads as `undefined`, which a stored `null` must stay distinct from.
   private async run<T>(mode: IDBTransactionMode, action: (store: IDBObjectStore) => IDBRequest<T> | undefined): Promise<T | undefined> {
     return await new Promise((resolve, reject) => {
       const transaction = this.database.transaction('records', mode);
@@ -229,5 +229,3 @@ export class LocalDataStore {
     });
   }
 }
-
-/* eslint-enable n/no-unsupported-features/node-builtins -- These are Obsidian renderer Web APIs, not Node builtins. */

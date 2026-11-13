@@ -1,4 +1,3 @@
-/* eslint-disable n/no-unsupported-features/node-builtins -- These are Obsidian renderer Web APIs, not Node builtins. */
 /**
  * @file
  *
@@ -6,6 +5,8 @@
  */
 
 import type { JsonValue } from 'type-fest';
+
+import { ensureNonNullable } from '@mnaoumov/typescript-lib/type-guards';
 
 /**
  * A store fixes its merge rule for its entire lifetime and schema version.
@@ -80,7 +81,7 @@ export class DataStoreReplica {
       return;
     }
     const previous = this.registers.get(operation.key);
-    if (this.kind !== 'last-write-wins' && (operation.deleted || rankOf(operation.value) === undefined)) {
+    if (this.kind !== 'last-write-wins' && (operation.deleted || rankOf(operation.value) === null)) {
       throw new Error('Min/max stores accept finite numbers or ranked JSON values and do not support deletion');
     }
     if (!previous || this.wins(operation, previous)) {
@@ -165,10 +166,11 @@ export class DataStoreReplica {
   private wins(next: DataStoreOperation, previous: DataStoreOperation): boolean {
     const nextRank = rankOf(next.value);
     const previousRank = rankOf(previous.value);
+    // `apply` admits only ranked values into a minimum or maximum store, so both ranks exist there.
     if (this.kind === 'minimum' && nextRank !== previousRank) {
-      return Number(nextRank) < Number(previousRank);
+      return ensureNonNullable(nextRank) < ensureNonNullable(previousRank);
     }
-    return this.kind === 'maximum' && nextRank !== previousRank ? Number(nextRank) > Number(previousRank) : next.time > previous.time || (next.time === previous.time && (next.counter > previous.counter
+    return this.kind === 'maximum' && nextRank !== previousRank ? ensureNonNullable(nextRank) > ensureNonNullable(previousRank) : next.time > previous.time || (next.time === previous.time && (next.counter > previous.counter
       || (next.counter === previous.counter && next.device > previous.device)));
   }
 }
@@ -227,14 +229,14 @@ function isPositiveInteger(value: unknown): boolean {
   return Number.isSafeInteger(value) && Number(value) > 0;
 }
 
-function rankOf(value: unknown): number | undefined {
+function rankOf(value: unknown): null | number {
   if (typeof value === 'number' && Number.isFinite(value)) {
     return value;
   }
   return typeof value === 'object' && value !== null && 'rank' in value && 'value' in value
       && typeof value.rank === 'number' && Number.isFinite(value.rank)
     ? value.rank
-    : undefined;
+    : null;
 }
 
 function tag(operation: DataStoreOperation): string {
@@ -254,5 +256,3 @@ function tagVector(tags: readonly string[]): Map<string, number> {
   }
   return vector;
 }
-
-/* eslint-enable n/no-unsupported-features/node-builtins -- These are Obsidian renderer Web APIs, not Node builtins. */

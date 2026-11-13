@@ -18,7 +18,6 @@ interface GlobalThisWithState {
 
 describe('getObsidianLibState', () => {
   afterEach(() => {
-    // eslint-disable-next-line obsidianmd/no-global-this -- The shared state intentionally lives on the realm global.
     delete (globalThis as Partial<GlobalThisWithState>).__obsidianLib;
   });
 
@@ -42,7 +41,6 @@ describe('getObsidianLibState', () => {
   it('should store the shared state on globalThis.__obsidianLib', () => {
     const wrapper = getObsidianLibState('globalKey', 'gVal');
     expect(wrapper).toBeInstanceOf(ValueWrapper);
-    // eslint-disable-next-line obsidianmd/no-global-this -- The shared state intentionally lives on the realm global.
     const bag = (globalThis as Partial<GlobalThisWithState>).__obsidianLib as Record<string, unknown>;
     expect(bag['globalKey']).toBe(wrapper);
   });
@@ -56,7 +54,6 @@ describe('getObsidianLibState', () => {
 
   it('should replace an accessor an older copy installed with a bag of its own', () => {
     const olderCopyBag: Record<string, unknown> = {};
-    // eslint-disable-next-line obsidianmd/no-global-this -- The shared state intentionally lives on the realm global.
     Object.defineProperty(globalThis, '__obsidianLib', {
       configurable: true,
       get: () => olderCopyBag
@@ -65,7 +62,6 @@ describe('getObsidianLibState', () => {
     const wrapper = getObsidianLibState('ownKey', 1);
 
     expect(olderCopyBag).toStrictEqual({});
-    // eslint-disable-next-line obsidianmd/no-global-this -- The shared state intentionally lives on the realm global.
     expect(Object.getOwnPropertyDescriptor(globalThis, '__obsidianLib')?.value).toStrictEqual({ ownKey: wrapper });
   });
 

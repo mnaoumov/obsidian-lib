@@ -86,6 +86,7 @@ export function initPluginContext(pluginId: string): void {
   getSharedAbortController();
 
   injectLibraryStyles({
+    // eslint-disable-next-line obsidianmd/prefer-active-doc -- The shared library styles belong to the main window; `activeDocument` would put them in whichever popout has focus.
     doc: document,
     libraryStyles: LIBRARY_STYLES,
     libraryVersion: LIBRARY_VERSION

@@ -53,7 +53,6 @@ describe('CaseInsensitiveFileIndexComponent', () => {
     try {
       const existing = app.vault.getFileByPath('Existing.md');
       assertNonNullable(existing);
-      // eslint-disable-next-line obsidianmd/prefer-file-manager-trash-file -- The test needs the vault `delete` event to fire.
       await app.vault.delete(existing);
       const index = getCaseInsensitiveFileIndex(app);
       assertNonNullable(index);

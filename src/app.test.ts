@@ -17,13 +17,11 @@ interface GlobalThisWithApp {
 
 describe('getApp', () => {
   afterEach(() => {
-    // eslint-disable-next-line obsidianmd/no-global-this -- Actively use globalThis.
     delete (globalThis as Partial<GlobalThisWithApp>).app;
   });
 
   it('should return globalThis.app when it exists', () => {
     const mockApp = { vault: {} };
-    // eslint-disable-next-line obsidianmd/no-global-this -- Actively use globalThis.
     (globalThis as Partial<GlobalThisWithApp>).app = mockApp;
     // eslint-disable-next-line @typescript-eslint/no-deprecated, import-x/no-deprecated -- Testing `getApp()`.
     expect(getApp()).toBe(mockApp);

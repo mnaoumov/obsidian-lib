@@ -659,7 +659,7 @@ export async function getAvailablePathForAttachments(params: GetAvailablePathFor
  * plugin is the point — a folder kept whole by one plugin and torn apart by another is exactly the failure
  * `findAttachmentUnitFolderPath` exists to prevent.
  *
- * `undefined` means nobody published a designation, the same "nobody owns this policy" answer that sends
+ * `null` means nobody published a designation, the same "nobody owns this policy" answer that sends
  * {@link getAttachmentFilePath} to Obsidian's own resolution. It is distinct from a designation that answers
  * `false` for every folder.
  *
@@ -668,13 +668,13 @@ export async function getAvailablePathForAttachments(params: GetAvailablePathFor
  *
  * @param _app - An Obsidian application instance. Unused since the answer comes from the plugin API registry;
  *   kept so existing callers compile unchanged.
- * @returns The designation predicate, or `undefined` when nobody published one.
+ * @returns The designation predicate, or `null` when nobody published one.
  */
-export function getCheckIsAttachmentUnitFolderFunction(_app: App): ((folderPath: string) => boolean) | undefined {
+export function getCheckIsAttachmentUnitFolderFunction(_app: App): ((folderPath: string) => boolean) | null {
   const customAttachmentLocationApi = findCustomAttachmentLocationApi();
   return customAttachmentLocationApi
     ? (folderPath: string): boolean => customAttachmentLocationApi.isAttachmentUnitFolder({ folderPath })
-    : undefined;
+    : null;
 }
 
 /**

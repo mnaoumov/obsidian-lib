@@ -508,7 +508,7 @@ class ResourceLockManager {
     // The indicators outlive a rename of the note (or of an enclosing locked folder), so they resolve
     // the owner lock at CLICK time from the view's current file, exactly as the status-bar item does.
     // A captured owner path would go stale the moment the lock is re-keyed.
-    const getOwnerPath = (): string | undefined => this.resolveViewOwnerPath(app, view);
+    const getOwnerPath = (): null | string => this.resolveViewOwnerPath(app, view);
 
     const actionIconEl = view.addAction(LOCK_ICON_ID, tooltip, noop);
     this.registerUnlockMenu(app, actionIconEl, getOwnerPath);
@@ -819,7 +819,7 @@ class ResourceLockManager {
     this.mutationBlockerComponent = null;
   }
 
-  private registerUnlockMenu(app: App, element: HTMLElement, getContextPath: () => string | undefined): void {
+  private registerUnlockMenu(app: App, element: HTMLElement, getContextPath: () => null | string): void {
     // A click of ANY mouse button on a lock indicator opens the same unlock context menu:
     // `click` fires only for the primary (left) button, `contextmenu` for the right button, and
     // `auxclick` for the middle button (the browser fires no `click` for it). `auxclick` also fires for
@@ -828,7 +828,7 @@ class ResourceLockManager {
     const openUnlockMenu = ($event: MouseEvent): void => {
       $event.preventDefault();
       const path = getContextPath();
-      if (path === undefined) {
+      if (path === null) {
         return;
       }
       const menu = new Menu();
@@ -892,11 +892,11 @@ class ResourceLockManager {
    *
    * @param app - The Obsidian app instance.
    * @param view - The view whose current file to resolve an owner lock for.
-   * @returns The covering locked path, or `undefined` when the view has no file or nothing covers it.
+   * @returns The covering locked path, or `null` when the view has no file or nothing covers it.
    */
-  private resolveViewOwnerPath(app: App, view: MarkdownView): string | undefined {
+  private resolveViewOwnerPath(app: App, view: MarkdownView): null | string {
     const path = view.file?.path;
-    return path === undefined ? undefined : this.resolveLockOwnerPath(app, path) ?? undefined;
+    return path === undefined ? null : this.resolveLockOwnerPath(app, path);
   }
 
   /**
@@ -953,7 +953,7 @@ class ResourceLockManager {
       // It must resolve the currently active note's owner lock at click time rather than capturing one path.
       this.registerUnlockMenu(app, this.statusBarItemEl, () => {
         const path = app.workspace.getActiveViewOfType(MarkdownView)?.file?.path;
-        return path === undefined ? undefined : this.resolveLockOwnerPath(app, path) ?? undefined;
+        return path === undefined ? null : this.resolveLockOwnerPath(app, path);
       });
     }
 

@@ -304,7 +304,6 @@ describe('markdown', () => {
           } finally {
             app.workspace.offref(hoverLinkEventRef);
             aEl.detach();
-            // eslint-disable-next-line obsidianmd/prefer-file-manager-trash-file -- Permanent cleanup in tests.
             await app.vault.delete(file);
           }
         }
@@ -413,7 +412,6 @@ describe('markdown', () => {
             aEl.detach();
             return app.workspace.getActiveFile()?.path ?? null;
           } finally {
-            // eslint-disable-next-line obsidianmd/prefer-file-manager-trash-file -- Permanent cleanup in tests.
             await app.vault.delete(file);
           }
         }
@@ -484,7 +482,6 @@ describe('markdown', () => {
             };
           } finally {
             restore();
-            // eslint-disable-next-line obsidianmd/prefer-file-manager-trash-file -- Permanent cleanup in tests.
             await app.vault.delete(folder, true);
           }
         },
@@ -551,7 +548,6 @@ describe('markdown', () => {
             };
           } finally {
             restore();
-            // eslint-disable-next-line obsidianmd/prefer-file-manager-trash-file -- Permanent cleanup in tests.
             await app.vault.delete(file);
           }
         },
@@ -629,7 +625,6 @@ describe('markdown', () => {
           } finally {
             restore();
             leaf.detach();
-            // eslint-disable-next-line obsidianmd/prefer-file-manager-trash-file -- Permanent cleanup in tests.
             await app.vault.delete(file);
           }
         },
@@ -708,7 +703,6 @@ async function clickFolderLink(folderPath: string, shouldHideFolderNote: boolean
         };
       } finally {
         restore();
-        // eslint-disable-next-line obsidianmd/prefer-file-manager-trash-file -- Permanent cleanup in tests.
         await app.vault.delete(folder, true);
       }
     },

@@ -805,11 +805,11 @@ function decodeUrlSafely(params: DecodeUrlSafelyParams): string {
   }
 }
 
-function extractAlias(params: ExtractAliasParams): string | undefined {
+function extractAlias(params: ExtractAliasParams): null | string {
   const { $string, aliasEndOffset, aliasStartOffset } = params;
   return aliasStartOffset < aliasEndOffset
     ? $string.slice(aliasStartOffset, aliasEndOffset)
-    : undefined;
+    : null;
 }
 
 function extractTextLinks(params: ExtractTextLinksParams): void {
@@ -997,7 +997,7 @@ function parseLinkNode(node: Link, $string: string): ParseLinkResult {
     aliasStartOffset: aliasNodeStartOffset
   });
   return normalizeOptionalProperties<ParseLinkResult>({
-    alias,
+    alias: alias ?? undefined,
     encodedUrl: isExternal ? encodeUrl(url) : undefined,
     endOffset: nodeEndOffset,
     hasAngleBrackets,
@@ -1008,7 +1008,7 @@ function parseLinkNode(node: Link, $string: string): ParseLinkResult {
     raw,
     startOffset: nodeStartOffset,
     title: node.title ?? undefined,
-    unescapedAlias: alias === undefined ? undefined : unescapeAlias(alias),
+    unescapedAlias: alias === null ? undefined : unescapeAlias(alias),
     url
   });
 }

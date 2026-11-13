@@ -88,7 +88,6 @@ describe('SyntaxHighlightingComponent', () => {
         } finally {
           component.unload();
           app.workspace.detachLeavesOfType('markdown');
-          // eslint-disable-next-line obsidianmd/prefer-file-manager-trash-file -- Permanent cleanup in tests.
           await app.vault.delete(file);
         }
 
@@ -187,7 +186,6 @@ describe('SyntaxHighlightingComponent', () => {
         } finally {
           component.unload();
           app.workspace.detachLeavesOfType('markdown');
-          // eslint-disable-next-line obsidianmd/prefer-file-manager-trash-file -- Permanent cleanup in tests.
           await app.vault.delete(file);
         }
 

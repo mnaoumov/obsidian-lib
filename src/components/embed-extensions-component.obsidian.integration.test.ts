@@ -369,6 +369,7 @@ beforeAll(async () => {
 afterAll(async () => {
   await evalInObsidian({
     async callback({ app, constants }): Promise<void> {
+      // eslint-disable-next-line unicorn/no-optional-chaining-on-undeclared-variable -- The closure runs in Obsidian, where `window` is always declared; only the fixture may be missing.
       window.__subpathFormatFixture?.dispose();
       Reflect.deleteProperty(window, '__subpathFormatFixture');
       const folder = app.vault.getFolderByPath(constants.FOLDER);
