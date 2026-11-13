@@ -77,7 +77,7 @@ vi.mock('./vault.ts', () => ({
 }));
 
 const resourceLockComponent = strictProxy<ResourceLockComponent>({
-  lockForPath: () => ({ [Symbol.dispose]: noop })
+  lockForPath: () => ({ dispose: noop, [Symbol.dispose]: noop })
 });
 
 let app: AppOriginal;

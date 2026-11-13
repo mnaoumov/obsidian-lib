@@ -114,7 +114,7 @@ describe('getIndexedBacklinksForFile', () => {
           try {
             native = snapshot(app.metadataCache.getBacklinksForFile(probe));
           } finally {
-            registration[Symbol.dispose]();
+            registration.dispose();
           }
           result.push({ indexed, native, path: missingPath });
         }

@@ -100,6 +100,7 @@ function createFakePluginNoticeComponent(): FakePluginNoticeComponent {
   const dispose = vi.fn<() => void>();
   const setContent = vi.fn<(content: DocumentFragment | string) => void>();
   const delayedNotice: PluginNoticeComponentDelayedNotice = {
+    dispose,
     setContent,
     [Symbol.dispose]: dispose
   };

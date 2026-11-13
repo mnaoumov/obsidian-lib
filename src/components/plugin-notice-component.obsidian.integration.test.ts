@@ -344,7 +344,7 @@ describe('PluginNoticeComponent.showNoticeAfterDelay', () => {
             updatedText
           };
         } finally {
-          handle[Symbol.dispose]();
+          handle.dispose();
         }
       }
     });
@@ -487,7 +487,7 @@ describe('PluginNoticeComponent delayed notice modes', () => {
           handle.setContent(`${MARKER} finishing`);
           const afterUpdate = getProbeNoticeEl()?.textContent ?? '';
 
-          handle[Symbol.dispose]();
+          handle.dispose();
           const afterDispose = getProbeNoticeEl()?.textContent ?? null;
 
           return { afterAppend, afterDispose, afterUpdate };

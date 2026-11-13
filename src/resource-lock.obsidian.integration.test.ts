@@ -176,7 +176,7 @@ describe('resource-lock', () => {
           const isOtherNoteLocked = isLeafReadOnly(otherNoteLeaf);
 
           // Releasing the lock makes the note editable again.
-          disposable[Symbol.dispose]();
+          disposable.dispose();
           await settle();
           const isCurrentTabLockedAfterUnlock = isLeafReadOnly(currentTabLeaf);
 
@@ -264,7 +264,7 @@ describe('resource-lock', () => {
           const didOtherNoteAcceptTyping = readValue(otherLeaf) !== otherBefore;
 
           // Releasing the lock makes the previously-locked note typable again.
-          disposable[Symbol.dispose]();
+          disposable.dispose();
           await settle();
           const unlockedBefore = readValue(lockedLeaf);
           await typeIntoEditor({ editor: getEditor(lockedLeaf), text: 'Z' });
@@ -343,7 +343,7 @@ describe('resource-lock', () => {
           const didLockedNoteRejectShiftEnter = readValue() === lockedBefore;
 
           // Releasing the lock restores the normal Shift+Enter behavior (a newline is inserted).
-          disposable[Symbol.dispose]();
+          disposable.dispose();
           await settle();
           await reconcile();
           const unlockedBefore = readValue();
@@ -431,7 +431,7 @@ describe('resource-lock', () => {
           await reconcile();
           const isChildLockedUnderSubtree = isLeafReadOnly();
 
-          disposable[Symbol.dispose]();
+          disposable.dispose();
           await settle();
           const isChildLockedAfterUnlock = isLeafReadOnly();
 
@@ -523,9 +523,9 @@ describe('resource-lock', () => {
             await renameStep(`${root}/B/Overview.md`, `${root}/B/A/Overview.md`);
             await renameStep(`${temporaryFolderPath}/Overview.md`, `${root}/B/Overview.md`);
           } finally {
-            bypass[Symbol.dispose]();
+            bypass.dispose();
             for (const lockDisposable of lockDisposables) {
-              lockDisposable[Symbol.dispose]();
+              lockDisposable.dispose();
             }
             // The locks were taken on paths that no longer exist, so this is also where a path-keyed release would leak them.
             isCoveredAfterRelease = isResourceLockedForPathByAncestor(app, `${root}/B/Overview.md`);
@@ -675,7 +675,7 @@ describe('resource-lock', () => {
               wasTrashBlocked = error instanceof ResourceLockedError;
             }
           } finally {
-            disposable[Symbol.dispose]();
+            disposable.dispose();
           }
 
           // With the blocker uninstalled, the same rename now runs.
@@ -732,7 +732,7 @@ describe('resource-lock', () => {
             } catch {
               // The bypassed modify should be allowed; leave the flag false if it unexpectedly throws.
             } finally {
-              bypass[Symbol.dispose]();
+              bypass.dispose();
             }
             // Outside the scope the path is enforced again.
             try {
@@ -741,7 +741,7 @@ describe('resource-lock', () => {
               wasModifyBlockedAfterScope = error instanceof ResourceLockedError;
             }
           } finally {
-            lock[Symbol.dispose]();
+            lock.dispose();
           }
 
           // eslint-disable-next-line obsidianmd/prefer-file-manager-trash-file -- Permanent cleanup in tests.
@@ -797,7 +797,7 @@ describe('resource-lock', () => {
 
             return { wasAbortedOnExternalDelete: abortController.signal.aborted };
           } finally {
-            lock[Symbol.dispose]();
+            lock.dispose();
           }
         }
       });
@@ -843,7 +843,7 @@ describe('resource-lock', () => {
             const canExecuteWhileNotLocked = command?.checkCallback?.(true) ?? false;
 
             // Disposing removes the command — this is the real-Obsidian removeCommand path that a mock cannot cover.
-            disposable[Symbol.dispose]();
+            disposable.dispose();
             const isRegisteredAfterDispose = Object.hasOwn(app.commands.commands, commandId);
 
             return { canExecuteWhileNotLocked, hasCheckCallback, isRegisteredAfterDispose, isRegisteredBefore, isRegisteredWhileActive };

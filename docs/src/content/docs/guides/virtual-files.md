@@ -11,19 +11,21 @@ The path must be unoccupied, vault-relative and inside an existing folder. Regis
 
 <!-- snippet-check: context declare const plugin: import('obsidian').Plugin; -->
 ```ts
+import { registerDisposable } from '@mnaoumov/obsidian-lib/disposable';
 import { registerVirtualFile } from '@mnaoumov/obsidian-lib/virtual-file';
 
-const registration = await registerVirtualFile({
-  app,
-  content: '# Plugin manual\n\nGenerated in memory.',
-  path: 'Plugin manual.md'
-});
-
-plugin.register(() => registration[Symbol.dispose]());
+const registration = registerDisposable(
+  plugin,
+  await registerVirtualFile({
+    app,
+    content: '# Plugin manual\n\nGenerated in memory.',
+    path: 'Plugin manual.md'
+  })
+);
 await app.workspace.getLeaf('tab').openFile(registration.file);
 ```
 
-Keep the registration alive while readers need it. Dispose it when replacing the content or unloading its owner. If registration runs during asynchronous plugin initialization, dispose the result immediately when the owner has already unloaded. Disposal is idempotent: it closes views of the virtual file, removes its resolver and metadata entries, restores patched methods and revokes its resource URL.
+`registerDisposable` ties the registration to any component, a plugin included, and returns it for further use. Keep the registration alive while readers need it. Dispose it with `registration.dispose()` when replacing the content or unloading its owner. If registration runs during asynchronous plugin initialization, dispose the result immediately when the owner has already unloaded. Disposal is idempotent: it closes views of the virtual file, removes its resolver and metadata entries, restores patched methods and revokes its resource URL.
 
 While registered, `[[Plugin manual]]` resolves to the in-memory file, and ordinary Markdown links and embeds use that destination. The helper supplies parsed Markdown metadata, including headings. It emits no vault create or delete events; it does not ask indexers or synchronization to treat the file as a persisted note.
 

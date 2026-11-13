@@ -14,6 +14,7 @@
 
 /* eslint-disable n/no-unsupported-features/node-builtins -- ReadableStream is the Obsidian renderer's Web API, not a Node builtin. */
 
+import type { DisposableEx } from '@mnaoumov/typescript-lib/disposable';
 import type {
   IncomingHttpHeaders,
   IncomingMessage
@@ -96,11 +97,11 @@ export async function openDesktopRequestUrlStream(request: EncodedRequestUrlRequ
 function createIncomingMessageStream(incomingMessage: IncomingMessage, abortSignal: AbortSignal): ReadableStream<Uint8Array> {
   let isSettled = false;
   // Assigned in `start`, which runs inside the constructor, so it is in place before `cancel` can run.
-  let abortListener: Disposable;
+  let abortListener: DisposableEx;
   return new ReadableStream<Uint8Array>({
     cancel(): void {
       isSettled = true;
-      abortListener[Symbol.dispose]();
+      abortListener.dispose();
       incomingMessage.destroy();
     },
     pull(): void {
@@ -127,11 +128,11 @@ function createIncomingMessageStream(incomingMessage: IncomingMessage, abortSign
         }
       });
       incomingMessage.on('end', () => {
-        abortListener[Symbol.dispose]();
+        abortListener.dispose();
         settle();
       });
       incomingMessage.on('error', (error) => {
-        abortListener[Symbol.dispose]();
+        abortListener.dispose();
         settle(error);
       });
       abortListener = onAbort(abortSignal, () => {

@@ -236,9 +236,10 @@ export async function loop<T>(params: LoopParams<T>): Promise<void> {
       await noticeMinTimeoutPromise;
     }
   } finally {
-    // Disposed by an explicit call rather than a `using` declaration: `using` looks the method up under a different
-    // key than the handle is built with on an engine lacking `Symbol.dispose`, and `loop()` runs on every platform.
-    delayedNotice?.[Symbol.dispose]();
+    // Disposed by an explicit `dispose()` call rather than a `using` declaration: `using` looks the method up under a
+    // different key than the handle is built with on an engine lacking `Symbol.dispose`, and `loop()` runs on every
+    // platform.
+    delayedNotice?.dispose();
   }
 
   function buildProgressBarFragment(): DocumentFragment {

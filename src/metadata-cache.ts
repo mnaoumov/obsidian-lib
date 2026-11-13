@@ -6,6 +6,7 @@
 
 import type { ApiContract } from '@mnaoumov/typescript-lib/api-contract';
 import type { RetryOptions } from '@mnaoumov/typescript-lib/async';
+import type { DisposableEx } from '@mnaoumov/typescript-lib/disposable';
 import type { CustomArrayDict } from '@obsidian-typings/obsidian-public-latest';
 import type {
   App,
@@ -742,9 +743,9 @@ export async function parseMetadata(app: App, $string: string, options: ParseMet
  * Registers the file cache for a non-existing file.
  *
  * @param params - The parameters for registering the file cache.
- * @returns A {@link Disposable} that unregisters the file cache when disposed, for use with `using`.
+ * @returns A {@link DisposableEx} that unregisters the file cache when disposed, for use with `using`.
  */
-export function registerFileCacheForNonExistingFile(params: RegisterFileCacheForNonExistingFileParams): Disposable {
+export function registerFileCacheForNonExistingFile(params: RegisterFileCacheForNonExistingFileParams): DisposableEx {
   const { app, cache, pathOrFile } = params;
   const file = getFile({ app, pathOrFile, shouldIncludeNonExisting: true });
   if (!file.deleted) {
@@ -771,9 +772,9 @@ export function registerFileCacheForNonExistingFile(params: RegisterFileCacheFor
  *
  * @param app - The Obsidian app instance.
  * @param files - The files to register.
- * @returns A {@link Disposable} that unregisters the files when disposed, for use with `using`.
+ * @returns A {@link DisposableEx} that unregisters the files when disposed, for use with `using`.
  */
-export function registerFiles(app: App, files: TAbstractFile[]): Disposable {
+export function registerFiles(app: App, files: TAbstractFile[]): DisposableEx {
   const registeredFilesCounts = getRegisteredFilesCounts();
 
   for (let file of files) {

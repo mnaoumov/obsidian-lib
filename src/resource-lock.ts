@@ -35,6 +35,7 @@
  * The explicit {@link unlockResourceForPath} pair remains available for non-`using` call sites.
  */
 
+import type { DisposableEx } from '@mnaoumov/typescript-lib/disposable';
 import type {
   App,
   TAbstractFile
@@ -45,7 +46,8 @@ import { convertAsyncToSync } from '@mnaoumov/typescript-lib/async';
 import { Beeper } from '@mnaoumov/typescript-lib/beeper';
 import {
   CallbackDisposable,
-  MultipleDisposeBehavior
+  MultipleDisposeBehavior,
+  toDisposableEx
 } from '@mnaoumov/typescript-lib/disposable';
 import { noop } from '@mnaoumov/typescript-lib/function';
 import { assertNonNullable } from '@mnaoumov/typescript-lib/type-guards';
@@ -1164,10 +1166,10 @@ export class ResourceLockComponent extends ComponentEx {
    * ```
    *
    * @param pathsOrFiles - The paths (or files/folders) whose mutation by this operation is sanctioned.
-   * @returns A {@link Disposable} that ends the bypass scope when disposed.
+   * @returns A {@link DisposableEx} that ends the bypass scope when disposed.
    */
-  public bypassBlockedMutations(pathsOrFiles: readonly PathOrFile[]): Disposable {
-    return getManager().bypass(this.app, pathsOrFiles);
+  public bypassBlockedMutations(pathsOrFiles: readonly PathOrFile[]): DisposableEx {
+    return toDisposableEx(getManager().bypass(this.app, pathsOrFiles));
   }
 
   /**
@@ -1212,20 +1214,22 @@ export class ResourceLockComponent extends ComponentEx {
    * in the unlock confirmation). Pass an {@link ResourceLockComponentLockForPathParams.abortController}
    * to make the lock cancelable via a lock indicator's "unlock" menu, the "Unlock active note" command,
    * or {@link requestResourceUnlockForPath}.
-   * @returns A {@link Disposable} that releases this lock when disposed. Disposing more than once is a no-op.
+   * @returns A {@link DisposableEx} that releases this lock when disposed. Disposing more than once is a no-op.
    */
-  public lockForPath(params: ResourceLockComponentLockForPathParams): Disposable {
-    return getManager().lock({
-      abortController: params.abortController,
-      app: this.app,
-      blocksMutations: params.shouldBlockMutations,
-      mode: params.mode,
-      onUnlockRequested: params.onUnlockRequested,
-      operationName: params.operationName,
-      pathOrFile: params.pathOrFile,
-      pluginId: this.pluginId,
-      shouldReleaseOnAbort: params.shouldReleaseOnAbort
-    });
+  public lockForPath(params: ResourceLockComponentLockForPathParams): DisposableEx {
+    return toDisposableEx(
+      getManager().lock({
+        abortController: params.abortController,
+        app: this.app,
+        blocksMutations: params.shouldBlockMutations,
+        mode: params.mode,
+        onUnlockRequested: params.onUnlockRequested,
+        operationName: params.operationName,
+        pathOrFile: params.pathOrFile,
+        pluginId: this.pluginId,
+        shouldReleaseOnAbort: params.shouldReleaseOnAbort
+      })
+    );
   }
 
   /**
@@ -1343,19 +1347,21 @@ export function isResourceLockedForPathByAncestor(app: App, pathOrFile: PathOrFi
  * that currently hold a lock on the note.
  *
  * The lock is reference-counted per calling plugin: each call must be balanced by exactly one
- * release (either disposing the returned {@link Disposable} — ideally via a `using` declaration — or
+ * release (either disposing the returned {@link DisposableEx} — ideally via a `using` declaration — or
  * a matching {@link unlockResourceForPath} call).
  *
  * @param params - The parameters for locking the note.
- * @returns A {@link Disposable} that releases this lock when disposed. Disposing more than once is a no-op.
+ * @returns A {@link DisposableEx} that releases this lock when disposed. Disposing more than once is a no-op.
  */
-export function lockResourceForPath(params: LockResourceForPathParams): Disposable {
-  return getManager().lock({
-    app: params.app,
-    operationName: params.operationName,
-    pathOrFile: params.pathOrFile,
-    pluginId: params.pluginId
-  });
+export function lockResourceForPath(params: LockResourceForPathParams): DisposableEx {
+  return toDisposableEx(
+    getManager().lock({
+      app: params.app,
+      operationName: params.operationName,
+      pathOrFile: params.pathOrFile,
+      pluginId: params.pluginId
+    })
+  );
 }
 
 /**

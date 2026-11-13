@@ -589,6 +589,24 @@ describe('ComponentEx', () => {
     });
   });
 
+  describe('registerAsyncDisposable', () => {
+    it('should return the same async disposable and start its disposal on unload', async () => {
+      const component = new SyncComponentEx();
+      component.load();
+      const asyncDisposeMock = vi.fn(noopAsync);
+      const asyncDisposable: AsyncDisposable = { [Symbol.asyncDispose]: asyncDisposeMock };
+
+      const returned = component.registerAsyncDisposable(asyncDisposable);
+
+      expect(returned).toBe(asyncDisposable);
+      expect(asyncDisposeMock).not.toHaveBeenCalled();
+
+      component.unload();
+      await noopAsync();
+      expect(asyncDisposeMock).toHaveBeenCalledOnce();
+    });
+  });
+
   describe('getInFlightAncestryLoadPromise', () => {
     interface Gate {
       readonly open: () => void;

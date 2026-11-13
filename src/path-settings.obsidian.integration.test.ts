@@ -188,7 +188,7 @@ describe('PathSettings', () => {
             validationMessageForInvalidRegExp: textAreaEl.validationMessage
           };
         } finally {
-          registration[Symbol.dispose]();
+          registration.dispose();
           // Unloaded here so the global async-error handler this component registers never outlives the test.
           asyncErrorHandlerComponent.unload();
           noticeComponent.unload();

@@ -845,7 +845,7 @@ export abstract class PluginBase extends mixinAsyncEvents<PluginEventMap>()(Plug
     try {
       didSettle = await didPluginAsyncCleanupsSettle({ pluginId: this.manifest.id, timeoutInMilliseconds });
     } finally {
-      pausedNotice[Symbol.dispose]();
+      pausedNotice.dispose();
     }
 
     if (didSettle) {
