@@ -21,6 +21,7 @@ const DOCUMENT_SUFFIX = '\n```\n';
 const BISECTION_DIVISOR = 2;
 const HEX_RADIX = 16;
 const HEX_BYTE_LENGTH = 2;
+const JOURNAL_SEGMENT_REG_EXP = /\/log-\d+\.(?:md|json)$/;
 
 /**
  * Parameters for the shared-store vault transport.
@@ -79,7 +80,8 @@ export interface DataStoreTransportWriteSnapshotParams {
 }
 
 /**
- * A store-scoped transport. Every published document is immutable except device acknowledgements.
+ * A store-scoped transport. Every published document is immutable except device acknowledgements and append-only
+ * journal segments, which only their own device rewrites and only by extending them.
  */
 export class DataStoreTransport {
   /**
@@ -141,7 +143,7 @@ export class DataStoreTransport {
     const files = allFiles.filter((path) => path.startsWith(`${this.root}/devices/`));
     const complete = new Set<string>();
     for (const path of files) {
-      if (/\/log-\d+\.(?:md|json)$/.test(path) && await this.read(path) !== undefined) {
+      if (JOURNAL_SEGMENT_REG_EXP.test(path) && await this.read(path) !== undefined) {
         complete.add(path);
       }
       if (!/\/snapshot-[\w-]+-manifest\.(?:md|json)$/.test(path) || await this.readSnapshot(path) === undefined) {
@@ -164,8 +166,8 @@ export class DataStoreTransport {
       const destination = target.root + path.slice(this.root.length);
       target.checkPath(destination);
       if (await target.adapter.exists(destination)) {
-        if (await target.adapter.read(destination) !== text) {
-          throw new Error('Conflicting immutable data-store history');
+        if (await target.adapter.read(destination) !== text && !await this.copyOverDifferentHistory(target, path, destination, text)) {
+          continue;
         }
       } else {
         await target.ensureParent(destination);
@@ -184,7 +186,7 @@ export class DataStoreTransport {
    * @returns Whether its document fits the configured cap.
    */
   public fits(value: unknown): boolean {
-    return new TextEncoder().encode(this.encode(value)).length <= this.maxFileBytes;
+    return this.measure(value) <= this.maxFileBytes;
   }
 
   /**
@@ -205,6 +207,16 @@ export class DataStoreTransport {
       pending.push(...children.folders.filter((path) => path.startsWith(`${folder}/`)));
     }
     return files.sort();
+  }
+
+  /**
+   * Measures the complete encoded size of a new document without writing.
+   *
+   * @param value - JSON payload.
+   * @returns UTF-8 bytes, encoding wrapper included.
+   */
+  public measure(value: unknown): number {
+    return new TextEncoder().encode(this.encode(value)).length;
   }
 
   /**
@@ -307,6 +319,33 @@ export class DataStoreTransport {
   }
 
   /**
+   * Publishes an append-only document: an occupied path is rewritten only when the new list strictly extends the stored one.
+   * A reader that sees an older copy sees a prefix, so it applies fewer entries and never a different one.
+   *
+   * @param path - Vault-relative destination within this store.
+   * @param values - JSON-compatible entries; the stored entries must be their prefix.
+   * @returns A promise that resolves after publication, or at once when the stored list is already identical.
+   */
+  public async writeAppendOnly(path: string, values: readonly unknown[]): Promise<void> {
+    this.checkPath(path);
+    const text = this.encode(values, path.endsWith('.json'));
+    this.checkSize(text);
+    if (await this.adapter.exists(path)) {
+      const stored = await this.readStoredList(path);
+      if (stored === undefined || !isListPrefix(stored, values)) {
+        throw new Error('Conflicting immutable data-store document');
+      }
+      if (stored.length === values.length) {
+        return;
+      }
+      await this.adapter.write(path, text);
+      return;
+    }
+    await this.ensureParent(path);
+    await this.adapter.write(path, text);
+  }
+
+  /**
    * Publishes an immutable document, accepting only byte-identical retries at an occupied path.
    *
    * @param path - Vault-relative destination within this store.
@@ -386,6 +425,32 @@ export class DataStoreTransport {
     throw new Error(message);
   }
 
+  /**
+   * Reconciles a destination whose bytes differ from the source. Only a journal segment may differ, because it grows
+   * while its device writes it, so either copy may be the older prefix of the other; anything else is a conflict.
+   *
+   * @param target - Destination transport.
+   * @param path - Source path.
+   * @param destination - Destination path.
+   * @param text - Source bytes.
+   * @returns Whether the source was written over the destination, which must then be verified.
+   */
+  private async copyOverDifferentHistory(target: DataStoreTransport, path: string, destination: string, text: string): Promise<boolean> {
+    const source = JOURNAL_SEGMENT_REG_EXP.test(path) ? await this.readStoredList(path) : undefined;
+    const copied = source === undefined ? undefined : await target.readStoredList(destination);
+    if (source === undefined || copied === undefined) {
+      throw new Error('Conflicting immutable data-store history');
+    }
+    if (isListPrefix(source, copied)) {
+      return false;
+    }
+    if (!isListPrefix(copied, source)) {
+      throw new Error('Conflicting immutable data-store history');
+    }
+    await target.adapter.write(destination, text);
+    return true;
+  }
+
   private encode(value: unknown, isJson = this.extension === '.json'): string {
     const json = JSON.stringify(value);
     if (json === undefined) {
@@ -411,11 +476,25 @@ export class DataStoreTransport {
       }
     }
   }
+
+  private async readStoredList(path: string): Promise<undefined | unknown[]> {
+    let value: unknown;
+    try {
+      value = await this.read(path);
+    } catch {
+      return undefined;
+    }
+    return Array.isArray(value) ? value : undefined;
+  }
 }
 
 async function digest(text: string): Promise<string> {
   const hash = await window.crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
   return [...new Uint8Array(hash)].map((byte) => byte.toString(HEX_RADIX).padStart(HEX_BYTE_LENGTH, '0')).join('');
+}
+
+function isListPrefix(prefix: readonly unknown[], list: readonly unknown[]): boolean {
+  return prefix.length <= list.length && prefix.every((value, index) => JSON.stringify(value) === JSON.stringify(list[index]));
 }
 
 function isSafeVaultPath(path: string): boolean {
