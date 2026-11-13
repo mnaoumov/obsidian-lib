@@ -284,7 +284,6 @@ import type { App } from 'obsidian';
 
 import { PluginBase } from '@mnaoumov/obsidian-lib/plugin/plugin';
 import { AsyncEvents } from '@mnaoumov/typescript-lib/async-events';
-import { castTo } from '@mnaoumov/typescript-lib/object-utils';
 import { Component } from 'obsidian';
 
 class LinkIndexComponent extends Component {
@@ -299,12 +298,7 @@ class LinkIndexComponent extends Component {
     this.api = {
       getLinkCount: (path) => this.linkCounts.get(path) ?? 0,
       on: (name, listener) => {
-        // `AsyncEvents.on` cannot carry a generic event name through to its listener type, so the listener is
-        // widened to every event's payload. `name` still picks the one event it is called for.
-        const eventRef = this.events.on<LinkIndexEventName, LinkIndexEventMap[LinkIndexEventName]>(
-          name,
-          castTo<(...payload: LinkIndexEventMap[LinkIndexEventName]) => void>(listener)
-        );
+        const eventRef = this.events.on(name, listener);
         return () => {
           this.events.offref(eventRef);
         };

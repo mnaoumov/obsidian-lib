@@ -545,7 +545,7 @@ describe('plugin-api', () => {
       harness.publish();
       harness.watch<GreeterApi>();
       findPluginApi<GreeterApi>({ apiVersionRange: ANY_VERSION_RANGE, pluginId: PROVIDER_ID });
-      expect(getDebugSwitch(VALIDATE_PLUGIN_API_PAYLOADS_DEBUG_SWITCH_ID)).toBeDefined();
+      expect(getDebugSwitch(VALIDATE_PLUGIN_API_PAYLOADS_DEBUG_SWITCH_ID)).not.toBeNull();
     });
   });
 

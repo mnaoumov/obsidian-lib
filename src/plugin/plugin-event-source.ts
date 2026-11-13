@@ -6,7 +6,8 @@
 
 import type {
   AsyncEventRef,
-  AsyncEventSource
+  AsyncEventSource,
+  CallbackArguments
 } from '@mnaoumov/typescript-lib/async-events';
 import type { StringKeys } from '@mnaoumov/typescript-lib/type';
 import type { Promisable } from 'type-fest';
@@ -53,7 +54,7 @@ export class PluginEventSourceImpl implements PluginEventSource {
    * ```
    */
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters -- We need to use the dummy parameter to get type inference.
-  public off<EventName extends StringKeys<PluginEventMap>, Arguments extends EventName extends StringKeys<PluginEventMap> ? PluginEventMap[EventName] : unknown[]>(
+  public off<EventName extends StringKeys<PluginEventMap>, Arguments extends CallbackArguments<PluginEventMap, EventName>>(
     name: EventName,
     callback: (...$arguments: Arguments) => Promisable<void>
   ): void {
@@ -90,7 +91,7 @@ export class PluginEventSourceImpl implements PluginEventSource {
    * ```
    */
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters -- We need to use the dummy parameter to get type inference.
-  public on<EventName extends StringKeys<PluginEventMap>, Arguments extends EventName extends StringKeys<PluginEventMap> ? PluginEventMap[EventName] : unknown[]>(
+  public on<EventName extends StringKeys<PluginEventMap>, Arguments extends CallbackArguments<PluginEventMap, EventName>>(
     name: EventName,
     callback: (...$arguments: Arguments) => Promisable<void>,
     thisArgument?: unknown
@@ -119,7 +120,7 @@ export class PluginEventSourceImpl implements PluginEventSource {
    * ```
    */
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters -- We need to use the dummy parameter to get type inference.
-  public once<EventName extends StringKeys<PluginEventMap>, Arguments extends EventName extends StringKeys<PluginEventMap> ? PluginEventMap[EventName] : unknown[]>(
+  public once<EventName extends StringKeys<PluginEventMap>, Arguments extends CallbackArguments<PluginEventMap, EventName>>(
     name: EventName,
     callback: (...$arguments: Arguments) => Promisable<void>,
     thisArgument?: unknown

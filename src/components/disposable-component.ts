@@ -5,6 +5,7 @@
  */
 
 import type { DisposableEx } from '@mnaoumov/typescript-lib/disposable';
+import type { Writable } from 'type-fest';
 
 import { Component } from 'obsidian';
 
@@ -24,7 +25,7 @@ type DisposableComponentWrapper<TComponent extends Component> = DisposableEx & T
  *   attached.
  */
 export function asDisposableComponent<TComponent extends Component>(component: TComponent): DisposableComponentWrapper<TComponent> {
-  const disposableEx = component as Partial<DisposableEx>;
+  const disposableEx = component as Partial<Writable<DisposableEx>>;
   const symbolDispose: () => void = disposableEx[Symbol.dispose] ?? ((): void => {
     component.unload();
   });

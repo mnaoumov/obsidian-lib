@@ -29,6 +29,13 @@
       "check": "npm view @lezer/common version",
       "expect": "1.5.4"
     },
+    "@mnaoumov/typescript-lib": {
+      "section": "overrides",
+      "why": "Keeps ONE copy of typescript-lib in the tree. The published typescript-test-toolkit, typescript-dev-toolkit and obsidian-dev-toolkit still declare ^1.0.0 || ^2.0.0 / ^2.0.0, so without the override npm nests a 2.0.0 copy under each, and the test setup's Library reset reaches that copy instead of this package's 4.x one: every PluginBase load in the unit tests then fails with 'typescript-lib is already initialized'. The 3.0.0 and 4.0.0 breaking changes are type-level (readonly members) or touch getDebugSwitch / TwoWayMap, which none of the three toolkit packages' unbundled runtime calls.",
+      "check": "node -e \"const fs=require('node:fs');for(const p of ['typescript-test-toolkit','typescript-dev-toolkit','obsidian-dev-toolkit'])console.log(JSON.parse(fs.readFileSync('node_modules/@mnaoumov/'+p+'/package.json','utf8')).dependencies['@mnaoumov/typescript-lib'])\"",
+      "expect": "^1.0.0 || ^2.0.0\n^2.0.0\n^1.0.0 || ^2.0.0",
+      "manualCheck": "Drop the override and this entry once all three toolkit packages admit the typescript-lib major in this package's dependencies; then `npm ls @mnaoumov/typescript-lib` must still show one version."
+    },
     "@puppeteer/browsers": {
       "section": "overrides",
       "why": "Keep the integration tooling's browser downloader on the patched 3.x line.",
