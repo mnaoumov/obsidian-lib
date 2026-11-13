@@ -670,7 +670,7 @@ export function getMarkdownFilesSorted(app: App): TFile[] {
  * @returns An array of all note files in the vault sorted by file path.
  */
 export function getNoteFilesSorted(app: App): TFile[] {
-  return app.vault.getAllLoadedFiles().filter((file) => isFile(file) && isNote(file)).sort((a, b) => a.path.localeCompare(b.path)) as TFile[];
+  return app.vault.getAllLoadedFiles().filter((file): file is TFile => isFile(file) && isNote(file)).sort((a, b) => a.path.localeCompare(b.path));
 }
 
 /**

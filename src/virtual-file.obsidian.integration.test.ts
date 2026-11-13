@@ -66,7 +66,6 @@ describe('registerVirtualFile', () => {
             const [name, operation] of [
               ['modify', (): Promise<void> => app.vault.modify(registration.file, 'Wrong')],
               ['rename', (): Promise<void> => app.fileManager.renameFile(registration.file, 'wrong.md')],
-              // eslint-disable-next-line obsidianmd/prefer-file-manager-trash-file -- This test exercises the deletion primitive itself.
               ['delete', (): Promise<void> => app.vault.delete(registration.file)],
               ['adapter write', (): Promise<void> => app.vault.adapter.write(path, 'Wrong')]
             ] as const

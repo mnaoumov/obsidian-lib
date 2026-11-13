@@ -120,7 +120,6 @@ function setupCreateFragmentGlobal(): CreateFragmentGlobalResult {
 
   const originalCreateFragment = createFragment;
 
-  // eslint-disable-next-line obsidianmd/no-global-this -- Actively use globalThis.
   globalThis.createFragment = vi.fn((callback?: (f: DocumentFragment) => void): DocumentFragment => {
     const fragment = originalCreateFragment(callback);
     lastFragment = fragment;
@@ -129,7 +128,6 @@ function setupCreateFragmentGlobal(): CreateFragmentGlobalResult {
 
   return {
     cleanup: (): void => {
-      // eslint-disable-next-line obsidianmd/no-global-this -- Actively use globalThis.
       globalThis.createFragment = originalCreateFragment;
     },
     getLastFragment: (): DocumentFragment | null => lastFragment
@@ -705,7 +703,6 @@ describe('AsyncWithNotice', () => {
       });
 
       const { cleanup } = setupCreateFragmentGlobal();
-      // eslint-disable-next-line obsidianmd/no-global-this -- Actively use globalThis.
       vi.spyOn(globalThis, 'clearInterval');
 
       onTimeout(context);
@@ -729,7 +726,6 @@ describe('AsyncWithNotice', () => {
       const context = createMockTimeoutContext();
 
       const { cleanup } = setupCreateFragmentGlobal();
-      // eslint-disable-next-line obsidianmd/no-global-this -- Actively use globalThis.
       vi.spyOn(globalThis, 'setInterval');
 
       onTimeout(context);
@@ -745,7 +741,6 @@ describe('AsyncWithNotice', () => {
       const context = createMockTimeoutContext();
 
       const { cleanup, getLastFragment } = setupCreateFragmentGlobal();
-      // eslint-disable-next-line obsidianmd/no-global-this -- Actively use globalThis.
       vi.spyOn(globalThis, 'clearInterval');
 
       onTimeout(context);

@@ -688,6 +688,7 @@ function parsePluginRecord(value: unknown): null | WorkspaceLayoutStatePluginRec
   };
 }
 
+// eslint-disable-next-line typescript-dev-toolkit/no-undefined-return-type -- A stored JSON `null` is a value, so a missing one must read differently.
 function readRawValue(state: WorkspaceLayoutStateSharedState, pluginId: string, key: string, leafId: null | string): JsonValue | undefined {
   return getBucket(state, pluginId, leafId)?.[key];
 }

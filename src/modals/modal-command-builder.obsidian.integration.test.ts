@@ -47,7 +47,6 @@ describe('modal command toggle fill', () => {
           }
 
           const referenceEl = modal.modalEl.createDiv();
-          // eslint-disable-next-line obsidianmd/no-static-styles-assignment -- A reference swatch resolves the theme variables independently of the button selectors under test.
           referenceEl.setCssProps({
             'background-color': 'var(--interactive-accent)',
             'color': 'var(--text-on-accent)'

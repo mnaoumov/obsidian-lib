@@ -123,10 +123,10 @@ afterEach(() => {
   }
 });
 
-function captureMenuOnShow(): () => Menu | undefined {
+function captureMenuOnShow(): () => Menu | null {
   const showSpy = vi.spyOn(Menu.prototype, 'showAtMouseEvent');
   // `mock.contexts` records the `this` of each call (the menu instance), typed as `unknown`.
-  return () => castTo<Menu | undefined>(showSpy.mock.contexts[0]);
+  return () => castTo<Menu | undefined>(showSpy.mock.contexts[0]) ?? null;
 }
 
 function createMarkdownView(path: string, hasTabStatusContainer = true): MarkdownViewOriginal {
@@ -1398,7 +1398,6 @@ describe('mutation blocker', () => {
   it('should block vault.delete of a locked file', () => {
     using _lock = lockTarget();
     const file = targetFile();
-    // eslint-disable-next-line obsidianmd/prefer-file-manager-trash-file -- Exercising the mutation blocker on this method.
     expect(() => app.vault.delete(file)).toThrow(ResourceLockedError);
   });
 
@@ -1436,7 +1435,6 @@ describe('mutation blocker', () => {
   it('should block vault.trash of a locked file', () => {
     using _lock = lockTarget();
     const file = targetFile();
-    // eslint-disable-next-line obsidianmd/prefer-file-manager-trash-file -- Exercising the mutation blocker on this method.
     expect(() => app.vault.trash(file, false)).toThrow(ResourceLockedError);
   });
 
@@ -1457,17 +1455,14 @@ describe('mutation blocker', () => {
     // The second blocking lock reuses the already-installed patch (no re-install).
     const second = lockTarget();
     const file = targetFile();
-    // eslint-disable-next-line obsidianmd/prefer-file-manager-trash-file -- Exercising the mutation blocker on this method.
     expect(() => app.vault.delete(file)).toThrow(ResourceLockedError);
 
     // Releasing one of the two blocking locks keeps the path blocked (the other still holds it).
     dispose(first);
-    // eslint-disable-next-line obsidianmd/prefer-file-manager-trash-file -- Exercising the mutation blocker on this method.
     expect(() => app.vault.delete(file)).toThrow(ResourceLockedError);
 
     // Releasing the last blocking lock uninstalls the patch, so the mutation runs.
     dispose(second);
-    // eslint-disable-next-line obsidianmd/prefer-file-manager-trash-file -- Confirming the mutation runs once the blocker is uninstalled.
     await expect(app.vault.delete(file)).resolves.toBeUndefined();
   });
 });

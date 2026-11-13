@@ -185,7 +185,6 @@ describe('initPluginContext', () => {
     initPluginContext('my-plugin');
 
     expect(getTypescriptLibStateSlot().values['sharedAbortController']?.value).toBeInstanceOf(ResettableAbortController);
-    // eslint-disable-next-line obsidianmd/no-global-this -- The documented console call reaches the realm global.
     expect(castTo<Record<symbol, unknown>>(globalThis)[TYPESCRIPT_LIB_STATE_KEY]).toBe(getTypescriptLibStateSlot());
   });
 });

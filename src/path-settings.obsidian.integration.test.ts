@@ -126,7 +126,6 @@ describe('PathSettings', () => {
           pluginSettingsComponent: settingsComponent
         });
         activeDocument.body.append(tab.containerEl);
-        // eslint-disable-next-line @typescript-eslint/no-deprecated -- The override clears the upstream deprecation, but the rule walks the inheritance chain and reports the base method anyway.
         tab.display();
 
         const asyncErrors: string[] = [];
@@ -196,9 +195,9 @@ describe('PathSettings', () => {
           settingsComponent.unload();
         }
 
-        function getSavedExcludePaths(): undefined | unknown[] {
+        function getSavedExcludePaths(): null | unknown[] {
           const excludePaths = (savedData as null | Record<string, unknown>)?.['excludePaths'];
-          return Array.isArray(excludePaths) ? excludePaths : undefined;
+          return Array.isArray(excludePaths) ? excludePaths : null;
         }
 
         async function type(textAreaEl: HTMLTextAreaElement, value: string): Promise<void> {

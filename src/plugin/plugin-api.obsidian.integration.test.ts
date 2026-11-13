@@ -83,6 +83,7 @@ describe('cross-copy plugin API registry', () => {
         // actually depends on rather than on the enable call returning.
         await waitUntil({
           message: 'the provider API to be visible to the consumer',
+          // eslint-disable-next-line unicorn/no-optional-chaining-on-undeclared-variable -- The closure runs in Obsidian, where `window` is always declared; only the fixture may be missing.
           predicate: (): boolean => window.__pluginApiIntegrationTestProbe?.greetV2() !== null,
           timeoutInMilliseconds: waitTimeoutInMilliseconds
         });
@@ -214,6 +215,7 @@ describe('a plugin gate depending on a plugin from another library copy', () => 
 
         await waitUntil({
           message: 'the gate on the provider to open',
+          // eslint-disable-next-line unicorn/no-optional-chaining-on-undeclared-variable -- The closure runs in Obsidian, where `window` is always declared; only the fixture may be missing.
           predicate: (): boolean => window.__pluginApiIntegrationTestProbe?.isGatedSurfaceLoaded() === true,
           timeoutInMilliseconds: waitTimeoutInMilliseconds
         });

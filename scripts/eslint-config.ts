@@ -207,6 +207,12 @@ export const configs: Linter.Config[] = defineEslintConfigs({
           'es-x/no-symbol-asyncdispose': 'off',
           'es-x/no-symbol-dispose': 'off'
         }
+      },
+      {
+        files: context.allFiles(),
+        rules: {
+          'typescript-dev-toolkit/no-undefined-return-type': 'error'
+        }
       }
     ]);
   }

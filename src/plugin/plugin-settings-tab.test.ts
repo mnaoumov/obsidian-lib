@@ -179,7 +179,6 @@ describe('PluginSettingsTabBase', () => {
 
     const displayLegacySpy = vi.spyOn(tab, 'displayLegacy');
 
-    // eslint-disable-next-line @typescript-eslint/no-deprecated -- We need to call it in the test.
     tab.display();
 
     expect(displayLegacySpy).toHaveBeenCalled();

@@ -252,8 +252,8 @@ function createApp(options: CreateAppOptions = {}): AppMock {
   };
 }
 
-function getSandboxNoticeDuration(): number | undefined {
-  return mockNotice.mock.calls.at(-1)?.[1];
+function getSandboxNoticeDuration(): null | number {
+  return mockNotice.mock.calls.at(-1)?.[1] ?? null;
 }
 
 function getSandboxNoticeText(): string {

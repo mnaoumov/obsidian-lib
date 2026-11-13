@@ -167,8 +167,8 @@ export class SettingsTabs {
     return this;
   }
 
-  private findEntry(tabId: null | string | undefined): SettingsTabEntry | undefined {
-    return this.entries.find((entry) => entry.tab.id === tabId);
+  private findEntry(tabId: null | string | undefined): null | SettingsTabEntry {
+    return this.entries.find((entry) => entry.tab.id === tabId) ?? null;
   }
 
   private onKeyDown(event_: KeyboardEvent): void {

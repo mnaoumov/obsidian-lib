@@ -1,4 +1,3 @@
-/* eslint-disable n/no-unsupported-features/node-builtins -- These are Obsidian renderer Web APIs, not Node builtins. */
 /**
  * @file
  *
@@ -332,7 +331,7 @@ export class DataStoreTransport {
     this.checkSize(text);
     if (await this.adapter.exists(path)) {
       const stored = await this.readStoredList(path);
-      if (stored === undefined || !isListPrefix(stored, values)) {
+      if (stored === null || !isListPrefix(stored, values)) {
         throw new Error('Conflicting immutable data-store document');
       }
       if (stored.length === values.length) {
@@ -436,9 +435,9 @@ export class DataStoreTransport {
    * @returns Whether the source was written over the destination, which must then be verified.
    */
   private async copyOverDifferentHistory(target: DataStoreTransport, path: string, destination: string, text: string): Promise<boolean> {
-    const source = JOURNAL_SEGMENT_REG_EXP.test(path) ? await this.readStoredList(path) : undefined;
-    const copied = source === undefined ? undefined : await target.readStoredList(destination);
-    if (source === undefined || copied === undefined) {
+    const source = JOURNAL_SEGMENT_REG_EXP.test(path) ? await this.readStoredList(path) : null;
+    const copied = source === null ? null : await target.readStoredList(destination);
+    if (source === null || copied === null) {
       throw new Error('Conflicting immutable data-store history');
     }
     if (isListPrefix(source, copied)) {
@@ -477,14 +476,14 @@ export class DataStoreTransport {
     }
   }
 
-  private async readStoredList(path: string): Promise<undefined | unknown[]> {
+  private async readStoredList(path: string): Promise<null | unknown[]> {
     let value: unknown;
     try {
       value = await this.read(path);
     } catch {
-      return undefined;
+      return null;
     }
-    return Array.isArray(value) ? value : undefined;
+    return Array.isArray(value) ? value : null;
   }
 }
 
@@ -500,5 +499,3 @@ function isListPrefix(prefix: readonly unknown[], list: readonly unknown[]): boo
 function isSafeVaultPath(path: string): boolean {
   return path.split('/').every((part) => part.length > 0 && part !== '.' && part !== '..' && !/[<>:"\\|?*\p{Control}]|[. ]$/u.test(part));
 }
-
-/* eslint-enable n/no-unsupported-features/node-builtins -- These are Obsidian renderer Web APIs, not Node builtins. */

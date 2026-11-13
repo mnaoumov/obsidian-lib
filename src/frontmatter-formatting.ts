@@ -271,6 +271,7 @@ function checkHasAnchorOrAlias(contents: ParsedNode): boolean {
   let hasAnchorOrAlias = false;
 
   visit(contents, {
+    // eslint-disable-next-line typescript-dev-toolkit/no-undefined-return-type -- Mirrors the `yaml` visitor, where `undefined` means continue.
     Node(_key: unknown, node: Node): symbol | undefined {
       if (!isAlias(node) && node.anchor === undefined) {
         return undefined;

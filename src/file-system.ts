@@ -827,7 +827,7 @@ export function getMarkdownFiles(params: GetMarkdownFilesParams): TFile[] {
       }
     });
   } else {
-    markdownFiles = folder.children.filter((file) => isMarkdownFile(file)) as TFile[];
+    markdownFiles = folder.children.filter((file): file is TFile => isFile(file) && isMarkdownFile(file));
   }
 
   markdownFiles = markdownFiles.sort((a, b) => a.path.localeCompare(b.path));

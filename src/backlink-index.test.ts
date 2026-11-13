@@ -297,6 +297,13 @@ describe('getIndexedBacklinksForFile', () => {
     expect(getIndexedBacklinksForFile(vault.app, target).keys()).toEqual(['holder.md']);
   });
 
+  it('reads no references from a candidate whose metadata is not stored yet', () => {
+    const vault = currentVault;
+    vault.setNote('target.md', undefined, 'pending-target-hash');
+    const target = getTestFile('target.md');
+    expect(getIndexedBacklinksForFile(vault.app, target).keys()).toEqual([]);
+  });
+
   it('reuses the realm index across queries', () => {
     const vault = currentVault;
     vault.setNote('target.md', {});

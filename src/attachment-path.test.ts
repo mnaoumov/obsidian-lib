@@ -569,9 +569,9 @@ describe('getCheckIsAttachmentUnitFolderFunction', () => {
     expect(isAttachmentUnitFolder).toHaveBeenCalledWith({ folderPath: 'notes/page_files' });
   });
 
-  it('should answer undefined when nobody published a designation', () => {
+  it('should answer null when nobody published a designation', () => {
     // Absent is the same "nobody owns this policy" answer that sends the path lookup to Obsidian's own resolution.
-    expect(getCheckIsAttachmentUnitFolderFunction(createApp('Files'))).toBeUndefined();
+    expect(getCheckIsAttachmentUnitFolderFunction(createApp('Files'))).toBeNull();
   });
 });
 

@@ -494,7 +494,6 @@ describe('resource-lock', () => {
           for (const staleFolderPath of [root, temporaryFolderPath]) {
             const staleFolder = app.vault.getFolderByPath(staleFolderPath);
             if (staleFolder) {
-              // eslint-disable-next-line obsidianmd/prefer-file-manager-trash-file -- Permanent cleanup in tests.
               await app.vault.delete(staleFolder, true);
             }
           }
@@ -538,12 +537,10 @@ describe('resource-lock', () => {
 
           const temporaryFolder = app.vault.getFolderByPath(temporaryFolderPath);
           if (temporaryFolder) {
-            // eslint-disable-next-line obsidianmd/prefer-file-manager-trash-file -- Permanent cleanup in tests.
             await app.vault.delete(temporaryFolder, true);
           }
           const rootFolder = app.vault.getFolderByPath(root);
           if (rootFolder) {
-            // eslint-disable-next-line obsidianmd/prefer-file-manager-trash-file -- Permanent cleanup in tests.
             await app.vault.delete(rootFolder, true);
           }
 
@@ -689,7 +686,6 @@ describe('resource-lock', () => {
 
           const renamed = app.vault.getAbstractFileByPath(renamedPath);
           if (renamed) {
-            // eslint-disable-next-line obsidianmd/prefer-file-manager-trash-file -- Permanent cleanup in tests.
             await app.vault.delete(renamed, true);
           }
 
@@ -744,7 +740,6 @@ describe('resource-lock', () => {
             lock.dispose();
           }
 
-          // eslint-disable-next-line obsidianmd/prefer-file-manager-trash-file -- Permanent cleanup in tests.
           await app.vault.delete(file, true);
 
           return {

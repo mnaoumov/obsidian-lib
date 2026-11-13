@@ -89,7 +89,6 @@ describe('IncrementalFileIndexComponent', () => {
     vi.spyOn(app.vault, 'cachedRead').mockReturnValueOnce(pending.promise);
     const loading = component.loadWithPromises();
     await settle();
-    // eslint-disable-next-line obsidianmd/prefer-file-manager-trash-file -- Exercise the vault delete event.
     await app.vault.delete(b);
     pending.resolve('alpha');
     await loading;

@@ -244,6 +244,7 @@ export interface BacklinksLike {
    * @param key - The path of the backlink-holding note.
    * @returns The links, or a nullish value.
    */
+  // eslint-disable-next-line typescript-dev-toolkit/no-undefined-return-type -- Mirrors `Map.get`, which a caller passes as is.
   readonly get: (key: string) => null | readonly Reference[] | undefined;
 
   /**
@@ -1353,7 +1354,7 @@ export interface UpdateReferencesInFileParams extends ProcessOptions {
   readonly linkStyle?: LinkStyle;
 
   /**
-   * Decides the style of one link, overriding {@link linkStyle} for it. Returning `undefined` keeps
+   * Decides the style of one link, overriding {@link linkStyle} for it. Returning `null` keeps
    * {@link linkStyle}.
    *
    * Use it when one style for the whole file is wrong for some of its links. A caller forcing
@@ -1362,7 +1363,7 @@ export interface UpdateReferencesInFileParams extends ProcessOptions {
    *
    * @default `undefined`
    */
-  readonly linkStyleProvider?: (reference: Reference) => LinkStyle | undefined;
+  readonly linkStyleProvider?: (reference: Reference) => LinkStyle | null;
 
   /**
    * A file to update the links in.
@@ -1820,7 +1821,7 @@ interface UpdateReferencesInContentParams {
   readonly linkStyle?: LinkStyle;
 
   /**
-   * Decides the style of one link, overriding {@link linkStyle} for it. Returning `undefined` keeps
+   * Decides the style of one link, overriding {@link linkStyle} for it. Returning `null` keeps
    * {@link linkStyle}.
    *
    * Use it when one style for the whole content is wrong for some of its links. A caller forcing
@@ -1829,7 +1830,7 @@ interface UpdateReferencesInContentParams {
    *
    * @default `undefined`
    */
-  readonly linkStyleProvider?: (reference: Reference) => LinkStyle | undefined;
+  readonly linkStyleProvider?: (reference: Reference) => LinkStyle | null;
 
   /**
    * A new source path or file.
@@ -2181,7 +2182,7 @@ export async function editReferences(params: EditReferencesParams): Promise<void
           cache,
           offsetRange,
           referenceConverter,
-          referenceDefinitionConversion: toReferenceDefinitionConversion(content, referenceDefinitionConverter),
+          referenceDefinitionConversion: toReferenceDefinitionConversion(content, referenceDefinitionConverter) ?? undefined,
           shouldIncludeExternalLinks: shouldEditExternalLinks,
           shouldIncludeFrontmatterExternalLinks: shouldEditFrontmatterExternalLinks,
           shouldIncludeMultiValueFrontmatterExternalLinks: shouldEditMultiValueFrontmatterExternalLinks,
@@ -2236,7 +2237,7 @@ export async function editReferencesInContent(params: EditReferencesInContentPar
         cache,
         offsetRange,
         referenceConverter,
-        referenceDefinitionConversion: toReferenceDefinitionConversion(content, referenceDefinitionConverter),
+        referenceDefinitionConversion: toReferenceDefinitionConversion(content, referenceDefinitionConverter) ?? undefined,
         shouldIncludeExternalLinks: shouldEditExternalLinks,
         shouldIncludeFrontmatterExternalLinks: shouldEditFrontmatterExternalLinks,
         shouldIncludeMultiValueFrontmatterExternalLinks: shouldEditMultiValueFrontmatterExternalLinks,
@@ -2630,7 +2631,7 @@ export function updateLink(params: UpdateLinkParams): string {
       canAddAlias: isWikilink && !subpath && !hasEmbedSyntax(originalLinkText),
       newTargetFile,
       oldTargetPath
-    });
+    }) ?? undefined;
   }
 
   const newLink = generateMarkdownLink(normalizeOptionalProperties<GenerateMarkdownLinkParams>({
@@ -3120,7 +3121,7 @@ function normalizeFileUrlLink(reference: Reference, shouldUseAngleBrackets: bool
  * @param params - The current alias, and the target before and after.
  * @returns The alias to use.
  */
-function refreshFileNameAlias(params: RefreshFileNameAliasParams): string | undefined {
+function refreshFileNameAlias(params: RefreshFileNameAliasParams): null | string {
   const { alias, app, canAddAlias, newTargetFile, oldTargetPath } = params;
   const oldBaseName = basename(oldTargetPath, extname(oldTargetPath));
   const folderNoteConfig = resolveFolderNoteConfig({ app });
@@ -3146,7 +3147,7 @@ function refreshFileNameAlias(params: RefreshFileNameAliasParams): string | unde
 
   if (alias === undefined) {
     // An alias-less wikilink to `charlie/!` would display `!`, so it takes the folder's name as its alias.
-    return isFolderNote && canAddAlias ? displayName : undefined;
+    return isFolderNote && canAddAlias ? displayName : null;
   }
 
   // An embed alias may end in a size (`photo|532`, `photo.png|532x400`): refresh the name before it and keep the size.
@@ -3220,10 +3221,10 @@ function shouldUseWikilinkStyle(params: ShouldUseWikilinkStyleParams): boolean {
 function toReferenceDefinitionConversion(
   content: string,
   referenceDefinitionConverter: ((definition: ReferenceLinkCache) => Promisable<MaybeReturn<null | string>>) | undefined
-): ReferenceDefinitionConversion | undefined {
+): null | ReferenceDefinitionConversion {
   return referenceDefinitionConverter
     ? { content, converter: referenceDefinitionConverter }
-    : undefined;
+    : null;
 }
 
 function validateOffsetRange(offsetRange: OffsetRange): void {

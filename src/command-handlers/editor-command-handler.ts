@@ -130,28 +130,28 @@ export abstract class EditorCommandHandler extends CommandHandler {
   /**
    * Gets the item name to use in the editor menu.
    *
-   * @returns The item name, or `undefined` to use the command name.
+   * @returns The item name, or `null` to use the command name.
    */
-  protected get editorMenuItemName(): string | undefined {
-    return this._editorMenuItemName;
+  protected get editorMenuItemName(): null | string {
+    return this._editorMenuItemName ?? null;
   }
 
   /**
    * Gets the section to use in the editor menu.
    *
-   * @returns The section name, or `undefined` to use the plugin name.
+   * @returns The section name, or `null` to use the plugin name.
    */
-  protected get editorMenuSection(): string | undefined {
-    return this._editorMenuSection;
+  protected get editorMenuSection(): null | string {
+    return this._editorMenuSection ?? null;
   }
 
   /**
    * Gets the icon to use in the editor menu submenu.
    *
-   * @returns The icon, or `undefined` for no icon.
+   * @returns The icon, or `null` for no icon.
    */
-  protected get editorMenuSubmenuIcon(): IconName | undefined {
-    return this._editorMenuSubmenuIcon;
+  protected get editorMenuSubmenuIcon(): IconName | null {
+    return this._editorMenuSubmenuIcon ?? null;
   }
 
   private readonly _editorMenuItemName?: string | undefined;
@@ -243,8 +243,8 @@ export abstract class EditorCommandHandler extends CommandHandler {
    *
    * @returns Whether to add to a submenu.
    */
-  protected shouldAddCommandToSubmenu(): boolean | undefined {
-    return this._shouldAddCommandToSubmenu;
+  protected shouldAddCommandToSubmenu(): boolean {
+    return this._shouldAddCommandToSubmenu ?? false;
   }
 
   /**

@@ -1,4 +1,3 @@
-/* eslint-disable n/no-unsupported-features/node-builtins -- These are Obsidian renderer Web APIs, not Node builtins. */
 /**
  * @file
  * Append-only, anchored discovery of history-preserving transport transitions.
@@ -209,8 +208,6 @@ export class DataStoreLocations {
     }
   }
 }
-
-/* eslint-enable n/no-unsupported-features/node-builtins -- These are Obsidian renderer Web APIs, not Node builtins. */
 
 function identity(location: DataStoreLocation): string {
   return `${location.folder}:${location.format ?? 'markdown'}`;

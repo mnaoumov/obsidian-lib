@@ -1,4 +1,3 @@
-/* eslint-disable n/no-unsupported-features/node-builtins -- These are Obsidian renderer Web APIs, not Node builtins. */
 /**
  * @file
  *
@@ -659,5 +658,3 @@ function isVector(value: unknown): value is VersionVector {
 function otherDevices(vector: VersionVector, device: string): VersionVector {
   return vector.filter(([entryDevice]) => entryDevice !== device).sort(([first], [second]) => first.localeCompare(second));
 }
-
-/* eslint-enable n/no-unsupported-features/node-builtins -- These are Obsidian renderer Web APIs, not Node builtins. */

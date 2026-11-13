@@ -3624,12 +3624,12 @@ describe('app-dependent functions', () => {
         newSourcePathOrFile: 'folder/other.md'
       };
 
-      const linkStyleProvider = vi.fn((): LinkStyle | undefined => LinkStyle.Wikilink);
+      const linkStyleProvider = vi.fn((): LinkStyle | null => LinkStyle.Wikilink);
       await updateReferencesInContent({ ...params, linkStyleProvider });
       expect(linkStyleProvider).toHaveBeenCalledWith(expect.objectContaining({ original: '[[target]]' }));
       expect(ensureNonNullable(changes).map((change) => change.newContent)).toEqual(['[[target]]']);
 
-      linkStyleProvider.mockReturnValue(undefined);
+      linkStyleProvider.mockReturnValue(null);
       await updateReferencesInContent({ ...params, linkStyleProvider });
       expect(ensureNonNullable(changes).map((change) => change.newContent)).toEqual(['[target](target.md)']);
     });
@@ -3846,12 +3846,12 @@ describe('app-dependent functions', () => {
         resourceLockComponent
       };
 
-      const linkStyleProvider = vi.fn((): LinkStyle | undefined => LinkStyle.Wikilink);
+      const linkStyleProvider = vi.fn((): LinkStyle | null => LinkStyle.Wikilink);
       await updateReferencesInFile({ ...params, linkStyleProvider });
       expect(linkStyleProvider).toHaveBeenCalledWith(expect.objectContaining({ original: link.original }));
       expect(ensureNonNullable(changes).map((change) => change.newContent)).toEqual(['[[target]]']);
 
-      linkStyleProvider.mockReturnValue(undefined);
+      linkStyleProvider.mockReturnValue(null);
       await updateReferencesInFile({ ...params, linkStyleProvider });
       expect(ensureNonNullable(changes).map((change) => change.newContent)).toEqual(['[target](target.md)']);
     });

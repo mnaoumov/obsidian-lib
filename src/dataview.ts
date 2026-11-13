@@ -125,6 +125,7 @@ interface ContainerInfo {
  * @returns A {@link Promise} that resolves when the cache is reloaded.
  */
 export async function reloadCurrentFileCache(dv: DataviewInlineApi): Promise<void> {
+  // eslint-disable-next-line unicorn/no-optional-chaining-on-undeclared-variable -- `activeWindow` is a global Obsidian always declares; only `DataviewAPI` may be missing.
   await activeWindow.DataviewAPI?.index.reload(getFile({
     app: dv.app,
     pathOrFile: dv.current().file.path

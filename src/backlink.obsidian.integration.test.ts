@@ -44,7 +44,6 @@ describe('backlinks via metadata cache', () => {
           for (const path of ['backlink-target.md', 'backlink-linker-a.md', 'backlink-linker-b.md']) {
             const f = app.vault.getAbstractFileByPath(path);
             if (f) {
-              // eslint-disable-next-line obsidianmd/prefer-file-manager-trash-file -- Permanent cleanup in tests.
               await app.vault.delete(f);
             }
           }
@@ -73,7 +72,6 @@ describe('backlinks via metadata cache', () => {
         } finally {
           const f = app.vault.getAbstractFileByPath('backlink-isolated.md');
           if (f) {
-            // eslint-disable-next-line obsidianmd/prefer-file-manager-trash-file -- Permanent cleanup in tests.
             await app.vault.delete(f);
           }
         }
@@ -101,7 +99,6 @@ describe('backlinks via metadata cache', () => {
         } finally {
           const f = app.vault.getAbstractFileByPath('backlink-multi-linker.md');
           if (f) {
-            // eslint-disable-next-line obsidianmd/prefer-file-manager-trash-file -- Permanent cleanup in tests.
             await app.vault.delete(f);
           }
         }

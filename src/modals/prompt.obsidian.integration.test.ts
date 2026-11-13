@@ -123,16 +123,16 @@ describe('prompt', () => {
           return [...document.querySelectorAll<HTMLButtonElement>('.prompt-modal .modal-content button')];
         }
 
-        function getCancelButton(): HTMLButtonElement | undefined {
-          return getButtons()[1];
+        function getCancelButton(): HTMLButtonElement | null {
+          return getButtons()[1] ?? null;
         }
 
         function getInputEl(): HTMLInputElement | null {
           return document.querySelector<HTMLInputElement>('.prompt-modal .modal-content input');
         }
 
-        function getOkButton(): HTMLButtonElement | undefined {
-          return getButtons()[0];
+        function getOkButton(): HTMLButtonElement | null {
+          return getButtons()[0] ?? null;
         }
       }
     });
@@ -162,8 +162,8 @@ describe('prompt', () => {
           app.vault.setConfig('spellcheck', originalSpellcheck);
         }
 
-        function getCancelButton(): HTMLButtonElement | undefined {
-          return [...document.querySelectorAll<HTMLButtonElement>('.prompt-modal .modal-content button')][1];
+        function getCancelButton(): HTMLButtonElement | null {
+          return [...document.querySelectorAll<HTMLButtonElement>('.prompt-modal .modal-content button')][1] ?? null;
         }
 
         function getInputEl(): HTMLInputElement | null {
@@ -218,8 +218,8 @@ describe('prompt', () => {
           app.vault.setConfig('spellcheck', originalSpellcheck);
         }
 
-        function getCancelButton(): HTMLButtonElement | undefined {
-          return [...document.querySelectorAll<HTMLButtonElement>('.prompt-modal .modal-content button')][1];
+        function getCancelButton(): HTMLButtonElement | null {
+          return [...document.querySelectorAll<HTMLButtonElement>('.prompt-modal .modal-content button')][1] ?? null;
         }
 
         function getInputEl(): HTMLInputElement | null {
@@ -324,8 +324,8 @@ describe('prompt', () => {
           return [...document.querySelectorAll<HTMLButtonElement>('.prompt-modal .modal-content button')];
         }
 
-        function getCancelButton(): HTMLButtonElement | undefined {
-          return getButtons()[1];
+        function getCancelButton(): HTMLButtonElement | null {
+          return getButtons()[1] ?? null;
         }
 
         function getErrorColor(): string {
@@ -426,8 +426,8 @@ describe('prompt', () => {
           getCancelButton()?.click();
         }
 
-        function getCancelButton(): HTMLButtonElement | undefined {
-          return [...document.querySelectorAll<HTMLButtonElement>('.prompt-modal .modal-content button')][1];
+        function getCancelButton(): HTMLButtonElement | null {
+          return [...document.querySelectorAll<HTMLButtonElement>('.prompt-modal .modal-content button')][1] ?? null;
         }
 
         function getCheckboxEl(): HTMLInputElement | null {

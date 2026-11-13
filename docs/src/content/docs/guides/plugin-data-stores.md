@@ -157,7 +157,7 @@ Use `transportRoots` or `containsTransportPath(path)` to filter raw/lifecycle ev
 
 Cache seeds are optional performance hints, never authoritative state. Expose a per-store sharing setting and pass it to `DataStoreSeeds`. Store records with their file path, size, mtime, content hash and consumer-defined JSON value. Publish on idle or another infrequent schedule; no journal of derived changes is required.
 
-`DataStoreSeeds.publish` writes immutable bounded chunks and replaces only that device's earlier seed. `readLatest` returns the newest complete, recognized seed, or `undefined` when none has arrived. Include the consumer schema version in the transport's store id. An unrecognized schema requires a fresh build; a partial delivery should first be given time to finish syncing.
+`DataStoreSeeds.publish` writes immutable bounded chunks and replaces only that device's earlier seed. `readLatest` returns the newest complete, recognized seed, or `null` when none has arrived. Include the consumer schema version in the transport's store id. An unrecognized schema requires a fresh build; a partial delivery should first be given time to finish syncing.
 
 ```typescript
 import { validateDataStoreSeed } from '@mnaoumov/obsidian-lib/data-stores/data-store-seeds';
