@@ -265,7 +265,7 @@ describe('VaultTransaction', () => {
             wasRolledBackUnderLock
           };
         } finally {
-          lock[Symbol.dispose]();
+          lock.dispose();
           if (await app.vault.adapter.exists(folderPath)) {
             await app.vault.adapter.rmdir(folderPath, true);
           }

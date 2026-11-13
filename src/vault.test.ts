@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 
+import type { DisposableEx } from '@mnaoumov/typescript-lib/disposable';
 import type { GenericObject } from '@mnaoumov/typescript-lib/type-guards';
 import type {
   App as AppOriginal,
@@ -1029,7 +1030,7 @@ describe('createTempFolder', () => {
 
 describe('processFile', () => {
   const defaultResourceLockComponent = strictProxy<ResourceLockComponent>({
-    lockForPath: () => ({ [Symbol.dispose]: noop })
+    lockForPath: () => ({ dispose: noop, [Symbol.dispose]: noop })
   });
 
   function setupRetryToInvokeOperationFunction(): void {
@@ -1176,7 +1177,7 @@ describe('processFile', () => {
     mockedRetryWithTimeoutNotice.mockResolvedValue(undefined);
 
     const dispose = vi.fn();
-    const lockDisposable: Disposable = { [Symbol.dispose]: dispose };
+    const lockDisposable: DisposableEx = { dispose, [Symbol.dispose]: dispose };
     const lockForPath = vi.fn(() => lockDisposable);
     const resourceLockComponent = strictProxy<ResourceLockComponent>({ lockForPath });
 
@@ -1190,7 +1191,7 @@ describe('processFile', () => {
     mockedRetryWithTimeoutNotice.mockRejectedValue(new Error('Timeout'));
 
     const dispose = vi.fn();
-    const lockDisposable: Disposable = { [Symbol.dispose]: dispose };
+    const lockDisposable: DisposableEx = { dispose, [Symbol.dispose]: dispose };
     const resourceLockComponent = strictProxy<ResourceLockComponent>({ lockForPath: vi.fn(() => lockDisposable) });
 
     await expect(processFile({ app, newContentProvider: 'new content', pathOrFile: 'note.md', pluginNoticeComponent: null, resourceLockComponent }))

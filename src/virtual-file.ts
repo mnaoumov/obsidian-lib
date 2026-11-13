@@ -3,6 +3,7 @@
  * Disposable, read-only files backed by memory instead of the vault adapter.
  */
 
+import type { DisposableEx } from '@mnaoumov/typescript-lib/disposable';
 import type {
   App,
   TFile
@@ -52,7 +53,7 @@ export interface RegisterVirtualFileParams {
 /**
 A memory file and its lifetime. Dispose it before its owning plugin unloads.
  */
-export interface VirtualFile extends Disposable {
+export interface VirtualFile extends DisposableEx {
   /**
   The immutable text; accessing it requires no asynchronous read.
    */
@@ -256,7 +257,7 @@ function installVirtualFile(params: InstallVirtualFileParams): VirtualFile {
       app.metadataCache.uniqueFileLookup.remove(file.name.toLowerCase(), file);
       if (app.vault.fileMap[path] === file) {
         Reflect.deleteProperty(app.vault.fileMap, path);
-        metadata[Symbol.dispose]();
+        metadata.dispose();
       }
       patches.unload();
       // eslint-disable-next-line n/no-unsupported-features/node-builtins -- The URL belongs to the browser realm that created it.
@@ -267,11 +268,14 @@ function installVirtualFile(params: InstallVirtualFileParams): VirtualFile {
   });
   return {
     content,
+    dispose: disposeRegistration,
     file,
-    [Symbol.dispose]: (): void => {
-      disposable[Symbol.dispose]();
-    }
+    [Symbol.dispose]: disposeRegistration
   };
+
+  function disposeRegistration(): void {
+    disposable.dispose();
+  }
 
   function isMatching(target: string): boolean {
     return normalizePath(target).toLowerCase() === path.toLowerCase();

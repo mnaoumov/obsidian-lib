@@ -213,6 +213,7 @@ beforeEach(() => {
   // `mkdtempSync` appends a random suffix to its prefix; emulate a deterministic unique parent folder.
   mockMkdtempSync.mockImplementation((prefix: string) => `${prefix}abc123`);
   mockShowNoticeAfterDelay.mockReturnValue({
+    dispose: vi.fn(),
     setContent: mockSetContent,
     [Symbol.dispose]: vi.fn()
   });

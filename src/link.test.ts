@@ -111,7 +111,7 @@ vi.mock('./file-change.ts', async (importOriginal) => {
 });
 
 const resourceLockComponent = strictProxy<ResourceLockComponent>({
-  lockForPath: () => ({ [Symbol.dispose]: noop })
+  lockForPath: () => ({ dispose: noop, [Symbol.dispose]: noop })
 });
 
 describe('splitSubpath', () => {

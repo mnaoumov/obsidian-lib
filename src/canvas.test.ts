@@ -189,7 +189,7 @@ describe('getCanvasReferences', () => {
 
 describe('getCanvasReferences rewrite round-trip via applyFileChanges', () => {
   const resourceLockComponent = strictProxy<ResourceLockComponent>({
-    lockForPath: () => ({ [Symbol.dispose]: noop })
+    lockForPath: () => ({ dispose: noop, [Symbol.dispose]: noop })
   });
 
   it('should rewrite both file-node and text-node references', async () => {
@@ -251,7 +251,7 @@ describe('getCanvasReferences rewrite round-trip via applyFileChanges', () => {
 
 describe('editReferences on a canvas holder', () => {
   const resourceLockComponent = strictProxy<ResourceLockComponent>({
-    lockForPath: () => ({ [Symbol.dispose]: noop })
+    lockForPath: () => ({ dispose: noop, [Symbol.dispose]: noop })
   });
 
   it('should call the converter for every file-node and text-node link and rewrite the canvas', async () => {

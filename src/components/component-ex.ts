@@ -8,7 +8,6 @@ import type { Promisable } from 'type-fest';
 
 import { createAggregateError } from '@mnaoumov/typescript-lib/aggregate-error';
 import { snapshot } from '@mnaoumov/typescript-lib/array';
-import { dispose } from '@mnaoumov/typescript-lib/disposable';
 import {
   ErrorWrapper,
   SilentError
@@ -18,6 +17,11 @@ import {
   noopAsyncSingletonPromise
 } from '@mnaoumov/typescript-lib/function';
 import { Component } from 'obsidian';
+
+import {
+  registerAsyncDisposable,
+  registerDisposable
+} from '../disposable.ts';
 
 /**
  * Extended Component
@@ -151,6 +155,20 @@ export class ComponentEx extends Component implements Disposable {
   }
 
   /**
+   * Registers an {@link AsyncDisposable} so its disposal starts when this component unloads, and returns it unchanged.
+   *
+   * Obsidian's unload is synchronous, so nothing awaits the disposal: it runs detached, and a failure is reported, never
+   * rethrown. See the free function {@link registerAsyncDisposable}, which this delegates to.
+   *
+   * @typeParam TAsyncDisposable - The type of the async disposable.
+   * @param asyncDisposable - The async disposable to register.
+   * @returns The same async disposable, for chaining.
+   */
+  public registerAsyncDisposable<TAsyncDisposable extends AsyncDisposable>(asyncDisposable: TAsyncDisposable): TAsyncDisposable {
+    return registerAsyncDisposable(this, asyncDisposable);
+  }
+
+  /**
    * Registers a {@link Disposable} so it is disposed when this component unloads, and returns it unchanged.
    *
    * The recurring "tie a disposable to the component's lifecycle, then keep using it" idiom: the disposable is
@@ -162,10 +180,7 @@ export class ComponentEx extends Component implements Disposable {
    * @returns The same disposable, for chaining.
    */
   public registerDisposable<TDisposable extends Disposable>(disposable: TDisposable): TDisposable {
-    this.register(() => {
-      dispose(disposable);
-    });
-    return disposable;
+    return registerDisposable(this, disposable);
   }
 
   /**

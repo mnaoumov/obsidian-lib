@@ -95,7 +95,7 @@ describe('CommandHandlerComponent menu-event teardown', () => {
           app.workspace.trigger('file-menu', new obsidianModule.Menu(), file, 'integration-test');
           const countAfterFirstTrigger = fileMenuCallCount;
 
-          disposable[Symbol.dispose]();
+          disposable.dispose();
 
           // After dispose the file-menu registration is gone, so a further trigger must not run the handler.
           app.workspace.trigger('file-menu', new obsidianModule.Menu(), file, 'integration-test');

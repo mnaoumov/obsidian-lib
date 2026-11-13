@@ -6,6 +6,7 @@ import type {
   TFile as TFileOriginal
 } from 'obsidian';
 
+import { dispose } from '@mnaoumov/typescript-lib/disposable';
 import { castTo } from '@mnaoumov/typescript-lib/object-utils';
 import { CustomArrayDictImpl } from '@obsidian-typings/obsidian-public-latest/implementations';
 import {
@@ -62,7 +63,7 @@ beforeEach(() => {
 
 afterEach(() => {
   for (const disposable of disposables.splice(0).reverse()) {
-    disposable[Symbol.dispose]();
+    dispose(disposable);
   }
   vi.restoreAllMocks();
 });
@@ -88,8 +89,8 @@ describe('registerVirtualFile', () => {
     expect(app.vault.getResourcePath(file)).toBe('blob:virtual');
     expect(app.vault.adapter.getResourcePath(file.path)).toBe('blob:virtual');
     expect(app.metadataCache.fileCache[file.path]).toBeDefined();
-    registration[Symbol.dispose]();
-    registration[Symbol.dispose]();
+    registration.dispose();
+    registration.dispose();
     expect(app.vault.getFileByPath(file.path)).toBeNull();
     expect(app.metadataCache.fileCache[file.path]).toBeUndefined();
     expect(URL.revokeObjectURL).toHaveBeenCalledExactlyOnceWith('blob:virtual');
@@ -133,7 +134,7 @@ describe('registerVirtualFile', () => {
     expect(parseMetadata).not.toHaveBeenCalled();
     const replacement = castTo<TFileOriginal>({ path: registration.file.path });
     app.vault.fileMap[registration.file.path] = replacement;
-    registration[Symbol.dispose]();
+    registration.dispose();
     expect(app.vault.fileMap[replacement.path]).toBe(replacement);
   });
 

@@ -36,7 +36,7 @@ describe('registerVirtualFile', () => {
           return { realContent: leaf.view.getViewData(), virtualContent };
         } finally {
           leaf.detach();
-          registration[Symbol.dispose]();
+          registration.dispose();
           await app.fileManager.trashFile(real);
         }
       }
@@ -90,10 +90,10 @@ describe('registerVirtualFile', () => {
             resourceContent: await response.text(),
             unchanged: isUnchanged
           };
-          registration[Symbol.dispose]();
+          registration.dispose();
           return { ...observations, disposed: !app.vault.getAbstractFileByPath(path) && !app.metadataCache.getFirstLinkpathDest('virtual-file-integration', '') };
         } finally {
-          registration[Symbol.dispose]();
+          registration.dispose();
         }
       }
     });

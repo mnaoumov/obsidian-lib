@@ -4,6 +4,7 @@
  * Component that manages displaying notices to the user.
  */
 
+import type { DisposableEx } from '@mnaoumov/typescript-lib/disposable';
 import type { ValueProvider } from '@mnaoumov/typescript-lib/value-provider';
 import type { App } from 'obsidian';
 import type { Promisable } from 'type-fest';
@@ -84,10 +85,10 @@ export interface PluginNoticeCloseClickEvent {
 
 /**
  * A handle to a delayed notice created by {@link PluginNoticeComponent.showNoticeAfterDelay}. It is a
- * {@link Disposable} (so it can be used with `using`) that also lets the content be updated while the
+ * {@link DisposableEx} (so it can be used with `using`) that also lets the content be updated while the
  * notice is shown.
  */
-export interface PluginNoticeComponentDelayedNotice extends Disposable {
+export interface PluginNoticeComponentDelayedNotice extends DisposableEx {
   /**
    * Replaces this handle's message, re-applying the plugin-name prefix, the interactive-click guard, and
    * the Cancel button. Useful for reporting progress. If the delay has not elapsed yet, the new content
@@ -459,7 +460,7 @@ export class PluginNoticeComponent extends ComponentEx {
   /**
    * Shows a notice describing a long-running operation, but only once the operation has run for longer
    * than {@link PluginNoticeComponentShowNoticeAfterDelayParams.delayInMilliseconds} — so operations
-   * that finish sooner never flash a notice. The notice stays until the returned {@link Disposable} is
+   * that finish sooner never flash a notice. The notice stays until the returned {@link DisposableEx} is
    * disposed (which also cancels the pending timer if it has not fired yet), so it can be used with
    * `using`. When an {@link PluginNoticeComponentShowNoticeAfterDelayParams.abortController} is given, a
    * Cancel button that aborts it is appended (and, being interactive, does not dismiss the notice).
@@ -531,7 +532,27 @@ export class PluginNoticeComponent extends ComponentEx {
 
     this.pendingTimerCancellations.add(cancelPendingTimer);
 
+    const disposeNotice = (): void => {
+      isDisposed = true;
+      cancelPendingTimer();
+      if (!shown) {
+        return;
+      }
+      // A notice this handle opened goes away with it; a notice it merely joined belongs to whoever
+      // opened it, so only this message is taken out of it.
+      if (shown.isNoticeOwned) {
+        shown.notice.hide();
+        this.standaloneNotices.delete(shown.notice);
+        if (this.notice === shown.notice) {
+          this.notice = null;
+        }
+      } else {
+        shown.contentEl.remove();
+      }
+    };
+
     return {
+      dispose: disposeNotice,
       setContent: (content: DocumentFragment | string): void => {
         currentContent = content;
         if (!shown) {
@@ -547,24 +568,7 @@ export class PluginNoticeComponent extends ComponentEx {
         shown.contentEl.replaceWith(rebuilt.fragment);
         shown = { ...shown, contentEl: rebuilt.contentEl };
       },
-      [Symbol.dispose]: (): void => {
-        isDisposed = true;
-        cancelPendingTimer();
-        if (!shown) {
-          return;
-        }
-        // A notice this handle opened goes away with it; a notice it merely joined belongs to whoever
-        // opened it, so only this message is taken out of it.
-        if (shown.isNoticeOwned) {
-          shown.notice.hide();
-          this.standaloneNotices.delete(shown.notice);
-          if (this.notice === shown.notice) {
-            this.notice = null;
-          }
-        } else {
-          shown.contentEl.remove();
-        }
-      }
+      [Symbol.dispose]: disposeNotice
     };
   }
 
