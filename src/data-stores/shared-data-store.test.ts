@@ -374,7 +374,8 @@ describe('SharedDataStore', () => {
 
   it('holds acknowledgements at gaps and ignores a segment copied partway', async () => {
     const source = new Map<string, string>();
-    const writer = await openDevice(source);
+    // A file limit below two operations seals each segment, so the second write opens a second file.
+    const writer = await openDevice(source, { maxFileBytes: 256 });
     await writer.set('first', 1);
     await writer.set('second', 2);
     const first = [...source].find(([path]) => path.endsWith('/log-1.md'));
@@ -383,7 +384,7 @@ describe('SharedDataStore', () => {
       throw new Error('Expected two log segments');
     }
     const delivered = new Map<string, string>([[first[0], first[1].slice(0, -4)], second]);
-    const reader = await openDevice(delivered);
+    const reader = await openDevice(delivered, { maxFileBytes: 256 });
     expect(reader.entries()).toEqual([]);
     delivered.set(...first);
     await reader.synchronize();

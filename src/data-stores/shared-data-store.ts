@@ -26,6 +26,17 @@ import { DataStoreTransport } from './data-store-transport.ts';
 
 const DEFAULT_ACTIVE_DEVICE_MILLISECONDS = 2_592_000_000;
 
+/**
+ * A segment this large is sealed: the next batch opens a new file, so each rewrite of the open one stays small.
+ */
+const OPEN_SEGMENT_BYTES = 65_536;
+
+/**
+ * An unchanged acknowledgement is still rewritten this often, so other devices keep seeing this one as active.
+ */
+const ACKNOWLEDGEMENT_REFRESH_MILLISECONDS = 86_400_000;
+const ACKNOWLEDGEMENT_REFRESHES_PER_RETIREMENT = 4;
+
 const OWNER_PATH_INDEX = -2;
 
 const VECTOR_ENTRY_LENGTH = 2;
@@ -110,6 +121,15 @@ interface Checkpoint {
   readonly vector: VersionVector;
 }
 
+interface JournalSegment extends JournalSegmentFile {
+  readonly added: DataStoreOperation[];
+}
+
+interface JournalSegmentFile {
+  readonly operations: readonly DataStoreOperation[];
+  readonly path: string;
+}
+
 type VersionVector = [string, number][];
 
 /**
@@ -133,6 +153,7 @@ export class SharedDataStore {
   private readonly knownTransportRoots = new Set<string>();
   private readonly localRecords = new Map<string, string>();
   private readonly locations: DataStoreLocations;
+  private readonly ownSegments = new Map<string, JournalSegmentFile[]>();
   private replica: DataStoreReplica;
   private time = 0;
 
@@ -278,7 +299,7 @@ export class SharedDataStore {
   }
 
   /**
-   * Publishes a batch of register writes, split into bounded immutable segments.
+   * Publishes a batch of register writes, appended to this device's open journal segment and split into bounded ones.
    * Segments are individually durable; a failed batch can have a published prefix and can be retried safely.
    *
    * @param entries - Register writes or set additions.
@@ -391,19 +412,23 @@ export class SharedDataStore {
       // Validate every single operation before publishing any prefix of a batch.
       for (const operation of operations) {
         if (!this.transport.fits([operation])) {
-          await this.transport.write(`${this.deviceRoot()}/log-${String(operation.sequence)}${this.transport.extension}`, [operation]);
+          await this.transport.write(this.segmentPath(operation.sequence), [operation]);
         }
       }
-      let batch: DataStoreOperation[] = [];
+      // Grow this device's open segment rather than create a file per batch; a sealed or missing one starts a new file.
+      let segment = this.openSegment();
       for (const operation of operations) {
-        if (!this.transport.fits([...batch, operation])) {
-          await this.publish(batch);
-          batch = [];
+        if (segment && this.transport.fits([...segment.operations, ...segment.added, operation])) {
+          segment.added.push(operation);
+          continue;
         }
-        batch.push(operation);
+        if (segment && segment.added.length > 0) {
+          await this.publish(segment);
+        }
+        segment = { added: [operation], operations: [], path: this.segmentPath(operation.sequence) };
       }
-      if (batch.length > 0) {
-        await this.publish(batch);
+      if (segment && segment.added.length > 0) {
+        await this.publish(segment);
       }
       await this.persist();
     });
@@ -503,6 +528,7 @@ export class SharedDataStore {
     }
     const operations: DataStoreOperation[] = [];
     const segments = files.filter((file) => /\/log-\d+\.(?:md|json)$/.test(file));
+    const ownSegments: [number, JournalSegmentFile][] = [];
     for (const path of segments) {
       const segment = await transport.read(path);
       if (segment === undefined) {
@@ -515,8 +541,14 @@ export class SharedDataStore {
       if (segment.some((operation) => operation.device !== owner)) {
         throw new Error('Journal segment has a different writer');
       }
+      const [firstOperation] = segment;
+      if (owner === this.device && firstOperation) {
+        ownSegments.push([firstOperation.sequence, { operations: segment, path }]);
+      }
       operations.push(...segment);
     }
+    ownSegments.sort(([first], [second]) => first - second);
+    this.ownSegments.set(transport.root, ownSegments.map(([, segment]) => segment));
     operations.sort((first, second) => first.device.localeCompare(second.device) || first.sequence - second.sequence);
     for (const operation of operations) {
       if (operation.sequence === (this.vector.get(operation.device) ?? 0) + 1) {
@@ -532,6 +564,25 @@ export class SharedDataStore {
     } else if (time === this.time) {
       this.counter = Math.max(this.counter, counter);
     }
+  }
+
+  /**
+   * Picks the segment the next operation may extend: this device's newest one in the active transport, when it ends
+   * exactly at the device's last sequence and is still small enough that rewriting it stays cheap.
+   *
+   * @returns The open segment, or `null` when the next operation starts a new file.
+   */
+  private openSegment(): JournalSegment | null {
+    const newest = this.ownSegments.get(this.transport.root)?.at(-1);
+    if (!newest) {
+      return null;
+    }
+    const last = newest.operations.at(-1);
+    return last?.sequence !== this.vector.get(this.device) || this.transport.measure(newest.operations) >= this.openSegmentBytes() ? null : { added: [], operations: newest.operations, path: newest.path };
+  }
+
+  private openSegmentBytes(): number {
+    return Math.min(OPEN_SEGMENT_BYTES, this.transport.maxFileBytes);
   }
 
   private async persist(): Promise<void> {
@@ -553,15 +604,44 @@ export class SharedDataStore {
       await this.params.local.set('shared-unpublished-v1', false);
       this.hasUnpublishedChanges = false;
     }
-    await this.transport.write(`${this.deviceRoot()}/have${this.transport.extension}`, { format: 1, time: Date.now(), vector: [...this.vector] });
+    await this.publishAcknowledgement();
   }
 
-  private async publish(operations: DataStoreOperation[]): Promise<void> {
-    const first = ensureNonNullable(operations[0]);
-    await this.transport.writeImmutable(`${this.deviceRoot()}/log-${String(first.sequence)}${this.transport.extension}`, operations);
-    for (const operation of operations) {
+  private async publish(segment: JournalSegment): Promise<void> {
+    await this.transport.writeAppendOnly(segment.path, [...segment.operations, ...segment.added]);
+    for (const operation of segment.added) {
       this.apply(operation);
     }
+  }
+
+  /**
+   * Rewrites `have` only when another device's acknowledged sequence moved, or the stored copy is due a refresh.
+   * Other devices read only their own entry from it, so this device's own sequence never forces a write.
+   *
+   * @returns A promise that resolves once the acknowledgement is current.
+   */
+  private async publishAcknowledgement(): Promise<void> {
+    const path = `${this.deviceRoot()}/have${this.transport.extension}`;
+    const acknowledged = JSON.stringify(otherDevices([...this.vector], this.device));
+    let stored: unknown;
+    try {
+      stored = await this.transport.read(path);
+    } catch {
+      stored = undefined;
+    }
+    const refreshMilliseconds = Math.min(ACKNOWLEDGEMENT_REFRESH_MILLISECONDS, this.activeDeviceMilliseconds / ACKNOWLEDGEMENT_REFRESHES_PER_RETIREMENT);
+    if (
+      isObject(stored) && stored['format'] === 1 && isVector(stored['vector']) && typeof stored['time'] === 'number'
+      && JSON.stringify(otherDevices(stored['vector'], this.device)) === acknowledged
+      && Date.now() - stored['time'] < refreshMilliseconds
+    ) {
+      return;
+    }
+    await this.transport.write(path, { format: 1, time: Date.now(), vector: [...this.vector] });
+  }
+
+  private segmentPath(firstSequence: number): string {
+    return `${this.deviceRoot()}/log-${String(firstSequence)}${this.transport.extension}`;
   }
 }
 
@@ -574,6 +654,10 @@ function isVector(value: unknown): value is VersionVector {
     Array.isArray(entry) && entry.length === VECTOR_ENTRY_LENGTH
     && typeof entry[0] === 'string' && /^[\w-]+$/.test(entry[0]) && Number.isSafeInteger(entry[1]) && Number(entry[1]) >= 0
   );
+}
+
+function otherDevices(vector: VersionVector, device: string): VersionVector {
+  return vector.filter(([entryDevice]) => entryDevice !== device).sort(([first], [second]) => first.localeCompare(second));
 }
 
 /* eslint-enable n/no-unsupported-features/node-builtins -- These are Obsidian renderer Web APIs, not Node builtins. */
