@@ -248,11 +248,119 @@ describe('SharedDataStore', () => {
     const reordered = new Map<string, string>();
     const control = new DataStoreTransport({ adapter: createAdapter(reordered), pluginId: 'test', storeId: 'shared' });
     const path = `${control.root}/locations-v1/later.json`;
-    await control.write(path, { format: 1, from: { folder: 'First' }, to: { folder: 'Last' } });
+    await control.write(path, { anchor: { folder: 'Plugin data' }, format: 1, from: { folder: 'First' }, to: { folder: 'Last' } });
     await expect(openDevice(reordered)).rejects.toThrow('incomplete');
     await control.write(`${control.root}/locations-v1/earlier.json`, { format: 1, from: { folder: 'Plugin data' }, to: { folder: 'First' } });
     const reader = await openDevice(reordered);
     expect(reader.transportRoots).toEqual(['Plugin data/test/shared', 'First/test/shared', 'Last/test/shared']);
+  });
+
+  describe('moved anchor folder', () => {
+    function moveFolder(files: Map<string, string>, from: string, to: string): void {
+      const moved = [...files].filter(([path]) => path.startsWith(`${from}/`));
+      for (const [path, text] of moved) {
+        files.delete(path);
+        files.set(`${to}${path.slice(from.length)}`, text);
+      }
+    }
+
+    it('opens after a format-only switch, and keeps relocating from the new folder', async () => {
+      const files = new Map<string, string>();
+      const store = await openDevice(files, { folder: 'Old' });
+      await store.set('key', 1);
+      await store.relocate({ folder: 'Old', format: 'json' });
+      await store.set('json', 2);
+      moveFolder(files, 'Old', 'New');
+      const moved = await openDevice(files, { folder: 'New' });
+      expect(moved.transportRoots).toEqual(['New/test/shared']);
+      expect(moved.entries()).toEqual([['json', 2], ['key', 1]]);
+      await moved.relocate({ folder: 'Elsewhere', format: 'json' });
+      await moved.set('after', 3);
+      const reopened = await openDevice(files, { folder: 'New' });
+      expect(reopened.transportRoots).toEqual(['New/test/shared', 'Elsewhere/test/shared']);
+      expect(reopened.entries()).toEqual([['after', 3], ['json', 2], ['key', 1]]);
+    });
+
+    it('keeps a relocation to an unrelated folder where it is', async () => {
+      const files = new Map<string, string>();
+      const store = await openDevice(files, { folder: 'Old' });
+      await store.set('key', 1);
+      await store.relocate({ folder: 'Unrelated' });
+      await store.set('unrelated', 2);
+      moveFolder(files, 'Old', 'New');
+      const moved = await openDevice(files, { folder: 'New' });
+      expect(moved.transportRoots).toEqual(['New/test/shared', 'Unrelated/test/shared']);
+      expect(moved.entries()).toEqual([['key', 1], ['unrelated', 2]]);
+    });
+
+    it('moves a relocation nested under the moved folder with it', async () => {
+      const files = new Map<string, string>();
+      const store = await openDevice(files, { folder: 'Old' });
+      await store.set('key', 1);
+      await store.relocate({ folder: 'Old/Nested', format: 'json' });
+      await store.set('nested', 2);
+      moveFolder(files, 'Old', 'Parent/New');
+      const moved = await openDevice(files, { folder: 'Parent/New' });
+      expect(moved.transportRoots).toEqual(['Parent/New/test/shared', 'Parent/New/Nested/test/shared']);
+      expect(moved.entries()).toEqual([['key', 1], ['nested', 2]]);
+    });
+
+    it('follows several successive moves through the anchor each transition names', async () => {
+      const files = new Map<string, string>();
+      const store = await openDevice(files, { folder: 'Old' });
+      await store.set('key', 1);
+      await store.relocate({ folder: 'Old', format: 'json' });
+      moveFolder(files, 'Old', 'Mid');
+      const mid = await openDevice(files, { folder: 'Mid' });
+      await mid.relocate({ folder: 'Mid/Nested', format: 'json' });
+      await mid.set('nested', 2);
+      moveFolder(files, 'Mid', 'New');
+      const moved = await openDevice(files, { folder: 'New' });
+      expect(moved.transportRoots).toEqual(['New/test/shared', 'New/Nested/test/shared']);
+      expect(moved.entries()).toEqual([['key', 1], ['nested', 2]]);
+    });
+
+    it('infers the former folder of transitions that name no anchor', async () => {
+      const files = new Map<string, string>();
+      const control = new DataStoreTransport({ adapter: createAdapter(files), folder: 'New', pluginId: 'test', storeId: 'shared' });
+      await control.write(`${control.root}/locations-v1/switch.json`, { format: 1, from: { folder: 'Old' }, to: { folder: 'Old', format: 'json' } });
+      await control.write(`${control.root}/locations-v1/nested.json`, {
+        format: 1,
+        from: { folder: 'Old', format: 'json' },
+        to: { folder: 'Old/Nested', format: 'json' }
+      });
+      await control.write(`${control.root}/locations-v1/unrelated.json`, {
+        format: 1,
+        from: { folder: 'Old/Nested', format: 'json' },
+        to: { folder: 'Unrelated' }
+      });
+      const moved = await openDevice(files, { folder: 'New' });
+      expect(moved.transportRoots).toEqual(['New/test/shared', 'New/Nested/test/shared', 'Unrelated/test/shared']);
+      await moved.relocate({ folder: 'Elsewhere' });
+      const reopened = await openDevice(files, { folder: 'New' });
+      expect(reopened.transportRoots).toEqual(['New/test/shared', 'New/Nested/test/shared', 'Unrelated/test/shared', 'Elsewhere/test/shared']);
+    });
+
+    it('fails closed on transitions with no anchor while the inferred former folder still holds the store', async () => {
+      const files = new Map<string, string>();
+      const first = await openDevice(files, { folder: 'First' });
+      await first.set('key', 1);
+      const control = new DataStoreTransport({ adapter: createAdapter(files), pluginId: 'test', storeId: 'shared' });
+      await control.write(`${control.root}/locations-v1/later.json`, { format: 1, from: { folder: 'First' }, to: { folder: 'Last' } });
+      await expect(openDevice(files)).rejects.toThrow('incomplete');
+    });
+
+    it('still fails closed on a real conflict', async () => {
+      const files = new Map<string, string>();
+      const control = new DataStoreTransport({ adapter: createAdapter(files), folder: 'New', pluginId: 'test', storeId: 'shared' });
+      await control.write(`${control.root}/locations-v1/first.json`, { format: 1, from: { folder: 'Old' }, to: { folder: 'First' } });
+      await control.write(`${control.root}/locations-v1/second.json`, { format: 1, from: { folder: 'Old' }, to: { folder: 'Second' } });
+      await expect(openDevice(files, { folder: 'New' })).rejects.toThrow('Conflicting');
+      files.clear();
+      await control.write(`${control.root}/locations-v1/first.json`, { format: 1, from: { folder: 'Old' }, to: { folder: 'First' } });
+      await control.write(`${control.root}/locations-v1/second.json`, { format: 1, from: { folder: 'Other' }, to: { folder: 'Second' } });
+      await expect(openDevice(files, { folder: 'New' })).rejects.toThrow('Conflicting');
+    });
   });
 
   it('validates transition documents, containment, duplicate destinations and loops', async () => {
