@@ -26,6 +26,9 @@
  * has the same layout even when the vault ships no invocable scripts — the vaults themselves commit no
  * empty folder for it.
  *
+ * Before enabling `CodeScript Toolkit` it trusts the vault's startup script and invocable scripts folder on this
+ * device, so the vault opens with no trust prompt and its buttons run on the first click.
+ *
  * It then installs the `Folder Notes` plugin, configured to treat `README.md` as a folder's own note. A
  * demo vault that has outgrown a flat note list groups its notes into folders, and a group folder only
  * says what it is for if it has a note of its own — `README.md`, because that is also the file GitHub
@@ -125,6 +128,13 @@ const CODE_SCRIPT_TOOLKIT_SETTINGS: CodeScriptToolkitSettings = {
   startupScriptPath: 'startup.ts'
 };
 
+// `CodeScript Toolkit`'s per-vault, per-device `localStorage` lists of trusted startup script paths and trusted
+// invocable scripts folders (its `trusted-startup-scripts-key.ts` and `trusted-invocable-scripts-folder-key.ts`). Each
+// holds paths resolved under `modulesRoot`. The invocable scripts folder key once held a single path string, which
+// `CodeScript Toolkit` still reads as a one-entry list, and so does this module.
+const CODE_SCRIPT_TOOLKIT_TRUSTED_STARTUP_SCRIPTS_KEY = 'codescript-toolkit-trusted-startup-scripts';
+const CODE_SCRIPT_TOOLKIT_TRUSTED_INVOCABLE_SCRIPTS_FOLDER_KEY = 'codescript-toolkit-trusted-invocable-scripts-folder';
+
 const FOLDER_NOTES_PLUGIN_ID = 'folder-notes';
 // `README` rather than `Folder Notes`' own `{{folder_name}}` default: the same file has to be the folder's
 // note in Obsidian AND the page GitHub renders when the vault is browsed as a repository, and GitHub
@@ -152,8 +162,9 @@ const SANDBOX_NOTICE_DURATION_IN_MILLISECONDS = 0;
  * popout's animation frame, and writing the settings BEFORE enabling so a fresh enable loads it already configured, with no
  * reload. If `CodeScript Toolkit` is already enabled but the settings just changed, it is reloaded
  * (disabled then enabled) so it re-reads `data.json`; when the settings were already in place, nothing is
- * reloaded (so a routine vault re-open does not re-run `CodeScript Toolkit`'s startup). `CodeScript Toolkit`
- * then runs the vault's `startup.ts`. `Folder Notes` is installed next, configured to treat `README.md` as
+ * reloaded (so a routine vault re-open does not re-run `CodeScript Toolkit`'s startup). Before that enable it
+ * trusts the vault's startup script and invocable scripts folder on this device, so `CodeScript Toolkit` asks about
+ * neither. `CodeScript Toolkit` then runs the vault's `startup.ts`. `Folder Notes` is installed next, configured to treat `README.md` as
  * a folder's own note, so a vault whose notes are grouped into folders describes each group in the file
  * explorer. Finally it closes Settings again (so the notice cannot be raised inside the settings popout) and
  * raises the sandbox notice describing the opened vault as a throwaway copy.
@@ -173,6 +184,8 @@ export async function bootstrapDemoVault(params: BootstrapDemoVaultParams): Prom
     settings: CODE_SCRIPT_TOOLKIT_SETTINGS
   });
   await ensureInvocableScriptsFolder(app);
+  // Before the enable: `CodeScript Toolkit` asks about an untrusted startup script as soon as it loads on a ready layout.
+  trustCodeScriptToolkitScripts(app);
   // Reloaded when already enabled with stale settings, so `CodeScript Toolkit` re-reads the freshly written data.json.
   await enableOrReloadPlugin(app, CODE_SCRIPT_TOOLKIT_PLUGIN_ID, result === ConfigureCommunityPluginResult.Success);
 
@@ -187,6 +200,23 @@ export async function bootstrapDemoVault(params: BootstrapDemoVaultParams): Prom
   await enableOrReloadPlugin(app, FOLDER_NOTES_PLUGIN_ID, folderNotesResult === ConfigureCommunityPluginResult.Success);
 
   showSandboxNotice(app, demoedPluginId);
+}
+
+// Adds a path to one of `CodeScript Toolkit`'s trusted-path lists, keeping every path already trusted there.
+function addCodeScriptToolkitTrustedPath(app: App, key: string, path: string): void {
+  const stored: unknown = app.loadLocalStorage(key);
+  let paths: string[] = [];
+  if (Array.isArray(stored)) {
+    paths = stored.filter((storedPath): storedPath is string => typeof storedPath === 'string' && storedPath !== EMPTY);
+  } else if (typeof stored === 'string' && stored !== EMPTY) {
+    paths = [stored];
+  }
+
+  if (paths.includes(path)) {
+    return;
+  }
+
+  app.saveLocalStorage(key, [...new Set([...paths, path])].sort());
 }
 
 // Builds the sandbox notice content: what this vault is, where it lives, how long it lives, and why
@@ -286,4 +316,27 @@ function showSandboxNotice(app: App, demoedPluginId: string): void {
   const fragment = buildSandboxNoticeFragment(pluginName);
   app.setting.close();
   new Notice(fragment, SANDBOX_NOTICE_DURATION_IN_MILLISECONDS);
+}
+
+// Trusts the vault's startup script and invocable scripts folder in `CodeScript Toolkit` on this device, so the demo
+// vault opens with no "Trust the startup script?" prompt and its buttons run with no first-click prompt.
+//
+// This grants nothing new. The helper is itself a plugin the user enabled by opening the demo vault, so it can already
+// run any code; the trust gate guards a script that arrived by sync, not one the vault's own bootstrap configured.
+//
+// It writes `CodeScript Toolkit`'s own `localStorage` lists rather than calling the running plugin's
+// `trustStartupScript()`, because there is no window for the call: enabled on a ready layout, the plugin asks about
+// an untrusted startup script as it loads, so the prompt would already be up by the time `enablePluginAndSave`
+// returns. A `CodeScript Toolkit` build without the trust gate ignores both keys.
+function trustCodeScriptToolkitScripts(app: App): void {
+  addCodeScriptToolkitTrustedPath(
+    app,
+    CODE_SCRIPT_TOOLKIT_TRUSTED_STARTUP_SCRIPTS_KEY,
+    join(CODE_SCRIPT_TOOLKIT_MODULES_ROOT, CODE_SCRIPT_TOOLKIT_SETTINGS.startupScriptPath)
+  );
+  addCodeScriptToolkitTrustedPath(
+    app,
+    CODE_SCRIPT_TOOLKIT_TRUSTED_INVOCABLE_SCRIPTS_FOLDER_KEY,
+    join(CODE_SCRIPT_TOOLKIT_MODULES_ROOT, CODE_SCRIPT_TOOLKIT_SETTINGS.invocableScriptsFolder)
+  );
 }

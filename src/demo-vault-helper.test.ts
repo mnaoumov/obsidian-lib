@@ -106,6 +106,8 @@ interface AppMock {
   readonly disablePluginAndSave: App['plugins']['disablePluginAndSave'];
   readonly enablePluginAndSave: App['plugins']['enablePluginAndSave'];
   readonly installPlugin: App['plugins']['installPlugin'];
+  readonly localStorage: Map<string, unknown>;
+  readonly saveLocalStorage: App['saveLocalStorage'];
   readonly settingClose: App['setting']['close'];
 }
 
@@ -123,6 +125,8 @@ interface CreateAppOptions {
   readonly isFolderNotesEnabled?: boolean;
   readonly isFolderNotesInstalled?: boolean;
   readonly isInvocableScriptsFolderPresent?: boolean;
+  // `CodeScript Toolkit`'s per-vault `localStorage` entries as they stand before the bootstrap runs.
+  readonly localStorage?: Readonly<Record<string, unknown>>;
 }
 
 const { mockNotice, mockRequestUrl } = vi.hoisted(() => ({
@@ -224,7 +228,14 @@ function createApp(options: CreateAppOptions = {}): AppMock {
 
   const settingClose = vi.fn<App['setting']['close']>();
 
+  const localStorage = new Map<string, unknown>(Object.entries(options.localStorage ?? {}));
+  const loadLocalStorage = vi.fn<App['loadLocalStorage']>().mockImplementation((key: string) => localStorage.get(key) ?? null);
+  const saveLocalStorage = vi.fn<App['saveLocalStorage']>().mockImplementation((key: string, data: unknown) => {
+    localStorage.set(key, data);
+  });
+
   const app = strictProxy<App>({
+    loadLocalStorage,
     plugins: strictProxy<App['plugins']>({
       disablePluginAndSave,
       enabledPlugins,
@@ -233,6 +244,7 @@ function createApp(options: CreateAppOptions = {}): AppMock {
       manifests,
       plugins
     }),
+    saveLocalStorage,
     setting: strictProxy<App['setting']>({ close: settingClose }),
     vault: strictProxy<Vault>({
       adapter: strictProxy<DataAdapter>(adapterMembers),
@@ -248,6 +260,8 @@ function createApp(options: CreateAppOptions = {}): AppMock {
     disablePluginAndSave,
     enablePluginAndSave: checkEnablePluginAndSave,
     installPlugin,
+    localStorage,
+    saveLocalStorage,
     settingClose
   };
 }
@@ -346,6 +360,51 @@ describe('bootstrapDemoVault', () => {
     expect(adapterWrite).not.toHaveBeenCalled();
     expect(disablePluginAndSave).not.toHaveBeenCalled();
     expect(enablePluginAndSave).not.toHaveBeenCalled();
+  });
+});
+
+describe('bootstrapDemoVault CodeScript Toolkit trust', () => {
+  const STARTUP_SCRIPTS_KEY = 'codescript-toolkit-trusted-startup-scripts';
+  const INVOCABLE_SCRIPTS_FOLDER_KEY = 'codescript-toolkit-trusted-invocable-scripts-folder';
+  const STARTUP_SCRIPT_PATH = `${CODE_SCRIPT_TOOLKIT_SETTINGS.modulesRoot}/${CODE_SCRIPT_TOOLKIT_SETTINGS.startupScriptPath}`;
+
+  it('should trust the startup script and the invocable scripts folder on this device', async () => {
+    const { app, localStorage } = createApp();
+    await bootstrapDemoVault({ app });
+    expect(localStorage.get(STARTUP_SCRIPTS_KEY)).toEqual([STARTUP_SCRIPT_PATH]);
+    expect(localStorage.get(INVOCABLE_SCRIPTS_FOLDER_KEY)).toEqual([INVOCABLE_SCRIPTS_FOLDER_PATH]);
+  });
+
+  it('should trust both before enabling CodeScript Toolkit, which asks as it loads', async () => {
+    const { app, enablePluginAndSave, saveLocalStorage } = createApp();
+    await bootstrapDemoVault({ app });
+    const lastSaveOrder = vi.mocked(saveLocalStorage).mock.invocationCallOrder.at(-1) ?? Infinity;
+    const enableOrder = vi.mocked(enablePluginAndSave).mock.invocationCallOrder[0] ?? 0;
+    expect(vi.mocked(saveLocalStorage).mock.calls).toHaveLength(2);
+    expect(lastSaveOrder).toBeLessThan(enableOrder);
+  });
+
+  it('should keep the paths already trusted on this device', async () => {
+    const { app, localStorage } = createApp({
+      localStorage: {
+        [INVOCABLE_SCRIPTS_FOLDER_KEY]: 'Other/Folder',
+        [STARTUP_SCRIPTS_KEY]: ['Other/startup.ts', 42, EMPTY]
+      }
+    });
+    await bootstrapDemoVault({ app });
+    expect(localStorage.get(STARTUP_SCRIPTS_KEY)).toEqual(['Other/startup.ts', STARTUP_SCRIPT_PATH].sort());
+    expect(localStorage.get(INVOCABLE_SCRIPTS_FOLDER_KEY)).toEqual(['Other/Folder', INVOCABLE_SCRIPTS_FOLDER_PATH].sort());
+  });
+
+  it('should write nothing when both are already trusted', async () => {
+    const { app, saveLocalStorage } = createApp({
+      localStorage: {
+        [INVOCABLE_SCRIPTS_FOLDER_KEY]: [INVOCABLE_SCRIPTS_FOLDER_PATH],
+        [STARTUP_SCRIPTS_KEY]: [STARTUP_SCRIPT_PATH]
+      }
+    });
+    await bootstrapDemoVault({ app });
+    expect(saveLocalStorage).not.toHaveBeenCalled();
   });
 });
 
