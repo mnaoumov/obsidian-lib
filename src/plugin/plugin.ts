@@ -22,8 +22,8 @@ import { ensureNonNullable } from '@mnaoumov/typescript-lib/type-guards';
 import { Plugin } from 'obsidian';
 
 import type {
-  PluginConflict,
-  PluginDependency
+  DeclaredPluginDependency,
+  PluginConflict
 } from '../components/plugin-gate-component.ts';
 import type { TranslationsMap } from '../i18n/i18n.ts';
 import type { PluginApiDeclaration } from './plugin-api.ts';
@@ -611,13 +611,15 @@ export abstract class PluginBase extends mixinAsyncEvents<PluginEventMap>()(Plug
    * settings banner that installs the missing plugin in one click. The load completes the moment the
    * dependency arrives, with no restart.
    *
-   * A dependency must publish an API through `publishPluginApi`, which is what makes its presence,
-   * absence, version and departure all observable through one mechanism. A plugin with nothing to expose
-   * can publish an empty API purely so it can be depended upon.
+   * A plugin built on this library is declared as a `PluginDependency`: it must publish an API through
+   * `publishPluginApi`, which is what makes its presence, absence, version and departure all observable
+   * through one mechanism. A plugin with nothing to expose can publish an empty API purely so it can be
+   * depended upon. A THIRD-PARTY plugin, which publishes nothing there, is declared through its adapter with
+   * `createThirdPartyPluginDependency`, and the gate reads its API the way the adapter says.
    *
    * @returns The declared dependencies.
    */
-  protected getPluginDependencies(): PluginDependency[] {
+  protected getPluginDependencies(): DeclaredPluginDependency[] {
     return [];
   }
 

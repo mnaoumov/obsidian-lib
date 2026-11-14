@@ -24,6 +24,8 @@ import type { GetFileParams } from './file-system.ts';
 import type { RelativePathToResourceUrlParams } from './resource-url.ts';
 
 import {
+  DATAVIEW_PLUGIN_ADAPTER,
+  DATAVIEW_PLUGIN_ID,
   getRenderedContainer,
   insertCodeBlock,
   reloadCurrentFileCache,
@@ -842,5 +844,27 @@ describe('renderPaginated page navigation', () => {
 
     // Dv.list should NOT have been called because page 99 is out of range
     expect(dv.list).not.toHaveBeenCalled();
+  });
+});
+
+describe('DATAVIEW_PLUGIN_ADAPTER', () => {
+  const api = { page: (): void => undefined, pages: (): void => undefined, query: (): void => undefined };
+
+  it('should name the Dataview plugin', () => {
+    expect(DATAVIEW_PLUGIN_ADAPTER.pluginId).toBe(DATAVIEW_PLUGIN_ID);
+    expect(DATAVIEW_PLUGIN_ADAPTER.pluginName).toBe('Dataview');
+  });
+
+  it('should read a plugin api that carries the query entry points', () => {
+    expect(DATAVIEW_PLUGIN_ADAPTER.getApi(castTo({ api }))).toBe(api);
+  });
+
+  it('should refuse a plugin without an api', () => {
+    expect(DATAVIEW_PLUGIN_ADAPTER.getApi(castTo({}))).toBeNull();
+  });
+
+  it('should refuse an api missing a query entry point', () => {
+    expect(DATAVIEW_PLUGIN_ADAPTER.getApi(castTo({ api: null }))).toBeNull();
+    expect(DATAVIEW_PLUGIN_ADAPTER.getApi(castTo({ api: { ...api, query: 'x' } }))).toBeNull();
   });
 });

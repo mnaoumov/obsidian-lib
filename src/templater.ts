@@ -35,10 +35,12 @@
 
 import type {
   App,
+  Plugin,
   TFile
 } from 'obsidian';
 
 import type { PathOrFile } from './file-system.ts';
+import type { ThirdPartyPluginAdapter } from './plugin/third-party-plugin.ts';
 
 import { AppActiveFileProvider } from './active-file-provider.ts';
 import { getFile } from './file-system.ts';
@@ -389,7 +391,21 @@ export function requireTemplaterApi(app: App): TemplaterApi {
  */
 export function resolveTemplaterApi(app: App): null | TemplaterApi {
   const plugin = app.plugins.getPlugin(TEMPLATER_PLUGIN_ID);
-  if (!plugin || !('templater' in plugin)) {
+  return plugin ? getTemplaterApiFromPlugin(plugin) : null;
+}
+
+/**
+ * The {@link ThirdPartyPluginAdapter} of `Templater`, for `watchThirdPartyPluginApi`, the waits and
+ * `createThirdPartyPluginDependency`. It reads `plugin.templater` and verifies the members this module calls.
+ */
+export const TEMPLATER_PLUGIN_ADAPTER: ThirdPartyPluginAdapter<TemplaterApi> = {
+  getApi: getTemplaterApiFromPlugin,
+  pluginId: TEMPLATER_PLUGIN_ID,
+  pluginName: 'Templater'
+};
+
+function getTemplaterApiFromPlugin(plugin: Plugin): null | TemplaterApi {
+  if (!('templater' in plugin)) {
     return null;
   }
 

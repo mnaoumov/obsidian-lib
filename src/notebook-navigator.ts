@@ -20,9 +20,12 @@
 import type {
   App,
   MenuItem,
+  Plugin,
   TFile,
   TFolder
 } from 'obsidian';
+
+import type { ThirdPartyPluginAdapter } from './plugin/third-party-plugin.ts';
 
 /**
  * `Notebook Navigator`'s public API object, narrowed to what this library uses.
@@ -150,7 +153,21 @@ export const NOTEBOOK_NAVIGATOR_PLUGIN_ID = 'notebook-navigator';
  */
 export function resolveNotebookNavigatorApi(app: App): NotebookNavigatorApi | null {
   const plugin = app.plugins.getPlugin(NOTEBOOK_NAVIGATOR_PLUGIN_ID);
-  if (!plugin || !('api' in plugin)) {
+  return plugin ? getNotebookNavigatorApiFromPlugin(plugin) : null;
+}
+
+/**
+ * The {@link ThirdPartyPluginAdapter} of `Notebook Navigator`, for `watchThirdPartyPluginApi`, the waits and
+ * `createThirdPartyPluginDependency`. It reads `plugin.api` and verifies both menu registrars.
+ */
+export const NOTEBOOK_NAVIGATOR_PLUGIN_ADAPTER: ThirdPartyPluginAdapter<NotebookNavigatorApi> = {
+  getApi: getNotebookNavigatorApiFromPlugin,
+  pluginId: NOTEBOOK_NAVIGATOR_PLUGIN_ID,
+  pluginName: 'Notebook Navigator'
+};
+
+function getNotebookNavigatorApiFromPlugin(plugin: Plugin): NotebookNavigatorApi | null {
+  if (!('api' in plugin)) {
     return null;
   }
 

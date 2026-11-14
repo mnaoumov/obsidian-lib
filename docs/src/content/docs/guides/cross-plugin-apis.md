@@ -575,7 +575,7 @@ Three deliberate choices, each with an obvious-looking alternative:
 
 - **Blocked means enabled-but-inert, never self-disabled.** Calling `disablePluginAndSave` on yourself is the literal reading of "refuses to load", and it rewrites a config that belongs to the user — who then has to remember to re-enable you after fixing the dependency.
 - **Blocked is not an error.** Throwing from `onload` marks the plugin failed and hands the user a stack trace where a sentence and a button belong.
-- **A dependency must publish an API.** That is what makes presence, absence, version and departure all observable through one mechanism. A provider with nothing to expose can publish an empty API purely so it can be depended upon — which is cheaper than a second, weaker detection path beside the registry.
+- **A dependency built on this library must publish an API.** That is what makes presence, absence, version and departure all observable through one mechanism. A provider with nothing to expose can publish an empty API purely so it can be depended upon — which is cheaper than a second, weaker detection path beside the registry. A plugin you do not own, which publishes nothing there, is declared through its adapter instead: see [Typed APIs of third-party plugins](#typed-apis-of-third-party-plugins).
 
 Reach for `PluginSuggestionComponent` instead whenever the other plugin merely **adds** something. The two are siblings, and the question that separates them is whether your plugin still does what it says on the tin.
 
@@ -747,3 +747,88 @@ export default class MyPlugin extends Plugin {
 `requirePlugin` waits like `waitForPlugin`, with no timeout unless you pass one. Once the layout is ready (before that, a plugin Obsidian has not reached yet looks exactly like a missing one), it shows a notice saying what is wrong, with the button that fixes it: install, enable, or update, plus a way to the community plugins list. The notice follows the state as it changes and goes away when the plugin arrives. A repair that fails is reported and the wait goes on, so the user can try again. A `PluginBase` plugin passes its own `pluginNoticeComponent` and `this`.
 
 It settles once, and that is the line between it and [Requiring another plugin](#requiring-another-plugin). `requirePlugin` is for an optional feature, or a one-time step, that needs the other plugin when it runs. A plugin that must stop working whenever the other one goes away declares a `PluginDependency` instead, which owns that teardown; a second teardown mechanism beside it would only conflict with it.
+
+## Typed APIs of third-party plugins
+
+`Dataview`, `Templater`, `Notebook Navigator` and most other plugins publish nothing through the registry, but each hangs a usable API off its instance under a name of its own choosing. A `ThirdPartyPluginAdapter` (`@mnaoumov/obsidian-lib/plugin/third-party-plugin`) says once, for one plugin, how to get from the instance to that API, and verifies the shape on the way. The library ships three:
+
+1. `DATAVIEW_PLUGIN_ADAPTER` in `@mnaoumov/obsidian-lib/dataview`, reading `plugin.api` typed as `DataviewApi` from `@mnaoumov/obsidian-dataview`.
+2. `TEMPLATER_PLUGIN_ADAPTER` in `@mnaoumov/obsidian-lib/templater`, reading `Templater`'s undocumented `plugin.templater`.
+3. `NOTEBOOK_NAVIGATOR_PLUGIN_ADAPTER` in `@mnaoumov/obsidian-lib/notebook-navigator`, reading `plugin.api`.
+
+An OPTIONAL integration holds a live ref, whose `value` is the typed API or `null` while the plugin is missing, disabled, still loading, too old or the wrong shape. It re-reads on every `app.plugins` `changed` and every lifecycle broadcast, so it follows the plugin through enable, disable and update with no polling:
+
+```typescript
+import { DATAVIEW_PLUGIN_ADAPTER } from '@mnaoumov/obsidian-lib/dataview';
+import { watchThirdPartyPluginApi } from '@mnaoumov/obsidian-lib/plugin/third-party-plugin';
+import { Plugin } from 'obsidian';
+
+export default class MyPlugin extends Plugin {
+  public override onload(): void {
+    const dataviewRef = watchThirdPartyPluginApi({ adapter: DATAVIEW_PLUGIN_ADAPTER, app: this.app, component: this });
+    this.addCommand({
+      checkCallback: (isChecking) => {
+        const dataview = dataviewRef.value;
+        if (!dataview) {
+          return false;
+        }
+        if (!isChecking) {
+          console.log(dataview.pages('#project').length);
+        }
+        return true;
+      },
+      id: 'count-projects',
+      name: 'Count projects'
+    });
+  }
+}
+```
+
+A REQUIRED one is declared beside your own-plugin dependencies, and the gate treats it exactly like one: `onloadImpl` does not run while it is missing, disabled, below `minPluginVersion` or the wrong shape, and the notice and stand-in settings tab offer the install, enable or update:
+
+```typescript
+import type { DeclaredPluginDependency } from '@mnaoumov/obsidian-lib/components/plugin-gate-component';
+
+import { DATAVIEW_PLUGIN_ADAPTER } from '@mnaoumov/obsidian-lib/dataview';
+import { PluginBase } from '@mnaoumov/obsidian-lib/plugin/plugin';
+import { createThirdPartyPluginDependency } from '@mnaoumov/obsidian-lib/plugin/third-party-plugin';
+
+export class Plugin extends PluginBase {
+  protected override getPluginDependencies(): DeclaredPluginDependency[] {
+    return [createThirdPartyPluginDependency({
+      adapter: DATAVIEW_PLUGIN_ADAPTER,
+      minPluginVersion: '0.5.0',
+      reason: 'Runs the queries this plugin paginates.'
+    })];
+  }
+}
+```
+
+`getThirdPartyPluginApi` answers once, and `waitForThirdPartyPluginApi` and `requireThirdPartyPluginApi` are `waitForPlugin` and `requirePlugin` from the section above with the API, not the instance, as their result.
+
+A plugin the library has no adapter for takes one constant of your own. `getApi` returns `null` for a shape it does not recognize, which reads as `shapeMismatch` rather than as a crash inside a callback; never cast there. `minPluginVersion` on the adapter is the oldest release it was verified against, and a dependent may raise it:
+
+```typescript
+import type { ThirdPartyPluginAdapter } from '@mnaoumov/obsidian-lib/plugin/third-party-plugin';
+
+interface TheirPluginApi {
+  readonly summarize: (path: string) => Promise<string>;
+}
+
+export const THEIR_PLUGIN_ADAPTER: ThirdPartyPluginAdapter<TheirPluginApi> = {
+  getApi: (plugin) => {
+    if (!('api' in plugin)) {
+      return null;
+    }
+    const api: unknown = plugin.api;
+    return typeof api === 'object' && api !== null && 'summarize' in api && typeof api.summarize === 'function'
+      ? api as TheirPluginApi
+      : null;
+  },
+  minPluginVersion: '1.4.0',
+  pluginId: 'their-plugin-id',
+  pluginName: 'Their Plugin'
+};
+```
+
+The cast in the last line is the one place a cast is honest, because the line before it checked the member the type declares.

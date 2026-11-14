@@ -10,6 +10,7 @@ import type {
   SMarkdownPage
 } from '@mnaoumov/obsidian-dataview';
 import type { DataviewInlineApi as DataviewInlineApiOriginal } from '@mnaoumov/obsidian-dataview/api/inline-api';
+import type { Plugin } from 'obsidian';
 import type { Promisable } from 'type-fest';
 
 import { convertAsyncToSync } from '@mnaoumov/typescript-lib/async';
@@ -18,6 +19,7 @@ import { ensureNonNullable } from '@mnaoumov/typescript-lib/type-guards';
 
 import type { PathOrFile } from './file-system.ts';
 import type { CombinedFrontmatter } from './frontmatter.ts';
+import type { ThirdPartyPluginAdapter } from './plugin/third-party-plugin.ts';
 
 import {
   getFile,
@@ -119,6 +121,25 @@ interface ContainerInfo {
 }
 
 /**
+ * `Dataview`'s plugin id, as its manifest declares it.
+ */
+export const DATAVIEW_PLUGIN_ID = 'dataview';
+
+/**
+ * The {@link ThirdPartyPluginAdapter} of `Dataview`, for `watchThirdPartyPluginApi`, the waits and
+ * `createThirdPartyPluginDependency`.
+ *
+ * It reads `plugin.api`, the same object `Dataview` installs as the `DataviewAPI` global, and verifies the
+ * query entry points (`page`, `pages`, `query`) before handing it over typed as {@link DataviewApi}, whose
+ * declarations come from `@mnaoumov/obsidian-dataview`.
+ */
+export const DATAVIEW_PLUGIN_ADAPTER: ThirdPartyPluginAdapter<DataviewApi> = {
+  getApi: getDataviewApiFromPlugin,
+  pluginId: DATAVIEW_PLUGIN_ID,
+  pluginName: 'Dataview'
+};
+
+/**
  * Reloads the current file cache using the `Dataview` API.
  *
  * @param dv - The DataviewInlineApi instance.
@@ -130,6 +151,28 @@ export async function reloadCurrentFileCache(dv: DataviewInlineApi): Promise<voi
     app: dv.app,
     pathOrFile: dv.current().file.path
   }));
+}
+
+function getDataviewApiFromPlugin(plugin: Plugin): DataviewApi | null {
+  if (!('api' in plugin)) {
+    return null;
+  }
+
+  const api: unknown = plugin.api;
+  return isDataviewApi(api) ? api : null;
+}
+
+/**
+ * Checks that a value is `Dataview`'s API, by its query entry points.
+ *
+ * @param value - The candidate `api` object.
+ * @returns Whether it carries `page`, `pages` and `query`.
+ */
+function isDataviewApi(value: unknown): value is DataviewApi {
+  return typeof value === 'object' && value !== null
+    && 'page' in value && typeof value.page === 'function'
+    && 'pages' in value && typeof value.pages === 'function'
+    && 'query' in value && typeof value.query === 'function';
 }
 
 const paginationCss = `

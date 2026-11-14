@@ -32,6 +32,7 @@ import {
   parseTemplate,
   requireTemplaterApi,
   resolveTemplaterApi,
+  TEMPLATER_PLUGIN_ADAPTER,
   TEMPLATER_PLUGIN_ID,
   TemplaterActiveFileProvider,
   TemplaterRunMode,
@@ -477,3 +478,14 @@ function createProviderApp(): AppOriginal {
 }
 
 /* eslint-enable camelcase -- `Templater` API. */
+
+describe('TEMPLATER_PLUGIN_ADAPTER', () => {
+  it('should name the Templater plugin', () => {
+    expect(TEMPLATER_PLUGIN_ADAPTER.pluginId).toBe(TEMPLATER_PLUGIN_ID);
+    expect(TEMPLATER_PLUGIN_ADAPTER.pluginName).toBe('Templater');
+  });
+
+  it('should refuse a plugin without a templater member', () => {
+    expect(TEMPLATER_PLUGIN_ADAPTER.getApi(castTo({}))).toBeNull();
+  });
+});
