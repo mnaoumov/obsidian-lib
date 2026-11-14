@@ -4,10 +4,12 @@
  * The lifecycle broadcast every {@link PluginBase} makes: `obsidian-lib:plugin-loaded` when it has
  * finished loading and `obsidian-lib:plugin-unloaded` when it goes away.
  *
- * Obsidian gives a plugin no way to learn that ANOTHER plugin was enabled or disabled — there is no such
- * event on `app.plugins`, and a plugin's own `Events` source cannot help a listener that does not yet hold
- * the instance. So the broadcast goes through `app.workspace`, which is one object every plugin in the
- * vault can reach. Deliberately NOT the `globalThis.__obsidianLib` bag the rest of the library shares
+ * Obsidian does say that SOME plugin changed: read from Obsidian `1.15.1`, `app.plugins` triggers
+ * `changed`, debounced by one macrotask, after every enable, disable, install, uninstall and manifest
+ * reload, but it carries no payload: it does not say which plugin changed, nor that its APIs are published.
+ * This broadcast names the plugin and comes after its APIs, so it is the signal for "that plugin is ready
+ * to call", and `changed` the signal for "re-read the manifests". The broadcast goes through
+ * `app.workspace`, which is one object every plugin in the vault can reach. Deliberately NOT the `globalThis.__obsidianLib` bag the rest of the library shares
  * its state through: a listener there needs its own copy of this library, and these events are meant to be
  * consumable by any plugin at all.
  *

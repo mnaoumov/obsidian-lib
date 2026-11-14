@@ -64,12 +64,11 @@
  *
  * ## What this can and cannot see
  *
- * Obsidian raises no event when ANOTHER plugin is enabled or disabled (see `plugin-lifecycle-events.ts`),
- * so live conflict detection has a real ceiling and it is stated here rather than implied away. A
- * conflicting plugin built on this library announces itself through the lifecycle broadcast, and is
- * therefore caught the moment it is enabled or disabled. One that is not — an old release predating the
- * broadcast, or a plugin by another author entirely — is caught at the next load, which is when its
- * manifest is read.
+ * Every conflicting plugin is caught the moment it is enabled, disabled, installed, uninstalled or
+ * updated, whoever wrote it. Read from Obsidian `1.15.1`: `app.plugins` is an `Events` source whose
+ * `didChange` triggers `changed`, debounced by one macrotask, after each of those, and the gate re-reads
+ * the manifests on it. A plugin built on this library also announces itself through the lifecycle
+ * broadcast (`plugin-lifecycle-events.ts`), which the gate re-reads on too.
  *
  * ## Why a loss is announced late
  *
@@ -123,6 +122,7 @@ import {
   PluginVersionComparison,
   updatePlugin
 } from '../plugin/plugin-install-state.ts';
+import { PLUGINS_CHANGED_EVENT_NAME } from '../plugin/plugin-instance.ts';
 import {
   PLUGIN_LOADED_EVENT_NAME,
   PLUGIN_UNLOADED_EVENT_NAME
@@ -407,9 +407,18 @@ export class PluginGateComponent extends ComponentEx {
       this.apiRefs.set(dependency.pluginId, apiRef);
     }
 
-    // A conflict has no API to watch — it is read out of the manifests — so the trigger to re-read is the
-    // library's own lifecycle broadcast. It covers every conflicting plugin built on this library; one
-    // that is not is caught at the next load, as the file header says.
+    // A conflict has no API to watch — it is read out of the manifests — so the triggers to re-read are
+    // `app.plugins` `changed`, which Obsidian raises after every enable, disable, install, uninstall and
+    // manifest reload of ANY plugin, and the library's own lifecycle broadcast. The broadcast stays: a
+    // plugin built on this library finishes loading after `changed` has fired, and its `loaded` payload is
+    // the one moment its whole surface is up. Re-reading on both costs a manifest lookup per conflict.
+    this.registerEvent(this.app.plugins.on(
+      PLUGINS_CHANGED_EVENT_NAME,
+      convertAsyncToSync(async () => {
+        await this.refresh();
+      })
+    ));
+
     const lifecycleEventNames: PluginLifecycleEventName[] = [PLUGIN_LOADED_EVENT_NAME, PLUGIN_UNLOADED_EVENT_NAME];
     for (const eventName of lifecycleEventNames) {
       this.registerEvent(this.app.workspace.on(

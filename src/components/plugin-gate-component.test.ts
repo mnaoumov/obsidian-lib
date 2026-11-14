@@ -41,6 +41,7 @@ import type { PluginNoticeComponent } from './plugin-notice-component.ts';
 
 import { UpdateCommunityPluginResult } from '../community-plugins.ts';
 import { PluginApiUnavailabilityReason } from '../plugin/plugin-api.ts';
+import { PLUGINS_CHANGED_EVENT_NAME } from '../plugin/plugin-instance.ts';
 import {
   PLUGIN_LOADED_EVENT_NAME,
   PLUGIN_UNLOADED_EVENT_NAME
@@ -145,6 +146,7 @@ let lifecycleCallbacks: Map<string, ((payload: PluginLifecycleEventPayload) => u
 let layoutReadyCallback: (() => void) | undefined;
 let loadedPlugins: Set<string>;
 let manifests: AppOriginal['plugins']['manifests'];
+let pluginsChangedCallbacks: Map<string, (() => unknown)[]>;
 let openSetting: ReturnType<typeof vi.fn>;
 let openTabById: ReturnType<typeof vi.fn>;
 let removeSettingTab: ReturnType<typeof vi.fn>;
@@ -163,6 +165,7 @@ beforeEach(() => {
   loadedPlugins = new Set<string>();
   manifests = {};
   Object.setPrototypeOf(manifests, null);
+  pluginsChangedCallbacks = new Map();
   settingTabs = [];
   fireApiRefChange = async (): Promise<void> => {
     // Replaced when the component subscribes; a test that fires before that is asserting nothing.
@@ -399,7 +402,13 @@ async function createLoadedComponent(options: CreateComponentOptions = {}): Prom
     plugins: strictProxy<AppOriginal['plugins']>({
       enabledPlugins,
       getPlugin: (pluginId: string) => loadedPlugins.has(pluginId) ? castTo<Plugin>({}) : null,
-      manifests
+      manifests,
+      on: castTo<AppOriginal['plugins']['on']>((name: string, callback: () => unknown): EventRef => {
+        const callbacks = pluginsChangedCallbacks.get(name) ?? [];
+        callbacks.push(callback);
+        pluginsChangedCallbacks.set(name, callbacks);
+        return castTo<EventRef>({});
+      })
     }),
     // Cast rather than typed one member at a time: `openTabById` is overloaded (`'hotkeys'` returns a
     // narrower tab), and a plain mock cannot satisfy an overload set.
@@ -855,6 +864,35 @@ describe('when a conflict appears while the plugin is running', () => {
     expect(loadFeatureSurface).toHaveBeenCalledTimes(1);
   });
 
+  it('should tear the feature surface down on app.plugins changed, for a plugin not built on this library', async () => {
+    const { showNotice, unloadFeatureSurface } = await createLoadedComponent({
+      conflicts: [BLOCKING_CONFLICT],
+      dependencies: []
+    });
+
+    installPlugin(BLOCKING_CONFLICT.pluginId, '11.9.0');
+    await firePluginsChanged();
+
+    expect(unloadFeatureSurface).toHaveBeenCalledTimes(1);
+
+    await waitOutLossGracePeriod();
+    expectNoticeText(
+      showNotice,
+      `${BLOCKING_CONFLICT.pluginName} is now enabled, so ${HOST_PLUGIN_NAME} has stopped working. Update or disable it to resume.`
+    );
+  });
+
+  it('should come back up on app.plugins changed once the conflicting plugin is disabled', async () => {
+    installPlugin(BLOCKING_CONFLICT.pluginId, '11.9.0');
+    const { loadFeatureSurface } = await createLoadedComponent({ conflicts: [BLOCKING_CONFLICT], dependencies: [] });
+    expect(loadFeatureSurface).not.toHaveBeenCalled();
+
+    enabledPlugins.delete(BLOCKING_CONFLICT.pluginId);
+    await firePluginsChanged();
+
+    expect(loadFeatureSurface).toHaveBeenCalledTimes(1);
+  });
+
   it('should ignore the host plugin\'s own broadcast, which would otherwise re-enter the gate', async () => {
     const { loadFeatureSurface } = await createLoadedComponent({ conflicts: [BLOCKING_CONFLICT], dependencies: [] });
 
@@ -975,8 +1013,6 @@ describe('renderConflictWarningBanner', () => {
   });
 });
 
-// The library's lifecycle broadcast is the only signal a conflict can react to, so a test drives it
-// directly rather than through a second plugin.
 async function fireLifecycleEvent(name: string, pluginId: string): Promise<void> {
   const payload = castTo<PluginLifecycleEventPayload>({ pluginId });
   for (const callback of lifecycleCallbacks.get(name) ?? []) {
@@ -985,6 +1021,16 @@ async function fireLifecycleEvent(name: string, pluginId: string): Promise<void>
 
   // Only what is due now: running every timer would also fire the loss-announcement grace period, which
   // is exactly what the tests of that period need to control.
+  await vi.advanceTimersByTimeAsync(0);
+}
+
+// The library's lifecycle broadcast is the only signal a conflict can react to, so a test drives it
+// directly rather than through a second plugin.
+async function firePluginsChanged(): Promise<void> {
+  for (const callback of pluginsChangedCallbacks.get(PLUGINS_CHANGED_EVENT_NAME) ?? []) {
+    callback();
+  }
+
   await vi.advanceTimersByTimeAsync(0);
 }
 

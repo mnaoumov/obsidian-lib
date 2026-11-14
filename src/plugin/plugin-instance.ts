@@ -70,8 +70,11 @@ const DEFAULT_WAIT_FOR_PLUGIN_TIMEOUT_IN_MILLISECONDS = 10_000;
 
 /**
  * The event `app.plugins` triggers after every enable, disable, install, uninstall and manifest reload.
+ *
+ * Read from Obsidian `1.15.1`: `didChange` triggers it debounced by one macrotask, so several changes in one
+ * task arrive as one event, after `enablePlugin` / `disablePlugin` returned.
  */
-const PLUGINS_CHANGED_EVENT_NAME = 'changed';
+export const PLUGINS_CHANGED_EVENT_NAME = 'changed';
 
 /**
  * The id of Obsidian's community plugins settings tab.
