@@ -30,11 +30,13 @@ interface EnvironmentProbe {
 }
 
 interface ProbeInput {
+  readonly [key: string]: unknown;
   readonly source: string;
 }
 
 interface RoundTripInput {
   readonly hex: string;
+  readonly [key: string]: unknown;
   readonly source: string;
 }
 
