@@ -18,6 +18,7 @@ import {
 } from 'vitest';
 
 import {
+  NOTEBOOK_NAVIGATOR_PLUGIN_ADAPTER,
   NOTEBOOK_NAVIGATOR_PLUGIN_ID,
   resolveNotebookNavigatorApi
 } from './notebook-navigator.ts';
@@ -87,5 +88,16 @@ describe('resolveNotebookNavigatorApi', () => {
     }]
   ])('should return null for %s', (_description: string, api: unknown) => {
     expect(resolveNotebookNavigatorApi(createApp({ api }))).toBeNull();
+  });
+});
+
+describe('NOTEBOOK_NAVIGATOR_PLUGIN_ADAPTER', () => {
+  it('should name the Notebook Navigator plugin', () => {
+    expect(NOTEBOOK_NAVIGATOR_PLUGIN_ADAPTER.pluginId).toBe(NOTEBOOK_NAVIGATOR_PLUGIN_ID);
+    expect(NOTEBOOK_NAVIGATOR_PLUGIN_ADAPTER.pluginName).toBe('Notebook Navigator');
+  });
+
+  it('should refuse a plugin without an api member', () => {
+    expect(NOTEBOOK_NAVIGATOR_PLUGIN_ADAPTER.getApi(castTo({}))).toBeNull();
   });
 });

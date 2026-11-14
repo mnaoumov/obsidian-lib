@@ -82,6 +82,7 @@
  * dependency — outlasts the window and is announced as before, only a few seconds later.
  */
 
+import type { AsyncEventSource } from '@mnaoumov/typescript-lib/async-events';
 import type {
   App,
   Plugin
@@ -94,11 +95,11 @@ import {
   PluginSettingTab
 } from 'obsidian';
 
-import type { PluginApiRef } from '../plugin/plugin-api.ts';
 import type {
   PluginLifecycleEventName,
   PluginLifecycleEventPayload
 } from '../plugin/plugin-lifecycle-events.ts';
+import type { ThirdPartyPluginDependency } from '../plugin/third-party-plugin.ts';
 import type { PluginNoticeComponent } from './plugin-notice-component.ts';
 
 import { disableCommunityPlugin } from '../community-plugins.ts';
@@ -127,6 +128,10 @@ import {
   PLUGIN_LOADED_EVENT_NAME,
   PLUGIN_UNLOADED_EVENT_NAME
 } from '../plugin/plugin-lifecycle-events.ts';
+import {
+  isThirdPartyPluginDependency,
+  watchThirdPartyPluginApi
+} from '../plugin/third-party-plugin.ts';
 import { openSettingTab } from '../settings-modal.ts';
 import { registerAsyncEvent } from './async-events-component.ts';
 import { ComponentEx } from './component-ex.ts';
@@ -160,6 +165,13 @@ export enum PluginConflictSeverity {
    */
   Warn = 'warn'
 }
+
+/**
+ * A dependency `PluginBase.getPluginDependencies()` may declare: a plugin built on this library that publishes
+ * its API ({@link PluginDependency}), or a third-party plugin read through an adapter
+ * ({@link ThirdPartyPluginDependency}).
+ */
+export type DeclaredPluginDependency = PluginDependency | ThirdPartyPluginDependency;
 
 /**
  * A plugin another plugin refuses to run beside, or warns about running beside.
@@ -204,9 +216,9 @@ export interface PluginConflict {
 }
 
 /**
- * A plugin another plugin cannot work without.
+ * A plugin another plugin cannot work without, publishing its API through this library's registry.
  */
-export interface PluginDependency {
+export interface PluginDependency extends PluginDependencyBase {
   /**
    * The semver range of API contract versions the dependent compiled against, e.g. `'^2'`.
    *
@@ -215,12 +227,17 @@ export interface PluginDependency {
    * one" message. Spell "any version" as `'>=0.0.0'` — `compare-versions` rejects a bare `*`.
    */
   readonly apiVersionRange: string;
+}
 
+/**
+ * What every declared dependency has, whichever way its API is read.
+ */
+export interface PluginDependencyBase {
   /**
    * The oldest release of the required plugin the dependent works with, e.g. `'2.2.0'`.
    *
    * For a provider whose BEHAVIOR changed while its API contract stayed the same, which
-   * {@link apiVersionRange} cannot see. A dependency enabled below it counts as UNSATISFIED and asks the
+   * {@link PluginDependency.apiVersionRange} cannot see. A dependency enabled below it counts as UNSATISFIED and asks the
    * user to update it. Evaluated against `manifest.version`; a version that cannot be parsed counts as too
    * old. A minimum rather than a range, because the only advice the gate can give is "update it", and an
    * upper bound is a version no update reaches.
@@ -262,7 +279,7 @@ export interface PluginGateComponentConstructorParams {
    * The dependencies to enforce. An empty list means the plugin depends on nothing, and its feature
    * surface loads immediately.
    */
-  readonly dependencies: readonly PluginDependency[];
+  readonly dependencies: readonly DeclaredPluginDependency[];
 
   /**
    * Loads the host plugin's feature surface. Called once every dependency is satisfied and no blocking
@@ -306,6 +323,43 @@ interface BlockedPluginSettingTabConstructorParams {
 }
 
 /**
+ * The part of `PluginApiRef` and `ThirdPartyPluginApiRef` the gate reads.
+ */
+interface DependencyApiRef extends AsyncEventSource<DependencyApiRefEventMap> {
+  /**
+   * The API, or `null` while unavailable.
+   */
+  readonly value: null | object;
+}
+
+/**
+ * The events a {@link DependencyApiRef} fires.
+ */
+interface DependencyApiRefEventMap {
+  /**
+   * Fired whenever {@link DependencyApiRef.value} changes.
+   */
+  readonly change: [];
+}
+
+/**
+ * What the gate reads off one dependency's API watch, whichever kind it is.
+ */
+interface DependencyApiWatch {
+  /**
+   * Whether the dependency publishes an API whose contract version is outside the declared range.
+   *
+   * @returns The answer, read now.
+   */
+  readonly isApiVersionMismatch: () => boolean;
+
+  /**
+   * The live reference; its `value` is the API, or `null` while unavailable.
+   */
+  readonly ref: DependencyApiRef;
+}
+
+/**
  * The settings tab a blocked plugin shows in place of the one it never got to register.
  *
  * A blocked plugin's `onloadImpl` never ran, so its real settings tab does not exist — and a user who goes
@@ -340,10 +394,10 @@ class BlockedPluginSettingTab extends PluginSettingTab {
  */
 export class PluginGateComponent extends ComponentEx {
   private readonly announcedWarningPluginIds = new Set<string>();
-  private readonly apiRefs = new Map<string, PluginApiRef<object>>();
+  private readonly apiWatches = new Map<string, DependencyApiWatch>();
   private blockedSettingTab: null | PluginSettingTab = null;
   private readonly conflicts: readonly PluginConflict[];
-  private readonly dependencies: readonly PluginDependency[];
+  private readonly dependencies: readonly DeclaredPluginDependency[];
   private hasAnnouncedBlocked = false;
   private isFeatureSurfaceLoaded = false;
   private isLayoutReady = false;
@@ -392,19 +446,14 @@ export class PluginGateComponent extends ComponentEx {
    */
   public override onload(): void {
     for (const dependency of this.dependencies) {
-      const apiRef = watchPluginApi<object>({
-        apiVersionRange: dependency.apiVersionRange,
-        app: this.app,
-        component: this,
-        pluginId: dependency.pluginId
-      });
+      const apiWatch = this.watchDependencyApi(dependency);
       registerAsyncEvent(
         this,
-        apiRef.on('change', async () => {
+        apiWatch.ref.on('change', async () => {
           await this.refresh();
         })
       );
-      this.apiRefs.set(dependency.pluginId, apiRef);
+      this.apiWatches.set(dependency.pluginId, apiWatch);
     }
 
     // A conflict has no API to watch — it is read out of the manifests — so the triggers to re-read are
@@ -522,7 +571,7 @@ export class PluginGateComponent extends ComponentEx {
     this.lossAnnouncementTimerId = null;
   }
 
-  private createBlockedMessage(dependency: PluginDependency): DocumentFragment {
+  private createBlockedMessage(dependency: DeclaredPluginDependency): DocumentFragment {
     if (this.isTooOld(dependency)) {
       return this.createVersionMismatchMessage(dependency);
     }
@@ -558,7 +607,7 @@ export class PluginGateComponent extends ComponentEx {
     }));
   }
 
-  private createDependencyLostMessage(dependency: PluginDependency): DocumentFragment {
+  private createDependencyLostMessage(dependency: DeclaredPluginDependency): DocumentFragment {
     if (this.isTooOld(dependency)) {
       return this.createVersionMismatchMessage(dependency);
     }
@@ -573,14 +622,14 @@ export class PluginGateComponent extends ComponentEx {
     }));
   }
 
-  private createNoReadableApiMessage(dependency: PluginDependency): DocumentFragment {
+  private createNoReadableApiMessage(dependency: DeclaredPluginDependency): DocumentFragment {
     return createFragmentWithCodeBlocks(t(($) => $.obsidianLib.pluginDependency.noReadableApiNotice, {
       dependencyPluginName: asCodeBlock(dependency.pluginName),
       pluginName: asCodeBlock(this.plugin.manifest.name)
     }));
   }
 
-  private createVersionMismatchMessage(dependency: PluginDependency): DocumentFragment {
+  private createVersionMismatchMessage(dependency: DeclaredPluginDependency): DocumentFragment {
     return createFragmentWithCodeBlocks(t(($) => $.obsidianLib.pluginDependency.versionMismatchNotice, {
       dependencyPluginName: asCodeBlock(dependency.pluginName),
       pluginName: asCodeBlock(this.plugin.manifest.name)
@@ -597,8 +646,8 @@ export class PluginGateComponent extends ComponentEx {
     return this.conflicts.filter((conflict) => conflict.severity === severity && this.isConflictActive(conflict));
   }
 
-  private getUnsatisfiedDependencies(): PluginDependency[] {
-    return this.dependencies.filter((dependency) => !this.apiRefs.get(dependency.pluginId)?.value || this.isBelowMinPluginVersion(dependency));
+  private getUnsatisfiedDependencies(): DeclaredPluginDependency[] {
+    return this.dependencies.filter((dependency) => !this.apiWatches.get(dependency.pluginId)?.ref.value || this.isBelowMinPluginVersion(dependency));
   }
 
   private hideBlockedSettingTab(): void {
@@ -617,10 +666,10 @@ export class PluginGateComponent extends ComponentEx {
    * reloading the provider, which fires the API watch's `change`, so the gate opens without a restart.
    *
    * @param dependency - The declared dependency.
-   * @returns Whether the dependency is enabled below its {@link PluginDependency.minPluginVersion}; `false`
+   * @returns Whether the dependency is enabled below its {@link PluginDependencyBase.minPluginVersion}; `false`
    * when it declares none or is not enabled, since its API is then absent anyway.
    */
-  private isBelowMinPluginVersion(dependency: PluginDependency): boolean {
+  private isBelowMinPluginVersion(dependency: DeclaredPluginDependency): boolean {
     if (dependency.minPluginVersion === undefined) {
       return false;
     }
@@ -674,7 +723,7 @@ export class PluginGateComponent extends ComponentEx {
    * @param dependency - The declared dependency.
    * @returns Whether the dependency is enabled and loaded.
    */
-  private isRunning(dependency: PluginDependency): boolean {
+  private isRunning(dependency: DeclaredPluginDependency): boolean {
     return getInstalledPluginState({
           app: this.app,
           pluginId: dependency.pluginId
@@ -684,15 +733,15 @@ export class PluginGateComponent extends ComponentEx {
   /**
    * Decides whether a dependency is running but too old for this plugin, so the advice is "update it".
    *
-   * Two independent signals say so: a release below {@link PluginDependency.minPluginVersion}, and a published
+   * Two independent signals say so: a release below {@link PluginDependencyBase.minPluginVersion}, and a published
    * API whose contract version is outside {@link PluginDependency.apiVersionRange}.
    *
    * @param dependency - The declared dependency.
    * @returns Whether updating the dependency is what it needs.
    */
-  private isTooOld(dependency: PluginDependency): boolean {
+  private isTooOld(dependency: DeclaredPluginDependency): boolean {
     return this.isBelowMinPluginVersion(dependency)
-      || this.apiRefs.get(dependency.pluginId)?.unavailabilityReason === PluginApiUnavailabilityReason.VersionMismatch;
+      || this.apiWatches.get(dependency.pluginId)?.isApiVersionMismatch() === true;
   }
 
   /**
@@ -703,7 +752,7 @@ export class PluginGateComponent extends ComponentEx {
    * @param blockingConflicts - The conflicts currently refusing the plugin the right to run.
    */
   private presentUnsatisfied(
-    unsatisfiedDependencies: readonly PluginDependency[],
+    unsatisfiedDependencies: readonly DeclaredPluginDependency[],
     blockingConflicts: readonly PluginConflict[]
   ): void {
     if (!this.isLayoutReady || (unsatisfiedDependencies.length === 0 && blockingConflicts.length === 0)) {
@@ -780,7 +829,7 @@ export class PluginGateComponent extends ComponentEx {
    */
   private renderBlockedBanner(
     containerEl: HTMLElement,
-    unsatisfiedDependencies: readonly PluginDependency[],
+    unsatisfiedDependencies: readonly DeclaredPluginDependency[],
     blockingConflicts: readonly PluginConflict[]
   ): void {
     if (unsatisfiedDependencies.length > 0) {
@@ -898,7 +947,7 @@ export class PluginGateComponent extends ComponentEx {
   }
 
   private showBlockedSettingTab(
-    unsatisfiedDependencies: readonly PluginDependency[],
+    unsatisfiedDependencies: readonly DeclaredPluginDependency[],
     blockingConflicts: readonly PluginConflict[]
   ): void {
     if (this.blockedSettingTab) {
@@ -917,5 +966,44 @@ export class PluginGateComponent extends ComponentEx {
     });
     this.app.setting.addSettingTab(blockedSettingTab);
     this.blockedSettingTab = blockedSettingTab;
+  }
+
+  /**
+   * Starts watching one dependency's API, the way its kind is read.
+   *
+   * A third-party dependency is read through its adapter, which has no contract version, so it never reports
+   * an API version mismatch: its "too old" signal is {@link PluginDependencyBase.minPluginVersion} alone, which
+   * `isBelowMinPluginVersion` reads for both kinds. So the watch is NOT handed the minimum: the ref would only
+   * read `null` for the same reason, and the gate could no longer tell "update it" from "install it".
+   *
+   * @param dependency - The declared dependency.
+   * @returns The watch.
+   */
+  private watchDependencyApi(dependency: DeclaredPluginDependency): DependencyApiWatch {
+    if (isThirdPartyPluginDependency(dependency)) {
+      return {
+        isApiVersionMismatch: () => false,
+        ref: watchThirdPartyPluginApi({
+          adapter: {
+            getApi: dependency.adapter.getApi,
+            pluginId: dependency.adapter.pluginId,
+            pluginName: dependency.adapter.pluginName
+          },
+          app: this.app,
+          component: this
+        })
+      };
+    }
+
+    const apiRef = watchPluginApi<object>({
+      apiVersionRange: dependency.apiVersionRange,
+      app: this.app,
+      component: this,
+      pluginId: dependency.pluginId
+    });
+    return {
+      isApiVersionMismatch: () => apiRef.unavailabilityReason === PluginApiUnavailabilityReason.VersionMismatch,
+      ref: apiRef
+    };
   }
 }

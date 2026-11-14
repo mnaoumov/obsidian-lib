@@ -34,6 +34,11 @@ import {
 import type { PluginApiRef } from '../plugin/plugin-api.ts';
 import type { PluginLifecycleEventPayload } from '../plugin/plugin-lifecycle-events.ts';
 import type {
+  ThirdPartyPluginApiRef,
+  WatchThirdPartyPluginApiParams
+} from '../plugin/third-party-plugin.ts';
+import type {
+  DeclaredPluginDependency,
   PluginConflict,
   PluginDependency
 } from './plugin-gate-component.ts';
@@ -46,6 +51,7 @@ import {
   PLUGIN_LOADED_EVENT_NAME,
   PLUGIN_UNLOADED_EVENT_NAME
 } from '../plugin/plugin-lifecycle-events.ts';
+import { createThirdPartyPluginDependency } from '../plugin/third-party-plugin.ts';
 import {
   PluginConflictSeverity,
   PluginGateComponent
@@ -64,7 +70,7 @@ interface ComponentContext {
 
 interface CreateComponentOptions {
   readonly conflicts?: readonly PluginConflict[];
-  readonly dependencies?: readonly PluginDependency[];
+  readonly dependencies?: readonly DeclaredPluginDependency[];
   readonly isSatisfied?: boolean;
 }
 
@@ -109,13 +115,15 @@ const {
   mockEnableCommunityPlugin,
   mockInstallConfigureEnableCommunityPlugin,
   mockUpdateCommunityPlugin,
-  mockWatchPluginApi
+  mockWatchPluginApi,
+  mockWatchThirdPartyPluginApi
 } = vi.hoisted(() => ({
   mockDisableCommunityPlugin: vi.fn(),
   mockEnableCommunityPlugin: vi.fn(),
   mockInstallConfigureEnableCommunityPlugin: vi.fn(),
   mockUpdateCommunityPlugin: vi.fn(),
-  mockWatchPluginApi: vi.fn()
+  mockWatchPluginApi: vi.fn(),
+  mockWatchThirdPartyPluginApi: vi.fn()
 }));
 
 vi.mock('../plugin/plugin-api.ts', async (importOriginal) => {
@@ -125,6 +133,11 @@ vi.mock('../plugin/plugin-api.ts', async (importOriginal) => {
     watchPluginApi: mockWatchPluginApi
   };
 });
+
+vi.mock('../plugin/third-party-plugin.ts', async (importOriginal) => ({
+  ...await importOriginal<typeof import('../plugin/third-party-plugin.ts')>(),
+  watchThirdPartyPluginApi: mockWatchThirdPartyPluginApi
+}));
 
 vi.mock('../community-plugins.ts', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../community-plugins.ts')>();
@@ -193,6 +206,25 @@ beforeEach(() => {
   });
   removeSettingTab = vi.fn((tab: SettingTab) => {
     settingTabs = settingTabs.filter((candidate) => candidate !== tab);
+  });
+
+  mockWatchThirdPartyPluginApi.mockImplementation(() => {
+    const changeCallbacks: (() => Promise<void>)[] = [];
+    fireApiRefChange = async (): Promise<void> => {
+      for (const callback of changeCallbacks) {
+        await callback();
+      }
+    };
+
+    return castTo<ThirdPartyPluginApiRef<object>>({
+      on: (_name: string, callback: () => Promise<void>) => {
+        changeCallbacks.push(callback);
+        return { asyncEventSource: { offref: vi.fn() } };
+      },
+      get value(): null | object {
+        return apiRefValue;
+      }
+    });
   });
 
   mockWatchPluginApi.mockImplementation(() => {
@@ -392,6 +424,57 @@ describe('unload', () => {
     component.unload();
 
     expect(removeSettingTab).not.toHaveBeenCalled();
+  });
+});
+
+describe('with a third-party dependency', () => {
+  const thirdPartyDependency = createThirdPartyPluginDependency({
+    adapter: {
+      getApi: () => ({}),
+      minPluginVersion: '2.0.0',
+      pluginId: 'third-party',
+      pluginName: 'Third Party'
+    },
+    reason: 'Runs the queries.'
+  });
+
+  it('should watch it through its adapter, without the minimum the gate reads itself', async () => {
+    await createLoadedComponent({ dependencies: [thirdPartyDependency] });
+
+    expect(mockWatchPluginApi).not.toHaveBeenCalled();
+    const params: unknown = mockWatchThirdPartyPluginApi.mock.calls.at(-1)?.[0];
+    expect(params).toMatchObject({ adapter: { pluginId: 'third-party', pluginName: 'Third Party' } });
+    expect(castTo<WatchThirdPartyPluginApiParams<object>>(params).adapter).not.toHaveProperty('minPluginVersion');
+  });
+
+  it('should load the feature surface while the adapter reads its API', async () => {
+    const { loadFeatureSurface } = await createLoadedComponent({ dependencies: [thirdPartyDependency] });
+
+    expect(loadFeatureSurface).toHaveBeenCalledTimes(1);
+  });
+
+  it('should block until the plugin arrives, and then load', async () => {
+    const { loadFeatureSurface, showNotice } = await createLoadedComponent({ dependencies: [thirdPartyDependency], isSatisfied: false });
+    await triggerLayoutReady();
+
+    expectNoticeText(showNotice, `${HOST_PLUGIN_NAME} does nothing until Third Party is installed and enabled.`);
+    expect(loadFeatureSurface).not.toHaveBeenCalled();
+
+    apiRefValue = {};
+    await fireApiRefChange();
+
+    expect(loadFeatureSurface).toHaveBeenCalledTimes(1);
+  });
+
+  it('should ask for an update when the plugin runs below the minimum release', async () => {
+    enabledPlugins.add('third-party');
+    loadedPlugins.add('third-party');
+    manifests['third-party'] = castTo<PluginManifest>({ id: 'third-party', version: '1.0.0' });
+    const { loadFeatureSurface, showNotice } = await createLoadedComponent({ dependencies: [thirdPartyDependency] });
+    await triggerLayoutReady();
+
+    expect(loadFeatureSurface).not.toHaveBeenCalled();
+    expectNoticeText(showNotice, `${HOST_PLUGIN_NAME} needs a newer version of Third Party. Update it to resume.`);
   });
 });
 
