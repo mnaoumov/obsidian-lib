@@ -12,7 +12,10 @@ import type { JsonValue } from 'type-fest';
 
 import { noopAsync } from '@mnaoumov/typescript-lib/function';
 import { castTo } from '@mnaoumov/typescript-lib/object-utils';
-import { App } from 'obsidian-test-mocks/obsidian';
+import {
+  App,
+  Workspace
+} from 'obsidian-test-mocks/obsidian';
 import {
   afterEach,
   beforeEach,
@@ -33,16 +36,6 @@ interface ItemsValue {
   readonly items: number[];
 }
 
-interface WorkspaceWithLayout {
-  readonly getLayout: () => Record<string, unknown>;
-  readonly layoutReady: boolean;
-  readonly readWorkspaceFile: () => Promise<Record<string, unknown>>;
-  readonly setLayout: (layout: Record<string, unknown>) => Promise<void>;
-}
-
-const LEAF_A = castTo<WorkspaceLeafOriginal>({ id: 'leaf-a' });
-const LEAF_B = castTo<WorkspaceLeafOriginal>({ id: 'leaf-b' });
-
 const LAYOUT_WITH_LEAVES = {
   floating: { children: [{ children: [{ children: [{ id: 'leaf-b', type: 'leaf' }], type: 'tabs' }], type: 'window' }], type: 'floating' },
   left: 'not an item',
@@ -54,12 +47,26 @@ function isNumber(value: unknown): value is number {
 }
 
 describe('WorkspaceLayoutStateComponent', () => {
+  type WorkspaceOriginal = AppOriginal['workspace'];
+  type SerializedLayout = Parameters<WorkspaceOriginal['setLayout']>[0];
   let app: AppOriginal;
-  let workspace: WorkspaceWithLayout;
-  let baseLayout: Record<string, unknown>;
-  let savedFile: Record<string, unknown>;
-  let setLayoutImpl: () => Promise<void>;
+  let workspace: WorkspaceOriginal;
+  let leafA: WorkspaceLeafOriginal;
+  let leafB: WorkspaceLeafOriginal;
   const components: WorkspaceLayoutStateComponent[] = [];
+
+  async function writeWorkspaceFile(layout: Record<string, unknown>): Promise<void> {
+    await app.vault.adapter.mkdir(app.vault.configDir);
+    await app.vault.adapter.write(`${app.vault.configDir}/workspace.json`, JSON.stringify(layout));
+  }
+
+  async function setLayout(layout: unknown): Promise<void> {
+    await workspace.setLayout(castTo<SerializedLayout>(layout));
+  }
+
+  function setLayoutReady(): void {
+    Workspace.fromOriginalType2__(workspace).setLayoutReady__();
+  }
 
   function load(pluginId = 'plugin-a'): WorkspaceLayoutStateComponent {
     const component = new WorkspaceLayoutStateComponent({ app, pluginId });
@@ -70,23 +77,12 @@ describe('WorkspaceLayoutStateComponent', () => {
 
   beforeEach(() => {
     app = App.createConfigured__().asOriginalType__();
-    workspace = castTo<WorkspaceWithLayout>(app.workspace);
-    baseLayout = { ...LAYOUT_WITH_LEAVES };
-    savedFile = {};
-    setLayoutImpl = async (): Promise<void> => {
-      await noopAsync();
-    };
-    Object.assign(workspace, {
-      getLayout: (): Record<string, unknown> => ({ ...baseLayout }),
-      async readWorkspaceFile(): Promise<Record<string, unknown>> {
-        await noopAsync();
-        return savedFile;
-      },
-      async setLayout(): Promise<void> {
-        await setLayoutImpl();
-      }
-    });
-    vi.spyOn(app.workspace, 'requestSaveLayout');
+    workspace = app.workspace;
+    leafA = workspace.getLeaf('tab');
+    leafB = workspace.getLeaf('window');
+    // Spied before any component loads, so the component's patch wraps the spy and a test can intercept the real method.
+    vi.spyOn(workspace, 'setLayout');
+    vi.spyOn(workspace, 'requestSaveLayout');
   });
 
   afterEach(() => {
@@ -154,13 +150,13 @@ describe('WorkspaceLayoutStateComponent', () => {
   it('keeps leaf scopes and the workspace scope apart', () => {
     const key = load().defineKey({ defaultValue: 0, key: 'k' });
     key.set(1);
-    key.set(2, LEAF_A);
+    key.set(2, leafA);
     expect(key.get()).toBe(1);
-    expect(key.get(LEAF_A)).toBe(2);
-    expect(key.get(LEAF_B)).toBe(0);
-    key.unset(LEAF_B);
-    key.unset(LEAF_A);
-    expect(key.has(LEAF_A)).toBe(false);
+    expect(key.get(leafA)).toBe(2);
+    expect(key.get(leafB)).toBe(0);
+    key.unset(leafB);
+    key.unset(leafA);
+    expect(key.has(leafA)).toBe(false);
   });
 
   it('does nothing when the value does not change', () => {
@@ -181,16 +177,15 @@ describe('WorkspaceLayoutStateComponent', () => {
     const key = component.defineKey({ defaultValue: 0, key: 'k' });
     const sibling = component.defineKey({ defaultValue: 0, key: 'sibling' });
     const otherKey = other.defineKey({ defaultValue: 0, key: 'k' });
-    vi.spyOn(app.workspace, 'getLeafById').mockImplementation((id) => id === 'leaf-a' ? LEAF_A : null);
     const callback = vi.fn();
     const unsubscribe = key.onChange(callback);
 
     sibling.set(5);
     otherKey.set(5);
-    key.set(3, LEAF_A);
+    key.set(3, leafA);
     key.set(4);
     expect(callback.mock.calls).toEqual([
-      [{ leaf: LEAF_A, leafId: 'leaf-a', oldValue: 0, value: 3 }],
+      [{ leaf: leafA, leafId: leafA.id, oldValue: 0, value: 3 }],
       [{ leaf: null, leafId: null, oldValue: 0, value: 4 }]
     ]);
 
@@ -218,11 +213,11 @@ describe('WorkspaceLayoutStateComponent', () => {
     expect(workspace.getLayout()[WORKSPACE_LAYOUT_STATE_LAYOUT_KEY]).toBeUndefined();
 
     key.set(1);
-    key.set(2, LEAF_A);
-    key.set(3, LEAF_B);
+    key.set(2, leafA);
+    key.set(3, leafB);
     key.set(4, castTo<WorkspaceLeafOriginal>({ id: 'closed-leaf' }));
     expect(workspace.getLayout()[WORKSPACE_LAYOUT_STATE_LAYOUT_KEY]).toEqual({
-      plugins: { 'plugin-a': { leaves: { 'leaf-a': { k: 2 }, 'leaf-b': { k: 3 } }, workspace: { k: 1 } } }
+      plugins: { 'plugin-a': { leaves: { [leafA.id]: { k: 2 }, [leafB.id]: { k: 3 } }, workspace: { k: 1 } } }
     });
   });
 
@@ -231,21 +226,22 @@ describe('WorkspaceLayoutStateComponent', () => {
     const key = component.defineKey({ defaultValue: 0, key: 'k' });
     key.set(1);
     const events: string[] = [];
-    setLayoutImpl = async (): Promise<void> => {
+    const realSetLayout = Workspace.prototype.setLayout;
+    vi.mocked(workspace.setLayout).mockImplementation(async function setLayoutWithEvent(this: WorkspaceOriginal, data: SerializedLayout) {
       events.push(`during: ${String(key.get())}`);
-      await noopAsync();
-    };
+      await realSetLayout.call(Workspace.fromOriginalType2__(this), data);
+    });
     const unsubscribe = component.onLayoutLoad(() => {
-      events.push(`after: ${String(key.get(LEAF_A))}`);
+      events.push(`after: ${String(key.get(leafA))}`);
     });
 
-    await workspace.setLayout({
-      [WORKSPACE_LAYOUT_STATE_LAYOUT_KEY]: { plugins: { 'plugin-a': { leaves: { 'leaf-a': { k: 9 } }, workspace: { k: 8 } } } }
+    await setLayout({
+      [WORKSPACE_LAYOUT_STATE_LAYOUT_KEY]: { plugins: { 'plugin-a': { leaves: { [leafA.id]: { k: 9 } }, workspace: { k: 8 } } } }
     });
     expect(events).toEqual(['during: 8', 'after: 9']);
 
     unsubscribe();
-    await workspace.setLayout({});
+    await setLayout({});
     expect(key.get()).toBe(0);
     expect(events).toEqual(['during: 8', 'after: 9', 'during: 0']);
   });
@@ -254,46 +250,43 @@ describe('WorkspaceLayoutStateComponent', () => {
     const component = load();
     const callback = vi.fn();
     component.onLayoutLoad(callback);
-    setLayoutImpl = async (): Promise<void> => {
-      await noopAsync();
-      throw new Error('broken layout');
-    };
-    await expect(workspace.setLayout({})).rejects.toThrow('broken layout');
+    vi.mocked(workspace.setLayout).mockRejectedValueOnce(new Error('broken layout'));
+    await expect(setLayout({})).rejects.toThrow('broken layout');
     expect(callback).toHaveBeenCalledTimes(1);
   });
 
   it('hydrates once from the saved layout when loaded after layout-ready, keeping values set meanwhile', async () => {
-    Object.assign(workspace, { layoutReady: true });
-    savedFile = {
+    setLayoutReady();
+    await writeWorkspaceFile({
       [WORKSPACE_LAYOUT_STATE_LAYOUT_KEY]: {
         plugins: {
-          'plugin-a': { leaves: { 'leaf-a': { k: 1 }, 'leaf-b': { k: 2 } }, workspace: { k: 3, other: 4 } },
+          'plugin-a': { leaves: { [leafA.id]: { k: 1 }, [leafB.id]: { k: 2 } }, workspace: { k: 3, other: 4 } },
           'plugin-b': { leaves: {}, workspace: { k: 5 } }
         }
       }
-    };
+    });
     const component = load();
     const key = component.defineKey({ defaultValue: 0, key: 'k' });
     const loaded = new Promise<void>((resolve) => {
       component.onLayoutLoad(resolve);
     });
     key.set(10);
-    key.set(20, LEAF_A);
+    key.set(20, leafA);
     await loaded;
 
     expect(key.get()).toBe(10);
-    expect(key.get(LEAF_A)).toBe(20);
-    expect(key.get(LEAF_B)).toBe(2);
+    expect(key.get(leafA)).toBe(20);
+    expect(key.get(leafB)).toBe(2);
     expect(component.defineKey({ defaultValue: 0, key: 'other' }).get()).toBe(4);
     expect(load('plugin-b').defineKey({ defaultValue: 0, key: 'k' }).get()).toBe(5);
   });
 
   it('skips hydration when a layout loaded first, or the installation is gone', async () => {
-    Object.assign(workspace, { layoutReady: true });
-    savedFile = { [WORKSPACE_LAYOUT_STATE_LAYOUT_KEY]: { plugins: { 'plugin-a': { leaves: {}, workspace: { k: 1 } } } } };
+    setLayoutReady();
+    await writeWorkspaceFile({ [WORKSPACE_LAYOUT_STATE_LAYOUT_KEY]: { plugins: { 'plugin-a': { leaves: {}, workspace: { k: 1 } } } } });
     const component = load();
     const key = component.defineKey({ defaultValue: 0, key: 'k' });
-    await workspace.setLayout({});
+    await setLayout({});
     await noopAsync();
     await noopAsync();
     expect(key.get()).toBe(0);
@@ -303,8 +296,8 @@ describe('WorkspaceLayoutStateComponent', () => {
   });
 
   it('skips hydration when unloaded before the saved layout is read', async () => {
-    Object.assign(workspace, { layoutReady: true });
-    savedFile = { [WORKSPACE_LAYOUT_STATE_LAYOUT_KEY]: { plugins: { 'plugin-x': { leaves: {}, workspace: { k: 1 } } } } };
+    setLayoutReady();
+    await writeWorkspaceFile({ [WORKSPACE_LAYOUT_STATE_LAYOUT_KEY]: { plugins: { 'plugin-x': { leaves: {}, workspace: { k: 1 } } } } });
     const component = load();
     component.unload();
     components.length = 0;
@@ -335,7 +328,9 @@ describe('WorkspaceLayoutStateComponent', () => {
   it('reads a layout that is not an object as one without records', async () => {
     const key = load().defineKey({ defaultValue: 0, key: 'k' });
     key.set(1);
-    await workspace.setLayout(castTo<Record<string, unknown>>(null));
+    // The real method cannot read a null layout, so only the component's patch sees it.
+    vi.mocked(workspace.setLayout).mockResolvedValueOnce();
+    await setLayout(null);
     expect(key.get()).toBe(0);
   });
 

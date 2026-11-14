@@ -425,7 +425,7 @@
     "nano-staged": "^1.0.2",
     "obsidian": "^1.14.4",
     "obsidian-integration-testing": "^17.7.4",
-    "obsidian-test-mocks": "^7.2.3",
+    "obsidian-test-mocks": "^8.0.0",
     "prismjs": "^1.30.0",
     "sass": "^1.104.1",
     "satori": "^0.33.5",
