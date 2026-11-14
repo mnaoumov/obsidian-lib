@@ -1,7 +1,6 @@
 /// <reference types="obsidian-integration-testing/vitest/typings" />
 
 import type { BasesView } from '@obsidian-typings/obsidian-public-latest';
-import type { QueryController } from 'obsidian';
 
 import { evalInObsidian } from 'obsidian-integration-testing';
 import {
@@ -43,7 +42,7 @@ describe('formula functions', () => {
           await leaf.openFile(file);
           const view = castTo<BasesView>(leaf.view);
           await waitUntil({ message: 'the Base query is ready', predicate: () => !!view.controller.query });
-          const controller = castTo<QueryController>(view.controller);
+          const controller = view.controller;
           await waitUntil({ message: 'the Base indexes the note', predicate: () => controller.results.has(note) });
           const entry = controller.results.get(note);
           const doubled = entry?.getValue('formula.doubled')?.toString();
