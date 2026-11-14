@@ -83,6 +83,8 @@ export const en = {
       attachmentIsStillUsed: 'Attachment {{attachmentPath}} is still used by other notes. It will not be deleted.',
       attachmentRescued: 'Attachment {{attachmentPath}} is still used by other notes. It was moved to {{newAttachmentPath}}.',
       closeAriaLabel: 'Close',
+      dataFileUnparseable: 'The settings file {{path}} is not valid JSON, so its settings could not be loaded. The file was left untouched.',
+      dataFileUnparseableCopyKept: 'The settings file {{path}} is not valid JSON, so its settings could not be loaded. The file was left untouched, and a copy of it was kept on this device.',
       failedToOpenUrl: 'Failed to open {{url}}',
       pluginLoadPaused: 'Loading is paused until the previous unload of this plugin finishes. Please wait...',
       pluginLoadPauseTimedOut: 'The previous unload of this plugin did not finish in time, so the plugin is loading anyway.',

@@ -45,11 +45,19 @@ import { ValueWrapper } from '@mnaoumov/typescript-lib/value-wrapper';
 
 import type { DataHandler } from '../data-handler.ts';
 import type { PluginEventSource } from '../plugin/plugin-event-source.ts';
+import type { SettingsRecoveryCopy } from '../settings-recovery.ts';
 
+import { PluginDataParseError } from '../data-handler.ts';
 import { getObsidianLibDebugger } from '../debug.ts';
+import { SettingsRecoveryReason } from '../settings-recovery.ts';
 import { DurationTransformer } from '../transformers/duration-transformer.ts';
 import { registerAsyncEvent } from './async-events-component.ts';
 import { ComponentEx } from './component-ex.ts';
+
+/**
+ * The indentation Obsidian's `Vault.writeJson` uses for `data.json`, so a recovery copy reads like the file did.
+ */
+const JSON_INDENT = 2;
 
 const defaultTransformer = new GroupTransformer([
   new SkipPrivatePropertyTransformer(),
@@ -306,6 +314,16 @@ export class PluginSettingsComponentBase<PluginSettings extends object> extends 
   }
 
   /**
+   * Lists the recovery copies of `data.json` kept on this device: copies of a file that did not parse, and of a file
+   * whose stored values a first save would have dropped or changed.
+   *
+   * @returns The copies, newest first; none when the data handler keeps no recovery copies.
+   */
+  public async getRecoveryCopies(): Promise<SettingsRecoveryCopy[]> {
+    return await this.dataHandler.recoveryStore?.list() ?? [];
+  }
+
+  /**
    * Gets a safe copy of the settings.
    *
    * @param settings - The settings.
@@ -326,7 +344,29 @@ export class PluginSettingsComponentBase<PluginSettings extends object> extends 
    */
   public async loadFromFile(isInitialLoad: boolean): Promise<void> {
     this.ensureLoaded();
-    const data = await this.dataHandler.loadData();
+    let data: unknown;
+    try {
+      data = await this.dataHandler.loadData();
+    } catch (error) {
+      // A `data.json` that does not parse is NOT an empty record: reading it as one would save the defaults over the
+      // user's settings. The file is left untouched either way. With a recovery copy kept, the initial load runs on
+      // the defaults in memory and a reload keeps the settings already in memory, and nothing is written until the
+      // user changes a setting. Without a copy the load fails, so nothing can ever be saved over the only copy.
+      if (!(error instanceof PluginDataParseError) || error.recoveryCopy === null) {
+        throw error;
+      }
+      if (isInitialLoad) {
+        this.lastSavedState = this.createDefaultState();
+        this.currentState = this.createDefaultState();
+      }
+      this.markLoadedFromFile();
+      if (isInitialLoad) {
+        await this.asyncEvents.triggerAsync('loadSettings', this.currentState as ReadonlyPluginSettingsState<PluginSettings>, isInitialLoad);
+      }
+      return;
+    }
+    // Taken before anything below can mutate the record: what the file held, for a recovery copy.
+    const originalJson = JSON.stringify(data, undefined, JSON_INDENT);
     this.lastSavedState = this.createDefaultState();
     this.currentState = this.createDefaultState();
 
@@ -371,7 +411,7 @@ export class PluginSettingsComponentBase<PluginSettings extends object> extends 
 
       const newRecord = await this.settingsToRawRecord(this.currentState.inputValues);
 
-      if (!isDeepEqual(newRecord, data)) {
+      if (!isDeepEqual(newRecord, data) && await this.keepCopyBeforeLossyRewrite(originalJson, newRecord)) {
         await this.saveToFileImpl();
       }
     } finally {
@@ -509,6 +549,46 @@ export class PluginSettingsComponentBase<PluginSettings extends object> extends 
     validator: SettingsValidator<PluginSettings, PropertyName>
   ): void {
     this.validators.set(propertyName, validator as SettingsValidator<PluginSettings>);
+  }
+
+  /**
+   * Restores a recovery copy of `data.json` kept on this device: writes its record back to the file and reloads the
+   * settings from it.
+   *
+   * The settings in use are kept as a recovery copy of their own first, so a restore loses nothing either.
+   *
+   * @param id - The id of the copy, from {@link getRecoveryCopies}.
+   * @returns A {@link Promise} that resolves when the restored settings are loaded.
+   * @throws If the data handler keeps no recovery copies, no copy has that id, or the copy is not valid JSON (a copy
+   * of an unparseable file has to be repaired by hand first).
+   */
+  public async restoreRecoveryCopy(id: string): Promise<void> {
+    this.ensureLoaded();
+    const recoveryStore = this.dataHandler.recoveryStore;
+    if (!recoveryStore) {
+      throw new Error('The data handler keeps no recovery copies.');
+    }
+    const copies = await recoveryStore.list();
+    const copy = copies.find((candidate) => candidate.id === id);
+    if (!copy) {
+      throw new Error(`No recovery copy "${id}" is kept on this device.`);
+    }
+
+    let data: unknown;
+    try {
+      data = JSON.parse(copy.rawText);
+    } catch (error) {
+      throw new Error(`Recovery copy "${id}" is not valid JSON, so it cannot be restored as it is.`, { cause: error });
+    }
+
+    const currentRecord = await this.settingsToRawRecord(this.currentState.inputValues);
+    await recoveryStore.keep({
+      path: copy.path,
+      rawText: JSON.stringify(currentRecord, undefined, JSON_INDENT),
+      reason: SettingsRecoveryReason.LossyRewrite
+    });
+    await this.dataHandler.saveData(data);
+    await this.loadFromFile(false);
   }
 
   /**
@@ -730,6 +810,39 @@ export class PluginSettingsComponentBase<PluginSettings extends object> extends 
 
   private isValidPropertyName(property: unknown): property is PropertyNames<PluginSettings> {
     return typeof property === 'string' && (this.propertyNames as string[]).includes(property);
+  }
+
+  /**
+   * Keeps a recovery copy before the initial load's normalizing save, when that save would drop or change a stored
+   * value: an unknown key (a newer plugin version's setting), a legacy migration, a value the transformer rewrites.
+   * Adding defaults for keys the file lacks loses nothing and keeps no copy.
+   *
+   * @param originalJson - The record as the file held it, serialized before anything could mutate it.
+   * @param newRecord - The record about to be saved.
+   * @returns Whether the save may go ahead: nothing would be lost, a copy was kept, or the handler keeps no copies.
+   */
+  private async keepCopyBeforeLossyRewrite(originalJson: string | undefined, newRecord: GenericObject): Promise<boolean> {
+    const recoveryStore = this.dataHandler.recoveryStore;
+    if (!recoveryStore || originalJson === undefined) {
+      return true;
+    }
+    // `data.json` held an object or `null` here: anything else was rejected before the save was considered.
+    const originalRecord = JSON.parse(originalJson) as GenericObject | null;
+    if (originalRecord === null) {
+      return true;
+    }
+    const isLossy = Object.keys(originalRecord).some((key) => !Object.hasOwn(newRecord, key) || !isDeepEqual(newRecord[key], originalRecord[key]));
+    if (!isLossy) {
+      return true;
+    }
+
+    try {
+      await recoveryStore.keep({ path: 'data.json', rawText: originalJson, reason: SettingsRecoveryReason.LossyRewrite });
+      return true;
+    } catch (error) {
+      console.error(new Error('Could not keep a recovery copy of data.json, so the normalized settings were not saved over it.', { cause: error }));
+      return false;
+    }
   }
 
   private markLoadedFromFile(): void {

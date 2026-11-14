@@ -170,6 +170,17 @@ const dataHandler = new PluginDataHandler(plugin, { maxSizeInBytes: 1024 * 1024 
 
 `Infinity` turns the guard off. The limit protects startup and is not an Obsidian Sync quota, which depends on the plan. Keep `data.json` for small settings. If it grows with the vault, move the growing part to the [plugin data stores](/obsidian-lib/guides/plugin-data-stores/).
 
+### Damaged `data.json` and recovery copies
+
+Obsidian's `Plugin.loadData` resolves `undefined` both when `data.json` is missing and when it exists but does not parse (truncated by a sync tool, a crash mid-write, a hand edit). A settings component that read the second case as "nothing stored" would save its defaults over the user's settings. So when Obsidian answers `undefined` or `null`, `PluginDataHandler` reads the file itself:
+
+- **Missing, or valid JSON.** The handler returns what the file holds, as before.
+- **Not valid JSON.** The handler keeps a copy of the raw text in its `recoveryStore`, shows a notice naming the plugin and the path, and throws `PluginDataParseError`. The file is never touched. `PluginSettingsComponentBase` then runs on the defaults in memory (a reload keeps the settings already in memory) and writes nothing until the user changes a setting. When no copy could be kept, the load fails instead, so nothing is ever saved over the only copy.
+
+The initial load also saves the normalized settings back to `data.json`. When that save would drop or change a stored value (an unknown key from a newer plugin version, a legacy migration), the component keeps a copy of the original record first, and skips the save if the copy cannot be kept. A save that only adds defaults for missing keys loses nothing and keeps no copy.
+
+The default `recoveryStore` is a `LocalSettingsRecoveryStore`: a [`LocalDataStore`](/obsidian-lib/guides/plugin-data-stores/) on this device, so no sync tool carries the copies anywhere, holding the newest five copies per plugin. `getRecoveryCopies()` lists them, newest first, and `restoreRecoveryCopy(id)` writes one back to `data.json` and reloads it, keeping the settings in use as a copy first. Pass `recoveryStore: null` to keep no copies.
+
 ## [PluginSettingsTabBase](https://github.com/mnaoumov/obsidian-lib/blob/main/src/plugin/plugin-settings-tab.ts)
 
 <!-- snippet-check: context declare class FooPluginSettings { invalidCharacterAction: 'Remove' | 'Replace'; replacementCharacter: string; } -->

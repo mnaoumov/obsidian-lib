@@ -16,7 +16,14 @@ import {
 
 import type { DataHandler } from '../data-handler.ts';
 import type { PluginEventSource } from '../plugin/plugin-event-source.ts';
+import type {
+  SettingsRecoveryCopy,
+  SettingsRecoveryStore,
+  SettingsRecoveryStoreKeepParams
+} from '../settings-recovery.ts';
 
+import { PluginDataParseError } from '../data-handler.ts';
+import { SettingsRecoveryReason } from '../settings-recovery.ts';
 import { PluginSettingsComponentBase } from './plugin-settings-component.ts';
 
 vi.mock('../../../debug.ts', () => ({
@@ -729,5 +736,186 @@ describe('PluginSettingsComponentBase', () => {
 
       expect(dataHandler.saveData).not.toHaveBeenCalled();
     });
+  });
+});
+
+class MemoryRecoveryStore implements SettingsRecoveryStore {
+  public readonly copies: SettingsRecoveryCopy[] = [];
+  public keepError: Error | null = null;
+
+  public keep(params: SettingsRecoveryStoreKeepParams): Promise<SettingsRecoveryCopy> {
+    if (this.keepError) {
+      return Promise.reject(this.keepError);
+    }
+    const copy = { ...params, id: `copy-${String(this.copies.length)}`, keptAt: this.copies.length };
+    this.copies.push(copy);
+    return Promise.resolve(copy);
+  }
+
+  public list(): Promise<SettingsRecoveryCopy[]> {
+    return Promise.resolve([...this.copies].reverse());
+  }
+
+  public remove(): Promise<void> {
+    return noopAsync();
+  }
+}
+
+class RecoveringDataHandler extends MockDataHandler {
+  public loadError: Error | null = null;
+
+  public constructor(data: unknown, public readonly recoveryStore: MemoryRecoveryStore | null = new MemoryRecoveryStore()) {
+    super(data);
+    this.loadData.mockImplementation(() => this.loadError ? Promise.reject(this.loadError) : Promise.resolve(this.data));
+  }
+}
+
+function createParseError(recoveryCopy: null | SettingsRecoveryCopy): PluginDataParseError {
+  return new PluginDataParseError({ cause: new SyntaxError('x'), path: 'p/data.json', pluginId: 'foo', pluginName: 'Foo', recoveryCopy });
+}
+
+const KEPT_COPY: SettingsRecoveryCopy = { id: 'kept', keptAt: 0, path: 'p/data.json', rawText: '{', reason: SettingsRecoveryReason.InvalidJson };
+
+describe('PluginSettingsComponentBase recovery', () => {
+  it('should run on defaults and write nothing when data.json does not parse', async () => {
+    const dataHandler = new RecoveringDataHandler(undefined);
+    dataHandler.loadError = createParseError(KEPT_COPY);
+    const component = createComponent(dataHandler);
+    const loaded = vi.fn();
+    component.on('loadSettings', loaded);
+
+    await component.loadWithPromises();
+    await component.whenLoadedFromFile();
+
+    expect(component.settings).toEqual({ count: 0, name: 'default' });
+    expect(dataHandler.saveData).not.toHaveBeenCalled();
+    expect(loaded).toHaveBeenCalledWith(expect.anything(), true);
+
+    // Nothing is saved until the user changes a setting: then the copy kept on this device is what survives.
+    await component.saveToFile();
+    expect(dataHandler.saveData).not.toHaveBeenCalled();
+  });
+
+  it('should keep the settings in memory when a reload finds data.json unparseable', async () => {
+    const dataHandler = new RecoveringDataHandler({ count: 7, name: 'stored' });
+    const component = createComponent(dataHandler);
+    await component.loadWithPromises();
+    const loaded = vi.fn();
+    component.on('loadSettings', loaded);
+
+    dataHandler.loadError = createParseError(KEPT_COPY);
+    await component.onExternalSettingsChange();
+
+    expect(component.settings).toEqual({ count: 7, name: 'stored' });
+    expect(loaded).not.toHaveBeenCalled();
+  });
+
+  it('should fail the load when no recovery copy was kept', async () => {
+    const dataHandler = new RecoveringDataHandler(undefined, null);
+    dataHandler.loadError = createParseError(null);
+    const component = createComponent(dataHandler);
+
+    await expect(component.loadWithPromises()).rejects.toThrow();
+    expect(dataHandler.saveData).not.toHaveBeenCalled();
+  });
+
+  it('should keep a copy before a first save that drops a stored value', async () => {
+    const dataHandler = new RecoveringDataHandler({ count: 1, fromNewerVersion: true, name: 'stored' });
+    const component = createComponent(dataHandler);
+
+    await component.loadWithPromises();
+
+    expect(dataHandler.recoveryStore?.copies).toStrictEqual([
+      expect.objectContaining({ rawText: JSON.stringify({ count: 1, fromNewerVersion: true, name: 'stored' }, undefined, 2), reason: SettingsRecoveryReason.LossyRewrite })
+    ]);
+    expect(dataHandler.data).toStrictEqual({ count: 1, name: 'stored' });
+  });
+
+  it('should keep no copy when nothing was stored', async () => {
+    for (const data of [null, undefined]) {
+      const dataHandler = new RecoveringDataHandler(data);
+      await createComponent(dataHandler).loadWithPromises();
+
+      expect(dataHandler.recoveryStore?.copies).toStrictEqual([]);
+      expect(dataHandler.data).toStrictEqual({ count: 0, name: 'default' });
+    }
+  });
+
+  it('should keep no copy when the first save only adds defaults', async () => {
+    const dataHandler = new RecoveringDataHandler({ name: 'stored' });
+    const component = createComponent(dataHandler);
+
+    await component.loadWithPromises();
+
+    expect(dataHandler.recoveryStore?.copies).toStrictEqual([]);
+    expect(dataHandler.data).toStrictEqual({ count: 0, name: 'stored' });
+  });
+
+  it('should skip a lossy first save when the copy cannot be kept', async () => {
+    const dataHandler = new RecoveringDataHandler({ count: 1, fromNewerVersion: true, name: 'stored' });
+    const recoveryStore = dataHandler.recoveryStore ?? new MemoryRecoveryStore();
+    recoveryStore.keepError = new Error('quota');
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(noop);
+    const component = createComponent(dataHandler);
+
+    await component.loadWithPromises();
+
+    expect(dataHandler.saveData).not.toHaveBeenCalled();
+    expect(consoleError).toHaveBeenCalledOnce();
+    expect(component.settings).toEqual({ count: 1, name: 'stored' });
+  });
+
+  it('should write a lossy first save as before when the handler keeps no copies', async () => {
+    const dataHandler = new RecoveringDataHandler({ count: 1, fromNewerVersion: true, name: 'stored' }, null);
+    const component = createComponent(dataHandler);
+
+    await component.loadWithPromises();
+
+    expect(dataHandler.data).toStrictEqual({ count: 1, name: 'stored' });
+  });
+
+  it('should list the kept copies, and none without a recovery store', async () => {
+    const dataHandler = new RecoveringDataHandler({ count: 1, fromNewerVersion: true, name: 'stored' });
+    const component = createComponent(dataHandler);
+    await component.loadWithPromises();
+
+    expect(await component.getRecoveryCopies()).toHaveLength(1);
+    expect(await createComponent(new MockDataHandler({})).getRecoveryCopies()).toStrictEqual([]);
+  });
+
+  it('should restore a copy, keeping the settings in use as a copy first', async () => {
+    const dataHandler = new RecoveringDataHandler({ count: 1, fromNewerVersion: true, name: 'stored' });
+    const component = createComponent(dataHandler);
+    await component.loadWithPromises();
+    await component.editAndSave((settings) => {
+      settings.name = 'edited';
+    });
+    const [lossyCopy] = await component.getRecoveryCopies();
+
+    await component.restoreRecoveryCopy(lossyCopy?.id ?? '');
+
+    expect(dataHandler.data).toStrictEqual({ count: 1, fromNewerVersion: true, name: 'stored' });
+    expect(component.settings).toEqual({ count: 1, name: 'stored' });
+    expect(dataHandler.recoveryStore?.copies.at(-1)?.rawText).toBe(JSON.stringify({ count: 1, name: 'edited' }, undefined, 2));
+  });
+
+  it('should refuse to restore without a store, an unknown id, or a copy that is not JSON', async () => {
+    const withoutStore = createComponent(new RecoveringDataHandler({}, null));
+    await withoutStore.loadWithPromises();
+    await expect(withoutStore.restoreRecoveryCopy('x')).rejects.toThrow(/keeps no recovery copies/u);
+
+    const dataHandler = new RecoveringDataHandler({});
+    const component = createComponent(dataHandler);
+    await component.loadWithPromises();
+    await expect(component.restoreRecoveryCopy('missing')).rejects.toThrow(/No recovery copy "missing"/u);
+
+    const invalid = await dataHandler.recoveryStore?.keep({ path: 'p/data.json', rawText: '{', reason: SettingsRecoveryReason.InvalidJson });
+    await expect(component.restoreRecoveryCopy(invalid?.id ?? '')).rejects.toThrow(/not valid JSON/u);
+  });
+
+  it('should still rethrow any other load failure', async () => {
+    const dataHandler = new RecoveringDataHandler({});
+    dataHandler.loadError = new Error('boom');
+    await expect(createComponent(dataHandler).loadWithPromises()).rejects.toThrow();
   });
 });
