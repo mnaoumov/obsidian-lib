@@ -12,6 +12,9 @@ import type {
 import type { Promisable } from 'type-fest';
 
 import { normalizePromisable } from '@mnaoumov/typescript-lib/async';
+import { noop } from '@mnaoumov/typescript-lib/function';
+
+import { getObsidianLibDebugger } from './debug.ts';
 
 /**
  * A registrar for markdown code block processors.
@@ -70,10 +73,24 @@ export class PluginMarkdownCodeBlockProcessorRegistrar implements MarkdownCodeBl
   /**
    * Registers a markdown code block processor.
    *
+   * Does nothing, and returns a no-op processor, when the plugin instance is not loaded. Obsidian `1.15.1`'s
+   * `Component.register` keeps a cleanup handed to an unloaded component without ever running it, so a processor
+   * registered by an instance that was unloaded while it was still loading (a plugin update, an install over an
+   * existing copy, a Hot Reload) would stay in Obsidian's global language map for the rest of the session, and the
+   * next instance's registration of the same language would throw `Code block postprocessor for language ... is
+   * already registered`.
+   *
    * @param params - The parameters for the markdown code block processor.
    * @returns The markdown post processor.
    */
   public registerMarkdownCodeBlockProcessor(params: PluginMarkdownCodeBlockProcessorRegistrarRegisterMarkdownCodeBlockProcessorParams): MarkdownPostProcessor {
+    if (!this.plugin._loaded) {
+      getObsidianLibDebugger('PluginMarkdownCodeBlockProcessorRegistrar')(
+        `Skipped registering the code block processor for language ${params.language}: the plugin instance is not loaded.`
+      );
+      return noop;
+    }
+
     return this.plugin.registerMarkdownCodeBlockProcessor(params.language, (source, element, context) => normalizePromisable(params.handler(source, element, context)), params.sortOrder);
   }
 }
