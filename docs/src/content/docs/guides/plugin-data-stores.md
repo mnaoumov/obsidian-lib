@@ -32,6 +32,8 @@ try {
 
 Values use IndexedDB's structured-clone contract. Reads return `unknown` so consumers validate their own schema. `commit({ entries, removedKeys })` updates several records atomically. Writes resolve after transaction completion, including disk/quota failures, rather than after the individual request succeeds. `getOrCreate` initializes a value atomically across connections. `entries()` reads every record in key order from one consistent snapshot.
 
+Once a connection is closed, every operation rejects with `LocalDataStoreClosedError`, whose `reason` says whether the owner called `close()`, another connection's schema upgrade closed it, or the browser closed it (for example after the site data was cleared). IndexedDB's own `InvalidStateError` ("The database connection is closing") never reaches you. `isClosed` answers the same question up front. The usual cause is work that outlives its owner: a debounced save, an interval or an event handler that still runs after the plugin unloaded. Cancel that work in `onunload` and close the store last. Work that may still be in flight can check `isClosed` and stop.
+
 To replace a whole store, pass `shouldClear: true`: the store is cleared and `entries` are written in the same transaction, so a marker or metadata record written with them can never land without the clear, and a failed commit keeps every previous record. Prefer it over listing every existing key in `removedKeys`, which deletes record by record: at 90,000 records in Obsidian a per-key reset took 7 to 16 s, a clearing commit about 1 s.
 
 ```typescript
