@@ -506,7 +506,12 @@ describe('EmbedExtensionsComponent with a subpath-aware format', () => {
             const rect = el.getBoundingClientRect();
             const hitEl = el.doc.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
             lastState = `link ${describeElement(el)}, viewport ${String(el.win.innerWidth)}x${String(el.win.innerHeight)}, hit ${hitEl ? describeElement(hitEl) : 'nothing'}, body children: ${[...el.doc.body.children].map((child) => describeElement(child)).join('; ')}`;
-            return hitEl !== null && el.contains(hitEl);
+            if (hitEl !== null && el.contains(hitEl)) {
+              return true;
+            }
+            // A soft keyboard an earlier file left open shrinks `.app-container`, which can leave the link below its bottom edge.
+            el.scrollIntoView({ block: 'center' });
+            return false;
           }
           // On a phone the new tab is still coming on screen after `openFile`, so the link exists before a tap at its center
           // Reaches it: wait until the link is the element at that point, which is what `clickElement` asserts.
