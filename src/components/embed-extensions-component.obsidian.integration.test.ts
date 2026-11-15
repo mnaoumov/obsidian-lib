@@ -493,6 +493,11 @@ describe('EmbedExtensionsComponent with a subpath-aware format', () => {
         const selector = `:scope .markdown-reading-view a.internal-link[data-href="${constants.LINK}"]`;
         try {
           await leaf.openFile(file, { active: true, state: { mode: 'preview' } });
+          let lastState = 'the link never rendered';
+          function describeElement(el: Element): string {
+            const rect = el.getBoundingClientRect();
+            return `<${el.tagName.toLowerCase()} .${[...el.classList].join('.')}> at (${String(rect.left)}, ${String(rect.top)}) ${String(rect.width)}x${String(rect.height)}`;
+          }
           function isLinkOnTop(): boolean {
             const el = leaf.view.containerEl.querySelector<HTMLElement>(selector);
             if (!el) {
@@ -500,11 +505,16 @@ describe('EmbedExtensionsComponent with a subpath-aware format', () => {
             }
             const rect = el.getBoundingClientRect();
             const hitEl = el.doc.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+            lastState = `link ${describeElement(el)}, viewport ${String(el.win.innerWidth)}x${String(el.win.innerHeight)}, hit ${hitEl ? describeElement(hitEl) : 'nothing'}, body children: ${[...el.doc.body.children].map((child) => describeElement(child)).join('; ')}`;
             return hitEl !== null && el.contains(hitEl);
           }
           // On a phone the new tab is still coming on screen after `openFile`, so the link exists before a tap at its center
           // Reaches it: wait until the link is the element at that point, which is what `clickElement` asserts.
-          await waitUntil({ message: 'The link did not render on top.', predicate: isLinkOnTop, timeoutInMilliseconds: 10_000 });
+          try {
+            await waitUntil({ message: 'The link did not render on top.', predicate: isLinkOnTop, timeoutInMilliseconds: 10_000 });
+          } catch (error) {
+            throw new Error(`The link did not render on top: ${lastState}`, { cause: error });
+          }
           const linkEl = leaf.view.containerEl.querySelector<HTMLElement>(selector);
           if (!linkEl) {
             throw new Error('The link is missing.');
