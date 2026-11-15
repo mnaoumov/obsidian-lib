@@ -493,11 +493,18 @@ describe('EmbedExtensionsComponent with a subpath-aware format', () => {
         const selector = `:scope .markdown-reading-view a.internal-link[data-href="${constants.LINK}"]`;
         try {
           await leaf.openFile(file, { active: true, state: { mode: 'preview' } });
-          await waitUntil({
-            message: 'The link did not render.',
-            predicate: () => leaf.view.containerEl.querySelector(selector) !== null,
-            timeoutInMilliseconds: 10_000
-          });
+          function isLinkOnTop(): boolean {
+            const el = leaf.view.containerEl.querySelector<HTMLElement>(selector);
+            if (!el) {
+              return false;
+            }
+            const rect = el.getBoundingClientRect();
+            const hitEl = el.doc.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+            return hitEl !== null && el.contains(hitEl);
+          }
+          // On a phone the new tab is still coming on screen after `openFile`, so the link exists before a tap at its center
+          // Reaches it: wait until the link is the element at that point, which is what `clickElement` asserts.
+          await waitUntil({ message: 'The link did not render on top.', predicate: isLinkOnTop, timeoutInMilliseconds: 10_000 });
           const linkEl = leaf.view.containerEl.querySelector<HTMLElement>(selector);
           if (!linkEl) {
             throw new Error('The link is missing.');
@@ -585,7 +592,8 @@ describe('EmbedExtensionsComponent with a subpath-aware format', () => {
           const unloadedEl = await render();
           await waitUntil({
             message: 'The generic file embeds did not render.',
-            predicate: () => unloadedEl.querySelectorAll(loadedSelector).length >= constants.count,
+            // The embeds of existing files plus the one of the missing file: stopping at `count` read the last one before it loaded.
+            predicate: () => unloadedEl.querySelectorAll(loadedSelector).length >= constants.count + 1,
             timeoutInMilliseconds: 10_000
           });
           const unloadedLoaded = unloadedEl.querySelectorAll(loadedSelector).length;
