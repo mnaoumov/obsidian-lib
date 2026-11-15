@@ -1,5 +1,41 @@
 # CHANGELOG
 
+## 11.0.0
+
+This release has 1 breaking change, 11 new features, 6 fixes and 2 documentation changes. 10 maintenance commits (tests, build, CI, refactoring, dependencies) are not listed.
+
+### Breaking changes
+
+- return null rather than undefined for "no value"
+
+### New
+
+- **demo-vault-helper:** open demo vaults with no CodeScript Toolkit trust prompt
+- **settings:** keep an unparseable data.json and device-local recovery copies
+- **workers:** add Web Worker and WebAssembly runtime helpers
+- share path compatibility and misplaced-attachment checks
+- **plugin:** typed, declared dependencies on third-party plugins
+- **plugin-gate:** catch any conflicting plugin the moment it is toggled
+- **disposable:** register disposables on any component and return DisposableEx from public APIs
+- **data-stores:** open a store whose anchor folder was moved
+- **data-stores:** grow one journal file per device, 18 file creates an hour instead of 732
+- **link:** accept null from link converters and validators
+- **plugin:** show a notice while a load waits for the previous unload
+
+### Fixed
+
+- **local-data-store:** reject operations on a closed store with a named error
+- **markdown-code-block-processor-registrar:** keep a dead plugin instance from blocking a code block language
+- **plugin:** load quietly when unloaded during its own load
+- **link:** keep the size suffix when refreshing a file-name embed alias (<https://github.com/mnaoumov/obsidian-custom-attachment-location/issues/104>)
+- **link:** rewrite canvas holders' links in editReferences (<https://github.com/mnaoumov/obsidian-advanced-rename-and-delete-handler/issues/10>)
+- **setting-components:** read an empty MultipleTextComponent as an empty list
+
+### Documentation
+
+- **cross-plugin-apis:** forward the listener without a cast, on typescript-lib 4
+- **changelog:** regroup the published release notes for readers
+
 ## 10.12.0
 
 This release has 8 new features, 3 fixes and 3 documentation changes. 1 maintenance commit (tests, build, CI, refactoring, dependencies) is not listed.
