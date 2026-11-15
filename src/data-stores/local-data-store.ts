@@ -5,6 +5,35 @@
  */
 
 /**
+ * Why a {@link LocalDataStore} connection stopped accepting operations.
+ */
+export enum LocalDataStoreCloseReason {
+  /**
+   * The browser closed the connection on its own, for example because the database was deleted or the storage was
+   * cleared.
+   */
+  ClosedByBrowser = 'closedByBrowser',
+  /**
+   * The owner called {@link LocalDataStore.close}, usually because it unloaded.
+   */
+  ClosedByOwner = 'closedByOwner',
+  /**
+   * Another connection asked for a newer schema version, so this one closed to let it upgrade.
+   */
+  VersionChange = 'versionChange'
+}
+
+/**
+ * Options of a {@link LocalDataStoreClosedError}.
+ */
+export interface LocalDataStoreClosedErrorConstructorOptions {
+  /**
+   * The IndexedDB error the closed-store error replaces.
+   */
+  readonly cause?: unknown;
+}
+
+/**
  * Atomic mutations of a local record store.
  */
 export interface LocalDataStoreCommitParams {
@@ -54,7 +83,28 @@ export interface LocalDataStoreOpenParams {
  * A local store holds structured-cloneable values; it never writes to the vault.
  */
 export class LocalDataStore {
-  private constructor(private readonly database: IDBDatabase) {}
+  /**
+   * Whether the connection is closed or closing, so no further operation can run.
+   *
+   * @returns `true` once {@link LocalDataStore.close} was called, or the browser or a schema upgrade closed the
+   *   connection.
+   */
+  public get isClosed(): boolean {
+    return this.closeReason !== null;
+  }
+
+  private closeReason: LocalDataStoreCloseReason | null = null;
+
+  private constructor(private readonly database: IDBDatabase) {
+    database.onversionchange = (): void => {
+      this.markClosed(LocalDataStoreCloseReason.VersionChange);
+      database.close();
+    };
+    // Fired only when the browser closes the connection abnormally, never after `close()`.
+    database.addEventListener('close', (): void => {
+      this.markClosed(LocalDataStoreCloseReason.ClosedByBrowser);
+    });
+  }
 
   /**
    * Opens an isolated database. Writes resolve only once their transaction commits.
@@ -73,11 +123,7 @@ export class LocalDataStore {
         reject(new Error('Could not open local data store', { cause: request.error }));
       });
       request.onsuccess = (): void => {
-        const database = request.result;
-        database.onversionchange = (): void => {
-          database.close();
-        };
-        resolve(new LocalDataStore(database));
+        resolve(new LocalDataStore(request.result));
       };
     });
   }
@@ -92,9 +138,11 @@ export class LocalDataStore {
   }
 
   /**
-   * Closes this connection without deleting its records.
+   * Closes this connection without deleting its records. Every later operation rejects with
+   * {@link LocalDataStoreClosedError}. Closing twice is harmless.
    */
   public close(): void {
+    this.markClosed(LocalDataStoreCloseReason.ClosedByOwner);
     this.database.close();
   }
 
@@ -207,10 +255,23 @@ export class LocalDataStore {
     await this.run('readwrite', (store) => store.put(value, key));
   }
 
+  private markClosed(reason: LocalDataStoreCloseReason): void {
+    this.closeReason ??= reason;
+  }
+
   // eslint-disable-next-line typescript-dev-toolkit/no-undefined-return-type -- Mirrors IndexedDB: a missing record reads as `undefined`, which a stored `null` must stay distinct from.
   private async run<T>(mode: IDBTransactionMode, action: (store: IDBObjectStore) => IDBRequest<T> | undefined): Promise<T | undefined> {
     return await new Promise((resolve, reject) => {
-      const transaction = this.database.transaction('records', mode);
+      let transaction: IDBTransaction;
+      try {
+        if (this.closeReason !== null) {
+          throw new LocalDataStoreClosedError(this.database.name, this.closeReason);
+        }
+        transaction = this.database.transaction('records', mode);
+      } catch (error) {
+        reject(this.toClosedError(error));
+        return;
+      }
       let request: IDBRequest<T> | undefined;
       try {
         request = action(transaction.objectStore('records'));
@@ -227,5 +288,41 @@ export class LocalDataStore {
         reject(new Error('Local data-store transaction aborted', { cause: transaction.error }));
       });
     });
+  }
+
+  private toClosedError(error: unknown): Error {
+    if (error instanceof LocalDataStoreClosedError) {
+      return error;
+    }
+    // A closing connection makes `transaction()` throw `InvalidStateError` synchronously.
+    if (error instanceof Error && error.name === 'InvalidStateError') {
+      return new LocalDataStoreClosedError(this.database.name, this.closeReason ?? LocalDataStoreCloseReason.ClosedByBrowser, { cause: error });
+    }
+    return error instanceof Error ? error : new Error('Local data-store transaction failed', { cause: error });
+  }
+}
+
+/**
+ * Thrown by every operation of a {@link LocalDataStore} whose connection is closed or closing.
+ *
+ * It replaces IndexedDB's raw `InvalidStateError` ("The database connection is closing"), which names neither the
+ * store nor the cause. The usual cause is work that outlived its owner: a debounced or scheduled save that runs after
+ * the plugin unloaded and closed its store.
+ */
+export class LocalDataStoreClosedError extends Error {
+  /**
+   * Creates a {@link LocalDataStoreClosedError}.
+   *
+   * @param databaseName - The IndexedDB database name of the store.
+   * @param reason - Why the connection closed.
+   * @param options - The IndexedDB error this one replaces, as its `cause`.
+   */
+  public constructor(
+    public readonly databaseName: string,
+    public readonly reason: LocalDataStoreCloseReason,
+    options?: LocalDataStoreClosedErrorConstructorOptions
+  ) {
+    super(`The local data store "${databaseName}" is closed (${reason}), so the operation was not run.`, options);
+    this.name = 'LocalDataStoreClosedError';
   }
 }

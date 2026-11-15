@@ -1,4 +1,6 @@
+import { castTo } from '@mnaoumov/typescript-lib/object-utils';
 import {
+  forceCloseDatabase,
   IDBDatabase,
   IDBFactory,
   IDBObjectStore
@@ -11,7 +13,11 @@ import {
   vi
 } from 'vitest';
 
-import { LocalDataStore } from './local-data-store.ts';
+import {
+  LocalDataStore,
+  LocalDataStoreClosedError,
+  LocalDataStoreCloseReason
+} from './local-data-store.ts';
 
 describe('LocalDataStore', () => {
   afterEach(() => {
@@ -174,6 +180,81 @@ describe('LocalDataStore', () => {
     });
     await expect(store.entries()).rejects.toThrow('transaction aborted');
     database.close();
+    store.close();
+  });
+
+  it('rejects every operation after close with a named error instead of the raw InvalidStateError', async () => {
+    const store = await LocalDataStore.open({ factory: new IDBFactory(), pluginId: 'plugin', storeId: 'cache', vaultId: 'vault' });
+    await store.set('key', true);
+    expect(store.isClosed).toBe(false);
+    store.close();
+    store.close();
+    expect(store.isClosed).toBe(true);
+    const error = await store.get('key').catch((error_: unknown) => error_);
+    expect(error).toBeInstanceOf(LocalDataStoreClosedError);
+    expect(error).toMatchObject({
+      databaseName: `obsidian-lib:${JSON.stringify(['vault', 'plugin', 'cache'])}`,
+      name: 'LocalDataStoreClosedError',
+      reason: LocalDataStoreCloseReason.ClosedByOwner
+    });
+    await expect(store.set('key', false)).rejects.toThrow('is closed (closedByOwner)');
+    await expect(store.entries()).rejects.toBeInstanceOf(LocalDataStoreClosedError);
+  });
+
+  it('reports a schema upgrade as the close reason', async () => {
+    const factory = new IDBFactory();
+    const params = { factory, pluginId: 'plugin', storeId: 'cache', vaultId: 'vault' };
+    const store = await LocalDataStore.open(params);
+    const request = factory.open(`obsidian-lib:${JSON.stringify(['vault', 'plugin', 'cache'])}`, 2);
+    const database = await new Promise<IDBDatabase>((resolve) => {
+      request.onsuccess = (): void => {
+        resolve(request.result);
+      };
+    });
+    database.close();
+    expect(store.isClosed).toBe(true);
+    await expect(store.get('key')).rejects.toMatchObject({ reason: LocalDataStoreCloseReason.VersionChange });
+    store.close();
+    await expect(store.get('key')).rejects.toMatchObject({ reason: LocalDataStoreCloseReason.VersionChange });
+  });
+
+  it('reports a connection the browser closed', async () => {
+    const store = await LocalDataStore.open({ factory: new IDBFactory(), pluginId: 'plugin', storeId: 'cache', vaultId: 'vault' });
+    const transaction = vi.spyOn(IDBDatabase.prototype, 'transaction');
+    await store.set('key', true);
+    const database = transaction.mock.contexts[0];
+    transaction.mockRestore();
+    expect(database).toBeDefined();
+    // The fake's declaration types the parameter as the class rather than an instance.
+    forceCloseDatabase(castTo<typeof IDBDatabase>(database));
+    await vi.waitFor(() => {
+      expect(store.isClosed).toBe(true);
+    });
+    await expect(store.get('key')).rejects.toMatchObject({ reason: LocalDataStoreCloseReason.ClosedByBrowser });
+    store.close();
+  });
+
+  it('turns a synchronous InvalidStateError from a closing connection into the named error, keeping other errors', async () => {
+    const store = await LocalDataStore.open({ factory: new IDBFactory(), pluginId: 'plugin', storeId: 'cache', vaultId: 'vault' });
+    const invalidState = new DOMException('The database connection is closing.', 'InvalidStateError');
+    const transaction = vi.spyOn(IDBDatabase.prototype, 'transaction').mockImplementation(() => {
+      throw invalidState;
+    });
+    const error = await store.get('key').catch((error_: unknown) => error_);
+    expect(error).toBeInstanceOf(LocalDataStoreClosedError);
+    expect(error).toMatchObject({ cause: invalidState, reason: LocalDataStoreCloseReason.ClosedByBrowser });
+
+    transaction.mockImplementation(() => {
+      throw new Error('Other');
+    });
+    await expect(store.get('key')).rejects.toThrow('Other');
+
+    transaction.mockImplementation(() => {
+      // eslint-disable-next-line @typescript-eslint/only-throw-error -- Simulates a non-Error throw.
+      throw 'not an error';
+    });
+    await expect(store.get('key')).rejects.toMatchObject({ cause: 'not an error', message: 'Local data-store transaction failed' });
+    transaction.mockRestore();
     store.close();
   });
 });

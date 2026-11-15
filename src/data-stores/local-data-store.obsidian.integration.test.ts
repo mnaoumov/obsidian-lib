@@ -64,6 +64,53 @@ describe('LocalDataStore in Obsidian', () => {
     expect(result.sibling).toEqual([['kept', true]]);
   });
 
+  it('rejects an operation on a closed store with LocalDataStoreClosedError, where the raw connection throws InvalidStateError', async () => {
+    const result = await evalInObsidian({
+      async callback({ app, lib: { LocalDataStore, LocalDataStoreClosedError }, pluginId }) {
+        const params = { pluginId, storeId: `integration-${window.crypto.randomUUID()}`, vaultId: app.appId };
+        // The premise: Chromium throws synchronously from `transaction()` once a connection is closing.
+        const rawRequest = indexedDB.open(`obsidian-lib-raw-${window.crypto.randomUUID()}`, 1);
+        const raw = await new Promise<IDBDatabase>((resolve) => {
+          rawRequest.onupgradeneeded = (): void => {
+            rawRequest.result.createObjectStore('records');
+          };
+          rawRequest.onsuccess = (): void => {
+            resolve(rawRequest.result);
+          };
+        });
+        raw.close();
+        let rawErrorName = 'none';
+        try {
+          raw.transaction('records', 'readonly');
+        } catch (error) {
+          rawErrorName = error instanceof Error ? error.name : 'non-error';
+        }
+        indexedDB.deleteDatabase(raw.name);
+
+        const store = await LocalDataStore.open(params);
+        await store.set('key', true);
+        await store.clear();
+        store.close();
+        const error = await store.get('key').then(() => null).catch((error_: unknown) => error_);
+        return {
+          isClosed: store.isClosed,
+          isNamedError: error instanceof LocalDataStoreClosedError,
+          name: error instanceof Error ? error.name : null,
+          rawErrorName,
+          reason: error instanceof LocalDataStoreClosedError ? error.reason : null
+        };
+      },
+      input: { pluginId: PLUGIN_ID }
+    });
+    expect(result).toEqual({
+      isClosed: true,
+      isNamedError: true,
+      name: 'LocalDataStoreClosedError',
+      rawErrorName: 'InvalidStateError',
+      reason: 'closedByOwner'
+    });
+  });
+
   it(`reads and resets ${String(RECORD_COUNT)} records`, { timeout: LARGE_STORE_TEST_TIMEOUT_IN_MILLISECONDS }, async () => {
     // Seeding, each read and each reset run in closures of their own, so no single one approaches the transport's eval cap.
     const largeStoreId = `integration-${randomUUID()}`;
