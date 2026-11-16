@@ -3,6 +3,7 @@
 
 import type { App as AppOriginal } from 'obsidian';
 
+import { renderMatches } from 'obsidian';
 import { App } from 'obsidian-test-mocks/obsidian';
 import {
   beforeEach,
@@ -24,6 +25,13 @@ import {
   LinkAndTagCompletionKind,
   LinkAndTagInputSuggest
 } from './link-and-tag-input-suggest.ts';
+
+vi.mock('obsidian', async (importOriginal) => ({
+  ...await importOriginal<typeof import('obsidian')>(),
+  renderMatches: vi.fn((el: HTMLElement, text: string) => {
+    el.appendText(text);
+  })
+}));
 
 interface CreatedSuggest {
   readonly inputEl: HTMLInputElement | HTMLTextAreaElement;
@@ -241,5 +249,19 @@ describe('LinkAndTagInputSuggest', () => {
     suggest.renderSuggestion({ count: 3, kind: LinkAndTagCompletionKind.Tag, tag: 'project' }, el);
     expect(el.textContent).toBe('#project3');
     expect(el.hasClass('mod-complex')).toBe(true);
+  });
+
+  it('should highlight the matched tag characters past the #', () => {
+    const { inputEl, suggest } = create();
+    typeText(inputEl, '#home');
+    const [suggestion] = suggest.suggest();
+    if (!isTag(suggestion)) {
+      throw new Error('Expected a tag suggestion');
+    }
+    expect(suggestion.matches).toEqual([[5, 9]]);
+    vi.mocked(renderMatches).mockClear();
+    const el = createDiv();
+    suggest.renderSuggestion(suggestion, el);
+    expect(vi.mocked(renderMatches)).toHaveBeenCalledWith(el.querySelector('.suggestion-content'), '#area/home', [[5, 9]], 1);
   });
 });

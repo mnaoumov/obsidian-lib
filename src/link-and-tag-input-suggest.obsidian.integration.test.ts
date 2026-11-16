@@ -52,4 +52,43 @@ describe('LinkAndTagInputSuggest', () => {
     expect(result.value).toBe('a [[link-and-tag-input-suggest-probe]]');
     expect(result.caret).toBe(result.value.length);
   });
+
+  it('should highlight the matched tag characters past the #', async () => {
+    const result = await evalInObsidian({
+      async callback({ app, lib: { LinkAndTagInputSuggest, pressKey, waitUntil } }) {
+        const tag = 'tagHighlightProbe';
+        const note = await app.vault.create('link-and-tag-input-suggest-tag-probe.md', `#${tag}\n`);
+        const inputEl = activeDocument.body.createEl('input');
+        const suggest = new LinkAndTagInputSuggest({ app, inputEl });
+
+        try {
+          await waitUntil({
+            message: 'the metadata cache indexes the probe tag',
+            predicate: () => app.metadataCache.getFileCache(note)?.tags?.some((tagCache) => tagCache.tag === `#${tag}`) ?? false
+          });
+          inputEl.focus();
+          for (const key of ['#', 'h', 'i', 'g', 'h']) {
+            await pressKey({ key });
+          }
+          let contentEl: Element | undefined;
+          await waitUntil({
+            message: 'the suggest popover lists the probe tag',
+            predicate: () => {
+              contentEl = [...activeDocument.querySelectorAll('.suggestion-content')].find((el) => el.textContent === `#${tag}`);
+              return contentEl !== undefined;
+            },
+            timeoutInMilliseconds: 10_000
+          });
+
+          return [...contentEl?.querySelectorAll(':scope .suggestion-highlight') ?? []].map((el) => el.textContent);
+        } finally {
+          suggest.close();
+          inputEl.remove();
+          await app.fileManager.trashFile(note);
+        }
+      }
+    });
+
+    expect(result).toEqual(['High']);
+  });
 });

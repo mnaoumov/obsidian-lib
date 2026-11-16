@@ -161,7 +161,7 @@ new FileInputSuggest(app, inputEl).onSelect((file) => console.log(file.path));
 
 ## FolderListComponent
 
-A [`ListComponent`](#listcomponent) of vault folder paths. The new-item row suggests the vault's folders, and a typed path is normalized with Obsidian's `normalizePath`, so the root reads as `/`. A path need not exist yet.
+A [`ListComponent`](#listcomponent) of vault folder paths. The new-item row suggests the vault's folders, with the matched characters highlighted, and a typed path is normalized with Obsidian's `normalizePath`, so the root reads as `/`. A path need not exist yet.
 
 ```ts
 import { SettingEx } from '@mnaoumov/obsidian-lib/setting-ex';
@@ -390,7 +390,7 @@ new SettingEx(containerEl)
 
 ## TagListComponent
 
-A [`ListComponent`](#listcomponent) of tags, stored without the `#` and shown with it. The new-item row suggests the vault's tags, most used first, whether or not the typed text starts with `#`, and a typed tag is refused unless it is a valid Obsidian tag: letters, digits, `_`, `-` and `/`, not digits only.
+A [`ListComponent`](#listcomponent) of tags, stored without the `#` and shown with it. The new-item row suggests the vault's tags, best match first and then most used, with the matched characters highlighted, whether or not the typed text starts with `#`, and a typed tag is refused unless it is a valid Obsidian tag: letters, digits, `_`, `-` and `/`, not digits only.
 
 ```ts
 import { SettingEx } from '@mnaoumov/obsidian-lib/setting-ex';
@@ -603,7 +603,7 @@ new SettingEx(containerEl)
 ```
 
 - `[[` suggests vault files, matched fuzzily on their link text or path, and inserts `[[link]]`, taking over a `]]` already after the caret. Links are relative to `sourcePath`, the vault root by default.
-- `#` at the start of the text or after whitespace suggests the vault's tags, most used first, and inserts `#tag` and a space.
+- `#` at the start of the text or after whitespace suggests the vault's tags, best match first and then most used, with the matched characters highlighted, and inserts `#tag` and a space.
 - `shouldSuggestLinks: false` or `shouldSuggestTags: false` turns one trigger off.
 - The insertion dispatches an `input` event, so the text component's own `onChange` sees it. `onSelect` still reports the chosen suggestion.
 

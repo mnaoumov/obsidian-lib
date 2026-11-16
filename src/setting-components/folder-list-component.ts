@@ -6,13 +6,15 @@
 
 import type {
   App,
+  SearchResult,
   TFolder
 } from 'obsidian';
 
 import {
   AbstractInputSuggest,
   normalizePath,
-  prepareFuzzySearch
+  prepareFuzzySearch,
+  renderMatches
 } from 'obsidian';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- We need to import `SettingEx` to use it in the tsdocs.
@@ -23,17 +25,20 @@ import { ListComponent } from './list-component.ts';
 
 interface FolderMatch {
   readonly folder: TFolder;
-  readonly score: number;
+  readonly result: SearchResult;
 }
 
 /**
- * Suggests the vault's folders, the root included, in an `<input>`, matching the typed text against the folder path.
+ * Suggests the vault's folders, the root included, in an `<input>`, matching the typed text against the folder path
+ * and highlighting the matched characters.
  */
 export class FolderInputSuggest extends AbstractInputSuggest<TFolder> {
   /**
    * The input the suggest completes.
    */
   protected readonly inputEl: HTMLInputElement;
+
+  private readonly resultsByFolder = new Map<TFolder, SearchResult>();
 
   /**
    * Creates a new folder suggest.
@@ -47,13 +52,13 @@ export class FolderInputSuggest extends AbstractInputSuggest<TFolder> {
   }
 
   /**
-   * Renders a folder.
+   * Renders a folder path, the matched characters highlighted.
    *
    * @param folder - The folder.
    * @param el - The element to render into.
    */
   public renderSuggestion(folder: TFolder, el: HTMLElement): void {
-    el.setText(getFolderDisplayPath(folder));
+    renderMatches(el, getFolderDisplayPath(folder), this.resultsByFolder.get(folder)?.matches ?? null);
   }
 
   /**
@@ -77,15 +82,19 @@ export class FolderInputSuggest extends AbstractInputSuggest<TFolder> {
    */
   protected override getSuggestions(query: string): TFolder[] {
     const fuzzySearch = prepareFuzzySearch(query.trim());
-    const results: FolderMatch[] = [];
+    const folderMatches: FolderMatch[] = [];
     for (const folder of this.app.vault.getAllFolders(true)) {
-      const match = fuzzySearch(getFolderDisplayPath(folder));
-      if (match) {
-        results.push({ folder, score: match.score });
+      const result = fuzzySearch(getFolderDisplayPath(folder));
+      if (result) {
+        folderMatches.push({ folder, result });
       }
     }
-    results.sort((result1, result2) => result2.score - result1.score);
-    return results.map((result) => result.folder);
+    folderMatches.sort((folderMatch1, folderMatch2) => folderMatch2.result.score - folderMatch1.result.score);
+    this.resultsByFolder.clear();
+    for (const folderMatch of folderMatches) {
+      this.resultsByFolder.set(folderMatch.folder, folderMatch.result);
+    }
+    return folderMatches.map((folderMatch) => folderMatch.folder);
   }
 }
 

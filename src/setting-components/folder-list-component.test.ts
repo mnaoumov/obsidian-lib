@@ -2,6 +2,7 @@
 
 import type { App as AppOriginal } from 'obsidian';
 
+import { renderMatches } from 'obsidian';
 import { App } from 'obsidian-test-mocks/obsidian';
 import {
   beforeEach,
@@ -18,6 +19,13 @@ import {
 
 vi.mock('../plugin/plugin-context.ts', () => ({
   addPluginCssClasses: vi.fn()
+}));
+
+vi.mock('obsidian', async (importOriginal) => ({
+  ...await importOriginal<typeof import('obsidian')>(),
+  renderMatches: vi.fn((el: HTMLElement, text: string) => {
+    el.appendText(text);
+  })
 }));
 
 class TestFolderInputSuggest extends FolderInputSuggest {
@@ -74,5 +82,23 @@ describe('FolderInputSuggest', () => {
     }
     suggest.renderSuggestion(otherFolder, folderEl);
     expect(folderEl.textContent).toBe('Other');
+  });
+
+  it('should highlight the matched characters of the last query', () => {
+    const app = App.createConfigured__({ files: { 'Other/note.md': '', 'Projects/Alpha/note.md': '' } }).asOriginalType__();
+    const suggest = new TestFolderInputSuggest(app, createEl('input'));
+    vi.mocked(renderMatches).mockClear();
+    suggest.suggest('alp');
+    const folder = app.vault.getFolderByPath('Projects/Alpha');
+    const otherFolder = app.vault.getFolderByPath('Other');
+    if (!folder || !otherFolder) {
+      throw new Error('The test folder is missing');
+    }
+    const el = createDiv();
+    suggest.renderSuggestion(folder, el);
+    expect(vi.mocked(renderMatches)).toHaveBeenCalledWith(el, 'Projects/Alpha', [[9, 12]]);
+    const otherEl = createDiv();
+    suggest.renderSuggestion(otherFolder, otherEl);
+    expect(vi.mocked(renderMatches)).toHaveBeenCalledWith(otherEl, 'Other', null);
   });
 });
