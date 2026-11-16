@@ -310,6 +310,20 @@ export class FooPlugin extends PluginBase {
 }
 ```
 
+## Opening a sidebar view
+
+A "show my view" command usually wants one leaf of its view type: the existing one, wherever the user dragged it, or a new sidebar leaf. Obsidian's own `Workspace.ensureSideLeaf` already does all of it, so this library adds no helper for it. Read from Obsidian `1.15.1`, it takes the first leaf of the type when one exists, wherever it is, and creates one in the requested sidebar only when none does. It loads a deferred view, applies `state` when you pass it, reveals the leaf (expanding a collapsed sidebar, `reveal` defaults to `true`) and focuses it when `active` is set. The core plugins open the file explorer, search, backlinks, outline and tags this way.
+
+```ts
+const MY_VIEW_TYPE = 'my-plugin-view';
+
+async function openMyView(): Promise<void> {
+  await app.workspace.ensureSideLeaf(MY_VIEW_TYPE, 'right', { active: true });
+}
+```
+
+Avoid the older recipe that detaches every leaf of the type and then opens a new one. It throws away the user's placement of the view and its state.
+
 ## Working with plugin settings
 
 Most of the times, it's enough to use `this.pluginSettingsComponent.settings` (`pluginSettingsComponent` is a `protected` member of `PluginBase`) which is just an alias to `this.pluginSettingsComponent.settingsState.effectiveValues`.
