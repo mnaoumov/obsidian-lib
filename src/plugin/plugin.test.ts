@@ -3,6 +3,7 @@ import type {
   Plugin,
   PluginManifest
 } from 'obsidian';
+import type { Mock } from 'vitest';
 
 import { setTimeoutAsync } from '@mnaoumov/typescript-lib/async';
 import {
@@ -41,6 +42,7 @@ import { PluginConflictSeverity } from '../components/plugin-gate-component.ts';
 import { PluginNoticeComponent } from '../components/plugin-notice-component.ts';
 import { PluginSettingsComponentBase } from '../components/plugin-settings-component.ts';
 import { PluginDataHandler } from '../data-handler.ts';
+import { getObsidianLibDebugger } from '../debug.ts';
 import { initI18N } from '../i18n/i18n.ts';
 import {
   DEFAULT_PLUGIN_ASYNC_CLEANUP_NOTICE_DELAY_IN_MILLISECONDS,
@@ -746,6 +748,23 @@ describe('lifecycle broadcast', () => {
 
   describe('a plugin unloaded during its own load', () => {
     /**
+     * Checks whether an error tree holds the given error, following `AggregateError.errors` and `cause`.
+     *
+     * @param error - The root of the tree.
+     * @param target - The error to look for.
+     * @returns Whether the tree holds `target`.
+     */
+    function containsError(error: unknown, target: Error): boolean {
+      if (error === target) {
+        return true;
+      }
+      if (error instanceof AggregateError && error.errors.some((child) => containsError(child, target))) {
+        return true;
+      }
+      return error instanceof Error && error.cause !== undefined && containsError(error.cause, target);
+    }
+
+    /**
      * Loads a plugin whose `onloadImpl` awaits, unloads it during that await, then lets `onloadImpl` resume and run
      * `afterResume`.
      *
@@ -798,6 +817,26 @@ describe('lifecycle broadcast', () => {
       expect(printError).not.toHaveBeenCalled();
       expect(mockPublishPluginApi).not.toHaveBeenCalled();
       expect(loadedCallback).not.toHaveBeenCalled();
+    });
+
+    it('should pass the swallowed silent error to the debugger', async () => {
+      const silentError = new SilentError('Component is already unloaded');
+      const wrappedError = new Error('wrapped', { cause: silentError });
+      const { onloadPromise } = await loadAndUnloadMidLoad(() => {
+        throw wrappedError;
+      });
+
+      await expect(onloadPromise).resolves.toBeUndefined();
+      const debuggerCallIndex = vi.mocked(getObsidianLibDebugger).mock.calls.findIndex(([namespace]) => namespace === 'PluginBase:onload');
+      expect(debuggerCallIndex).toBeGreaterThanOrEqual(0);
+      const onloadDebugger = vi.mocked(getObsidianLibDebugger).mock.results[debuggerCallIndex]?.value as Mock<(message: string, error?: unknown) => void>;
+      expect(onloadDebugger).toHaveBeenCalledOnce();
+      const [message, loggedError] = onloadDebugger.mock.calls[0] ?? [];
+      expect(message).toContain('was unloaded during its own load');
+      // The caught tree, not a copy: it carries the `SilentError` and its stack.
+      expect(loggedError).toBeInstanceOf(AggregateError);
+      expect(containsError(loggedError, silentError)).toBe(true);
+      expect(printError).not.toHaveBeenCalled();
     });
 
     it('should load quietly when the silent error arrives wrapped as a cause', async () => {
