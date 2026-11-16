@@ -135,6 +135,30 @@ new SettingEx(containerEl)
 
 ![FileComponent](./images/setting-components/FileComponent.png)
 
+## FilePathComponent
+
+The path of one vault file, typed into a text input whose suggest offers the vault's files. Each suggestion shows the file name and its path, with the matched characters highlighted, and picking one puts its path into the input and fires `onChange`. The value is the typed text, so a path need not exist yet; `getFile()` resolves it, normalized with `normalizePath`, and returns `null` when it names no file. The optional third argument filters the offered files.
+
+```ts
+import { SettingEx } from '@mnaoumov/obsidian-lib/setting-ex';
+
+new SettingEx(containerEl)
+  .addFilePath(app, (filePath) => {
+    filePath.setPlaceholderValue('Templates/Daily.md');
+    filePath.onChange((path) => console.log(path, filePath.getFile()));
+  }, { shouldIncludeFile: (file) => file.extension === 'md' });
+```
+
+The suggest alone, `FileInputSuggest`, attaches to any `<input>`, the way `FolderInputSuggest` does for folders:
+
+<!-- snippet-check: context declare const inputEl: HTMLInputElement; -->
+
+```ts
+import { FileInputSuggest } from '@mnaoumov/obsidian-lib/file-input-suggest';
+
+new FileInputSuggest(app, inputEl).onSelect((file) => console.log(file.path));
+```
+
 ## FolderListComponent
 
 A [`ListComponent`](#listcomponent) of vault folder paths. The new-item row suggests the vault's folders, and a typed path is normalized with Obsidian's `normalizePath`, so the root reads as `/`. A path need not exist yet.

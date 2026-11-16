@@ -12,12 +12,15 @@ import type {
 import { castTo } from '@mnaoumov/typescript-lib/object-utils';
 import { Setting } from 'obsidian';
 
+import type { FilePathComponentConstructorOptions } from './setting-components/file-path-component.ts';
+
 import { CheckboxComponent } from './setting-components/checkbox-component.ts';
 import { CodeHighlighterComponent } from './setting-components/code-highlighter-component.ts';
 import { DateComponent } from './setting-components/date-component.ts';
 import { DateTimeComponent } from './setting-components/date-time-component.ts';
 import { EmailComponent } from './setting-components/email-component.ts';
 import { FileComponent } from './setting-components/file-component.ts';
+import { FilePathComponent } from './setting-components/file-path-component.ts';
 import { FolderListComponent } from './setting-components/folder-list-component.ts';
 import { HotkeyComponent } from './setting-components/hotkey-component.ts';
 import { ListComponent } from './setting-components/list-component.ts';
@@ -36,6 +39,11 @@ import { TypedDropdownComponent } from './setting-components/typed-dropdown-comp
 import { TypedMultipleDropdownComponent } from './setting-components/typed-multiple-dropdown-component.ts';
 import { UrlComponent } from './setting-components/url-component.ts';
 import { WeekComponent } from './setting-components/week-component.ts';
+
+/**
+ * The optional parameters of {@link SettingEx.addFilePath}: those of the {@link FilePathComponent} it adds.
+ */
+export type SettingExAddFilePathOptions = FilePathComponentConstructorOptions;
 
 /**
  * Extends the Setting class with additional methods for adding components.
@@ -115,6 +123,22 @@ export class SettingEx extends Setting {
    */
   public addFile(callback: (file: FileComponent) => void): this {
     return this.addComponentClass(FileComponent, callback);
+  }
+
+  /**
+   * Adds a {@link FilePathComponent} to the setting: one vault file path, with a file suggest.
+   *
+   * @param app - The Obsidian app, for the file suggest.
+   * @param callback - The callback to call with the component.
+   * @param options - The optional file suggest parameters, such as a file filter.
+   * @returns The setting instance.
+   */
+  public addFilePath(app: App, callback: (filePath: FilePathComponent) => void, options?: SettingExAddFilePathOptions): this {
+    return this.addComponent((element) => {
+      const component = new FilePathComponent(element, app, options);
+      callback(component);
+      return component;
+    });
   }
 
   /**

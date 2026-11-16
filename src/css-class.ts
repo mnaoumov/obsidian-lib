@@ -109,6 +109,11 @@ export enum CssClass {
   FileComponent = 'file-component',
 
   /**
+   * A CSS class for the file path component.
+   */
+  FilePathComponent = 'file-path-component',
+
+  /**
    * A CSS class for rendered markdown whose headings and lists `registerFoldHandlers` made foldable.
    */
   FoldableMarkdown = 'foldable-markdown',

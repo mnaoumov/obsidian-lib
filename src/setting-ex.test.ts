@@ -11,6 +11,7 @@ import {
   vi
 } from 'vitest';
 
+import { FilePathComponent } from './setting-components/file-path-component.ts';
 import { FolderListComponent } from './setting-components/folder-list-component.ts';
 import { ListComponent } from './setting-components/list-component.ts';
 import { TagListComponent } from './setting-components/tag-list-component.ts';
@@ -162,6 +163,13 @@ describe('SettingEx', () => {
       const result = settingEx.addFile(callback);
       expect(result).toBe(settingEx);
       expect(callback).toHaveBeenCalled();
+    });
+
+    it('should add file path component', () => {
+      const app = App.createConfigured__().asOriginalType__();
+      const callback = vi.fn();
+      expect(settingEx.addFilePath(app, callback)).toBe(settingEx);
+      expect(callback).toHaveBeenCalledWith(expect.any(FilePathComponent));
     });
 
     it('should add hotkey component', () => {
