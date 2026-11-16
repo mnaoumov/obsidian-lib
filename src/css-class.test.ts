@@ -17,6 +17,7 @@ describe('CssClass', () => {
     ['DateTimeComponent', 'datetime-component'],
     ['EmailComponent', 'email-component'],
     ['FileComponent', 'file-component'],
+    ['FilePathComponent', 'file-path-component'],
     ['IsPlaceholder', 'is-placeholder'],
     ['LibraryName', 'obsidian-lib'],
     ['MonthComponent', 'month-component'],
