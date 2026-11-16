@@ -85,24 +85,6 @@ export interface ForEachWindowParams {
 }
 
 /**
- * Parameters for {@link registerBodyClass}.
- */
-export interface RegisterBodyClassParams {
-  /**
-   * The Obsidian app instance.
-   */
-  readonly app: App;
-  /**
-   * One CSS class to add to each window's body. Use a plugin-specific name.
-   */
-  readonly className: string;
-  /**
-   * The component that owns the body class.
-   */
-  readonly component: Component;
-}
-
-/**
  * Handles registering DOM events and handlers for all windows (main window and all existing/future popup windows) and their documents.
  */
 export class AllWindowsEventComponent extends ComponentEx {
@@ -221,26 +203,4 @@ export function forEachWindow(params: ForEachWindowParams): AllWindowsEventCompo
   const allWindowsComponent = component.addChild(new AllWindowsEventComponent(app));
   allWindowsComponent.registerAllWindowsHandler(callback);
   return allWindowsComponent;
-}
-
-/**
- * Adds a body class to the main window and every existing or future popout until the owner unloads.
- * Use a plugin-specific class owned exclusively by this registration.
- *
- * @param params - The registration parameters. The owner must be loaded.
- * @returns The child component; remove it from the owner to stop early.
- */
-export function registerBodyClass(params: RegisterBodyClassParams): AllWindowsEventComponent {
-  const { app, className, component } = params;
-  return forEachWindow({
-    app,
-    callback(win) {
-      const { classList } = win.document.body;
-      classList.add(className);
-      return () => {
-        classList.remove(className);
-      };
-    },
-    component
-  });
 }

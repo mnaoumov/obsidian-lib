@@ -1,6 +1,6 @@
 ---
 title: Windows and Popouts
-description: Apply window-specific behavior and body classes with automatic cleanup.
+description: Apply window-specific behavior with automatic cleanup.
 ---
 
 Obsidian's main window and desktop popouts have separate documents. Use the window passed to your callback for DOM access. Mobile has only the main window.
@@ -9,16 +9,12 @@ Obsidian's main window and desktop popouts have separate documents. Use the wind
 
 `forEachWindow` calls your handler for the main window immediately, then for existing popouts after layout ready and for later `window-open` events. Return a synchronous cleanup function to undo each window's changes when that window closes or the owning component unloads. Each registration visits a window once.
 
-`registerBodyClass` uses the same lifecycle for one plugin-specific CSS class. It removes the class on cleanup. Use a plugin-specific class owned exclusively by this registration: Obsidian can copy main-window body classes into a newly opened popout, so class presence alone cannot establish ownership.
-
 ```ts
-import { forEachWindow, registerBodyClass } from '@mnaoumov/obsidian-lib/components/all-windows-event-component';
+import { forEachWindow } from '@mnaoumov/obsidian-lib/components/all-windows-event-component';
 import { Plugin } from 'obsidian';
 
 export class AlphaPlugin extends Plugin {
   public override onload(): void {
-    registerBodyClass({ app: this.app, className: 'alpha-plugin-enabled', component: this });
-
     forEachWindow({
       app: this.app,
       callback(win) {
@@ -33,7 +29,19 @@ export class AlphaPlugin extends Plugin {
 }
 ```
 
-The owner must already be loaded, as it is inside `Plugin.onload`. Both helpers return an `AllWindowsEventComponent` child. Call `owner.removeChild(registration)` to stop early. For a one-time snapshot without subscriptions or cleanup, use `getAllDomWindows(app)` from `@mnaoumov/obsidian-lib/workspace`.
+The owner must already be loaded, as it is inside `Plugin.onload`. `forEachWindow` returns an `AllWindowsEventComponent` child. Call `owner.removeChild(registration)` to stop early. For a one-time snapshot without subscriptions or cleanup, use `getAllDomWindows(app)` from `@mnaoumov/obsidian-lib/workspace`.
+
+## Body classes
+
+Add a body class to the main window only, for example with `document.body.addClass(...)` and a matching `register` cleanup. Obsidian copies the main window's body classes to every popout and keeps them in step while the popout lives, removals included. It also copies the main body's `--` CSS variables. So a class on the main body reaches every popout with no library code. This was read from Obsidian `1.15.1`, and the desktop integration test checks it against a real popout.
+
+## What Obsidian relays by itself
+
+Read from Obsidian `1.15.1` and checked by `core-popout-relay.desktop.obsidian.integration.test.ts` against a real popout:
+
+- **Body classes and `--` variables** on the main body reach every popout, as above.
+- **Style elements**: Obsidian clones every `<style>` and `<link rel="stylesheet">` element in the main window's `<head>` into each popout and keeps them in step. A constructed sheet in `document.adoptedStyleSheets` is NOT copied, which is why `registerStyle` adopts one sheet per window itself.
+- **Events**: a popout re-dispatches a copy of these events on the main `window`: `auxclick`, `click`, `contextmenu`, `copy`, `cut`, `drag`, `dragend`, `dragenter`, `dragleave`, `dragover`, `dragstart`, `drop`, `fullscreenchange`, `keydown`, `keyup`, `mousedown`, `mousemove`, `mouseup` and `paste`. The copy goes to the main `window` only, never to the main `document`. A listener on `document` therefore misses popout events, and any other type stays in the popout: `focus`, `blur`, `focusin`, `focusout`, `input`, `wheel`, `resize`, `selectionchange` and the `pointer*` events. For those, and for any listener that must sit on a popout's own `document`, use `registerAllWindowsDomEvent` or `registerAllDocumentsDomEvent` below.
 
 ## Use the component directly
 

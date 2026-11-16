@@ -16,7 +16,7 @@ The guides and the API reference are at [mnaoumov.dev/obsidian-lib](https://mnao
 
 Register custom global and instance functions for Bases with the [formula-function helpers](./docs/src/content/docs/guides/bases-formula-functions.md).
 
-Apply behavior and body classes to the main window and existing or future popouts with the [window helpers](./docs/src/content/docs/guides/windows.md), with cleanup when the window closes or the owner unloads.
+Apply behavior to the main window and existing or future popouts with the [window helpers](./docs/src/content/docs/guides/windows.md), with cleanup when the window closes or the owner unloads.
 
 Keep plugin state with the workspace layout, so each saved workspace restores its own values, with [workspace layout state](./docs/src/content/docs/guides/workspace-layout-state.md).
 
