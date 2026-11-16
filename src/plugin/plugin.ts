@@ -469,8 +469,9 @@ export abstract class PluginBase extends mixinAsyncEvents<PluginEventMap>()(Plug
       // re-enables it), and the resumed load unwound on the `SilentError` an unloaded component throws, which is that
       // error's purpose. Reporting it would make Obsidian log `Plugin failure` and show `Failed to load plugin` for an
       // instance that was torn down correctly and is already replaced. Any other failure in the tree still reports.
+      // The error still goes to the debugger, so with debug on its stacks show where the load was cut off.
       if (hasLoadedUniversalWrapper && !this.universalWrapperComponent._loaded && isSilentErrorTree(error)) {
-        getObsidianLibDebugger('PluginBase:onload')(`Plugin ${this.manifest.name} (${this.manifest.id}) was unloaded during its own load`);
+        getObsidianLibDebugger('PluginBase:onload')(`Plugin ${this.manifest.name} (${this.manifest.id}) was unloaded during its own load`, error);
         return;
       }
 
