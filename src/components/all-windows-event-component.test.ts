@@ -23,8 +23,7 @@ import {
 
 import {
   AllWindowsEventComponent,
-  forEachWindow,
-  registerBodyClass
+  forEachWindow
 } from './all-windows-event-component.ts';
 
 interface CreateMockAppParams {
@@ -155,27 +154,6 @@ describe('AllWindowsEventComponent', () => {
     function emitClose(): void {
       close?.(workspaceWindow, popupWin);
     }
-  });
-
-  it('should remove body classes from every window when the registration is removed early', () => {
-    const popupDoc = document.implementation.createHTMLDocument('popout');
-    const popupWin = strictProxy<Window>({ document: popupDoc });
-    const app = createMockApp({ domWindows: [activeWindow, popupWin] });
-    const owner = new Component().asOriginalType__();
-    owner.load();
-    const className = 'window-registration-test';
-    // A popout can inherit the main body's class before its registration callback runs.
-    popupDoc.body.classList.add(className);
-    const registration = registerBodyClass({ app, className, component: owner });
-    vi.runAllTimers();
-    expect(document.body.classList.contains(className)).toBe(true);
-    expect(popupDoc.body.classList.contains(className)).toBe(true);
-
-    owner.removeChild(registration);
-
-    expect(document.body.classList.contains(className)).toBe(false);
-    expect(popupDoc.body.classList.contains(className)).toBe(false);
-    owner.unload();
   });
 
   describe('registerAllWindowsHandler', () => {

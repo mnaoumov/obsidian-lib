@@ -42,9 +42,9 @@ afterAll(async () => {
 });
 
 describe('all-window registrations', () => {
-  it('should cover existing and later popouts, clean up on close and unload, and use imported APIs from a popout', async () => {
+  it('should cover existing and later popouts, clean up on close and unload, see core relay main-body classes, and use imported APIs from a popout', async () => {
     const result = await evalInObsidian({
-      async callback({ app, lib: { forEachWindow, getMainWindow, registerBodyClass, waitUntil }, obsidianModule: { Component, Notice, requestUrl }, url: requestUrlValue }) {
+      async callback({ app, lib: { forEachWindow, getMainWindow, waitUntil }, obsidianModule: { Component, Notice, requestUrl }, url: requestUrlValue }) {
         const mainWindow = getMainWindow(app);
         const className = 'obsidian-lib-window-probe';
         const owner = new Component();
@@ -68,9 +68,10 @@ describe('all-window registrations', () => {
             },
             component: owner
           });
-          registerBodyClass({ app, className, component: owner });
+          // No library code copies body classes: Obsidian relays the main body's classes to every popout itself.
+          mainWindow.document.body.classList.add(className);
           await waitUntil({ message: 'existing popout body class', predicate: () => firstWindow.document.body.classList.contains(className) });
-          const isMainCovered = attached.has(mainWindow) && mainWindow.document.body.classList.contains(className);
+          const isMainCovered = attached.has(mainWindow);
           const isExistingCovered = attached.has(firstWindow);
 
           const notice = new Notice('Popout API probe', 0);
@@ -87,6 +88,8 @@ describe('all-window registrations', () => {
           await waitUntil({ message: 'closed popout cleanup', predicate: () => cleaned.has(secondWindow) });
 
           owner.unload();
+          mainWindow.document.body.classList.remove(className);
+          await waitUntil({ message: 'popout body class removed', predicate: () => !firstWindow.document.body.classList.contains(className) });
           return {
             existingCovered: isExistingCovered,
             laterCovered: isLaterCovered,
@@ -98,6 +101,7 @@ describe('all-window registrations', () => {
           };
         } finally {
           owner.unload();
+          mainWindow.document.body.classList.remove(className);
           window.activeWindow = mainWindow;
           window.activeDocument = mainWindow.document;
           secondLeaf?.detach();
