@@ -6,6 +6,7 @@
 
 import type {
   App,
+  SearchMatches,
   SearchResult,
   TFile
 } from 'obsidian';
@@ -15,6 +16,7 @@ import {
   AbstractInputSuggest,
   getAllTags,
   prepareFuzzySearch,
+  renderMatches,
   sortSearchResults
 } from 'obsidian';
 
@@ -131,6 +133,12 @@ export interface TagSuggestion {
   readonly kind: LinkAndTagCompletionKind.Tag;
 
   /**
+   * The characters of {@link TagSuggestion.tag} the query matched, highlighted when the suggestion renders. Nothing is
+   * highlighted when omitted.
+   */
+  readonly matches?: SearchMatches;
+
+  /**
    * The tag, without its `#`.
    */
   readonly tag: string;
@@ -233,9 +241,7 @@ export class LinkAndTagInputSuggest extends AbstractInputSuggest<LinkAndTagSugge
       return;
     }
 
-    el.addClass('mod-complex');
-    el.createDiv({ cls: 'suggestion-content', text: `${TAG_PREFIX}${suggestion.tag}` });
-    el.createDiv({ cls: 'suggestion-aux', text: String(suggestion.count) });
+    renderTagSuggestion(suggestion, el);
   }
 
   /**
@@ -391,9 +397,23 @@ export function getVaultTagSuggestions(params: GetVaultTagSuggestionsParams): Ta
   for (const [tag, count] of sortedCounts) {
     const match = fuzzySearch(tag);
     if (match) {
-      results.push({ match, suggestion: { count, kind: LinkAndTagCompletionKind.Tag, tag } });
+      results.push({ match, suggestion: { count, kind: LinkAndTagCompletionKind.Tag, matches: match.matches, tag } });
     }
   }
   sortSearchResults(results);
   return results.map((result) => result.suggestion);
+}
+
+/**
+ * Renders a tag suggestion the way {@link LinkAndTagInputSuggest} and {@link TagListComponent} show it: the tag with
+ * its `#` and the matched characters highlighted, and its note count beside it.
+ *
+ * @param suggestion - The tag suggestion.
+ * @param el - The suggestion element to render into.
+ */
+export function renderTagSuggestion(suggestion: TagSuggestion, el: HTMLElement): void {
+  el.addClass('mod-complex');
+  // `renderMatches` adds the offset to every range, which shifts the tag's matches past the `#`.
+  renderMatches(el.createDiv('suggestion-content'), `${TAG_PREFIX}${suggestion.tag}`, suggestion.matches ?? null, TAG_PREFIX.length);
+  el.createDiv({ cls: 'suggestion-aux', text: String(suggestion.count) });
 }

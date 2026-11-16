@@ -13,7 +13,10 @@ import type { TagSuggestion } from '../link-and-tag-input-suggest.ts';
 import type { SettingEx } from '../setting-ex.ts';
 
 import { CssClass } from '../css-class.ts';
-import { getVaultTagSuggestions } from '../link-and-tag-input-suggest.ts';
+import {
+  getVaultTagSuggestions,
+  renderTagSuggestion
+} from '../link-and-tag-input-suggest.ts';
 import { ListComponent } from './list-component.ts';
 
 const TAG_PREFIX = '#';
@@ -43,15 +46,13 @@ export class TagInputSuggest extends AbstractInputSuggest<TagSuggestion> {
   }
 
   /**
-   * Renders a tag with its note count.
+   * Renders a tag with its note count, the matched characters highlighted.
    *
    * @param suggestion - The tag.
    * @param el - The element to render into.
    */
   public renderSuggestion(suggestion: TagSuggestion, el: HTMLElement): void {
-    el.addClass('mod-complex');
-    el.createDiv({ cls: 'suggestion-content', text: `${TAG_PREFIX}${suggestion.tag}` });
-    el.createDiv({ cls: 'suggestion-aux', text: String(suggestion.count) });
+    renderTagSuggestion(suggestion, el);
   }
 
   /**

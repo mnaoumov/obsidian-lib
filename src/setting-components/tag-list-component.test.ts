@@ -2,6 +2,7 @@
 
 import type { App as AppOriginal } from 'obsidian';
 
+import { renderMatches } from 'obsidian';
 import { App } from 'obsidian-test-mocks/obsidian';
 import {
   beforeEach,
@@ -23,9 +24,20 @@ vi.mock('../plugin/plugin-context.ts', () => ({
   addPluginCssClasses: vi.fn()
 }));
 
+vi.mock('obsidian', async (importOriginal) => ({
+  ...await importOriginal<typeof import('obsidian')>(),
+  renderMatches: vi.fn((el: HTMLElement, text: string) => {
+    el.appendText(text);
+  })
+}));
+
 class TestTagInputSuggest extends TagInputSuggest {
+  public getTagSuggestions(query: string): TagSuggestion[] {
+    return this.getSuggestions(query);
+  }
+
   public suggest(query: string): string[] {
-    return this.getSuggestions(query).map((suggestion) => suggestion.tag);
+    return this.getTagSuggestions(query).map((suggestion) => suggestion.tag);
   }
 }
 
@@ -82,5 +94,20 @@ describe('TagInputSuggest', () => {
     suggest.renderSuggestion({ count: 3, kind: LinkAndTagCompletionKind.Tag, tag: 'project' }, el);
     expect(el.hasClass('mod-complex')).toBe(true);
     expect(el.textContent).toBe('#project3');
+  });
+
+  it('should highlight the matched characters past the #', () => {
+    const mockApp = App.createConfigured__({ files: { 'a.md': '' } });
+    mockApp.metadataCache.setCache__('a.md', { tags: [{ position: POSITION, tag: '#project' }] });
+    const suggest = new TestTagInputSuggest(mockApp.asOriginalType__(), createEl('input'));
+    const [suggestion] = suggest.getTagSuggestions('#pro');
+    if (!suggestion) {
+      throw new Error('Expected a suggestion');
+    }
+    expect(suggestion.matches).toEqual([[0, 3]]);
+    vi.mocked(renderMatches).mockClear();
+    const el = createDiv();
+    suggest.renderSuggestion(suggestion, el);
+    expect(vi.mocked(renderMatches)).toHaveBeenCalledWith(el.querySelector('.suggestion-content'), '#project', [[0, 3]], 1);
   });
 });
