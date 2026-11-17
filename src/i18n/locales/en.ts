@@ -39,7 +39,8 @@ export const en = {
     },
     buttons: {
       cancel: 'Cancel',
-      ok: 'OK'
+      ok: 'OK',
+      undo: 'Undo'
     },
     callout: {
       loadContent: 'Load content for callout'
@@ -88,6 +89,8 @@ export const en = {
       failedToOpenUrl: 'Failed to open {{url}}',
       pluginLoadPaused: 'Loading is paused until the previous unload of this plugin finishes. Please wait...',
       pluginLoadPauseTimedOut: 'The previous unload of this plugin did not finish in time, so the plugin is loading anyway.',
+      undoFailed: 'Undo failed: {{message}}',
+      undone: 'Undone.',
       unhandledError: 'An unhandled error occurred. Please check the console for more information.'
     },
     pathSettings: {

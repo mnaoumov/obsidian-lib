@@ -15,7 +15,8 @@
     padding-right: var(--size-4-5);
     position: relative;
 
-    .obsidian-lib.cancel-button {
+    .obsidian-lib.cancel-button,
+    .obsidian-lib.undo-button {
       display: block;
       margin-top: var(--size-4-2);
       width: fit-content;

@@ -11,6 +11,7 @@ import type { Promisable } from 'type-fest';
 
 import { snapshot } from '@mnaoumov/typescript-lib/array';
 import { invokeAsyncSafely } from '@mnaoumov/typescript-lib/async';
+import { printError } from '@mnaoumov/typescript-lib/error';
 import {
   castTo,
   normalizeOptionalProperties
@@ -225,6 +226,12 @@ export interface PluginNoticeComponentShowNoticeOptions {
    * @default `true`
    */
   readonly shouldShowCloseButton?: boolean;
+
+  /**
+   * When provided, an Undo button is appended to the notice — for a "Done. Undo" notice after a rename or
+   * a bulk edit. See {@link PluginNoticeUndoAction}.
+   */
+  readonly undo?: PluginNoticeUndoAction;
 }
 
 /**
@@ -243,6 +250,29 @@ export interface PluginNoticeHideInfo {
    * it, an explicit `hide()`, the duration elapsing, or component unload).
    */
   readonly isUserAction: boolean;
+}
+
+/**
+ * An Undo action offered on a notice through {@link PluginNoticeComponentShowNoticeOptions.undo}.
+ *
+ * The button works once: the first press disables it and runs {@link PluginNoticeUndoAction.onUndo}, and
+ * later presses do nothing, so an undo can never be run twice. When it settles, the notice holding the
+ * button is replaced by a notice reporting the outcome. A failure is reported there once, as
+ * `Undo failed: <message>`, and logged to the console; it is not rethrown, so the unhandled-error notice
+ * does not report the same failure a second time.
+ */
+export interface PluginNoticeUndoAction {
+  /**
+   * The text of the Undo button. When omitted, the localized `Undo` label is used.
+   */
+  readonly buttonText?: string;
+
+  /**
+   * Performs the undo.
+   *
+   * @returns The message reporting the result, or `null` for the localized `Undone.`.
+   */
+  readonly onUndo: () => Promisable<DocumentFragment | null | string>;
 }
 
 interface PluginNoticeComponentAppendCloseButtonParams {
@@ -306,6 +336,12 @@ interface PluginNoticeComponentBuildNoticeContentParams {
    * @default `true`
    */
   readonly shouldShowCloseButton?: boolean;
+}
+
+interface PluginNoticeComponentBuildUndoMessageParams {
+  readonly getShownNotice: () => null | PluginNoticeComponentShownNotice;
+  readonly message: DocumentFragment | string;
+  readonly undo: PluginNoticeUndoAction | undefined;
 }
 
 interface PluginNoticeComponentConstructorParams {
@@ -434,13 +470,13 @@ export class PluginNoticeComponent extends ComponentEx {
    * @param options - The options for displaying the notice.
    * @returns The notice object.
    */
-  public showNotice(message: DocumentFragment | string, options?: PluginNoticeComponentShowNoticeOptions): Notice {
-    const isPermanent = options?.isPermanent ?? false;
-    const shouldHideOnClick = options?.shouldHideOnClick ?? true;
+  public showNotice(message: DocumentFragment | string, options: PluginNoticeComponentShowNoticeOptions = {}): Notice {
+    const isPermanent = options.isPermanent ?? false;
+    const shouldHideOnClick = options.shouldHideOnClick ?? true;
     const requiresExplicitClose = !shouldHideOnClick;
-    const mode = options?.mode ?? (requiresExplicitClose ? PluginNoticeMode.Separate : PluginNoticeMode.Replace);
+    const mode = options.mode ?? (requiresExplicitClose ? PluginNoticeMode.Separate : PluginNoticeMode.Replace);
 
-    if (options?.mode !== undefined && options.mode !== PluginNoticeMode.Separate && requiresExplicitClose) {
+    if (options.mode !== undefined && options.mode !== PluginNoticeMode.Separate && requiresExplicitClose) {
       throw new Error('A notice that does not hide on click must be shown in the separate mode.');
     }
     if (mode === PluginNoticeMode.Separate && isPermanent) {
@@ -448,16 +484,20 @@ export class PluginNoticeComponent extends ComponentEx {
     }
 
     const durationInMilliseconds = isPermanent || requiresExplicitClose ? PERMANENT_NOTICE_DURATION_IN_MILLISECONDS : null;
-    return this.showNoticeWithDuration({
+    // The Undo button has to know where its message ended up, which is known only once it is shown, so
+    // it reads this holder at click time.
+    let shown: null | PluginNoticeComponentShownNotice = null;
+    shown = this.showNoticeWithDuration({
       durationInMilliseconds,
-      message,
+      message: this.buildUndoMessage({ getShownNotice: () => shown, message, undo: options.undo }),
       mode,
-      onCloseClick: options?.onCloseClick,
-      onHide: options?.onHide,
+      onCloseClick: options.onCloseClick,
+      onHide: options.onHide,
       requiresExplicitClose,
       shouldRegisterAsPermanent: isPermanent,
-      shouldShowCloseButton: options?.shouldShowCloseButton ?? true
-    }).notice;
+      shouldShowCloseButton: options.shouldShowCloseButton ?? true
+    });
+    return shown.notice;
   }
 
   /**
@@ -759,6 +799,43 @@ export class PluginNoticeComponent extends ComponentEx {
     return fragment;
   }
 
+  /**
+   * Builds the message of a notice offering an Undo action: the message, followed by a one-shot Undo
+   * button. See {@link PluginNoticeUndoAction}.
+   *
+   * @param params - The parameters.
+   * @returns A {@link DocumentFragment} holding the message and the Undo button, or the message itself
+   * when no Undo action is given.
+   */
+  private buildUndoMessage(params: PluginNoticeComponentBuildUndoMessageParams): DocumentFragment | string {
+    const { getShownNotice, message, undo } = params;
+    if (!undo) {
+      return message;
+    }
+    const fragment = createFragment();
+    if (typeof message === 'string') {
+      fragment.appendText(message);
+    } else {
+      fragment.append(message);
+    }
+
+    const undoButton = new ButtonComponent(createDiv());
+    undoButton.setButtonText(undo.buttonText ?? t(($) => $.obsidianLib.buttons.undo));
+    addPluginCssClasses(undoButton.buttonEl, CssClass.UndoButton);
+    // `once` makes the button one-shot by construction: the listener is gone after the first press, so
+    // an undo cannot run twice even if something re-enables the button. Disabling it shows that state.
+    // The listener is added directly, like the Cancel button's, so it bubbles through the interactive
+    // guard that keeps the notice open.
+    undoButton.buttonEl.addEventListener('click', () => {
+      undoButton.setDisabled(true);
+      invokeAsyncSafely(async () => {
+        await this.runUndo(undo, ensureNonNullable(getShownNotice()));
+      });
+    }, { once: true });
+    fragment.append(undoButton.buttonEl);
+    return fragment;
+  }
+
   private getPermanentNotice(): Notice | null {
     return this.getPermanentNotices().get(this.pluginName) ?? null;
   }
@@ -832,6 +909,32 @@ export class PluginNoticeComponent extends ComponentEx {
         this.userClickedNotices.delete(notice);
       });
     }, { capture: true });
+  }
+
+  /**
+   * Runs an Undo action and replaces the notice that offered it with one reporting the outcome.
+   *
+   * @param undo - The Undo action.
+   * @param shown - Where the message holding the Undo button ended up.
+   */
+  private async runUndo(undo: PluginNoticeUndoAction, shown: PluginNoticeComponentShownNotice): Promise<void> {
+    let resultMessage: DocumentFragment | string;
+    try {
+      resultMessage = await undo.onUndo() ?? t(($) => $.obsidianLib.notices.undone);
+    } catch (error) {
+      // Reported once, in the result notice, with the details in the console. Rethrowing would make the
+      // async-error pipeline show its own notice about the same failure.
+      printError(error);
+      resultMessage = t(($) => $.obsidianLib.notices.undoFailed, { message: getErrorMessage(error) });
+    }
+
+    // The result notice takes the slot, which hides the offering notice when it is there. A notice of its
+    // own (the separate mode) is not in the slot, so it is hidden here.
+    if (shown.isNoticeOwned && shown.notice !== this.notice) {
+      shown.notice.hide();
+      this.standaloneNotices.delete(shown.notice);
+    }
+    this.showNotice(resultMessage);
   }
 
   private setPermanentNotice(notice: Notice | null): void {
@@ -980,6 +1083,16 @@ export class PluginNoticeComponent extends ComponentEx {
       }
     });
   }
+}
+
+/**
+ * Reads the message of a thrown value for a notice.
+ *
+ * @param error - The thrown value.
+ * @returns The error's message, or the value converted to a string when it is not an error.
+ */
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }
 
 /**
