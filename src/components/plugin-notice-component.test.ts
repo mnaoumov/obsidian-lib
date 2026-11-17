@@ -4,7 +4,10 @@ import type {
 } from 'obsidian';
 
 import { dispose } from '@mnaoumov/typescript-lib/disposable';
-import { noop } from '@mnaoumov/typescript-lib/function';
+import {
+  noop,
+  noopAsync
+} from '@mnaoumov/typescript-lib/function';
 import { castTo } from '@mnaoumov/typescript-lib/object-utils';
 import { ensureNonNullable } from '@mnaoumov/typescript-lib/type-guards';
 import { waitForAllAsyncOperations } from '@mnaoumov/typescript-test-toolkit/async-operation-tracking';
@@ -1219,5 +1222,192 @@ describe('PluginNoticeComponent.showNoticeAfterDelay', () => {
     expect(newerNotice?.hide).not.toHaveBeenCalled();
     component.unload();
     expect(newerNotice?.hide).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('PluginNoticeComponent undo action', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.instances.length = 0;
+    stateMocks.store.clear();
+  });
+
+  function getUndoButton(): HTMLButtonElement {
+    const fragment = castTo<DocumentFragment>(mocks.NoticeMock.mock.calls[0]?.[0]);
+    return ensureNonNullable(fragment.querySelector<HTMLButtonElement>(`.${CssClass.UndoButton}`));
+  }
+
+  function getNoticeText(noticeIndex: number): string {
+    return castTo<DocumentFragment>(mocks.NoticeMock.mock.calls[noticeIndex]?.[0]).textContent;
+  }
+
+  function click(element: HTMLElement): void {
+    element.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+  }
+
+  it('should append an Undo button after the message', () => {
+    const component = new PluginNoticeComponent({ app, pluginName: PLUGIN_NAME });
+    component.load();
+    component.showNotice('Renamed 3 notes.', { undo: { onUndo: () => null } });
+
+    const undoButton = getUndoButton();
+    expect(undoButton.textContent).toBe('Undo');
+    expect(undoButton.classList.contains(CssClass.LibraryName)).toBe(true);
+    expect(getNoticeText(0)).toBe('My Plugin\nRenamed 3 notes.Undo');
+  });
+
+  it('should use a custom Undo button text', () => {
+    const component = new PluginNoticeComponent({ app, pluginName: PLUGIN_NAME });
+    component.load();
+    component.showNotice('Done.', { undo: { buttonText: 'Revert', onUndo: () => null } });
+
+    expect(getUndoButton().textContent).toBe('Revert');
+  });
+
+  it('should accept a document-fragment message', () => {
+    const component = new PluginNoticeComponent({ app, pluginName: PLUGIN_NAME });
+    component.load();
+    const message = createFragment((f) => {
+      f.createEl('em', { text: 'Done.' });
+    });
+    component.showNotice(message, { undo: { onUndo: () => null } });
+
+    const fragment = castTo<DocumentFragment>(mocks.NoticeMock.mock.calls[0]?.[0]);
+    expect(fragment.querySelector('em')?.textContent).toBe('Done.');
+    expect(getUndoButton().textContent).toBe('Undo');
+  });
+
+  it('should keep the notice open when the Undo button is clicked', () => {
+    const component = new PluginNoticeComponent({ app, pluginName: PLUGIN_NAME });
+    component.load();
+    component.showNotice('Done.', { undo: { onUndo: () => null } });
+
+    const noticeElementStub = createDiv();
+    noticeElementStub.append(castTo<DocumentFragment>(mocks.NoticeMock.mock.calls[0]?.[0]));
+    const dismissListener = vi.fn();
+    noticeElementStub.addEventListener('click', dismissListener);
+
+    click(ensureNonNullable(noticeElementStub.querySelector<HTMLButtonElement>(`.${CssClass.UndoButton}`)));
+
+    expect(dismissListener).not.toHaveBeenCalled();
+  });
+
+  it('should run the undo only once and disable the button after the first press', async () => {
+    const component = new PluginNoticeComponent({ app, pluginName: PLUGIN_NAME });
+    component.load();
+    const onUndo = vi.fn(() => null);
+    component.showNotice('Done.', { undo: { onUndo } });
+
+    const undoButton = getUndoButton();
+    click(undoButton);
+    expect(undoButton.disabled).toBe(true);
+    // Re-enabling the button must not make a second undo possible.
+    undoButton.disabled = false;
+    click(undoButton);
+    await waitForAllAsyncOperations();
+
+    expect(onUndo).toHaveBeenCalledTimes(1);
+  });
+
+  it('should replace the notice with the localized Undone message when the undo returns null', async () => {
+    const component = new PluginNoticeComponent({ app, pluginName: PLUGIN_NAME });
+    component.load();
+    component.showNotice('Done.', { undo: { onUndo: () => null } });
+    const offeringNotice = mocks.instances[0];
+
+    click(getUndoButton());
+    await waitForAllAsyncOperations();
+
+    expect(offeringNotice?.hide).toHaveBeenCalledTimes(1);
+    expect(mocks.NoticeMock).toHaveBeenCalledTimes(2);
+    expect(getNoticeText(1)).toBe('My Plugin\nUndone.');
+  });
+
+  it('should report the message the undo returns', async () => {
+    const component = new PluginNoticeComponent({ app, pluginName: PLUGIN_NAME });
+    component.load();
+    component.showNotice('Renamed 3 notes.', {
+      undo: {
+        onUndo: async (): Promise<string> => {
+          await noopAsync();
+          return 'Restored 3 notes.';
+        }
+      }
+    });
+
+    click(getUndoButton());
+    await waitForAllAsyncOperations();
+
+    expect(getNoticeText(1)).toBe('My Plugin\nRestored 3 notes.');
+  });
+
+  it('should report a failed undo once, in the result notice, without rethrowing', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(noop);
+    const component = new PluginNoticeComponent({ app, pluginName: PLUGIN_NAME });
+    component.load();
+    component.showNotice('Done.', {
+      undo: {
+        onUndo: (): null => {
+          throw new Error('The note is locked.');
+        }
+      }
+    });
+
+    click(getUndoButton());
+    await waitForAllAsyncOperations();
+
+    expect(mocks.NoticeMock).toHaveBeenCalledTimes(2);
+    expect(getNoticeText(1)).toBe('My Plugin\nUndo failed: The note is locked.');
+    expect(consoleErrorSpy).toHaveBeenCalled();
+  });
+
+  it('should report a thrown non-error value as a string', async () => {
+    vi.spyOn(console, 'error').mockImplementation(noop);
+    const component = new PluginNoticeComponent({ app, pluginName: PLUGIN_NAME });
+    component.load();
+    component.showNotice('Done.', {
+      undo: {
+        onUndo: async (): Promise<null> => {
+          await noopAsync();
+          // eslint-disable-next-line @typescript-eslint/only-throw-error -- The case under test is a non-error rejection.
+          throw 'offline';
+        }
+      }
+    });
+
+    click(getUndoButton());
+    await waitForAllAsyncOperations();
+
+    expect(getNoticeText(1)).toBe('My Plugin\nUndo failed: offline');
+  });
+
+  it('should hide a separate notice that offered the undo, which the result notice does not replace', async () => {
+    const component = new PluginNoticeComponent({ app, pluginName: PLUGIN_NAME });
+    component.load();
+    component.showNotice('Done.', { mode: PluginNoticeMode.Separate, undo: { onUndo: () => null } });
+    const offeringNotice = mocks.instances[0];
+
+    click(getUndoButton());
+    await waitForAllAsyncOperations();
+
+    expect(offeringNotice?.hide).toHaveBeenCalledTimes(1);
+    // It is no longer tracked, so unloading does not hide it a second time.
+    component.unload();
+    expect(offeringNotice?.hide).toHaveBeenCalledTimes(1);
+  });
+
+  it('should leave a joined notice to the result notice, which replaces it in the slot', async () => {
+    const component = new PluginNoticeComponent({ app, pluginName: PLUGIN_NAME });
+    component.load();
+    component.showNotice('First.');
+    component.showNotice('Done.', { mode: PluginNoticeMode.Append, undo: { onUndo: () => null } });
+    const slotNotice = ensureNonNullable(mocks.instances[0]);
+
+    const undoButton = ensureNonNullable(slotNotice.messageEl.querySelector<HTMLButtonElement>(`.${CssClass.UndoButton}`));
+    click(undoButton);
+    await waitForAllAsyncOperations();
+
+    expect(slotNotice.hide).toHaveBeenCalledTimes(1);
+    expect(getNoticeText(1)).toBe('My Plugin\nUndone.');
   });
 });
