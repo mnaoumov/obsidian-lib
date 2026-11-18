@@ -55,6 +55,21 @@ await prompt({
 
 ![Prompt](./images/modals/prompt.png)
 
+### Asking for a password or an API key
+
+Pass `isMasked: true` to ask for a secret. The input becomes a `password` input with autocomplete and spell-checking turned off, so the value never reaches a spell-checking service, and a toggle button beside it shows and hides the value so the user can check what they typed. `spellcheckMode` is ignored while the input is masked.
+
+```ts
+import { prompt } from '@mnaoumov/obsidian-lib/modals/prompt';
+
+const apiKey = await prompt({
+  app,
+  isMasked: true,
+  placeholder: 'sk-...',
+  title: 'Enter your API key'
+});
+```
+
 ## Select Item
 
 ```ts

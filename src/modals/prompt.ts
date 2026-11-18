@@ -17,6 +17,7 @@ import { noop } from '@mnaoumov/typescript-lib/function';
 import { normalizeOptionalProperties } from '@mnaoumov/typescript-lib/object-utils';
 import {
   ButtonComponent,
+  ExtraButtonComponent,
   TextComponent
 } from 'obsidian';
 
@@ -72,6 +73,17 @@ export interface PromptParams extends ModalParamsBase {
   readonly defaultValue?: string;
 
   /**
+   * Whether the input masks what is typed, for a password, an API key or another secret.
+   *
+   * A masked input is a `password` input with autocomplete turned off and spell-checking always off
+   * ({@link PromptParams.spellcheckMode} is ignored), so the value is never sent to a spell-checking
+   * service. A toggle button beside it shows and hides the value, so the user can check what was typed.
+   *
+   * @default `false`
+   */
+  readonly isMasked?: boolean;
+
+  /**
    * A text for the "OK" button.
    */
   readonly okButtonText?: string;
@@ -113,10 +125,26 @@ export interface PromptParams extends ModalParamsBase {
 
 type PromptModalConstructorParams = ModalBaseConstructorParams<null | string> & PromptParams;
 
+/**
+ * Displays a prompt modal in Obsidian to get user input.
+ *
+ * @param params - The parameters for the prompt modal.
+ * @returns A {@link Promise} that resolves with the user input or `null` if the prompt was cancelled.
+ */
+export async function prompt(params: PromptParams): Promise<null | string> {
+  return await showModal<null | string>((promiseResolve) =>
+    new PromptModal({
+      ...params,
+      promiseResolve
+    })
+  );
+}
+
 class PromptModal extends ModalBase<null | string> {
   private readonly cancelButtonText: string;
   private readonly commandBuilder: ModalCommandBuilder | null;
   private readonly commandsRenderMode: ModalCommandsRenderMode | undefined;
+  private readonly isMasked: boolean;
   private isOkClicked = false;
   private isTouched = false;
   private readonly okButtonText: string;
@@ -132,6 +160,7 @@ class PromptModal extends ModalBase<null | string> {
     this.cancelButtonText = params.cancelButtonText ?? t(($) => $.obsidianLib.buttons.cancel);
     this.commandBuilder = params.commandBuilder ?? null;
     this.commandsRenderMode = params.commandsRenderMode;
+    this.isMasked = params.isMasked ?? false;
     this.okButtonText = params.okButtonText ?? t(($) => $.obsidianLib.buttons.ok);
     this.placeholder = params.placeholder ?? '';
     this.spellcheckMode = params.spellcheckMode ?? SpellcheckMode.FollowObsidianSetting;
@@ -146,15 +175,21 @@ class PromptModal extends ModalBase<null | string> {
 
   public override onOpen(): void {
     this.titleEl.setText(this.title);
-    const textComponent = new TextComponent(this.contentEl);
+    const inputContainerEl = this.isMasked ? this.contentEl.createDiv(CssClass.PromptMaskedInput) : this.contentEl;
+    const textComponent = new TextComponent(inputContainerEl);
     const inputEl = textComponent.inputEl;
-    // `AbstractTextComponent` forces `spellcheck="false"` on every text component, so the mode has to be applied here.
-    // Obsidian's own file explorer reads the same config when it starts an inline rename.
-    applySpellcheckMode({
-      app: this.app,
-      element: inputEl,
-      spellcheckMode: this.spellcheckMode
-    });
+    if (this.isMasked) {
+      // `AbstractTextComponent` already forces `spellcheck="false"`, which is what a secret needs, so no mode is applied.
+      this.initMaskedInput(inputContainerEl, inputEl);
+    } else {
+      // `AbstractTextComponent` forces `spellcheck="false"` on every text component, so the mode has to be applied here.
+      // Obsidian's own file explorer reads the same config when it starts an inline rename.
+      applySpellcheckMode({
+        app: this.app,
+        element: inputEl,
+        spellcheckMode: this.spellcheckMode
+      });
+    }
 
     const validate = async (shouldReport: boolean): Promise<void> => {
       const errorMessage = await this.valueValidator(inputEl.value) as null | string | undefined;
@@ -222,23 +257,26 @@ class PromptModal extends ModalBase<null | string> {
     this.close();
   }
 
+  private initMaskedInput(containerEl: HTMLElement, inputEl: HTMLInputElement): void {
+    inputEl.type = 'password';
+    inputEl.autocomplete = 'off';
+    const toggleButton = new ExtraButtonComponent(containerEl);
+    this.updateMaskToggleButton(toggleButton, inputEl);
+    toggleButton.onClick(() => {
+      inputEl.type = inputEl.type === 'password' ? 'text' : 'password';
+      this.updateMaskToggleButton(toggleButton, inputEl);
+      inputEl.focus();
+    });
+  }
+
   private markTouched(inputEl: HTMLInputElement): void {
     this.isTouched = true;
     inputEl.removeClass(CssClass.Untouched);
   }
-}
 
-/**
- * Displays a prompt modal in Obsidian to get user input.
- *
- * @param params - The parameters for the prompt modal.
- * @returns A {@link Promise} that resolves with the user input or `null` if the prompt was cancelled.
- */
-export async function prompt(params: PromptParams): Promise<null | string> {
-  return await showModal<null | string>((promiseResolve) =>
-    new PromptModal({
-      ...params,
-      promiseResolve
-    })
-  );
+  private updateMaskToggleButton(toggleButton: ExtraButtonComponent, inputEl: HTMLInputElement): void {
+    const isHidden = inputEl.type === 'password';
+    toggleButton.setIcon(isHidden ? 'eye' : 'eye-off');
+    toggleButton.setTooltip(isHidden ? t(($) => $.obsidianLib.prompt.showValue) : t(($) => $.obsidianLib.prompt.hideValue));
+  }
 }

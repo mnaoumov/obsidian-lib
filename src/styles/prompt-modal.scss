@@ -3,5 +3,16 @@
     .text-box {
       width: 100%;
     }
+
+    .prompt-masked-input {
+      display: flex;
+      align-items: center;
+      gap: var(--size-4-2);
+
+      .text-box {
+        flex: 1;
+        min-width: 0;
+      }
+    }
   }
 }

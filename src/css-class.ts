@@ -337,6 +337,11 @@ export enum CssClass {
   PromptInstructions = 'prompt-instructions',
 
   /**
+   * A CSS class for the row holding a masked prompt input and its show/hide toggle.
+   */
+  PromptMaskedInput = 'prompt-masked-input',
+
+  /**
    * A CSS class for the prompt modal.
    */
   PromptModal = 'prompt-modal',

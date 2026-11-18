@@ -136,6 +136,10 @@ export const en = {
       installFailed: 'Failed to install {{pluginName}}. Check the console for more information.',
       notNow: 'Not now'
     },
+    prompt: {
+      hideValue: 'Hide the value',
+      showValue: 'Show the value'
+    },
     queue: {
       flushQueue: 'Flush queue'
     },

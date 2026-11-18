@@ -3,6 +3,7 @@
 import type { App as AppOriginal } from 'obsidian';
 import type {
   ButtonComponent,
+  ExtraButtonComponent,
   TextComponent
 } from 'obsidian-test-mocks/obsidian';
 import type { MockInstance } from 'vitest';
@@ -12,6 +13,7 @@ import { ensureNonNullable } from '@mnaoumov/typescript-lib/type-guards';
 import { mockImplementation } from '@mnaoumov/typescript-test-toolkit/mock-implementation';
 import {
   ButtonComponent as ButtonComponentOriginal,
+  ExtraButtonComponent as ExtraButtonComponentOriginal,
   TextComponent as TextComponentOriginal
 } from 'obsidian';
 import { App } from 'obsidian-test-mocks/obsidian';
@@ -56,6 +58,7 @@ vi.mock('../css-class.ts', () => ({
     PromptInstruction: 'prompt-instruction',
     PromptInstructionCommand: 'prompt-instruction-command',
     PromptInstructions: 'prompt-instructions',
+    PromptMaskedInput: 'prompt-masked-input',
     PromptModal: 'prompt-modal',
     TextBox: 'text-box',
     Untouched: 'untouched'
@@ -82,6 +85,7 @@ vi.mock('../plugin/plugin-context.ts', () => ({
 
 describe('prompt', () => {
   const buttonInstances: ButtonComponentOriginal[] = [];
+  const extraButtonInstances: ExtraButtonComponentOriginal[] = [];
   const textInstances: TextComponentOriginal[] = [];
   let reportValiditySpy: MockInstance;
 
@@ -94,12 +98,22 @@ describe('prompt', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     buttonInstances.length = 0;
+    extraButtonInstances.length = 0;
     textInstances.length = 0;
     mockImplementation({
       $object: ButtonComponentOriginal.prototype,
       impl: function impl(this: ButtonComponentOriginal, originalImplementation, containerEl: HTMLElement): ButtonComponentOriginal {
         originalImplementation.call(this, containerEl);
         buttonInstances.push(this);
+        return this;
+      },
+      method: 'constructor2__'
+    });
+    mockImplementation({
+      $object: ExtraButtonComponentOriginal.prototype,
+      impl: function impl(this: ExtraButtonComponentOriginal, originalImplementation, containerEl: HTMLElement): ExtraButtonComponentOriginal {
+        originalImplementation.call(this, containerEl);
+        extraButtonInstances.push(this);
         return this;
       },
       method: 'constructor2__'
@@ -414,6 +428,70 @@ describe('prompt', () => {
     const result = await resultPromise;
     expect(result).toBeNull();
     expect(spellcheckAttribute).toBe('true');
+  });
+
+  it('should render a plain text input without a toggle when the input is not masked', async () => {
+    let inputType = '';
+    const resultPromise = prompt({
+      app
+    });
+    queueMicrotask(() => {
+      const textComp = ensureNonNullable(textInstances[0]);
+      inputType = textComp.inputEl.type;
+    });
+    const result = await resultPromise;
+    expect(result).toBeNull();
+    expect(inputType).toBe('text');
+    expect(extraButtonInstances).toHaveLength(0);
+  });
+
+  it('should mask the input, turn autocomplete and spellcheck off, and resolve the typed value', async () => {
+    app.vault.setConfig('spellcheck', true);
+    let inputType = '';
+    let autocomplete = '';
+    let spellcheckAttribute = null as null | string;
+    let isInRow = false;
+    const resultPromise = prompt({
+      app,
+      defaultValue: 'secret',
+      isMasked: true,
+      spellcheckMode: SpellcheckMode.AlwaysOn
+    });
+    queueMicrotask(() => {
+      const textComp = ensureNonNullable(textInstances[0]);
+      inputType = textComp.inputEl.type;
+      autocomplete = textComp.inputEl.autocomplete;
+      spellcheckAttribute = textComp.inputEl.getAttribute('spellcheck');
+      isInRow = textComp.inputEl.parentElement?.hasClass('prompt-masked-input') ?? false;
+      castTo<ButtonComponent>(ensureNonNullable(buttonInstances[0])).simulateClick__();
+    });
+    const result = await resultPromise;
+    expect(result).toBe('secret');
+    expect(inputType).toBe('password');
+    expect(autocomplete).toBe('off');
+    expect(spellcheckAttribute).toBe('false');
+    expect(isInRow).toBe(true);
+    expect(extraButtonInstances).toHaveLength(1);
+  });
+
+  it('should show and hide a masked value with the toggle', async () => {
+    const inputTypes: string[] = [];
+    const resultPromise = prompt({
+      app,
+      isMasked: true
+    });
+    queueMicrotask(() => {
+      const textComp = ensureNonNullable(textInstances[0]);
+      const toggleButton = castTo<ExtraButtonComponent>(ensureNonNullable(extraButtonInstances[0]));
+      inputTypes.push(textComp.inputEl.type);
+      toggleButton.simulateClick__();
+      inputTypes.push(textComp.inputEl.type);
+      toggleButton.simulateClick__();
+      inputTypes.push(textComp.inputEl.type);
+    });
+    const result = await resultPromise;
+    expect(result).toBeNull();
+    expect(inputTypes).toEqual(['password', 'text', 'password']);
   });
 
   it('should report validity and not submit when OK is clicked with an invalid value', async () => {
