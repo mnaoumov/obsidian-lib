@@ -39,12 +39,14 @@ import {
 import { assertNonNullable } from '@mnaoumov/typescript-lib/type-guards';
 import {
   debounce,
+  Notice,
   PluginSettingTab,
   setTooltip
 } from 'obsidian';
 
 import type {
   PluginSettingsComponentBase,
+  PluginSettingsImportResult,
   ReadonlyPluginSettings,
   ReadonlyPluginSettingsState
 } from '../components/plugin-settings-component.ts';
@@ -54,7 +56,12 @@ import type { ValidationMessageHolder } from '../validation.ts';
 
 import { registerAsyncEvent } from '../components/async-events-component.ts';
 import { ComponentEx } from '../components/component-ex.ts';
+import { PluginSettingsImportError } from '../components/plugin-settings-component.ts';
 import { CssClass } from '../css-class.ts';
+import { t } from '../i18n/i18n.ts';
+import { confirm } from '../modals/confirm.ts';
+import { copyTextManually } from '../modals/copy-text-manually.ts';
+import { prompt } from '../modals/prompt.ts';
 import { ensureWrapped } from '../setting-components/setting-component-wrapper.ts';
 import { getTextBasedComponentValue } from '../setting-components/text-based-component.ts';
 import { getValidatorComponent } from '../setting-components/validator-component.ts';
@@ -66,6 +73,12 @@ import { addPluginCssClasses } from './plugin-context.ts';
  * A context passed to the {@link PluginSettingsComponentBase.saveToFile} method.
  */
 export const SAVE_TO_FILE_CONTEXT = 'PluginSettingsTab';
+
+/**
+ * The save context of a reset or an import made from the settings management row
+ * ({@link PluginSettingsTabBase.settingsManagementEx}). It is not {@link SAVE_TO_FILE_CONTEXT}, so the tab re-renders.
+ */
+export const SETTINGS_MANAGEMENT_CONTEXT = 'PluginSettingsTab:settingsManagement';
 
 /**
  * Options for `PluginSettingsTabBase.bind`.
@@ -799,6 +812,34 @@ export abstract class PluginSettingsTabBase<PluginSettings extends object> exten
   }
 
   /**
+   * Renders the settings management row into a setting: Reset to defaults, Export to clipboard and Import from
+   * clipboard. The imperative counterpart of {@link settingsManagementEx}, for a tab built in {@link displayLegacy}.
+   *
+   * @param setting - The setting to render into.
+   */
+  protected renderSettingsManagement(setting: Setting): void {
+    setting
+      .setName(t(($) => $.obsidianLib.settingsManagement.name))
+      .setDesc(t(($) => $.obsidianLib.settingsManagement.description));
+    setting.addButton((button) => {
+      button
+        .setButtonText(t(($) => $.obsidianLib.settingsManagement.reset))
+        .setDestructive()
+        .onClick(convertAsyncToSync(() => this.resetSettingsToDefaults()));
+    });
+    setting.addButton((button) => {
+      button
+        .setButtonText(t(($) => $.obsidianLib.settingsManagement.export))
+        .onClick(convertAsyncToSync(() => this.exportSettingsToClipboard()));
+    });
+    setting.addButton((button) => {
+      button
+        .setButtonText(t(($) => $.obsidianLib.settingsManagement.import))
+        .onClick(convertAsyncToSync(() => this.importSettingsFromClipboard()));
+    });
+  }
+
+  /**
    * Revalidates the settings.
    *
    * @returns A {@link Promise} that resolves when the settings are revalidated.
@@ -849,6 +890,22 @@ export abstract class PluginSettingsTabBase<PluginSettings extends object> exten
     });
   }
 
+  /**
+   * Builds a search-indexable row that resets every setting to its default, and exports and imports the settings as
+   * JSON through the clipboard. Add it to {@link getSettingDefinitionItems}, usually last.
+   *
+   * @returns The setting definition.
+   */
+  protected settingsManagementEx(): SettingDefinitionRender {
+    return this.settingEx({
+      desc: t(($) => $.obsidianLib.settingsManagement.description),
+      name: t(($) => $.obsidianLib.settingsManagement.name),
+      render: (setting) => {
+        this.renderSettingsManagement(setting);
+      }
+    });
+  }
+
   private beginRenderCycle(): void {
     this.endRenderCycle();
     this.currentRenderComponent = this.createRenderComponent();
@@ -870,6 +927,22 @@ export abstract class PluginSettingsTabBase<PluginSettings extends object> exten
     this.component.removeChild(renderComponent);
   }
 
+  private async exportSettingsToClipboard(): Promise<void> {
+    const json = await this.pluginSettingsComponent.exportToJson();
+    try {
+      // The clipboard of the focused window: a popout's document is the one that holds the focus.
+      await activeWindow.navigator.clipboard.writeText(json);
+      new Notice(t(($) => $.obsidianLib.settingsManagement.exported));
+    } catch {
+      await copyTextManually({
+        app: this.app,
+        message: t(($) => $.obsidianLib.settingsManagement.copyManuallyMessage),
+        text: json,
+        title: t(($) => $.obsidianLib.settingsManagement.copyManuallyTitle)
+      });
+    }
+  }
+
   private getPluginSettingsProperty<PropertyName extends StringKeys<PluginSettings>>(
     propertyName: PropertyName
   ): ReadonlyDeep<PluginSettings[PropertyName]> {
@@ -880,6 +953,52 @@ export abstract class PluginSettingsTabBase<PluginSettings extends object> exten
   private getRenderComponent(): ComponentEx {
     this.currentRenderComponent ??= this.createRenderComponent();
     return this.currentRenderComponent;
+  }
+
+  private async importSettingsFromClipboard(): Promise<void> {
+    const isConfirmed = await confirm({
+      app: this.app,
+      message: t(($) => $.obsidianLib.settingsManagement.importConfirmMessage),
+      title: t(($) => $.obsidianLib.settingsManagement.importConfirmTitle)
+    });
+    if (!isConfirmed) {
+      return;
+    }
+
+    let json: null | string;
+    try {
+      json = await activeWindow.navigator.clipboard.readText();
+    } catch {
+      // A device that refuses clipboard reads (mobile, a denied permission) still lets the user paste by hand.
+      json = await prompt({
+        app: this.app,
+        title: t(($) => $.obsidianLib.settingsManagement.importPasteTitle)
+      });
+    }
+    if (json === null) {
+      return;
+    }
+
+    this.saveSettingsDebounced.cancel();
+    let result: PluginSettingsImportResult;
+    try {
+      result = await this.pluginSettingsComponent.importFromJson(json, SETTINGS_MANAGEMENT_CONTEXT);
+    } catch (error) {
+      if (!(error instanceof PluginSettingsImportError)) {
+        throw error;
+      }
+      new Notice(t(($) => $.obsidianLib.settingsManagement.importFailed, { message: error.message }));
+      return;
+    }
+
+    this.refresh();
+    new Notice(t(($) => $.obsidianLib.settingsManagement.imported));
+    if (result.invalidPropertyNames.length > 0) {
+      new Notice(t(($) => $.obsidianLib.settingsManagement.importedInvalid, { propertyNames: result.invalidPropertyNames.join(', ') }));
+    }
+    if (result.unknownPropertyNames.length > 0) {
+      new Notice(t(($) => $.obsidianLib.settingsManagement.importedUnknown, { propertyNames: result.unknownPropertyNames.join(', ') }));
+    }
   }
 
   private async onSaveSettings(params: PluginSettingsTabBaseOnSaveSettingsParams<PluginSettings>): Promise<void> {
@@ -914,6 +1033,23 @@ export abstract class PluginSettingsTabBase<PluginSettings extends object> exten
     } finally {
       this.currentRenderComponent = previousRenderComponent;
     }
+  }
+
+  private async resetSettingsToDefaults(): Promise<void> {
+    const isConfirmed = await confirm({
+      app: this.app,
+      message: t(($) => $.obsidianLib.settingsManagement.resetConfirmMessage),
+      title: t(($) => $.obsidianLib.settingsManagement.resetConfirmTitle)
+    });
+    if (!isConfirmed) {
+      return;
+    }
+
+    this.saveSettingsDebounced.cancel();
+    await this.pluginSettingsComponent.resetToDefaults(SETTINGS_MANAGEMENT_CONTEXT);
+    // Also when nothing was saved: a value typed since the last save is in memory, and the rows must show the defaults.
+    this.refresh();
+    new Notice(t(($) => $.obsidianLib.settingsManagement.resetDone));
   }
 
   private async updateValidations(validationMessages: Record<StringKeys<PluginSettings>, string>): Promise<void> {

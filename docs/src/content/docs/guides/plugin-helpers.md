@@ -181,6 +181,10 @@ The initial load also saves the normalized settings back to `data.json`. When th
 
 The default `recoveryStore` is a `LocalSettingsRecoveryStore`: a [`LocalDataStore`](/obsidian-lib/guides/plugin-data-stores/) on this device, so no sync tool carries the copies anywhere, holding the newest five copies per plugin. `getRecoveryCopies()` lists them, newest first, and `restoreRecoveryCopy(id)` writes one back to `data.json` and reloads it, keeping the settings in use as a copy first. Pass `recoveryStore: null` to keep no copies.
 
+### Reset, export and import
+
+`resetToDefaults(context?)` sets every setting to its default and saves. `exportToJson()` returns the settings as entered, invalid values included, as the JSON `data.json` would hold. `importFromJson(json, context?)` replaces every setting with the ones in such a record, read exactly as `data.json` is: legacy converters and the transformer run, a setting the record lacks takes its default, and an unknown key is ignored. An invalid value is kept as entered, and the plugin uses its default until it is fixed. The import answers with the `invalidPropertyNames` and the `unknownPropertyNames`. Text that is not a JSON object throws `PluginSettingsImportError` and changes nothing. Before a reset or an import changes anything, the settings in use are kept as a recovery copy.
+
 ## [PluginSettingsTabBase](https://github.com/mnaoumov/obsidian-lib/blob/main/src/plugin/plugin-settings-tab.ts)
 
 <!-- snippet-check: context declare class FooPluginSettings { invalidCharacterAction: 'Remove' | 'Replace'; replacementCharacter: string; } -->
@@ -244,6 +248,7 @@ Notes:
 - `disabled` and `visible` accept a function, re-evaluated on every render and on every `refreshDomState()`. Prefer `refreshDomState()` when only those predicates change: it toggles the rendered DOM in place. Use `refresh()` only when the structure changes, i.e. rows are added or removed.
 - Native `control` definitions are supported too — `getControlValue()` / `setControlValue()` are wired to the settings component — but `render` + `bind()` is the richer path: it carries validation messages, the reset-when-empty behavior, placeholders for default values, and the value converters.
 - A tab that has not migrated keeps working: leave `getSettingDefinitionItems()` alone and override `displayLegacy()`, which Obsidian falls back to when the definitions are empty.
+- `settingsManagementEx()` builds a ready-made row with three buttons: Reset to defaults and Import from clipboard, each after a confirmation, and Export to clipboard. Add it to the definitions, usually last. An imperative tab calls `renderSettingsManagement(setting)` instead. Where the clipboard refuses a write, the JSON is shown for copying by hand. Where it refuses a read, as it can on mobile, the user pastes the JSON into a prompt.
 
 The most important methods in the execution order:
 

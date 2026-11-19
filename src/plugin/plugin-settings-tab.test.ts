@@ -31,17 +31,22 @@ import {
   vi
 } from 'vitest';
 
-import type { PluginSettingsComponentBase } from '../components/plugin-settings-component.ts';
+import type {
+  PluginSettingsComponentBase,
+  PluginSettingsImportResult
+} from '../components/plugin-settings-component.ts';
 import type { ValueComponentWithChangeTracking } from '../setting-components/value-component-with-change-tracking.ts';
 import type {
   PluginSettingsTabBaseSettingExParams,
   PluginSettingsTabBaseSettingGroupExParams
 } from './plugin-settings-tab.ts';
 
+import { PluginSettingsImportError } from '../components/plugin-settings-component.ts';
 import { SettingEx } from '../setting-ex.ts';
 import {
   PluginSettingsTabBase,
-  SAVE_TO_FILE_CONTEXT
+  SAVE_TO_FILE_CONTEXT,
+  SETTINGS_MANAGEMENT_CONTEXT
 } from './plugin-settings-tab.ts';
 
 vi.mock('../css-class.ts', () => ({
@@ -56,6 +61,35 @@ vi.mock('../css-class.ts', () => ({
 
 vi.mock('./plugin-context.ts', () => ({
   addPluginCssClasses: vi.fn()
+}));
+
+const {
+  mockConfirm,
+  mockCopyTextManually,
+  mockNotice,
+  mockPrompt
+} = vi.hoisted(() => ({
+  mockConfirm: vi.fn(),
+  mockCopyTextManually: vi.fn(),
+  mockNotice: vi.fn(),
+  mockPrompt: vi.fn()
+}));
+
+vi.mock('obsidian', async (importOriginal) => ({
+  ...await importOriginal<typeof import('obsidian')>(),
+  Notice: mockNotice
+}));
+
+vi.mock('../modals/confirm.ts', () => ({
+  confirm: mockConfirm
+}));
+
+vi.mock('../modals/copy-text-manually.ts', () => ({
+  copyTextManually: mockCopyTextManually
+}));
+
+vi.mock('../modals/prompt.ts', () => ({
+  prompt: mockPrompt
 }));
 
 interface EventListenerEntry {
@@ -101,6 +135,10 @@ class DeclarativeSettingsTab extends PluginSettingsTabBase<TestSettings> {
   public override settingGroupEx(params: PluginSettingsTabBaseSettingGroupExParams): SettingDefinitionGroup {
     return super.settingGroupEx(params);
   }
+
+  public override settingsManagementEx(): SettingDefinitionRender {
+    return super.settingsManagementEx();
+  }
 }
 
 class TestSettingsTab extends PluginSettingsTabBase<TestSettings> {
@@ -119,8 +157,9 @@ function createMockPlugin(appInstance: AppOriginal): Plugin {
   });
 }
 
-function createMockSettingsComponent(): PluginSettingsComponentBase<TestSettings> {
+function createMockSettingsComponent(overrides: Partial<PluginSettingsComponentBase<TestSettings>> = {}): PluginSettingsComponentBase<TestSettings> {
   return strictProxy<PluginSettingsComponentBase<TestSettings>>({
+    ...overrides,
     defaultSettings: { enabled: false, name: 'default' },
     on: castTo<PluginSettingsComponentBase<TestSettings>['on']>(vi.fn((_name: string, _callback: GenericVoidFunction) => ({
       asyncEventSource: {
@@ -1205,6 +1244,203 @@ describe('PluginSettingsTabBase render lifecycle', () => {
 
     const EXPECTED_SUBSCRIPTION_COUNT = 4;
     expect(pluginSettingsComponent.on).toHaveBeenCalledTimes(EXPECTED_SUBSCRIPTION_COUNT);
+  });
+});
+
+describe('PluginSettingsTabBase settings management', () => {
+  const EXPORTED_JSON = '{\n  "enabled": true,\n  "name": "exported"\n}';
+  const NO_FINDINGS: PluginSettingsImportResult = { invalidPropertyNames: [], unknownPropertyNames: [] };
+
+  interface ManagementFixture {
+    readonly clickButton: (index: number) => void;
+    readonly component: ManagementMocks;
+    readonly readText: ReturnType<typeof vi.fn>;
+    readonly setting: SettingApi;
+    readonly tab: DeclarativeSettingsTab;
+    readonly writeText: ReturnType<typeof vi.fn>;
+  }
+
+  interface SettingsImportEntryPoint {
+    readonly importSettingsFromClipboard: () => Promise<void>;
+  }
+
+  interface ManagementMocks {
+    readonly exportToJson: ReturnType<typeof vi.fn>;
+    readonly importFromJson: ReturnType<typeof vi.fn>;
+    readonly resetToDefaults: ReturnType<typeof vi.fn>;
+  }
+
+  function setUp(): ManagementFixture {
+    const component: ManagementMocks = {
+      exportToJson: vi.fn(() => Promise.resolve(EXPORTED_JSON)),
+      importFromJson: vi.fn(() => Promise.resolve(NO_FINDINGS)),
+      resetToDefaults: vi.fn(() => noopAsync())
+    };
+    const pluginSettingsComponent = createMockSettingsComponent(castTo<Partial<PluginSettingsComponentBase<TestSettings>>>(component));
+    const tab = new DeclarativeSettingsTab({ plugin: createMockPlugin(app), pluginSettingsComponent });
+    vi.spyOn(tab, 'refresh').mockImplementation(noop);
+    const writeText = vi.fn(() => noopAsync());
+    const readText = vi.fn(() => Promise.resolve(EXPORTED_JSON));
+    Object.defineProperty(window.navigator, 'clipboard', { configurable: true, value: { readText, writeText } });
+    const setting = createMockSetting();
+    const definition = tab.settingsManagementEx();
+    definition.render(setting, createMockSettingGroup());
+    return {
+      clickButton: (index: number): void => {
+        const button = setting.controlEl.querySelectorAll('button')[index];
+        button?.click();
+      },
+      component,
+      readText,
+      setting,
+      tab,
+      writeText
+    };
+  }
+
+  it('should describe the row for search and render three buttons into it', () => {
+    const { setting, tab } = setUp();
+    const definition = tab.settingsManagementEx();
+
+    expect(definition.name).toBe('Manage settings');
+    expect(definition.desc).toContain('Reset every setting to its default');
+    expect([...setting.controlEl.querySelectorAll('button')].map((button) => button.textContent)).toEqual([
+      'Reset to defaults',
+      'Export to clipboard',
+      'Import from clipboard'
+    ]);
+  });
+
+  it('should reset to defaults after a confirmation, re-render and say so', async () => {
+    const { clickButton, component, tab } = setUp();
+    mockConfirm.mockResolvedValue(true);
+
+    clickButton(0);
+
+    await vi.waitFor(() => {
+      expect(mockNotice).toHaveBeenCalledWith('The settings were reset to their defaults.');
+    });
+    expect(component.resetToDefaults).toHaveBeenCalledWith(SETTINGS_MANAGEMENT_CONTEXT);
+    expect(tab.refresh).toHaveBeenCalled();
+  });
+
+  it('should leave the settings alone when the reset is not confirmed', async () => {
+    const { clickButton, component } = setUp();
+    mockConfirm.mockResolvedValue(false);
+
+    clickButton(0);
+
+    await vi.waitFor(() => {
+      expect(mockConfirm).toHaveBeenCalledOnce();
+    });
+    expect(component.resetToDefaults).not.toHaveBeenCalled();
+  });
+
+  it('should export the settings to the clipboard', async () => {
+    const { clickButton, writeText } = setUp();
+
+    clickButton(1);
+
+    await vi.waitFor(() => {
+      expect(mockNotice).toHaveBeenCalledWith('The settings were copied to the clipboard.');
+    });
+    expect(writeText).toHaveBeenCalledWith(EXPORTED_JSON);
+  });
+
+  it('should show the settings for copying by hand when the clipboard refuses them', async () => {
+    const { clickButton, writeText } = setUp();
+    writeText.mockRejectedValue(new Error('denied'));
+
+    clickButton(1);
+
+    await vi.waitFor(() => {
+      expect(mockCopyTextManually).toHaveBeenCalledWith(expect.objectContaining({ text: EXPORTED_JSON, title: 'Copy the settings' }));
+    });
+    expect(mockNotice).not.toHaveBeenCalled();
+  });
+
+  it('should import the settings from the clipboard after a confirmation', async () => {
+    const { clickButton, component, tab } = setUp();
+    mockConfirm.mockResolvedValue(true);
+
+    clickButton(2);
+
+    await vi.waitFor(() => {
+      expect(mockNotice).toHaveBeenCalledWith('The settings were imported.');
+    });
+    expect(component.importFromJson).toHaveBeenCalledWith(EXPORTED_JSON, SETTINGS_MANAGEMENT_CONTEXT);
+    expect(tab.refresh).toHaveBeenCalled();
+    expect(mockNotice).toHaveBeenCalledOnce();
+  });
+
+  it('should name the invalid and the unknown imported settings', async () => {
+    const { clickButton, component } = setUp();
+    mockConfirm.mockResolvedValue(true);
+    component.importFromJson.mockResolvedValue({ invalidPropertyNames: ['name', 'enabled'], unknownPropertyNames: ['extra'] });
+
+    clickButton(2);
+
+    await vi.waitFor(() => {
+      expect(mockNotice).toHaveBeenCalledTimes(3);
+    });
+    expect(mockNotice).toHaveBeenCalledWith('These imported settings are not valid, so their defaults are used until you fix them: name, enabled');
+    expect(mockNotice).toHaveBeenCalledWith('These imported keys name no setting and were ignored: extra');
+  });
+
+  it('should ask for the settings to be pasted when the clipboard cannot be read', async () => {
+    const { clickButton, component, readText } = setUp();
+    mockConfirm.mockResolvedValue(true);
+    readText.mockRejectedValue(new Error('denied'));
+    mockPrompt.mockResolvedValue('{"name":"pasted"}');
+
+    clickButton(2);
+
+    await vi.waitFor(() => {
+      expect(component.importFromJson).toHaveBeenCalledWith('{"name":"pasted"}', SETTINGS_MANAGEMENT_CONTEXT);
+    });
+    expect(mockPrompt).toHaveBeenCalledWith(expect.objectContaining({ title: 'Paste the settings JSON' }));
+  });
+
+  it('should import nothing when the paste is cancelled or the import is not confirmed', async () => {
+    const { clickButton, component, readText } = setUp();
+    readText.mockRejectedValue(new Error('denied'));
+    mockPrompt.mockResolvedValue(null);
+    mockConfirm.mockResolvedValueOnce(true).mockResolvedValueOnce(false);
+
+    clickButton(2);
+    await vi.waitFor(() => {
+      expect(mockPrompt).toHaveBeenCalledOnce();
+    });
+    clickButton(2);
+    await vi.waitFor(() => {
+      expect(mockConfirm).toHaveBeenCalledTimes(2);
+    });
+
+    expect(readText).toHaveBeenCalledOnce();
+    expect(component.importFromJson).not.toHaveBeenCalled();
+  });
+
+  it('should say why a malformed import was refused', async () => {
+    const { clickButton, component, tab } = setUp();
+    mockConfirm.mockResolvedValue(true);
+    component.importFromJson.mockRejectedValue(new PluginSettingsImportError('The text is not valid JSON.'));
+
+    clickButton(2);
+
+    await vi.waitFor(() => {
+      expect(mockNotice).toHaveBeenCalledWith('The settings were not imported: The text is not valid JSON.');
+    });
+    expect(tab.refresh).not.toHaveBeenCalled();
+  });
+
+  it('should let any other import failure surface', async () => {
+    const { component, tab } = setUp();
+    mockConfirm.mockResolvedValue(true);
+    const failure = new Error('disk full');
+    component.importFromJson.mockRejectedValue(failure);
+
+    await expect(castTo<SettingsImportEntryPoint>(tab).importSettingsFromClipboard()).rejects.toBe(failure);
+    expect(mockNotice).not.toHaveBeenCalled();
   });
 });
 
