@@ -10,9 +10,8 @@
 export const en = {
   obsidianLib: {
     asyncWithNotice: {
-      milliseconds: 'milliseconds...',
       operation: 'Operation',
-      runningFor: 'Running for',
+      runningTime: 'Running for {{duration}} milliseconds...',
       terminateOperation: 'You can terminate the operation by clicking the button below, but be aware it might leave the vault in an inconsistent state.',
       timedOut: 'The operation timed out after {{duration, number}} milliseconds.'
     },
