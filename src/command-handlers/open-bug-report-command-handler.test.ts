@@ -24,6 +24,7 @@ const {
   mockCopyTextManually,
   mockGetBugReportEnvironment,
   mockGetBugReportIssueFormUrl,
+  mockGetBugReportScrubbedPaths,
   mockNotice,
   mockReviewBugReportDiagnostics
 } = vi.hoisted(() => ({
@@ -31,6 +32,7 @@ const {
   mockCopyTextManually: vi.fn(),
   mockGetBugReportEnvironment: vi.fn(),
   mockGetBugReportIssueFormUrl: vi.fn(),
+  mockGetBugReportScrubbedPaths: vi.fn(),
   mockNotice: vi.fn(),
   mockReviewBugReportDiagnostics: vi.fn()
 }));
@@ -47,6 +49,11 @@ vi.mock('../bug-report.ts', () => ({
   getBugReportIssueFormUrl: mockGetBugReportIssueFormUrl
 }));
 
+vi.mock('../bug-report-scrubber.ts', async (importOriginal) => ({
+  ...await importOriginal<typeof import('../bug-report-scrubber.ts')>(),
+  getBugReportScrubbedPaths: mockGetBugReportScrubbedPaths
+}));
+
 vi.mock('../modals/copy-text-manually.ts', () => ({
   copyTextManually: mockCopyTextManually
 }));
@@ -54,6 +61,10 @@ vi.mock('../modals/copy-text-manually.ts', () => ({
 vi.mock('../modals/review-bug-report-diagnostics.ts', () => ({
   reviewBugReportDiagnostics: mockReviewBugReportDiagnostics
 }));
+
+interface ReviewParams {
+  readonly sections: readonly BugReportDiagnosticSection[];
+}
 
 const ENVIRONMENT = strictProxy<BugReportEnvironment>({});
 const FULL_URL = 'https://github.com/owner/repo/issues/new?template=bug_report.yml&environment=full';
@@ -70,6 +81,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mockGetBugReportEnvironment.mockResolvedValue(ENVIRONMENT);
   mockBuildBugReportIssueFormLink.mockReturnValue({ clipboardText: null, url: FULL_URL });
+  mockGetBugReportScrubbedPaths.mockResolvedValue([{ path: '/home/alice/vault', placeholder: '<vault>' }]);
   open = vi.fn<typeof window.open>().mockReturnValue(null);
   vi.spyOn(window, 'open').mockImplementation(open);
   writeText = vi.fn().mockResolvedValue(undefined);
@@ -103,6 +115,7 @@ describe('OpenBugReportCommandHandler', () => {
     await createHandler().execute();
 
     expect(mockGetBugReportEnvironment).toHaveBeenCalledWith({ app, pluginId: 'my-plugin' });
+    expect(mockGetBugReportScrubbedPaths).not.toHaveBeenCalled();
     expect(mockReviewBugReportDiagnostics).not.toHaveBeenCalled();
     expect(mockBuildBugReportIssueFormLink).toHaveBeenCalledWith({ diagnostics: [], environment: ENVIRONMENT, gitHubRepo: 'owner/repo' });
     expect(open).toHaveBeenCalledWith(FULL_URL, '_blank');
@@ -144,6 +157,20 @@ describe('OpenBugReportCommandHandler', () => {
       maxUrlLength: 1234
     });
     expect(open).toHaveBeenCalledWith(FULL_URL, '_blank');
+  });
+
+  it('should scrub token shapes and the vault path before the review', async () => {
+    mockReviewBugReportDiagnostics.mockImplementation((params: ReviewParams) => params.sections);
+    const token = `ghp_${'a'.repeat(36)}`;
+
+    await createHandler({
+      getDiagnostics: () => [{ content: `read /home/alice/vault/note.md with ${token}`, id: 'logs', isPotentiallyPrivate: true, title: 'Logs' }]
+    }).execute();
+
+    const scrubbed = [{ content: 'read <vault>/note.md with [redacted github-token]', id: 'logs', isPotentiallyPrivate: true, title: 'Logs' }];
+    expect(mockGetBugReportScrubbedPaths).toHaveBeenCalledWith(app);
+    expect(mockReviewBugReportDiagnostics).toHaveBeenCalledWith(expect.objectContaining({ sections: scrubbed }));
+    expect(mockBuildBugReportIssueFormLink).toHaveBeenCalledWith(expect.objectContaining({ diagnostics: scrubbed }));
   });
 
   it('should open nothing when the user cancels the review', async () => {
