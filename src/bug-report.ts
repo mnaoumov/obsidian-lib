@@ -10,6 +10,11 @@
  * The desktop installer version is `Platform.build`, which no public typing declares: Obsidian's desktop
  * startup sets it from Electron's `app.getVersion()` (read from Obsidian `1.15.0`), so it is read
  * structurally here, and reads as `unknown` if a later version drops it.
+ *
+ * The runtime line reads `process.versions` (Electron, Chromium) only behind `Platform.isDesktopApp`, since
+ * `process` exists only in the desktop renderer, and falls back to the user agent's `Electron/`, `Chrome/`
+ * and `AppleWebKit/` tokens. On mobile it also names the Capacitor platform, read structurally from the
+ * `Capacitor` bridge's `getPlatform`.
  */
 
 import type { App } from 'obsidian';
@@ -151,6 +156,16 @@ export interface BugReportEnvironment {
    * The reporting plugin.
    */
   readonly plugin: BugReportPluginInfo;
+
+  /**
+   * The runtime under Obsidian: the Electron and Chromium versions on desktop, such as
+   * `Electron 37.2.0, Chromium 138.0.7204.100`, or the Capacitor platform and its web view on mobile, such
+   * as `Capacitor android, Chromium 140.0.7339.51`. `unknown` when nothing says.
+   *
+   * Optional, so an environment built by hand before it existed still type-checks;
+   * {@link getBugReportEnvironment} always sets it.
+   */
+  readonly runtime?: string;
 }
 
 /**
@@ -228,8 +243,25 @@ interface AppAndOperatingSystem {
   readonly operatingSystem: string;
 }
 
+interface CapacitorWithPlatform {
+  readonly getPlatform?: unknown;
+}
+
+interface NavigatorWithUserAgent {
+  readonly userAgent?: unknown;
+}
+
 interface PlatformWithBuild {
   readonly build?: unknown;
+}
+
+interface ProcessWithVersions {
+  readonly versions?: Readonly<Record<string, unknown>>;
+}
+
+interface WindowWithRuntime {
+  readonly Capacitor?: CapacitorWithPlatform;
+  readonly process?: ProcessWithVersions;
 }
 
 const UNKNOWN = 'unknown';
@@ -279,12 +311,17 @@ export function formatBugReportEnvironment(environment: BugReportEnvironment): s
   const enabledPlugins = environment.enabledPlugins.length === 0
     ? 'none'
     : environment.enabledPlugins.map((pluginInfo) => formatPluginInfo(pluginInfo)).join(', ');
-
-  return `- Plugin: ${formatPluginInfo(environment.plugin)}\n`
-    + `- Obsidian: ${environment.obsidianVersion} (installer ${environment.installerVersion})\n`
-    + `- Platform: ${environment.platform}\n`
-    + `- Operating system: ${environment.operatingSystem}\n`
-    + `- Other enabled plugins: ${enabledPlugins}`;
+  const lines = [
+    `- Plugin: ${formatPluginInfo(environment.plugin)}`,
+    `- Obsidian: ${environment.obsidianVersion} (installer ${environment.installerVersion})`,
+    `- Platform: ${environment.platform}`,
+    `- Operating system: ${environment.operatingSystem}`
+  ];
+  if (environment.runtime !== undefined) {
+    lines.push(`- Runtime: ${environment.runtime}`);
+  }
+  lines.push(`- Other enabled plugins: ${enabledPlugins}`);
+  return lines.join('\n');
 }
 
 /**
@@ -309,7 +346,8 @@ export async function getBugReportEnvironment(params: GetBugReportEnvironmentPar
     obsidianVersion: apiVersion,
     operatingSystem,
     platform: getPlatformName(),
-    plugin: getPluginInfo(app, pluginId)
+    plugin: getPluginInfo(app, pluginId),
+    runtime: getRuntime()
   };
 }
 
@@ -397,4 +435,42 @@ function getPluginInfo(app: App, pluginId: string): BugReportPluginInfo {
     id: pluginId,
     version: app.plugins.manifests[pluginId]?.version ?? null
   };
+}
+
+function getRuntime(): string {
+  const windowWithRuntime = window as WindowWithRuntime;
+  // The user agent is read for the engine versions only; the platform itself comes from `Platform`.
+  const { userAgent } = window.navigator as NavigatorWithUserAgent;
+  const userAgentText = typeof userAgent === 'string' ? userAgent : '';
+
+  function readVersion(processVersionKey: string, userAgentToken: string): null | string {
+    // `process` exists only in the desktop renderer, so it is read only there; the user agent is the fallback.
+    const processVersion = Platform.isDesktopApp ? windowWithRuntime.process?.versions?.[processVersionKey] : undefined;
+    return typeof processVersion === 'string'
+      ? processVersion
+      : new RegExp(String.raw`\b${userAgentToken}/([\d.]+)`).exec(userAgentText)?.[1] ?? null;
+  }
+
+  const parts: string[] = [];
+  const capacitor = windowWithRuntime.Capacitor;
+  const getCapacitorPlatform = capacitor?.getPlatform;
+  if (Platform.isMobileApp && typeof getCapacitorPlatform === 'function') {
+    const capacitorPlatform: unknown = getCapacitorPlatform.call(capacitor);
+    parts.push(`Capacitor ${typeof capacitorPlatform === 'string' ? capacitorPlatform : UNKNOWN}`);
+  }
+
+  const electronVersion = readVersion('electron', 'Electron');
+  if (electronVersion !== null) {
+    parts.push(`Electron ${electronVersion}`);
+  }
+
+  const chromiumVersion = readVersion('chrome', 'Chrome');
+  const webKitVersion = readVersion('webkit', 'AppleWebKit');
+  if (chromiumVersion !== null) {
+    parts.push(`Chromium ${chromiumVersion}`);
+  } else if (webKitVersion !== null) {
+    parts.push(`WebKit ${webKitVersion}`);
+  }
+
+  return parts.length === 0 ? UNKNOWN : parts.join(', ');
 }

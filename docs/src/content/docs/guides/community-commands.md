@@ -42,7 +42,7 @@ Discussions defaults to the `q-a` category slug because questions are the suppor
 
 GitHub [prefills issue form fields by their ids](https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues/creating-an-issue#creating-an-issue-from-a-url-query). A label alone does not enable prefilling.
 
-1. The bug form is `.github/ISSUE_TEMPLATE/bug_report.yml`. Give its fields the ids `plugin-version`, `obsidian-version`, `operating-system` and `environment`, as `BugReportIssueFormFieldId` declares. The environment includes the plugin, Obsidian and installer versions, platform, operating system and other enabled plugins.
+1. The bug form is `.github/ISSUE_TEMPLATE/bug_report.yml`. Give its fields the ids `plugin-version`, `obsidian-version`, `operating-system` and `environment`, as `BugReportIssueFormFieldId` declares. The environment includes the plugin, Obsidian and installer versions, platform, operating system, runtime (the Electron and Chromium versions on desktop, the Capacitor platform and its web view on mobile) and other enabled plugins.
 2. The feature form is `.github/ISSUE_TEMPLATE/feature_request.yml`. Give its version input the id `plugin-version`, as `FeatureRequestIssueFormFieldId.PluginVersion` declares. No environment dump is collected. A missing plugin manifest produces `unknown` for the version.
 
 For example, the feature form can include:
