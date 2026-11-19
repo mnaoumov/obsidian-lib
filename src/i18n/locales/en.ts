@@ -165,6 +165,26 @@ export const en = {
       unlockConfirmTitle: 'Unlock note?',
       unlockMenuItem: 'Unlock'
     },
+    settingsManagement: {
+      copyManuallyMessage: 'The settings could not be copied to your clipboard. Copy the text below.',
+      copyManuallyTitle: 'Copy the settings',
+      description: 'Reset every setting to its default, or copy the settings to the clipboard as JSON and import them back, on this device or another one. The settings in use are kept as a recovery copy on this device before a reset or an import.',
+      export: 'Export to clipboard',
+      exported: 'The settings were copied to the clipboard.',
+      import: 'Import from clipboard',
+      importConfirmMessage: 'Replace every setting with the ones in the clipboard? A setting the clipboard lacks is reset to its default.',
+      importConfirmTitle: 'Import the settings?',
+      imported: 'The settings were imported.',
+      importedInvalid: 'These imported settings are not valid, so their defaults are used until you fix them: {{propertyNames}}',
+      importedUnknown: 'These imported keys name no setting and were ignored: {{propertyNames}}',
+      importFailed: 'The settings were not imported: {{message}}',
+      importPasteTitle: 'Paste the settings JSON',
+      name: 'Manage settings',
+      reset: 'Reset to defaults',
+      resetConfirmMessage: 'Reset every setting to its default?',
+      resetConfirmTitle: 'Reset the settings?',
+      resetDone: 'The settings were reset to their defaults.'
+    },
     validation: {
       controlCharacter: '{{name}} contains a control character.',
       emptyName: 'The name is empty.',

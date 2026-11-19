@@ -24,7 +24,10 @@ import type {
 
 import { PluginDataParseError } from '../data-handler.ts';
 import { SettingsRecoveryReason } from '../settings-recovery.ts';
-import { PluginSettingsComponentBase } from './plugin-settings-component.ts';
+import {
+  PluginSettingsComponentBase,
+  PluginSettingsImportError
+} from './plugin-settings-component.ts';
 
 vi.mock('../../../debug.ts', () => ({
   getObsidianLibDebugger: vi.fn(() => vi.fn())
@@ -917,5 +920,128 @@ describe('PluginSettingsComponentBase recovery', () => {
     const dataHandler = new RecoveringDataHandler({});
     dataHandler.loadError = new Error('boom');
     await expect(createComponent(dataHandler).loadWithPromises()).rejects.toThrow();
+  });
+});
+
+class ValidatedSettingsComponent extends PluginSettingsComponentBase<TestSettings> {
+  protected override registerValidators(): void {
+    this.registerValidator('count', (value) => value < 0 ? 'Count must not be negative.' : null);
+  }
+}
+
+function createValidatedComponent(dataHandler: MockDataHandler): ValidatedSettingsComponent {
+  return new ValidatedSettingsComponent({
+    dataHandler,
+    pluginEventSource: createMockPluginEventSource(),
+    pluginSettingsClass: TestSettings
+  });
+}
+
+describe('PluginSettingsComponentBase reset, export and import', () => {
+  it('should export the settings as entered, invalid values included, as data.json would hold them', async () => {
+    const component = createValidatedComponent(new MockDataHandler({ count: -1, name: 'stored' }));
+    await component.loadWithPromises();
+
+    expect(await component.exportToJson()).toBe(JSON.stringify({ count: -1, name: 'stored' }, undefined, 2));
+  });
+
+  it('should reset every setting to its default, keep the settings in use as a copy, and save with the context', async () => {
+    const dataHandler = new RecoveringDataHandler({ count: 3, name: 'stored' });
+    const component = createComponent(dataHandler);
+    await component.loadWithPromises();
+    const saved = vi.fn();
+    component.on('saveSettings', saved);
+
+    await component.resetToDefaults('ctx');
+
+    expect(component.settings).toEqual({ count: 0, name: 'default' });
+    expect(dataHandler.data).toStrictEqual({ count: 0, name: 'default' });
+    expect(saved).toHaveBeenCalledWith(expect.anything(), expect.anything(), 'ctx');
+    expect(dataHandler.recoveryStore?.copies).toStrictEqual([
+      expect.objectContaining({ rawText: JSON.stringify({ count: 3, name: 'stored' }, undefined, 2), reason: SettingsRecoveryReason.LossyRewrite })
+    ]);
+  });
+
+  it('should keep no copy and save nothing when the settings already are the defaults', async () => {
+    const dataHandler = new RecoveringDataHandler({ count: 0, name: 'default' });
+    const component = createComponent(dataHandler);
+    await component.loadWithPromises();
+    vi.mocked(dataHandler.saveData).mockClear();
+
+    await component.resetToDefaults();
+
+    expect(dataHandler.recoveryStore?.copies).toStrictEqual([]);
+    expect(dataHandler.saveData).not.toHaveBeenCalled();
+  });
+
+  it('should still reset when the copy cannot be kept, and log why', async () => {
+    const dataHandler = new RecoveringDataHandler({ count: 3, name: 'stored' });
+    const recoveryStore = dataHandler.recoveryStore ?? new MemoryRecoveryStore();
+    recoveryStore.keepError = new Error('quota');
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(noop);
+    const component = createComponent(dataHandler);
+    await component.loadWithPromises();
+
+    await component.resetToDefaults();
+
+    expect(consoleError).toHaveBeenCalledOnce();
+    expect(dataHandler.data).toStrictEqual({ count: 0, name: 'default' });
+  });
+
+  it('should reset without a recovery store', async () => {
+    const dataHandler = new RecoveringDataHandler({ count: 3, name: 'stored' }, null);
+    const component = createComponent(dataHandler);
+    await component.loadWithPromises();
+
+    await component.resetToDefaults();
+
+    expect(dataHandler.data).toStrictEqual({ count: 0, name: 'default' });
+  });
+
+  it('should round-trip an export through an import', async () => {
+    const source = createComponent(new MockDataHandler({ count: 4, name: 'exported' }));
+    await source.loadWithPromises();
+    const json = await source.exportToJson();
+
+    const dataHandler = new RecoveringDataHandler({ count: 1, name: 'target' });
+    const target = createComponent(dataHandler);
+    await target.loadWithPromises();
+
+    expect(await target.importFromJson(json)).toStrictEqual({ invalidPropertyNames: [], unknownPropertyNames: [] });
+    expect(target.settings).toEqual({ count: 4, name: 'exported' });
+    expect(dataHandler.data).toStrictEqual({ count: 4, name: 'exported' });
+    expect(dataHandler.recoveryStore?.copies.at(-1)?.rawText).toBe(JSON.stringify({ count: 1, name: 'target' }, undefined, 2));
+  });
+
+  it('should reset a setting the import lacks, ignore unknown keys and keep invalid values as entered', async () => {
+    const dataHandler = new MockDataHandler({ count: 5, name: 'stored' });
+    const component = createValidatedComponent(dataHandler);
+    await component.loadWithPromises();
+
+    const result = await component.importFromJson(JSON.stringify({ count: -2, extra: true }), 'ctx');
+
+    expect(result).toStrictEqual({ invalidPropertyNames: ['count'], unknownPropertyNames: ['extra'] });
+    expect(component.settingsState.inputValues).toEqual({ count: -2, name: 'default' });
+    expect(component.settings).toEqual({ count: 0, name: 'default' });
+    expect(dataHandler.data).toStrictEqual({ count: -2, name: 'default' });
+  });
+
+  it('should refuse text that is not a JSON object and change nothing', async () => {
+    const dataHandler = new MockDataHandler({ count: 5, name: 'stored' });
+    const component = createComponent(dataHandler);
+    await component.loadWithPromises();
+    vi.mocked(dataHandler.saveData).mockClear();
+
+    const invalidJsonError = await component.importFromJson('{').catch((error: unknown) => error);
+    expect(invalidJsonError).toBeInstanceOf(PluginSettingsImportError);
+    expect(invalidJsonError).toMatchObject({ message: 'The text is not valid JSON.', name: 'PluginSettingsImportError' });
+    expect((invalidJsonError as Error).cause).toBeInstanceOf(SyntaxError);
+
+    for (const json of ['[]', 'null', '42']) {
+      await expect(component.importFromJson(json)).rejects.toThrow('The JSON is not an object of settings.');
+    }
+
+    expect(component.settings).toEqual({ count: 5, name: 'stored' });
+    expect(dataHandler.saveData).not.toHaveBeenCalled();
   });
 });

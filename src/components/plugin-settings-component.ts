@@ -113,6 +113,22 @@ export interface PluginSettingsComponentBaseOnSaveSettingsParams<PluginSettings 
 }
 
 /**
+ * The outcome of {@link PluginSettingsComponentBase.importFromJson}.
+ */
+export interface PluginSettingsImportResult {
+  /**
+   * The settings the import set to a value that fails validation. They are kept as entered, like an invalid value read
+   * from `data.json`, and the plugin uses their defaults until they are fixed.
+   */
+  readonly invalidPropertyNames: readonly string[];
+
+  /**
+   * The keys of the imported record that name no setting. They are ignored.
+   */
+  readonly unknownPropertyNames: readonly string[];
+}
+
+/**
  * A snapshot of plugin settings state, including raw input values, effective (validated) values,
  * and per-property validation messages.
  *
@@ -314,6 +330,17 @@ export class PluginSettingsComponentBase<PluginSettings extends object> extends 
   }
 
   /**
+   * Serializes the settings as entered, invalid values included, into the JSON `data.json` would hold.
+   *
+   * @returns The JSON text, indented like `data.json`.
+   */
+  public async exportToJson(): Promise<string> {
+    this.ensureLoaded();
+    const record = await this.settingsToRawRecord(this.currentState.inputValues);
+    return JSON.stringify(record, undefined, JSON_INDENT);
+  }
+
+  /**
    * Lists the recovery copies of `data.json` kept on this device: copies of a file that did not parse, and of a file
    * whose stored values a first save would have dropped or changed.
    *
@@ -333,6 +360,38 @@ export class PluginSettingsComponentBase<PluginSettings extends object> extends 
     const safeSettings = await this.cloneSettings(settings);
     await this.ensureSafe(safeSettings);
     return safeSettings;
+  }
+
+  /**
+   * Replaces every setting with the ones in a JSON record, such as one {@link exportToJson} produced, and saves them.
+   *
+   * The record is read the way `data.json` is: legacy converters and the transformer run, a setting it lacks takes its
+   * default, and an unknown key is ignored. The settings in use are kept as a recovery copy first, when the data
+   * handler keeps them.
+   *
+   * @param json - The JSON text.
+   * @param context - The save context passed to the `saveSettings` event.
+   * @returns The unknown keys and the settings whose imported value fails validation.
+   * @throws {PluginSettingsImportError} If the text is not a JSON object. Nothing is changed then.
+   */
+  public async importFromJson(json: string, context?: unknown): Promise<PluginSettingsImportResult> {
+    this.ensureLoaded();
+    let data: unknown;
+    try {
+      data = JSON.parse(json);
+    } catch (error) {
+      throw new PluginSettingsImportError('The text is not valid JSON.', error);
+    }
+
+    if (typeof data !== 'object' || data === null || Array.isArray(data)) {
+      throw new PluginSettingsImportError('The JSON is not an object of settings.');
+    }
+
+    const unknownPropertyNames: string[] = [];
+    const settings = await this.rawRecordToSettings(data as GenericObject, unknownPropertyNames);
+    await this.replaceAllSettings(settings, context);
+    const invalidPropertyNames = this.propertyNames.filter((propertyName) => this.currentState.validationMessages[propertyName] !== '');
+    return { invalidPropertyNames, unknownPropertyNames };
   }
 
   /**
@@ -549,6 +608,19 @@ export class PluginSettingsComponentBase<PluginSettings extends object> extends 
     validator: SettingsValidator<PluginSettings, PropertyName>
   ): void {
     this.validators.set(propertyName, validator as SettingsValidator<PluginSettings>);
+  }
+
+  /**
+   * Resets every setting to its default and saves them.
+   *
+   * The settings in use are kept as a recovery copy first, when the data handler keeps them.
+   *
+   * @param context - The save context passed to the `saveSettings` event.
+   * @returns A {@link Promise} that resolves when the defaults are saved.
+   */
+  public async resetToDefaults(context?: unknown): Promise<void> {
+    this.ensureLoaded();
+    await this.replaceAllSettings(new this.pluginSettingsClass(), context);
   }
 
   /**
@@ -854,7 +926,7 @@ export class PluginSettingsComponentBase<PluginSettings extends object> extends 
     }
   }
 
-  private async rawRecordToSettings(rawRecord: GenericObject): Promise<PluginSettings> {
+  private async rawRecordToSettings(rawRecord: GenericObject, unknownPropertyNames?: string[]): Promise<PluginSettings> {
     rawRecord = this.getTransformer().transformObjectRecursively(rawRecord);
     await this.onLoadRecord(rawRecord);
 
@@ -864,6 +936,7 @@ export class PluginSettingsComponentBase<PluginSettings extends object> extends 
     for (const [propertyName, value] of Object.entries(rawRecord)) {
       if (!this.isValidPropertyName(propertyName)) {
         getObsidianLibDebugger('PluginSettingsComponentBase:rawRecordToSettings')(`Unknown property: ${propertyName}`);
+        unknownPropertyNames?.push(propertyName);
         continue;
       }
 
@@ -888,6 +961,34 @@ export class PluginSettingsComponentBase<PluginSettings extends object> extends 
     }
 
     return settings;
+  }
+
+  private async replaceAllSettings(newSettings: PluginSettings, context: unknown): Promise<void> {
+    const recoveryStore = this.dataHandler.recoveryStore;
+    if (recoveryStore) {
+      const currentRecord = await this.settingsToRawRecord(this.currentState.inputValues);
+      const newRecord = await this.settingsToRawRecord(newSettings);
+      if (!isDeepEqual(currentRecord, newRecord)) {
+        try {
+          await recoveryStore.keep({
+            path: 'data.json',
+            rawText: JSON.stringify(currentRecord, undefined, JSON_INDENT),
+            reason: SettingsRecoveryReason.LossyRewrite
+          });
+        } catch (error) {
+          // The user confirmed the replacement, and could export the settings first, so a store that cannot keep a
+          // copy (no IndexedDB on this device) must not make reset and import impossible.
+          console.error(new Error('Could not keep a recovery copy of the settings before replacing them.', { cause: error }));
+        }
+      }
+    }
+
+    await this.edit((settings) => {
+      for (const propertyName of this.propertyNames) {
+        settings[propertyName] = newSettings[propertyName];
+      }
+    });
+    await this.saveToFile(context);
   }
 
   private async saveToFileImpl(): Promise<void> {
@@ -916,5 +1017,21 @@ export class PluginSettingsComponentBase<PluginSettings extends object> extends 
     await this.onSavingRecord(rawRecord);
 
     return this.getTransformer().transformObjectRecursively(rawRecord);
+  }
+}
+
+/**
+ * Thrown by {@link PluginSettingsComponentBase.importFromJson} when the text is not a JSON object. Nothing was changed.
+ */
+export class PluginSettingsImportError extends Error {
+  /**
+   * Creates a {@link PluginSettingsImportError}.
+   *
+   * @param message - The message.
+   * @param cause - The parse error, when the text is not valid JSON.
+   */
+  public constructor(message: string, cause?: unknown) {
+    super(message, { cause });
+    this.name = 'PluginSettingsImportError';
   }
 }
