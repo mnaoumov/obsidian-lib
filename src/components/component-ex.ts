@@ -26,7 +26,7 @@ import {
 /**
  * Extended Component
  */
-// eslint-disable-next-line obsidian-dev-toolkit/require-component-suffix -- Extended base class.
+// eslint-disable-next-line obsidian-dev-toolkit/require-component-suffix, obsidian-dev-toolkit/prefer-component-ex -- The extended base class every component is pointed to, so it extends the raw Component itself.
 export class ComponentEx extends Component implements Disposable {
   private readonly childrenSet = new Set<Component>();
   private hasBeenLoaded = false;

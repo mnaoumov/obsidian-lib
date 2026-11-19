@@ -31,6 +31,7 @@ const OBSIDIAN_LIB_GLOBAL_NAME = '__obsidianLib';
  * @returns The {@link ValueWrapper} that stores the shared state.
  */
 export function getObsidianLibState<T>(key: string, defaultValue: T): ValueWrapper<T> {
+  // eslint-disable-next-line typescript-dev-toolkit/no-unsafe-class-instance-assignment -- The bag entry is a ValueWrapper built by whichever library copy touched the key first; callers only read and write its value member.
   return (getObsidianLibBag()[key] ??= ValueWrapper.of(defaultValue)) as ValueWrapper<T>;
 }
 
