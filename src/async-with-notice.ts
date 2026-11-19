@@ -23,6 +23,7 @@ import { resolveValue } from '@mnaoumov/typescript-lib/value-provider';
 import type { PluginNoticeComponent } from './components/plugin-notice-component.ts';
 
 import { t } from './i18n/i18n.ts';
+import { tFragment } from './i18n/t-fragment.ts';
 
 /**
  * Options for {@link retryWithTimeoutNotice}.
@@ -161,7 +162,7 @@ function onTimeoutNotice(context: TimeoutContext, pluginNoticeComponent: PluginN
   }
 
   const startTime = Math.trunc(performance.now() - context.duration);
-  let runningTimeEl: HTMLSpanElement;
+  const runningTimeEl = createSpan();
   const SECOND_IN_MILLISECONDS = 1000;
   const cleanup = { intervalId: 0 };
 
@@ -174,11 +175,7 @@ function onTimeoutNotice(context: TimeoutContext, pluginNoticeComponent: PluginN
     }
     f.appendText(t(($) => $.obsidianLib.asyncWithNotice.timedOut, { duration: context.duration }));
     f.createEl('br');
-    f.appendText(t(($) => $.obsidianLib.asyncWithNotice.runningFor));
-    f.appendText(' ');
-    runningTimeEl = f.createSpan();
-    f.appendText(' ');
-    f.appendText(t(($) => $.obsidianLib.asyncWithNotice.milliseconds));
+    f.append(tFragment(($) => $.obsidianLib.asyncWithNotice.runningTime, { duration: runningTimeEl }));
     f.createEl('br');
     f.appendText(t(($) => $.obsidianLib.asyncWithNotice.terminateOperation));
     f.createEl('br');

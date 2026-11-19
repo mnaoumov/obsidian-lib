@@ -70,13 +70,12 @@ vi.mock('@mnaoumov/typescript-lib/debug', () => ({
 }));
 
 vi.mock('./i18n/i18n.ts', () => ({
-  t: vi.fn((selectorFunction: (translations: GenericObject) => string, _options?: GenericObject) => {
+  t: vi.fn((selectorFunction: (translations: GenericObject) => string, options?: GenericObject) => {
     const translations = {
       obsidianLib: {
         asyncWithNotice: {
-          milliseconds: 'milliseconds...',
           operation: 'Operation',
-          runningFor: 'Running for',
+          runningTime: 'Running for {{duration}} milliseconds...',
           terminateOperation: 'You can terminate the operation by clicking the button below.',
           timedOut: 'The operation timed out.'
         },
@@ -86,7 +85,10 @@ vi.mock('./i18n/i18n.ts', () => ({
       }
     };
     try {
-      return selectorFunction(translations);
+      return selectorFunction(translations).replaceAll(/\{\{(?<name>\w+)\}\}/gu, (match, name: number | string) => {
+        const value = options?.[String(name)];
+        return typeof value === 'string' || typeof value === 'number' ? String(value) : match;
+      });
     } catch {
       return 'mock-translation';
     }

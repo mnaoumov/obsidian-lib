@@ -45,6 +45,24 @@ Give each locale module a type derived from the English one, so a missing or mis
 - A loader that throws, rejects, or returns something other than an object is reported with `console.error` naming the language, and is skipped. That language then falls back to English, and the plugin still loads.
 - A change of Obsidian's language takes effect after a restart, as it does for Obsidian itself. `initI18N` runs again on every plugin load, so a reload picks up a new language.
 
+## Translate a whole sentence that holds DOM nodes
+
+A sentence with a link, a code span or a live counter in the middle must still be one translation string. When it is split into `part1`, the node and `part2`, a translator sees two fragments without the sentence they belong to, and cannot move the node to where their language needs it. `tFragment` from `@mnaoumov/obsidian-lib/i18n/t-fragment` takes the whole sentence and a map from placeholder name to a DOM value, and returns a `DocumentFragment` with each node at the position the translation gives its placeholder:
+
+<!-- snippet-check: skip the translation key is the plugin's own, which this package does not have -->
+```ts
+import { tFragment } from '@mnaoumov/obsidian-lib/i18n/t-fragment';
+
+// en: { notice: { linkUpdated: 'Updated the link to {{note}} in {{count}} files.' } }
+const noteLink = createEl('a', { cls: 'internal-link', text: 'Daily' });
+noticeEl.append(tFragment(($) => $.notice.linkUpdated, { note: noteLink }, { count: 3 }));
+```
+
+- A placeholder whose value is a `Node` is placed as that node. One used twice in a sentence is placed at its first position and deep-cloned at the later ones.
+- A placeholder whose value is a function `(parent) => void` is built in place: the function runs once per position and appends to `parent`.
+- Every other placeholder, here `{{count}}`, is interpolated by `i18next` from the third argument, exactly as `t` does it.
+- A placeholder the translation leaves out is not placed at all, so keep a reference to a node you update later, as the timeout notice of `runWithTimeoutNotice` does with its running-time counter.
+
 ## Measurements
 
 A fixture of 12 locales with 1 200 strings each (1.2 MB of source, 1.1 MB minified), bundled by esbuild 0.28.2 into one CommonJS file and loaded 21 times in fresh Node 26.10 processes on Windows, gave these medians:
