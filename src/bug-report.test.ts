@@ -1,7 +1,11 @@
+// Every real browser user agent string below carries the `KHTML` token.
+// cspell:words KHTML
+
 import type { App as AppOriginal } from 'obsidian';
 
 import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import {
+  afterEach,
   beforeEach,
   describe,
   expect,
@@ -92,9 +96,27 @@ function setPlatform(state: Partial<PlatformState>): void {
   });
 }
 
+const ORIGINAL_PROCESS_VERSIONS = process.versions;
+const DESKTOP_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) obsidian/1.8.10 Chrome/130.0.6723.191 Electron/33.3.2 Safari/537.36';
+
+function setProcessVersions(versions: Readonly<Record<string, string>>): void {
+  Object.defineProperty(process, 'versions', { configurable: true, value: { ...ORIGINAL_PROCESS_VERSIONS, ...versions } });
+}
+
+function setUserAgent(userAgent: unknown): void {
+  vi.stubGlobal('navigator', { userAgent });
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   setPlatform({ build: '1.8.10', isDesktopApp: true, isWin: true });
+  setProcessVersions({ chrome: '138.0.7204.100', electron: '37.2.0' });
+  setUserAgent(DESKTOP_USER_AGENT);
+});
+
+afterEach(() => {
+  Object.defineProperty(process, 'versions', { configurable: true, value: ORIGINAL_PROCESS_VERSIONS });
+  vi.unstubAllGlobals();
 });
 
 describe('getBugReportEnvironment', () => {
@@ -108,8 +130,41 @@ describe('getBugReportEnvironment', () => {
       obsidianVersion: '1.15.0',
       operatingSystem: 'Windows 11 Pro 10.0.26100',
       platform: 'Windows',
-      plugin: { id: PLUGIN_ID, version: '1.2.3' }
+      plugin: { id: PLUGIN_ID, version: '1.2.3' },
+      runtime: 'Electron 37.2.0, Chromium 138.0.7204.100'
     });
+  });
+
+  it('should fall back to the user agent for the desktop runtime when process.versions does not say', async () => {
+    setProcessVersions({});
+    const environment = await getBugReportEnvironment({ app: createApp(), pluginId: PLUGIN_ID });
+    expect(environment.runtime).toBe('Electron 33.3.2, Chromium 130.0.6723.191');
+  });
+
+  it('should name the Capacitor platform and the Chromium web view on Android', async () => {
+    setPlatform({ isAndroidApp: true, isMobileApp: true });
+    mockGetMobileAppInfo.mockResolvedValue(null);
+    vi.stubGlobal('Capacitor', { getPlatform: (): string => 'android' });
+    setUserAgent('Mozilla/5.0 (Linux; Android 15; Pixel 8 Build/AP3A; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/140.0.7339.51 Mobile Safari/537.36');
+    const environment = await getBugReportEnvironment({ app: createApp(), pluginId: PLUGIN_ID });
+    expect(environment.runtime).toBe('Capacitor android, Chromium 140.0.7339.51');
+  });
+
+  it('should name the WebKit web view on iOS and never read process.versions off desktop', async () => {
+    setPlatform({ isIosApp: true, isMacOS: true, isMobileApp: true });
+    mockGetMobileAppInfo.mockResolvedValue(null);
+    vi.stubGlobal('Capacitor', { getPlatform: (): unknown => 42 });
+    setUserAgent('Mozilla/5.0 (iPhone; CPU iPhone OS 18_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148');
+    const environment = await getBugReportEnvironment({ app: createApp(), pluginId: PLUGIN_ID });
+    expect(environment.runtime).toBe('Capacitor unknown, WebKit 605.1.15');
+  });
+
+  it('should read the runtime as unknown when nothing says', async () => {
+    setPlatform({ isMobileApp: true });
+    mockGetMobileAppInfo.mockResolvedValue(null);
+    setUserAgent(undefined);
+    const environment = await getBugReportEnvironment({ app: createApp(), pluginId: PLUGIN_ID });
+    expect(environment.runtime).toBe('unknown');
   });
 
   it('should give no version for a plugin whose manifest is not known', async () => {
@@ -183,6 +238,18 @@ describe('formatBugReportEnvironment', () => {
         + '- Operating system: Windows 11 Pro 10.0.26100\n'
         + '- Other enabled plugins: `alpha` 2.0.0, `beta` unknown'
     );
+  });
+
+  it('should render the runtime when the environment has one', () => {
+    expect(formatBugReportEnvironment({
+      enabledPlugins: [],
+      installerVersion: '1.8.10',
+      obsidianVersion: '1.15.0',
+      operatingSystem: 'Windows 11',
+      platform: 'Windows',
+      plugin: { id: PLUGIN_ID, version: '1.2.3' },
+      runtime: 'Electron 37.2.0, Chromium 138.0.7204.100'
+    })).toContain('- Operating system: Windows 11\n- Runtime: Electron 37.2.0, Chromium 138.0.7204.100\n- Other enabled plugins: none');
   });
 
   it('should say none when no other plugin is enabled', () => {
