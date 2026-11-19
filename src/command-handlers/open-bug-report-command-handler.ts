@@ -12,6 +12,10 @@ import { Notice } from 'obsidian';
 import type { BugReportDiagnosticSection } from '../bug-report-diagnostics.ts';
 
 import {
+  getBugReportScrubbedPaths,
+  scrubBugReportDiagnosticSections
+} from '../bug-report-scrubber.ts';
+import {
   buildBugReportIssueFormLink,
   formatBugReportEnvironment,
   getBugReportEnvironment,
@@ -35,7 +39,9 @@ export interface OpenBugReportCommandHandlerConstructorParams {
    * Gets the optional diagnostics the report can carry, such as a `BugReportLogBuffer`'s section or the
    * plugin's own redacted settings. Called each time the command runs. When it returns any section, the
    * user reviews them and chooses which to include before the form opens; a potentially private section
-   * starts excluded. Leave it out to open the form with the environment only, as before.
+   * starts excluded. Every section is scrubbed before the review: token shapes and the vault and home folder
+   * paths are masked (see `scrubBugReportText`), so the review shows what is sent. Leave it out to open the form
+   * with the environment only, as before.
    */
   readonly getDiagnostics?: () => Promisable<readonly BugReportDiagnosticSection[]>;
 
@@ -117,7 +123,10 @@ export class OpenBugReportCommandHandler extends OpenGitHubCommandHandler {
     }
 
     const environment = await getBugReportEnvironment({ app: this.app, pluginId: this.pluginId });
-    const sections = await this.getDiagnostics?.() ?? [];
+    const providedSections = await this.getDiagnostics?.() ?? [];
+    const sections = providedSections.length === 0
+      ? providedSections
+      : scrubBugReportDiagnosticSections(providedSections, { paths: await getBugReportScrubbedPaths(this.app) });
     let diagnostics: readonly BugReportDiagnosticSection[] = [];
     if (sections.length > 0) {
       const reviewedSections = await reviewBugReportDiagnostics({
