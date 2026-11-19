@@ -7,6 +7,8 @@ description: Promise-returning `alert`, `confirm`, `prompt`, item-selection and 
 
 In order for modals to look properly, their styles have to be initialized. See [Styling](/obsidian-lib/guides/styling/) for more details.
 
+To answer `alert`, `confirm`, `prompt`, `selectItem` and `selectOption` from a script in tests, show them through a `DialogContext`. See [Scripted dialogs](/obsidian-lib/guides/scripted-dialogs/).
+
 ## Alert
 
 ```ts
