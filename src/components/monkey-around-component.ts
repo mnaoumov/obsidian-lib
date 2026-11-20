@@ -4,10 +4,12 @@
  * Improved type-safe wrapper of {@link https://www.npmjs.com/package/monkey-around} library.
  */
 
+import type { DisposableEx } from '@mnaoumov/typescript-lib/disposable';
 import type { GenericFunction } from '@mnaoumov/typescript-lib/function';
 import type { GenericObject } from '@mnaoumov/typescript-lib/type-guards';
 import type { ConditionalKeys } from 'type-fest';
 
+import { CallbackDisposable } from '@mnaoumov/typescript-lib/disposable';
 import { around as originalAround } from 'monkey-around';
 
 import { getObsidianLibState } from '../obsidian-lib-state.ts';
@@ -169,6 +171,17 @@ export interface PatchHandlerParams<$Object extends object, MethodName extends M
    */
   readonly originalThis: $Object;
 }
+
+/**
+ * Parameters passed to {@link patchMethod}: the same as {@link MonkeyAroundComponent#registerMethodPatch} takes.
+ *
+ * @typeParam $Object - The object to patch.
+ * @typeParam MethodName - The method name to patch.
+ */
+export type PatchMethodParams<$Object extends object, MethodName extends MethodKeys<$Object>> = MonkeyAroundComponentRegisterMethodPatchParams<
+  $Object,
+  MethodName
+>;
 
 /**
  * A post-patch handler function that runs after a patch is applied.
@@ -363,6 +376,51 @@ export function around<$Object extends object>($object: $Object, factories: Fact
  */
 export function hasPatchToken($function: GenericFunction, patchToken: symbol): boolean {
   return getMonkeyAroundPatches().get($function) === patchToken;
+}
+
+/**
+ * Patches one method of an object for a scope, and returns a {@link DisposableEx} that restores it.
+ *
+ * The scoped counterpart of {@link MonkeyAroundComponent#registerMethodPatch}, for a patch whose lifetime is a block
+ * rather than a component:
+ *
+ * ```ts
+ * using _ = patchMethod({
+ *   $object: editor,
+ *   methodName: 'transaction',
+ *   patchHandler: ({ fallback }) => {
+ *     // ...
+ *     return fallback();
+ *   }
+ * });
+ * ```
+ *
+ * It takes the same parameters, and runs the same implementation, through a {@link MonkeyAroundComponent} of its own
+ * that is loaded here and unloaded on dispose. So `once`, `patchToken` and `postPatchHandler` behave exactly as they do
+ * there, and a patch stacked on the same method unloads in any order. Disposing more than once is a no-op.
+ *
+ * @typeParam $Object - The object to patch.
+ * @typeParam MethodName - The method name to patch.
+ * @param params - The parameters of the patch.
+ * @returns A {@link DisposableEx} that removes the patch when disposed, for use with `using`.
+ */
+export function patchMethod<$Object extends object, const MethodName extends MethodKeys<$Object>>(
+  params: PatchMethodParams<$Object, MethodName>
+): DisposableEx {
+  const component = new MonkeyAroundComponent();
+  component.load();
+  try {
+    component.registerMethodPatch(params);
+  } catch (error) {
+    component.unload();
+    throw error;
+  }
+
+  return new CallbackDisposable({
+    callback: (): void => {
+      component.unload();
+    }
+  });
 }
 
 function getMonkeyAroundPatches(): WeakMap<GenericFunction, symbol> {
