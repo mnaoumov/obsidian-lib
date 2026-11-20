@@ -14,6 +14,7 @@ import {
   emitAsyncErrorEvent,
   getStackTrace
 } from '@mnaoumov/typescript-lib/error';
+import { yieldToEventLoop } from '@mnaoumov/typescript-lib/event-loop-turn';
 import { noop } from '@mnaoumov/typescript-lib/function';
 
 import type { PluginNoticeComponent } from './components/plugin-notice-component.ts';
@@ -207,7 +208,7 @@ export async function loop<T>(params: LoopParams<T>): Promise<void> {
 
       try {
         if (performance.now() - lastUIUpdateTimestamp > fullOptions.uiUpdateThresholdInMilliseconds) {
-          await requestAnimationFrameAsync();
+          await yieldForUIUpdate();
           lastUIUpdateTimestamp = performance.now();
         }
         await fullOptions.processItem(item);
@@ -240,6 +241,26 @@ export async function loop<T>(params: LoopParams<T>): Promise<void> {
     // different key than the handle is built with on an engine lacking `Symbol.dispose`, and `loop()` runs on every
     // platform.
     delayedNotice?.dispose();
+  }
+
+  /**
+   * Gives the event loop a turn so the progress notice can repaint.
+   *
+   * While the window is visible, it waits for the next animation frame, which is when the notice repaints. In a hidden
+   * window `requestAnimationFrame` never fires, so waiting for a frame only waits out `requestAnimationFrameAsync`'s
+   * fallback timeout, about half the run at the default threshold. There it yields one macrotask instead: nothing
+   * repaints anyway, and Obsidian turns background timer throttling off, so the loop keeps its speed.
+   *
+   * `requestAnimationFrameAsync` schedules on the global window, so the global document's visibility is the one that
+   * decides whether that frame comes.
+   */
+  async function yieldForUIUpdate(): Promise<void> {
+    // eslint-disable-next-line obsidianmd/prefer-active-doc -- The frame is requested on the global window, so its own document decides whether it fires.
+    if (document.hidden) {
+      await yieldToEventLoop();
+      return;
+    }
+    await requestAnimationFrameAsync();
   }
 
   function buildProgressBarFragment(): DocumentFragment {

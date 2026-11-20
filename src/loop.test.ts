@@ -8,6 +8,7 @@ import {
   emitAsyncErrorEvent,
   getStackTrace
 } from '@mnaoumov/typescript-lib/error';
+import { yieldToEventLoop } from '@mnaoumov/typescript-lib/event-loop-turn';
 import {
   noop,
   noopAsync
@@ -52,6 +53,10 @@ vi.mock('@mnaoumov/typescript-lib/async', () => ({
     $function().catch(() => undefined);
   }),
   requestAnimationFrameAsync: vi.fn(() => noopAsync())
+}));
+
+vi.mock('@mnaoumov/typescript-lib/event-loop-turn', () => ({
+  yieldToEventLoop: vi.fn(() => noopAsync())
 }));
 
 vi.mock('./debug.ts', () => ({
@@ -606,7 +611,28 @@ describe('loop', () => {
     });
 
     expect(requestAnimationFrameAsync).toHaveBeenCalled();
+    expect(yieldToEventLoop).not.toHaveBeenCalled();
     vi.mocked(performance.now).mockRestore();
+  });
+
+  it('should yield to the event loop instead of waiting for a frame when the window is hidden', async () => {
+    let callCount = 0;
+    vi.spyOn(performance, 'now').mockImplementation(() => {
+      return callCount++ * 200;
+    });
+    vi.spyOn(document, 'hidden', 'get').mockReturnValue(true);
+
+    await loop({
+      buildNoticeMessage: vi.fn(() => 'msg'),
+      items: ['a', 'b'],
+      pluginNoticeComponent: strictProxy<PluginNoticeComponent>({}),
+      processItem: vi.fn(),
+      shouldShowNotice: false
+    });
+
+    expect(yieldToEventLoop).toHaveBeenCalled();
+    expect(requestAnimationFrameAsync).not.toHaveBeenCalled();
+    vi.restoreAllMocks();
   });
 
   it('should show the progress bar through a delayed notice and dispose it when the loop completes', async () => {
