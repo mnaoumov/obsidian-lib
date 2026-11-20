@@ -11,6 +11,7 @@ import {
 import { LocalDataStore } from './data-stores/local-data-store.ts';
 import {
   DEFAULT_MAX_SETTINGS_RECOVERY_COPIES,
+  isRestorableSettingsRecoveryCopy,
   isSettingsRecoveryCopy,
   LocalSettingsRecoveryStore,
   SETTINGS_RECOVERY_STORE_ID,
@@ -137,5 +138,13 @@ describe('isSettingsRecoveryCopy', () => {
     expect(isSettingsRecoveryCopy({ ...copy, keptAt: '1' })).toBe(false);
     expect(isSettingsRecoveryCopy(null)).toBe(false);
     expect(isSettingsRecoveryCopy('copy')).toBe(false);
+  });
+});
+
+describe('isRestorableSettingsRecoveryCopy', () => {
+  it('should accept only a copy whose raw text parses as JSON', () => {
+    const copy = { id: 'x', keptAt: 1, path: 'p', rawText: '{"a":1}', reason: SettingsRecoveryReason.LossyRewrite };
+    expect(isRestorableSettingsRecoveryCopy(copy)).toBe(true);
+    expect(isRestorableSettingsRecoveryCopy({ ...copy, rawText: '{"a":', reason: SettingsRecoveryReason.InvalidJson })).toBe(false);
   });
 });

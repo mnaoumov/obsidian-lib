@@ -347,6 +347,11 @@ export enum CssClass {
   PromptModal = 'prompt-modal',
 
   /**
+   * A CSS class for the button of the settings management row that lists the recovery copies of `data.json`.
+   */
+  RecoveryCopiesButton = 'recovery-copies-button',
+
+  /**
    * A CSS class for the restore button of the minimized modal bar.
    */
   RestoreButton = 'restore-button',
@@ -365,6 +370,21 @@ export enum CssClass {
    * A CSS class for the setting component wrapper.
    */
   SettingComponentWrapper = 'setting-component-wrapper',
+
+  /**
+   * A CSS class for the modal that lists the recovery copies of a plugin's `data.json`.
+   */
+  SettingsRecoveryCopiesModal = 'settings-recovery-copies-modal',
+
+  /**
+   * A CSS class for one recovery copy in the recovery copies modal.
+   */
+  SettingsRecoveryCopy = 'settings-recovery-copy',
+
+  /**
+   * A CSS class for the preview of a recovery copy's raw text.
+   */
+  SettingsRecoveryCopyPreview = 'settings-recovery-copy-preview',
 
   /**
    * A CSS class for the settings tabs.

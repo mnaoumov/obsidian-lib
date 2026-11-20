@@ -17,6 +17,7 @@ import {
   noopAsync
 } from '@mnaoumov/typescript-lib/function';
 import { castTo } from '@mnaoumov/typescript-lib/object-utils';
+import { waitForAllAsyncOperations } from '@mnaoumov/typescript-test-toolkit/async-operation-tracking';
 import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import {
   App,
@@ -36,13 +37,16 @@ import type {
   PluginSettingsImportResult
 } from '../components/plugin-settings-component.ts';
 import type { ValueComponentWithChangeTracking } from '../setting-components/value-component-with-change-tracking.ts';
+import type { SettingsRecoveryCopy } from '../settings-recovery.ts';
 import type {
   PluginSettingsTabBaseSettingExParams,
   PluginSettingsTabBaseSettingGroupExParams
 } from './plugin-settings-tab.ts';
 
 import { PluginSettingsImportError } from '../components/plugin-settings-component.ts';
+import { SettingsRecoveryCopyAction } from '../modals/settings-recovery-copies.ts';
 import { SettingEx } from '../setting-ex.ts';
+import { SettingsRecoveryReason } from '../settings-recovery.ts';
 import {
   PluginSettingsTabBase,
   SAVE_TO_FILE_CONTEXT,
@@ -53,6 +57,7 @@ vi.mock('../css-class.ts', () => ({
   CssClass: {
     LibraryName: 'obsidian-lib',
     PluginSettingsTab: 'plugin-settings-tab',
+    RecoveryCopiesButton: 'recovery-copies-button',
     Tooltip: 'tooltip',
     TooltipArrow: 'tooltip-arrow',
     TooltipValidator: 'tooltip-validator'
@@ -67,12 +72,14 @@ const {
   mockConfirm,
   mockCopyTextManually,
   mockNotice,
-  mockPrompt
+  mockPrompt,
+  mockSelectSettingsRecoveryCopy
 } = vi.hoisted(() => ({
   mockConfirm: vi.fn(),
   mockCopyTextManually: vi.fn(),
   mockNotice: vi.fn(),
-  mockPrompt: vi.fn()
+  mockPrompt: vi.fn(),
+  mockSelectSettingsRecoveryCopy: vi.fn()
 }));
 
 vi.mock('obsidian', async (importOriginal) => ({
@@ -90,6 +97,11 @@ vi.mock('../modals/copy-text-manually.ts', () => ({
 
 vi.mock('../modals/prompt.ts', () => ({
   prompt: mockPrompt
+}));
+
+vi.mock('../modals/settings-recovery-copies.ts', async (importOriginal) => ({
+  ...await importOriginal<typeof import('../modals/settings-recovery-copies.ts')>(),
+  selectSettingsRecoveryCopy: mockSelectSettingsRecoveryCopy
 }));
 
 interface EventListenerEntry {
@@ -159,6 +171,7 @@ function createMockPlugin(appInstance: AppOriginal): Plugin {
 
 function createMockSettingsComponent(overrides: Partial<PluginSettingsComponentBase<TestSettings>> = {}): PluginSettingsComponentBase<TestSettings> {
   return strictProxy<PluginSettingsComponentBase<TestSettings>>({
+    getRecoveryCopies: vi.fn(() => Promise.resolve([])),
     ...overrides,
     defaultSettings: { enabled: false, name: 'default' },
     on: castTo<PluginSettingsComponentBase<TestSettings>['on']>(vi.fn((_name: string, _callback: GenericVoidFunction) => ({
@@ -1266,15 +1279,40 @@ describe('PluginSettingsTabBase settings management', () => {
 
   interface ManagementMocks {
     readonly exportToJson: ReturnType<typeof vi.fn>;
+    readonly getRecoveryCopies: ReturnType<typeof vi.fn>;
     readonly importFromJson: ReturnType<typeof vi.fn>;
     readonly resetToDefaults: ReturnType<typeof vi.fn>;
+    readonly restoreRecoveryCopy: ReturnType<typeof vi.fn>;
   }
 
-  function setUp(): ManagementFixture {
+  interface RecoveryCopiesEntryPoint {
+    readonly restoreRecoveryCopy: (copy: SettingsRecoveryCopy) => Promise<void>;
+    readonly showRecoveryCopies: () => Promise<void>;
+  }
+
+  const VALID_COPY: SettingsRecoveryCopy = {
+    id: '2026-11-20T10:00:00.000Z',
+    keptAt: Date.UTC(2026, 10, 20, 10),
+    path: 'data.json',
+    rawText: '{"name":"kept"}',
+    reason: SettingsRecoveryReason.LossyRewrite
+  };
+
+  const DAMAGED_COPY: SettingsRecoveryCopy = {
+    id: '2026-11-19T10:00:00.000Z',
+    keptAt: Date.UTC(2026, 10, 19, 10),
+    path: 'data.json',
+    rawText: '{"name":',
+    reason: SettingsRecoveryReason.InvalidJson
+  };
+
+  function setUp(copies: readonly SettingsRecoveryCopy[] = []): ManagementFixture {
     const component: ManagementMocks = {
       exportToJson: vi.fn(() => Promise.resolve(EXPORTED_JSON)),
+      getRecoveryCopies: vi.fn(() => Promise.resolve([...copies])),
       importFromJson: vi.fn(() => Promise.resolve(NO_FINDINGS)),
-      resetToDefaults: vi.fn(() => noopAsync())
+      resetToDefaults: vi.fn(() => noopAsync()),
+      restoreRecoveryCopy: vi.fn(() => noopAsync())
     };
     const pluginSettingsComponent = createMockSettingsComponent(castTo<Partial<PluginSettingsComponentBase<TestSettings>>>(component));
     const tab = new DeclarativeSettingsTab({ plugin: createMockPlugin(app), pluginSettingsComponent });
@@ -1440,6 +1478,105 @@ describe('PluginSettingsTabBase settings management', () => {
     component.importFromJson.mockRejectedValue(failure);
 
     await expect(castTo<SettingsImportEntryPoint>(tab).importSettingsFromClipboard()).rejects.toBe(failure);
+    expect(mockNotice).not.toHaveBeenCalled();
+  });
+
+  it('should add no recovery copies button when this device keeps none', async () => {
+    const { component, setting } = setUp();
+
+    await vi.waitFor(() => {
+      expect(component.getRecoveryCopies).toHaveBeenCalledOnce();
+    });
+    await waitForAllAsyncOperations();
+    expect(setting.controlEl.querySelectorAll('button')).toHaveLength(3);
+  });
+
+  it('should add a recovery copies button naming how many copies are kept', async () => {
+    const { setting } = setUp([VALID_COPY, DAMAGED_COPY]);
+
+    await vi.waitFor(() => {
+      expect(setting.controlEl.querySelectorAll('button')).toHaveLength(4);
+    });
+    expect(setting.controlEl.querySelectorAll('button')[3]?.textContent).toBe('Recovery copies (2)');
+  });
+
+  it('should restore the chosen copy after a confirmation, re-render and say so', async () => {
+    const { clickButton, component, setting, tab } = setUp([VALID_COPY]);
+    await vi.waitFor(() => {
+      expect(setting.controlEl.querySelectorAll('button')).toHaveLength(4);
+    });
+    mockSelectSettingsRecoveryCopy.mockResolvedValue({ action: SettingsRecoveryCopyAction.Restore, copy: VALID_COPY });
+    mockConfirm.mockResolvedValue(true);
+
+    clickButton(3);
+
+    await vi.waitFor(() => {
+      expect(mockNotice).toHaveBeenCalledWith('The recovery copy was restored.');
+    });
+    expect(mockSelectSettingsRecoveryCopy).toHaveBeenCalledWith(expect.objectContaining({ copies: [VALID_COPY] }));
+    expect(mockConfirm).toHaveBeenCalledWith(expect.objectContaining({
+      message: expect.stringContaining('The settings in use are kept as a recovery copy first.') as unknown,
+      title: 'Restore this copy?'
+    }));
+    expect(component.restoreRecoveryCopy).toHaveBeenCalledWith(VALID_COPY.id);
+    expect(tab.refresh).toHaveBeenCalled();
+  });
+
+  it('should restore nothing when the modal is closed or the restore is not confirmed', async () => {
+    const { component, tab } = setUp([VALID_COPY]);
+    const entryPoint = castTo<RecoveryCopiesEntryPoint>(tab);
+    mockSelectSettingsRecoveryCopy.mockResolvedValueOnce(null);
+    await entryPoint.showRecoveryCopies();
+    mockConfirm.mockResolvedValue(false);
+    await entryPoint.restoreRecoveryCopy(VALID_COPY);
+
+    expect(mockConfirm).toHaveBeenCalledOnce();
+    expect(component.restoreRecoveryCopy).not.toHaveBeenCalled();
+  });
+
+  it('should say why a restore failed', async () => {
+    const { component, tab } = setUp([VALID_COPY]);
+    mockConfirm.mockResolvedValue(true);
+    component.restoreRecoveryCopy.mockRejectedValue(new Error('No recovery copy "x" is kept on this device.'));
+
+    await castTo<RecoveryCopiesEntryPoint>(tab).restoreRecoveryCopy(VALID_COPY);
+
+    expect(mockNotice).toHaveBeenCalledWith('The recovery copy was not restored: No recovery copy "x" is kept on this device.');
+    expect(tab.refresh).not.toHaveBeenCalled();
+  });
+
+  it('should let a restore failure that is not an error surface', async () => {
+    const { component, tab } = setUp([VALID_COPY]);
+    mockConfirm.mockResolvedValue(true);
+    component.restoreRecoveryCopy.mockRejectedValue('odd');
+
+    await expect(castTo<RecoveryCopiesEntryPoint>(tab).restoreRecoveryCopy(VALID_COPY)).rejects.toBe('odd');
+  });
+
+  it('should copy the text of a damaged copy to the clipboard', async () => {
+    const { clickButton, setting, writeText } = setUp([DAMAGED_COPY]);
+    await vi.waitFor(() => {
+      expect(setting.controlEl.querySelectorAll('button')).toHaveLength(4);
+    });
+    mockSelectSettingsRecoveryCopy.mockResolvedValue({ action: SettingsRecoveryCopyAction.CopyText, copy: DAMAGED_COPY });
+
+    clickButton(3);
+
+    await vi.waitFor(() => {
+      expect(mockNotice).toHaveBeenCalledWith(expect.stringContaining('The text of the recovery copy was copied to the clipboard.'));
+    });
+    expect(writeText).toHaveBeenCalledWith(DAMAGED_COPY.rawText);
+    expect(mockConfirm).not.toHaveBeenCalled();
+  });
+
+  it('should show the text of a damaged copy for copying by hand when the clipboard refuses it', async () => {
+    const { tab, writeText } = setUp([DAMAGED_COPY]);
+    writeText.mockRejectedValue(new Error('denied'));
+    mockSelectSettingsRecoveryCopy.mockResolvedValue({ action: SettingsRecoveryCopyAction.CopyText, copy: DAMAGED_COPY });
+
+    await castTo<RecoveryCopiesEntryPoint>(tab).showRecoveryCopies();
+
+    expect(mockCopyTextManually).toHaveBeenCalledWith(expect.objectContaining({ text: DAMAGED_COPY.rawText, title: 'Copy the recovery copy' }));
     expect(mockNotice).not.toHaveBeenCalled();
   });
 });

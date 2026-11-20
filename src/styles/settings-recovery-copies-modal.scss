@@ -1,0 +1,23 @@
+.obsidian-lib {
+  &.settings-recovery-copies-modal {
+    .settings-recovery-copy {
+      border-top: var(--border-width) solid var(--background-modifier-border);
+      padding-block: var(--size-4-2);
+
+      h3 {
+        font-size: var(--font-ui-medium);
+        margin-block: 0 var(--size-4-2);
+      }
+    }
+
+    .settings-recovery-copy-preview {
+      font-family: var(--font-monospace);
+      font-size: var(--font-ui-smaller);
+      max-height: 12em;
+      overflow: auto;
+      user-select: text;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+  }
+}
