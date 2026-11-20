@@ -23,28 +23,25 @@ interface RunParams {
 
 async function runBugReport(input: RunParams): Promise<BugReportRunResult> {
   return await evalInObsidian({
-    async callback({ app, isClipboardDenied, lib: { clickElement, noopAsync, OpenBugReportCommandHandler, pressKey, waitUntil }, maxUrlLength }) {
+    async callback({ app, isClipboardDenied, lib: { clickElement, noopAsync, OpenBugReportCommandHandler, pressKey, useInMemoryClipboard, waitUntil }, maxUrlLength }) {
       const pluginId = 'obsidian-lib-integration-test';
       const SETTLE_DELAY_IN_MILLISECONDS = 300;
       const urls: string[] = [];
-      const clipboardWrites: string[] = [];
       const originalOpen = window.open;
       // Capture the external-navigation boundary so the test does not launch the user's browser.
       window.open = (url): null => {
         urls.push(String(url));
         return null;
       };
-      // Capture the clipboard so the test neither reads nor overwrites the user's clipboard.
-      const clipboard = activeWindow.navigator.clipboard;
-      const isHadOwnWriteText = Object.hasOwn(clipboard, 'writeText');
-      const originalWriteText = clipboard.writeText;
-      clipboard.writeText = async (text: string): Promise<void> => {
-        await noopAsync();
-        if (isClipboardDenied) {
+      // An in-memory clipboard, so the test neither depends on the unfocused harness window's clipboard nor overwrites the user's.
+      const clipboard = useInMemoryClipboard({ window: activeWindow });
+      if (isClipboardDenied) {
+        // `restore()` puts back the descriptor saved before the install, so it also removes this override.
+        activeWindow.navigator.clipboard.writeText = async (): Promise<void> => {
+          await noopAsync();
           throw new DOMException('Write permission denied.', 'NotAllowedError');
-        }
-        clipboardWrites.push(text);
-      };
+        };
+      }
 
       const handler = new OpenBugReportCommandHandler({
         app,
@@ -95,19 +92,15 @@ async function runBugReport(input: RunParams): Promise<BugReportRunResult> {
         }
 
         await waitUntil({
-          message: `The issue form opens; clipboard writes: ${String(clipboardWrites.length)}, modals open: ${String(activeDocument.querySelectorAll('.modal-container').length)}`,
+          message: `The issue form opens; clipboard writes: ${String(clipboard.writtenTexts.length)}, modals open: ${String(activeDocument.querySelectorAll('.modal-container').length)}`,
           predicate: () => urls.length > 0,
           timeoutInMilliseconds: 5000
         });
         await executePromise;
-        return { clipboardWrites, manualCopyText, previewText, urls };
+        return { clipboardWrites: [...clipboard.writtenTexts], manualCopyText, previewText, urls };
       } finally {
         restoreOpen();
-        if (isHadOwnWriteText) {
-          clipboard.writeText = originalWriteText;
-        } else {
-          Reflect.deleteProperty(clipboard, 'writeText');
-        }
+        clipboard.restore();
         for (let attempt = 0; attempt < 2 && activeDocument.querySelector('.bug-report-review-modal, .copy-text-manually-modal'); attempt++) {
           await pressKey({ key: 'Escape' });
         }
