@@ -109,12 +109,12 @@ Nothing frees a WebAssembly instance's memory explicitly. It goes once nothing r
 
 ## Other off-main-thread APIs
 
-These were weighed for helpers of their own. `worker-component.obsidian.integration.test.ts` checks each answer below in a real renderer, so a change in Obsidian turns that test red.
+These were weighed for helpers of their own. `worker-component.obsidian.integration.test.ts` checks each answer below in a real renderer on desktop and on the Android emulator, so a change in Obsidian turns that test red. The one answer that differs between the two platforms, shared memory, is pinned by `worker-component.desktop.obsidian.integration.test.ts` and `worker-component.android.obsidian.integration.test.ts`. Everything else here holds on both, and the worker round trip itself (calls, errors, transfers, cancellation and a compiled `WebAssembly.Module` passed to a worker) passes on Android unchanged. iOS has not been measured.
 
-- **`SharedArrayBuffer` and `Atomics`** work on desktop even though the renderer is not cross-origin isolated (`crossOriginIsolated` is `false`): Electron turns the feature on, and a worker's `Atomics.store` into a shared buffer passed as a call argument is visible on the main thread. That is a desktop fact only, because a mobile WebView without cross-origin isolation is not known to provide it. A plugin that also runs on mobile checks `typeof SharedArrayBuffer` and falls back to transferring buffers.
-- **`OffscreenCanvas`** exists on the main thread and in workers, so a canvas can be drawn in a worker with no wrapper: transfer it with the call's `transfer`.
-- **`indexedDB`** is available inside a worker. For plugin data, prefer this library's data stores, which own their schema and lifetime.
-- **`requestIdleCallback`** is available. For background indexing that should yield to the user, schedule with it, or run the work in a worker.
-- **`BroadcastChannel`** exists. Popouts share one `App`, so plain events on `app.workspace` usually do the same job between windows without a channel.
+- **`SharedArrayBuffer`** works on desktop even though the renderer is not cross-origin isolated (`crossOriginIsolated` is `false`): Electron turns the feature on, and a worker's `Atomics.store` into a shared buffer passed as a call argument is visible on the main thread. **On Android it does not exist at all**: the WebView is not cross-origin isolated either, and `typeof SharedArrayBuffer` is `'undefined'` both on the main thread and inside a worker, so `new SharedArrayBuffer(...)` throws a `ReferenceError`. `Atomics` itself is still defined there, but with no shared buffer it has nothing to coordinate. A plugin that also runs on mobile checks `typeof SharedArrayBuffer` and falls back to transferring buffers.
+- **`OffscreenCanvas`** exists on the main thread and in workers, on desktop and Android, so a canvas can be drawn in a worker with no wrapper: transfer it with the call's `transfer`.
+- **`indexedDB`** is available inside a worker on both platforms. For plugin data, prefer this library's data stores, which own their schema and lifetime.
+- **`requestIdleCallback`** is available on both platforms. For background indexing that should yield to the user, schedule with it, or run the work in a worker.
+- **`BroadcastChannel`** exists on both platforms. Popouts share one `App`, so plain events on `app.workspace` usually do the same job between windows without a channel.
 
 None of these has a helper yet, because no two plugins built on this library need the same one.
