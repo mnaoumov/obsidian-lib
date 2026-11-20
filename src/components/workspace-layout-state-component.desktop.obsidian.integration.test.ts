@@ -44,13 +44,6 @@ describe('WorkspaceLayoutStateComponent', () => {
           readonly plugins: Record<string, unknown>;
         }
 
-        // TODO: Drop this local shape once obsidian-typings types the Workspaces plugin instance (T6117).
-        interface WorkspacesInstance {
-          readonly loadWorkspace: (name: string) => Promise<void>;
-          readonly saveWorkspace: (name: string) => void;
-          readonly workspaces: Record<string, Record<string, unknown>>;
-        }
-
         const workspacesPlugin = app.internalPlugins.getPluginById('workspaces');
         if (!workspacesPlugin) {
           throw new Error('The Workspaces core plugin is missing');
@@ -59,7 +52,7 @@ describe('WorkspaceLayoutStateComponent', () => {
         if (!wasEnabled) {
           await workspacesPlugin.enable(true);
         }
-        const workspaces = castTo<WorkspacesInstance>(workspacesPlugin.instance);
+        const workspaces = workspacesPlugin.instance;
         const originalLayout = app.workspace.getLayout();
 
         const component = new WorkspaceLayoutStateComponent({ app, pluginId: PLUGIN_ID });
