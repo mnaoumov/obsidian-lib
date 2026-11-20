@@ -26,7 +26,8 @@ import type {
 import {
   around,
   hasPatchToken,
-  MonkeyAroundComponent
+  MonkeyAroundComponent,
+  patchMethod
 } from './monkey-around-component.ts';
 
 interface MarkedGreet {
@@ -887,5 +888,129 @@ describe('MonkeyAroundComponent', () => {
     it('should expose only the original method to PostPatchHandlerParams', () => {
       expectTypeOf<keyof PostPatchHandlerParams<TestObject, 'greet'>>().toEqualTypeOf<'originalMethod'>();
     });
+  });
+});
+
+describe('patchMethod', () => {
+  it('should patch the method inside the scope and restore it after the block', () => {
+    const $object = createTestObject();
+    {
+      using _ = patchMethod<TestObject, 'greet'>({
+        $object,
+        methodName: 'greet',
+        patchHandler: ({ fallback }) => `patched: ${fallback()}`
+      });
+      expect($object.greet('a')).toBe('patched: hello a');
+    }
+    expect($object.greet('a')).toBe('hello a');
+  });
+
+  it('should hand the handler the original arguments, this and method', () => {
+    const $object = createTestObject();
+    using _ = patchMethod<TestObject, 'sum'>({
+      $object,
+      methodName: 'sum',
+      patchHandler: ({ originalArguments, originalMethod, originalMethodBound, originalThis }) => {
+        expect(originalThis).toBe($object);
+        return originalMethodBound(...originalArguments) + originalMethod.call(originalThis, 1, 1);
+      }
+    });
+    expect($object.sum(2, 3)).toBe(7);
+  });
+
+  it('should restore the method when the body throws', () => {
+    const $object = createTestObject();
+    expect(() => {
+      using _ = patchMethod<TestObject, 'greet'>({
+        $object,
+        methodName: 'greet',
+        patchHandler: () => 'patched'
+      });
+      expect($object.greet('a')).toBe('patched');
+      throw new Error('body failed');
+    }).toThrow('body failed');
+    expect($object.greet('a')).toBe('hello a');
+  });
+
+  it('should treat a second dispose as a no-op', () => {
+    const $object = createTestObject();
+    const disposable = patchMethod<TestObject, 'greet'>({
+      $object,
+      methodName: 'greet',
+      patchHandler: () => 'patched'
+    });
+    disposable.dispose();
+    expect($object.greet('a')).toBe('hello a');
+    const outer = patchMethod<TestObject, 'greet'>({
+      $object,
+      methodName: 'greet',
+      patchHandler: ({ fallback }) => `outer: ${fallback()}`
+    });
+    disposable.dispose();
+    expect($object.greet('a')).toBe('outer: hello a');
+    outer.dispose();
+    expect($object.greet('a')).toBe('hello a');
+  });
+
+  it('should stack with another patch of the same method, disposed in either order', () => {
+    for (const shouldDisposeInnerFirst of [true, false]) {
+      const $object = createTestObject();
+      const inner = patchMethod<TestObject, 'greet'>({
+        $object,
+        methodName: 'greet',
+        patchHandler: ({ fallback }) => `inner: ${fallback()}`
+      });
+      const component = new MonkeyAroundComponent();
+      component.load();
+      component.registerMethodPatch<TestObject, 'greet'>({
+        $object,
+        methodName: 'greet',
+        patchHandler: ({ fallback }) => `outer: ${fallback()}`
+      });
+      expect($object.greet('a')).toBe('outer: inner: hello a');
+
+      if (shouldDisposeInnerFirst) {
+        inner.dispose();
+        expect($object.greet('a')).toBe('outer: hello a');
+        component.unload();
+      } else {
+        component.unload();
+        expect($object.greet('a')).toBe('inner: hello a');
+        inner.dispose();
+      }
+      expect($object.greet('a')).toBe('hello a');
+    }
+  });
+
+  it('should honour once, patchToken and postPatchHandler like registerMethodPatch', () => {
+    const $object = createTestObject();
+    const patchToken = Symbol('patchMethod test token');
+    const postPatchHandler = vi.fn();
+    using onceDisposable = patchMethod<TestObject, 'greet'>({
+      $object,
+      methodName: 'greet',
+      once: true,
+      patchHandler: ({ fallback }) => `once: ${fallback()}`,
+      patchToken,
+      postPatchHandler
+    });
+    expect(postPatchHandler).toHaveBeenCalledOnce();
+    expect(hasPatchToken($object.greet, patchToken)).toBe(true);
+    expect($object.greet('a')).toBe('once: hello a');
+    expect($object.greet('a')).toBe('hello a');
+    expect(hasPatchToken($object.greet, patchToken)).toBe(false);
+    onceDisposable.dispose();
+  });
+
+  it('should leave nothing installed and rethrow when the patch cannot be installed', () => {
+    const $object = Object.freeze(createTestObject());
+    expect(() =>
+      patchMethod<TestObject, 'greet'>({
+        $object,
+        methodName: 'greet',
+        patchHandler: () => 'patched'
+      })
+    ).toThrow(TypeError);
+    expect($object.greet('a')).toBe('hello a');
   });
 });
