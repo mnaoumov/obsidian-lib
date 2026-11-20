@@ -20,7 +20,7 @@ Read from Obsidian `1.15.1`, the latest public and Catalyst release when this wa
 So the embed creator answers every rendering surface and the view answers navigation. Both receive the same string, so a single resolver serves both. Three behaviors follow from the loader:
 
 1. **A link to a missing file never reaches the provider.** Obsidian renders its own empty-file embed.
-2. **A creator may return `null`** to decline a file, and Obsidian then renders its generic file embed. The `obsidian-typings` signature does not admit `null` yet, so returning it needs a cast.
+2. **A creator may return `null`** to decline a file, and Obsidian then renders its generic file embed.
 3. **The subpath is passed as written, and is not decoded.** A wikilink and a Markdown embed (`![](data.csv#row=1)`) deliver the same `#row=1`, but a Markdown destination written percent-encoded, `![](data.csv#row%3D1)`, arrives as `#row%3D1`. Keep the syntax to characters that need no escaping in either form (no spaces, and no `#`, `|`, `[`, `]` or `%` inside the target), or decode in the resolver and say so in the format's documentation. The integration test pins the encoded form.
 
 ## The recipe

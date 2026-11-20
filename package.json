@@ -394,7 +394,7 @@
     "@mnaoumov/obsidian-dev-toolkit": "^12.2.0",
     "@mnaoumov/typescript-dev-toolkit": "^8.2.0",
     "@mnaoumov/typescript-test-toolkit": "^1.1.0",
-    "@obsidian-typings/obsidian-public-latest": "^6.60.0",
+    "@obsidian-typings/obsidian-public-latest": "^6.61.0",
     "@resvg/resvg-js": "^2.6.2",
     "@stryker-mutator/core": "^10.1.1",
     "@stryker-mutator/vitest-runner": "^10.1.1",
