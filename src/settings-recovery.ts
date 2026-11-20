@@ -246,6 +246,22 @@ export class LocalSettingsRecoveryStore implements SettingsRecoveryStore {
 }
 
 /**
+ * Checks whether a recovery copy can be restored as it is, which needs its raw text to parse as JSON. A copy of a file
+ * that did not parse has to be repaired by hand first.
+ *
+ * @param copy - The copy to check.
+ * @returns Whether the copy can be restored.
+ */
+export function isRestorableSettingsRecoveryCopy(copy: SettingsRecoveryCopy): boolean {
+  try {
+    JSON.parse(copy.rawText);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Checks whether a value is a {@link SettingsRecoveryCopy}. A record of another shape (a later version's, or a damaged
  * one) is ignored rather than trusted.
  *

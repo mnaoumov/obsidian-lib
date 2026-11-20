@@ -52,6 +52,7 @@ import type {
 } from '../components/plugin-settings-component.ts';
 import type { ValueComponentWithChangeTracking } from '../setting-components/value-component-with-change-tracking.ts';
 import type { SettingEx } from '../setting-ex.ts';
+import type { SettingsRecoveryCopy } from '../settings-recovery.ts';
 import type { ValidationMessageHolder } from '../validation.ts';
 
 import { registerAsyncEvent } from '../components/async-events-component.ts';
@@ -62,6 +63,11 @@ import { t } from '../i18n/i18n.ts';
 import { confirm } from '../modals/confirm.ts';
 import { copyTextManually } from '../modals/copy-text-manually.ts';
 import { prompt } from '../modals/prompt.ts';
+import {
+  formatKeptAt,
+  selectSettingsRecoveryCopy,
+  SettingsRecoveryCopyAction
+} from '../modals/settings-recovery-copies.ts';
 import { ensureWrapped } from '../setting-components/setting-component-wrapper.ts';
 import { getTextBasedComponentValue } from '../setting-components/text-based-component.ts';
 import { getValidatorComponent } from '../setting-components/validator-component.ts';
@@ -837,6 +843,19 @@ export abstract class PluginSettingsTabBase<PluginSettings extends object> exten
         .setButtonText(t(($) => $.obsidianLib.settingsManagement.import))
         .onClick(convertAsyncToSync(() => this.importSettingsFromClipboard()));
     });
+    // Only when this device keeps a recovery copy, so a plugin with none gains no button.
+    invokeAsyncSafely(async () => {
+      const copies = await this.pluginSettingsComponent.getRecoveryCopies();
+      if (copies.length === 0) {
+        return;
+      }
+      setting.addButton((button) => {
+        button
+          .setButtonText(t(($) => $.obsidianLib.settingsManagement.recoveryCopies, { count: copies.length }))
+          .onClick(convertAsyncToSync(() => this.showRecoveryCopies()));
+        button.setClass(CssClass.RecoveryCopiesButton);
+      });
+    });
   }
 
   /**
@@ -909,6 +928,21 @@ export abstract class PluginSettingsTabBase<PluginSettings extends object> exten
   private beginRenderCycle(): void {
     this.endRenderCycle();
     this.currentRenderComponent = this.createRenderComponent();
+  }
+
+  private async copyRecoveryCopyText(copy: SettingsRecoveryCopy): Promise<void> {
+    try {
+      // The clipboard of the focused window: a popout's document is the one that holds the focus.
+      await activeWindow.navigator.clipboard.writeText(copy.rawText);
+      new Notice(t(($) => $.obsidianLib.settingsManagement.recoveryCopyTextCopied));
+    } catch {
+      await copyTextManually({
+        app: this.app,
+        message: t(($) => $.obsidianLib.settingsManagement.recoveryCopyCopyManuallyMessage),
+        text: copy.rawText,
+        title: t(($) => $.obsidianLib.settingsManagement.recoveryCopyCopyManuallyTitle)
+      });
+    }
   }
 
   private createRenderComponent(): ComponentEx {
@@ -1050,6 +1084,46 @@ export abstract class PluginSettingsTabBase<PluginSettings extends object> exten
     // Also when nothing was saved: a value typed since the last save is in memory, and the rows must show the defaults.
     this.refresh();
     new Notice(t(($) => $.obsidianLib.settingsManagement.resetDone));
+  }
+
+  private async restoreRecoveryCopy(copy: SettingsRecoveryCopy): Promise<void> {
+    const isConfirmed = await confirm({
+      app: this.app,
+      message: t(($) => $.obsidianLib.settingsManagement.recoveryCopyRestoreConfirmMessage, { date: formatKeptAt(copy.keptAt) }),
+      title: t(($) => $.obsidianLib.settingsManagement.recoveryCopyRestoreConfirmTitle)
+    });
+    if (!isConfirmed) {
+      return;
+    }
+
+    this.saveSettingsDebounced.cancel();
+    try {
+      await this.pluginSettingsComponent.restoreRecoveryCopy(copy.id);
+    } catch (error) {
+      if (!(error instanceof Error)) {
+        throw error;
+      }
+      // The copy may have been dropped by a newer one, or be damaged: say why rather than fail silently.
+      new Notice(t(($) => $.obsidianLib.settingsManagement.recoveryCopyRestoreFailed, { message: error.message }));
+      return;
+    }
+
+    this.refresh();
+    new Notice(t(($) => $.obsidianLib.settingsManagement.recoveryCopyRestored));
+  }
+
+  private async showRecoveryCopies(): Promise<void> {
+    const copies = await this.pluginSettingsComponent.getRecoveryCopies();
+    const selection = await selectSettingsRecoveryCopy({ app: this.app, copies });
+    if (!selection) {
+      return;
+    }
+
+    if (selection.action === SettingsRecoveryCopyAction.Restore) {
+      await this.restoreRecoveryCopy(selection.copy);
+    } else {
+      await this.copyRecoveryCopyText(selection.copy);
+    }
   }
 
   private async updateValidations(validationMessages: Record<StringKeys<PluginSettings>, string>): Promise<void> {
