@@ -5,7 +5,9 @@
  *
  * The unit tests run both ends of the protocol in one realm. What only a real renderer shows is that a Blob-URL worker
  * starts from bundled source, that the call and cancel messages and a compiled `WebAssembly.Module` survive the
- * structured clone, and which of the off-main-thread APIs the guide weighs Obsidian actually provides.
+ * structured clone, and which of the off-main-thread APIs the guide weighs Obsidian actually provides. It runs on the
+ * desktop and Android projects alike. `SharedArrayBuffer` is the one answer that differs between them, so it lives in
+ * `worker-component.desktop.obsidian.integration.test.ts` and `worker-component.android.obsidian.integration.test.ts`.
  */
 
 /// <reference types="obsidian-integration-testing/vitest/typings" />
@@ -23,9 +25,7 @@ interface EnvironmentProbe {
   readonly hasBroadcastChannel: boolean;
   readonly hasOffscreenCanvas: boolean;
   readonly hasRequestIdleCallback: boolean;
-  readonly hasSharedArrayBuffer: boolean;
   readonly isCrossOriginIsolated: boolean;
-  readonly sharedMemoryResult: string;
   readonly workerProbe: WorkerProbe;
 }
 
@@ -78,8 +78,7 @@ exposeWorkerApi({
   makeBuffer: (byteLength) => { const buffer = new ArrayBuffer(byteLength); return withTransfer(buffer, [buffer]); },
   probe: () => ({ hasIndexedDatabase: typeof indexedDB !== 'undefined', hasOffscreenCanvas: typeof OffscreenCanvas !== 'undefined' }),
   wasCancelSeen: () => lastCancelSeen,
-  async wasmAnswer(compiledModule) { const wasm = await instantiateWasmModule(compiledModule); return wasm.exports.answer(); },
-  writeShared: (shared) => { Atomics.store(new Int32Array(shared), 0, 7); return true; }
+  async wasmAnswer(compiledModule) { const wasm = await instantiateWasmModule(compiledModule); return wasm.exports.answer(); }
 });
 `;
 
@@ -195,26 +194,15 @@ describe('WorkerComponent', () => {
         }
         interface Api {
           readonly probe: () => ProbedWorker;
-          readonly writeShared: (shared: SharedArrayBuffer) => boolean;
         }
         const component = new WorkerComponent<Api>({ source });
         component.load();
         try {
-          let sharedMemoryResult: string;
-          try {
-            const shared = new SharedArrayBuffer(4);
-            await component.call('writeShared', [shared]);
-            sharedMemoryResult = `shared write seen: ${String(Atomics.load(new Int32Array(shared), 0))}`;
-          } catch (error) {
-            sharedMemoryResult = `refused: ${(error as Error).name}`;
-          }
           return {
             hasBroadcastChannel: typeof BroadcastChannel !== 'undefined',
             hasOffscreenCanvas: typeof OffscreenCanvas !== 'undefined',
             hasRequestIdleCallback: typeof window.requestIdleCallback === 'function',
-            hasSharedArrayBuffer: typeof SharedArrayBuffer !== 'undefined',
             isCrossOriginIsolated: window.crossOriginIsolated,
-            sharedMemoryResult,
             workerProbe: await component.call('probe', [])
           };
         } finally {
@@ -228,9 +216,7 @@ describe('WorkerComponent', () => {
       hasBroadcastChannel: true,
       hasOffscreenCanvas: true,
       hasRequestIdleCallback: true,
-      hasSharedArrayBuffer: true,
       isCrossOriginIsolated: false,
-      sharedMemoryResult: 'shared write seen: 7',
       workerProbe: { hasIndexedDatabase: true, hasOffscreenCanvas: true }
     });
   });

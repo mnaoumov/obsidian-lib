@@ -38,7 +38,8 @@ const ANDROID_INTEGRATION_TEST_FILES = [
   ANDROID_ONLY_INTEGRATION_TEST_FILES,
   'src/command-handlers/open-bug-report-command-handler.obsidian.integration.test.ts',
   'src/components/embed-extensions-component.obsidian.integration.test.ts',
-  'src/components/embeddable-markdown-editor-component.obsidian.integration.test.ts'
+  'src/components/embeddable-markdown-editor-component.obsidian.integration.test.ts',
+  'src/components/worker-component.obsidian.integration.test.ts'
 ];
 
 // The same budget `defineObsidianPluginVitestConfig` gives every plugin's Android project: double the Appium transport's
