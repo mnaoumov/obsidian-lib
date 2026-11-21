@@ -71,11 +71,12 @@ describe('LinkAndTagInputSuggest', () => {
             await pressKey({ key });
           }
           let contentEl: Element | undefined;
+          // The popover re-renders after each key, so it can list the tag for a shorter query first.
           await waitUntil({
-            message: 'the suggest popover lists the probe tag',
+            message: 'the suggest popover lists the probe tag for the whole query',
             predicate: () => {
               contentEl = [...activeDocument.querySelectorAll('.suggestion-content')].find((el) => el.textContent === `#${tag}`);
-              return contentEl !== undefined;
+              return [...contentEl?.querySelectorAll(':scope .suggestion-highlight') ?? []].map((el) => el.textContent).join('').length === 'high'.length;
             },
             timeoutInMilliseconds: 10_000
           });
@@ -90,5 +91,40 @@ describe('LinkAndTagInputSuggest', () => {
     });
 
     expect(result).toEqual(['High']);
+  });
+
+  it('should highlight the matched link text characters in the title', async () => {
+    const result = await evalInObsidian({
+      async callback({ app, lib: { LinkAndTagInputSuggest, pressKey, waitUntil } }) {
+        const note = await app.vault.create('link-and-tag-input-suggest-link-highlight-probe.md', '');
+        const inputEl = activeDocument.body.createEl('input');
+        const suggest = new LinkAndTagInputSuggest({ app, inputEl });
+
+        try {
+          inputEl.focus();
+          for (const key of ['[', '[', 'h', 'i', 'g', 'h', 'l', 'i', 'g', 'h', 't']) {
+            await pressKey({ key });
+          }
+          let titleEl: Element | undefined;
+          // The popover re-renders after each key, so it can list the note for a shorter query first.
+          await waitUntil({
+            message: 'the suggest popover lists the probe note for the whole query',
+            predicate: () => {
+              titleEl = [...activeDocument.querySelectorAll('.suggestion-title')].find((el) => el.textContent === 'link-and-tag-input-suggest-link-highlight-probe');
+              return [...titleEl?.querySelectorAll(':scope .suggestion-highlight') ?? []].map((el) => el.textContent).join('').length === 'highlight'.length;
+            },
+            timeoutInMilliseconds: 10_000
+          });
+
+          return [...titleEl?.querySelectorAll(':scope .suggestion-highlight') ?? []].map((el) => el.textContent);
+        } finally {
+          suggest.close();
+          inputEl.remove();
+          await app.fileManager.trashFile(note);
+        }
+      }
+    });
+
+    expect(result).toEqual(['highlight']);
   });
 });

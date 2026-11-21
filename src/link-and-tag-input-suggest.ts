@@ -116,6 +116,18 @@ export interface LinkSuggestion {
    * The link text inserted between `[[` and `]]`.
    */
   readonly linktext: string;
+
+  /**
+   * The characters of {@link LinkSuggestion.linktext} the query matched, highlighted in the title when the suggestion
+   * renders. Omitted when the link text did not match.
+   */
+  readonly linktextMatches?: SearchMatches;
+
+  /**
+   * The characters of the file path the query matched, when the link text did not match, highlighted in the note line
+   * when the suggestion renders.
+   */
+  readonly pathMatches?: SearchMatches;
 }
 
 /**
@@ -234,9 +246,9 @@ export class LinkAndTagInputSuggest extends AbstractInputSuggest<LinkAndTagSugge
    */
   public renderSuggestion(suggestion: LinkAndTagSuggestion, el: HTMLElement): void {
     if (suggestion.kind === LinkAndTagCompletionKind.Link) {
-      el.createDiv({ cls: 'suggestion-title', text: suggestion.linktext });
+      renderMatches(el.createDiv('suggestion-title'), suggestion.linktext, suggestion.linktextMatches ?? null);
       if (suggestion.linktext !== suggestion.file.path) {
-        el.createDiv({ cls: 'suggestion-note', text: suggestion.file.path });
+        renderMatches(el.createDiv('suggestion-note'), suggestion.file.path, suggestion.pathMatches ?? null);
       }
       return;
     }
@@ -296,9 +308,17 @@ export class LinkAndTagInputSuggest extends AbstractInputSuggest<LinkAndTagSugge
     const results: SuggestionSearchResult<LinkSuggestion>[] = [];
     for (const file of this.app.vault.getFiles()) {
       const linktext = this.app.metadataCache.fileToLinktext(file, this.sourcePath, true);
-      const match = fuzzySearch(linktext) ?? fuzzySearch(file.path);
-      if (match) {
-        results.push({ match, suggestion: { file, kind: LinkAndTagCompletionKind.Link, linktext } });
+      const linktextMatch = fuzzySearch(linktext);
+      if (linktextMatch) {
+        results.push({
+          match: linktextMatch,
+          suggestion: { file, kind: LinkAndTagCompletionKind.Link, linktext, linktextMatches: linktextMatch.matches }
+        });
+        continue;
+      }
+      const pathMatch = fuzzySearch(file.path);
+      if (pathMatch) {
+        results.push({ match: pathMatch, suggestion: { file, kind: LinkAndTagCompletionKind.Link, linktext, pathMatches: pathMatch.matches } });
       }
     }
     sortSearchResults(results);
