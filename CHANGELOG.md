@@ -177,14 +177,18 @@ This release has 2 fixes, 1 improvement and 1 documentation change. 3 maintenanc
 
 ## 10.5.0
 
-- docs: record that the harness, not the embeddable editor, doubles an Android Enter
-- refactor: type the embeddable editor through the released constructor typing
-- chore: wrap pinned-versions.json entries under a pins key
-- feat: add bug-report links, a settings-tab opener and single-choice menu items
-- feat(codemirror): add all-editor dispatch, reconfigurable extension, RangeSet and parse helpers
-- feat(components): add EmbeddableMarkdownEditorComponent
+This release has 3 new features and 1 documentation change. 3 maintenance commits (tests, build, CI, refactoring, dependencies) are not listed.
+
+### New
+
+- **components:** add `EmbeddableMarkdownEditorComponent`, an editable Markdown editor a plugin can embed in its own views and modals
   - Adapted from the [embeddable editor gist](https://gist.github.com/Fevol/caa478ce303e69eabede7b12b2323838) by Matthew Meyers (mgmeyers) and Fevol, MIT
-- build(deps): bump typescript-dev-toolkit to ^5.4.1 and obsidian-dev-toolkit to ^7.4.0
+- **codemirror:** add helpers to dispatch to every open editor, a reconfigurable extension, `RangeSet` utilities and parse helpers
+- add bug-report links prefilled with the plugin's environment, a settings-tab opener and single-choice menu items
+
+### Documentation
+
+- record that the integration harness, not the embeddable editor, doubled an Enter on Android
 
 ## 10.4.1
 
@@ -436,15 +440,23 @@ This release has 1 new feature and 1 documentation change. 1 maintenance commit 
 
 ## 5.0.0
 
+This release has 1 breaking change, 1 fix and 3 documentation changes. 2 maintenance commits (tests, build, CI, refactoring, dependencies) are not listed.
+
 Migration: `PathSettings` entries now all match case-insensitively, whether they are plain paths, globs or regular expressions. An unescaped `*`, `?` or `[` makes an entry a glob (`*.pdf`, `Attachments/**/*.pdf`, `tmp*/`), so a plain path that contains one of those characters literally must escape it (`Notes \[old\]`). An entry shaped `/pattern/flags` is a regular expression whose flags are honoured, and `isPathIgnored` takes an optional `isFolder`. The `pathSettings.invalidRegularExpression` message now carries a `{{reason}}`.
 
-- feat(path-settings)!: support glob entries, case-insensitive matching and regex flags
-- build: take typescript-dev-toolkit 3.7.0's shared documentation checks
-- docs: mark plugin names as code
-- fix(components): accept a typed settings component without a cast
-- docs: fix guide snippets and retired obsidian-dev-utils references
-- build(docs): re-render the OG cards when the favicon changes
-- docs: replace the site logo and favicon with the approved obsidian-lib mark
+### Breaking changes
+
+- **path-settings:** support glob entries, case-insensitive matching and regular-expression flags
+
+### Fixed
+
+- **components:** accept a typed settings component without a cast
+
+### Documentation
+
+- mark plugin names as code
+- fix guide snippets and retired `obsidian-dev-utils` references
+- replace the site logo and favicon with the approved `obsidian-lib` mark
 
 ## 4.3.0
 
@@ -550,8 +562,11 @@ This release has 1 new feature, 1 fix and 2 documentation changes.
 
 ## 3.0.0
 
-- feat!: type `Dataview` through @mnaoumov/obsidian-dataview and drop the vendored declarations
-  - BREAKING: `@mnaoumov/obsidian-lib/@types/dataview/<x>` is removed; import `@mnaoumov/obsidian-dataview/<x>` instead.
+This release has 1 breaking change.
+
+### Breaking changes
+
+- type `Dataview` through `@mnaoumov/obsidian-dataview` and drop the vendored declarations: `@mnaoumov/obsidian-lib/@types/dataview/<x>` is removed; import `@mnaoumov/obsidian-dataview/<x>` instead
 
 ## 2.0.0
 
