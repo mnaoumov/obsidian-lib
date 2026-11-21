@@ -4,11 +4,13 @@
  * Interface for components that need to perform work when the workspace layout is ready.
  */
 
+import type { LayoutReadyWorkspace } from '@obsidian-typings/obsidian-public-latest';
 import type { App } from 'obsidian';
 import type { Promisable } from 'type-fest';
 
 import { invokeAsyncSafely } from '@mnaoumov/typescript-lib/async';
 import { noop } from '@mnaoumov/typescript-lib/function';
+import { onLayoutReadyEx } from '@obsidian-typings/obsidian-public-latest/implementations';
 
 import { ComponentEx } from './component-ex.ts';
 
@@ -29,7 +31,9 @@ export class LayoutReadyComponent extends ComponentEx {
    * Loads the component and registers the layout ready handler.
    */
   public override onload(): void {
-    this.app.workspace.onLayoutReady(() => {
+    // Obsidian calls its `onLayoutReady` callback with no argument; `onLayoutReadyEx` hands it the workspace, typed
+    // as the `LayoutReadyWorkspace` view whose layout members are set by now.
+    onLayoutReadyEx(this.app.workspace, (workspace) => {
       window.setTimeout(() => {
         if (!this._loaded) {
           return;
@@ -41,7 +45,7 @@ export class LayoutReadyComponent extends ComponentEx {
           // error) leaves no in-flight promise but a recorded failure. Skip `onLayoutReady` — a failed load is
           // exactly the half-initialized state it must not observe.
           if (!this.hasLoadErrors()) {
-            invokeAsyncSafely(this.onLayoutReady.bind(this));
+            invokeAsyncSafely(() => this.onLayoutReady(workspace));
           }
           return;
         }
@@ -55,7 +59,7 @@ export class LayoutReadyComponent extends ComponentEx {
         invokeAsyncSafely(async () => {
           await inFlightLoadPromise;
           if (this._loaded && !this.hasLoadErrors()) {
-            await this.onLayoutReady();
+            await this.onLayoutReady(workspace);
           }
         });
       }, 0);
@@ -64,8 +68,10 @@ export class LayoutReadyComponent extends ComponentEx {
 
   /**
    * Executes when the Obsidian layout becomes ready.
+   *
+   * @param _workspace - The workspace, typed as a {@link LayoutReadyWorkspace}, whose layout members are set.
    */
-  protected onLayoutReady(): Promisable<void> {
+  protected onLayoutReady(_workspace: LayoutReadyWorkspace): Promisable<void> {
     noop();
   }
 }
@@ -78,18 +84,20 @@ export class CallbackLayoutReadyComponent extends LayoutReadyComponent {
    * Creates a new CallbackLayoutReadyComponent instance.
    *
    * @param app - The Obsidian App instance.
-   * @param callback - The callback to invoke when layout is ready.
+   * @param callback - The callback to invoke when layout is ready. It receives the workspace, typed as a
+   *   {@link LayoutReadyWorkspace}.
    */
-  public constructor(app: App, protected readonly callback: () => Promisable<void>) {
+  public constructor(app: App, protected readonly callback: (workspace: LayoutReadyWorkspace) => Promisable<void>) {
     super(app);
   }
 
   /**
    * Executes when the Obsidian layout becomes ready.
    *
+   * @param workspace - The workspace, typed as a {@link LayoutReadyWorkspace}, whose layout members are set.
    * @returns The result of invoking the callback.
    */
-  protected override onLayoutReady(): Promisable<void> {
-    return this.callback();
+  protected override onLayoutReady(workspace: LayoutReadyWorkspace): Promisable<void> {
+    return this.callback(workspace);
   }
 }

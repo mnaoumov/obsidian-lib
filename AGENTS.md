@@ -144,7 +144,7 @@ Optional diagnostics (`src/bug-report-diagnostics.ts`) are sections the plugin s
 
 ## Bases formula functions
 
-`src/formula-function.ts` supplies plain `FormulaFunction` objects for Obsidian's unexported function base class. `registerFormulaFunction` selects `Plugin.registerGlobalFunc` or `registerInstanceFunc` from `instanceType`, leaving removal to the plugin's unload callbacks. Instance parameters include the receiver first; serialization receives already serialized expressions. `applyWithContext` restores the previous context in `finally`, including recursive evaluation. The typings peer floor is `6.58.0`, the first latest-public package exposing this contract. See `docs/src/content/docs/guides/bases-formula-functions.md` and the real Bases evaluator integration test before changing registration or serialization.
+`src/formula-function.ts` supplies plain `FormulaFunction` objects for Obsidian's unexported function base class. `registerFormulaFunction` selects `Plugin.registerGlobalFunc` or `registerInstanceFunc` from `instanceType`, leaving removal to the plugin's unload callbacks. Instance parameters include the receiver first; serialization receives already serialized expressions. `applyWithContext` restores the previous context in `finally`, including recursive evaluation. `6.58.0` is the first latest-public typings package exposing this contract; the peer floor has since moved to `6.61.0`, the first carrying the `LayoutReadyWorkspace` view and `onLayoutReadyEx` that `LayoutReadyComponent` passes to its `onLayoutReady`. See `docs/src/content/docs/guides/bases-formula-functions.md` and the real Bases evaluator integration test before changing registration or serialization.
 
 ## Bulk operation commits
 

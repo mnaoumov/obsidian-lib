@@ -4,6 +4,7 @@
  * Tests for {@link LayoutReadyComponent} and {@link CallbackLayoutReadyComponent}.
  */
 
+import type { LayoutReadyWorkspace } from '@obsidian-typings/obsidian-public-latest';
 import type { App as AppOriginal } from 'obsidian';
 
 import { noop } from '@mnaoumov/typescript-lib/function';
@@ -67,6 +68,51 @@ describe('LayoutReadyComponent', () => {
     vi.runAllTimers();
 
     expect(callback).toHaveBeenCalledOnce();
+    vi.useRealTimers();
+  });
+
+  it('should hand the callback the app workspace as its layout-ready view', () => {
+    vi.useFakeTimers();
+    const { app, triggerLayoutReady } = createMockApp();
+    const callback = vi.fn();
+    const component = new CallbackLayoutReadyComponent(app, callback);
+
+    component.load();
+    triggerLayoutReady();
+    vi.runAllTimers();
+
+    expect(callback).toHaveBeenCalledExactlyOnceWith(app.workspace);
+    vi.useRealTimers();
+  });
+
+  it('should hand an overriding onLayoutReady the workspace after waiting for an in-flight load', async () => {
+    vi.useFakeTimers();
+    const { app, triggerLayoutReady } = createMockApp();
+    const receivedWorkspaces: unknown[] = [];
+    let openLoadGate!: () => void;
+    const loadGate = new Promise<void>((resolve) => {
+      openLoadGate = resolve;
+    });
+
+    class AsyncLoadLayoutReadyComponent extends LayoutReadyComponent {
+      public override async onloadAsync(): Promise<void> {
+        await loadGate;
+      }
+
+      protected override onLayoutReady(workspace: LayoutReadyWorkspace): void {
+        receivedWorkspaces.push(workspace);
+      }
+    }
+
+    const component = new AsyncLoadLayoutReadyComponent(app);
+    component.load();
+    triggerLayoutReady();
+    await vi.runAllTimersAsync();
+    openLoadGate();
+    await vi.runAllTimersAsync();
+
+    expect(receivedWorkspaces).toEqual([app.workspace]);
+    expect(receivedWorkspaces[0]).toBe(app.workspace);
     vi.useRealTimers();
   });
 
