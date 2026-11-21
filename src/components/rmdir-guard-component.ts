@@ -3,6 +3,9 @@
  *
  * Contains class {@link RmdirGuardComponent} that makes the `recursive` flag of
  * {@link https://docs.obsidian.md/Reference/TypeScript+API/DataAdapter/rmdir | DataAdapter.rmdir} mean what it says.
+ *
+ * Obsidian workaround `adapter-rmdir-ignores-recursive`, seen in Obsidian `1.13.7`: its canary is in
+ * `rmdir-guard-component.obsidian.integration.test.ts`.
  */
 
 import type { App } from 'obsidian';

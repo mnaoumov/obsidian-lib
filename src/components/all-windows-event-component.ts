@@ -2,6 +2,10 @@
  * @file
  *
  * Handles registering DOM events and handlers for all windows (main window and all existing/future popup windows) and their documents.
+ *
+ * Obsidian workaround `popout-event-relay-partial`, seen in Obsidian `1.15.1`: core copies only a fixed set of event
+ * types from a popout to the main `window`, and none to the main `document`, so a listener on the main window misses
+ * the rest. Its canary is in `core-popout-relay.desktop.obsidian.integration.test.ts`.
  */
 
 import type { App } from 'obsidian';

@@ -14,6 +14,9 @@
  *
  * Mobile has no popouts, and `app.css` hides `.status-bar` under `.is-mobile`, so on mobile the component creates
  * nothing and never calls the render callback.
+ *
+ * Obsidian workaround `popout-has-no-status-bar`, seen in Obsidian `1.15.1`: its canary is in
+ * `all-windows-status-bar-item-component.desktop.obsidian.integration.test.ts`.
  */
 
 import type {

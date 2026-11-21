@@ -144,6 +144,38 @@ describe('PluginDataHandler size guard', () => {
   });
 });
 
+describe('Obsidian loadData', () => {
+  it('workaround canary load-data-hides-parse-error: loadData still answers an unparseable data.json like a missing one', async () => {
+    const obsidianLoadData = await evalInObsidian({
+      async callback({ app }): Promise<string> {
+        const HARNESS_PLUGIN_ID = 'obsidian-lib-integration-test';
+        const harnessPlugin = app.plugins.getPlugin(HARNESS_PLUGIN_ID);
+        if (!harnessPlugin) {
+          throw new Error(`Harness plugin "${HARNESS_PLUGIN_ID}" is not loaded`);
+        }
+
+        const adapter = app.vault.adapter;
+        const path = `${harnessPlugin.manifest.dir ?? ''}/data.json`;
+        const original = await adapter.exists(path) ? await adapter.read(path) : null;
+        try {
+          await adapter.write(path, '{\n  "name": ');
+          return String(await harnessPlugin.loadData());
+        } finally {
+          if (original === null) {
+            if (await adapter.exists(path)) {
+              await adapter.remove(path);
+            }
+          } else {
+            await adapter.write(path, original);
+          }
+        }
+      }
+    });
+
+    expect(obsidianLoadData).toBe('undefined');
+  });
+});
+
 interface UnparseableResult {
   readonly contentAfterLoad: null | string;
   readonly contentAfterSave: null | string;
