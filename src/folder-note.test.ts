@@ -15,14 +15,27 @@ import {
 } from 'vitest';
 
 import type { FolderNoteConfig } from './folder-note.ts';
+import type { ThirdPartyPluginAdapter } from './plugin/third-party-plugin.ts';
 
 import { getFile } from './file-system.ts';
 import {
+  FOLDER_INDEX_PLUGIN_ADAPTER,
+  FOLDER_INDEX_PLUGIN_ID,
+  FOLDER_NOTE_PLUGIN_ADAPTER,
+  FOLDER_NOTE_PLUGIN_ID,
+  FOLDER_NOTES_PLUGIN_ADAPTER,
   FOLDER_NOTES_PLUGIN_ID,
   FolderNoteLocation,
+  getFolderIndexFolderNoteConfig,
   getFolderNoteFolder,
+  getFolderNotePluginFolderNoteConfig,
+  getFolderNotesPluginFolderNoteConfig,
+  getWaypointFolderNoteConfig,
   resolveFolderNote,
-  resolveFolderNoteConfig
+  resolveFolderNoteConfig,
+  resolveFolderNotePluginConfigs,
+  WAYPOINT_PLUGIN_ADAPTER,
+  WAYPOINT_PLUGIN_ID
 } from './folder-note.ts';
 
 const DEFAULT_FILES = { 'alpha/bravo/charlie/charlie.md': '' };
@@ -169,7 +182,7 @@ describe('resolveFolderNoteConfig', () => {
           folderNoteName: 'index',
           folderNoteType: '.canvas',
           storageLocation: 'insideFolder',
-          supportedFileTypes: ['md', 'canvas', 42]
+          supportedFileTypes: ['md', 'canvas']
         }).extensions
       ).toEqual(['canvas', 'md']);
     });
@@ -372,5 +385,131 @@ describe('getFolderNoteFolder', () => {
     initApp({});
     const file = castTo<TFile>({ parent: null });
     expect(getFolderNoteFolder({ app, config: fixedNameConfig(FolderNoteLocation.InsideFolder, '!'), file })).toBeNull();
+  });
+});
+
+describe('folder-note plugin adapters', () => {
+  function pluginWith(settings: unknown): PluginOriginal {
+    return castTo<PluginOriginal>({ settings });
+  }
+
+  it('should hand back the live settings object of a recognized shape', () => {
+    const settings = { folderNoteName: '{{folder_name}}', storageLocation: 'insideFolder' };
+    expect(FOLDER_NOTES_PLUGIN_ADAPTER.getApi(pluginWith(settings))).toBe(settings);
+    const folderNoteSettings = { folderNoteHide: true, folderNoteName: '_about_', folderNoteType: 'index' };
+    expect(FOLDER_NOTE_PLUGIN_ADAPTER.getApi(pluginWith(folderNoteSettings))).toBe(folderNoteSettings);
+    const waypointSettings = { folderNoteFilename: 'index', folderNoteType: 'INSIDE_FOLDER' };
+    expect(WAYPOINT_PLUGIN_ADAPTER.getApi(pluginWith(waypointSettings))).toBe(waypointSettings);
+    const folderIndexSettings = { indexFilename: '!', indexFileUserSpecified: false };
+    expect(FOLDER_INDEX_PLUGIN_ADAPTER.getApi(pluginWith(folderIndexSettings))).toBe(folderIndexSettings);
+  });
+
+  it('should name each plugin by its manifest id', () => {
+    expect(FOLDER_NOTES_PLUGIN_ADAPTER.pluginId).toBe(FOLDER_NOTES_PLUGIN_ID);
+    expect(FOLDER_NOTE_PLUGIN_ADAPTER.pluginId).toBe(FOLDER_NOTE_PLUGIN_ID);
+    expect(WAYPOINT_PLUGIN_ADAPTER.pluginId).toBe(WAYPOINT_PLUGIN_ID);
+    expect(FOLDER_INDEX_PLUGIN_ADAPTER.pluginId).toBe(FOLDER_INDEX_PLUGIN_ID);
+  });
+
+  it.each([
+    ['an instance with no settings', castTo<PluginOriginal>({})],
+    ['settings that are not an object', pluginWith('not an object')],
+    ['settings that are null', pluginWith(null)]
+  ])('should answer null for %s', (_description: string, plugin: PluginOriginal) => {
+    expect(FOLDER_NOTES_PLUGIN_ADAPTER.getApi(plugin)).toBeNull();
+    expect(FOLDER_NOTE_PLUGIN_ADAPTER.getApi(plugin)).toBeNull();
+    expect(WAYPOINT_PLUGIN_ADAPTER.getApi(plugin)).toBeNull();
+    expect(FOLDER_INDEX_PLUGIN_ADAPTER.getApi(plugin)).toBeNull();
+  });
+
+  it.each([
+    ['folder-notes: a numeric primary type', FOLDER_NOTES_PLUGIN_ADAPTER, { folderNoteName: 'index', folderNoteType: 42, storageLocation: 'insideFolder' }],
+    ['folder-notes: a non-boolean hide flag', FOLDER_NOTES_PLUGIN_ADAPTER, { folderNoteName: 'index', hideFolderNote: 'yes', storageLocation: 'insideFolder' }],
+    ['folder-notes: supported types that are not an array', FOLDER_NOTES_PLUGIN_ADAPTER, {
+      folderNoteName: 'index',
+      storageLocation: 'insideFolder',
+      supportedFileTypes: 'md'
+    }],
+    ['folder-notes: a supported type that is not a string', FOLDER_NOTES_PLUGIN_ADAPTER, {
+      folderNoteName: 'index',
+      storageLocation: 'insideFolder',
+      supportedFileTypes: ['md', 42]
+    }],
+    ['folder-notes: no storage location', FOLDER_NOTES_PLUGIN_ADAPTER, { folderNoteName: 'index' }],
+    ['Folder Note: no type', FOLDER_NOTE_PLUGIN_ADAPTER, { folderNoteName: '_about_' }],
+    ['Folder Note: a non-boolean hide flag', FOLDER_NOTE_PLUGIN_ADAPTER, { folderNoteHide: 1, folderNoteName: '_about_', folderNoteType: 'inside' }],
+    ['Waypoint: no file name', WAYPOINT_PLUGIN_ADAPTER, { folderNoteType: 'CUSTOM_FILENAME' }],
+    ['Folder Index: a non-boolean switch', FOLDER_INDEX_PLUGIN_ADAPTER, { indexFilename: '!', indexFileUserSpecified: 'true' }]
+  ])('should answer null for %s', (_description: string, adapter: ThirdPartyPluginAdapter<object>, settings: unknown) => {
+    expect(adapter.getApi(pluginWith(settings))).toBeNull();
+  });
+});
+
+describe('folder-note plugin mappings', () => {
+  function describeConfig(config: FolderNoteConfig | null): null | string {
+    if (!config) {
+      return null;
+    }
+    initApp(DEFAULT_FILES);
+    return `${config.location}:${resolveNameOf(config)}:${config.extensions.join(',')}:${String(config.isHidden)}`;
+  }
+
+  it('should map folder-notes the way Auto reads it', () => {
+    expect(describeConfig(getFolderNotesPluginFolderNoteConfig({
+      folderNoteName: '{{folder_name}} note',
+      folderNoteType: '.canvas',
+      hideFolderNote: true,
+      storageLocation: 'parentFolder',
+      supportedFileTypes: ['md', 'canvas']
+    }))).toBe('ParentFolder:charlie note:canvas,md:true');
+    expect(getFolderNotesPluginFolderNoteConfig({ folderNoteName: '{{folder_name}}', storageLocation: 'vaultFolder' })).toBeNull();
+    expect(getFolderNotesPluginFolderNoteConfig({ folderNoteName: '', storageLocation: 'insideFolder' })).toBeNull();
+  });
+
+  it.each([
+    [{ folderNoteName: '_about_', folderNoteType: 'index' }, 'InsideFolder:_about_:md:false'],
+    [{ folderNoteHide: true, folderNoteName: '_about_', folderNoteType: 'inside' }, 'InsideFolder:charlie:md:true'],
+    [{ folderNoteName: '_about_', folderNoteType: 'outside' }, 'ParentFolder:charlie:md:false'],
+    [{ folderNoteName: '_about_', folderNoteType: 'unknown' }, 'InsideFolder:charlie:md:false']
+  ])('should map Folder Note %o', (settings, expected: string) => {
+    expect(describeConfig(getFolderNotePluginFolderNoteConfig(settings))).toBe(expected);
+  });
+
+  it.each([
+    [{ folderNoteFilename: 'index', folderNoteType: 'CUSTOM_FILENAME' }, 'InsideFolder:index:md:false'],
+    [{ folderNoteFilename: 'index', folderNoteType: 'INSIDE_FOLDER' }, 'InsideFolder:charlie:md:false'],
+    [{ folderNoteFilename: 'index', folderNoteType: 'OUTSIDE_FOLDER' }, 'ParentFolder:charlie:md:false'],
+    [{ folderNoteFilename: 'index', folderNoteType: 'unknown' }, 'InsideFolder:charlie:md:false']
+  ])('should map Waypoint %o', (settings, expected: string) => {
+    expect(describeConfig(getWaypointFolderNoteConfig(settings))).toBe(expected);
+  });
+
+  it.each([
+    [{ indexFilename: '!', indexFileUserSpecified: true }, 'InsideFolder:!:md:false'],
+    [{ indexFilename: '!', indexFileUserSpecified: false }, 'InsideFolder:charlie:md:false']
+  ])('should map Folder Index %o', (settings, expected: string) => {
+    expect(describeConfig(getFolderIndexFolderNoteConfig(settings))).toBe(expected);
+  });
+});
+
+describe('resolveFolderNotePluginConfigs', () => {
+  it('should answer nothing when no folder-note plugin is enabled', () => {
+    initApp(DEFAULT_FILES);
+    expect(resolveFolderNotePluginConfigs({ app })).toEqual([]);
+  });
+
+  it('should list every recognized plugin, in download order, skipping what it cannot read', () => {
+    initApp(DEFAULT_FILES, { folderNoteName: '{{folder_name}}', storageLocation: 'vaultFolder' });
+    appMock.plugins.registerPlugin__(FOLDER_INDEX_PLUGIN_ID, castTo<PluginOriginal>({ settings: { indexFilename: '!', indexFileUserSpecified: true } }));
+    appMock.plugins.registerPlugin__(WAYPOINT_PLUGIN_ID, castTo<PluginOriginal>({ settings: { folderNoteFilename: 'index', folderNoteType: 'OUTSIDE_FOLDER' } }));
+    appMock.plugins.registerPlugin__(FOLDER_NOTE_PLUGIN_ID, castTo<PluginOriginal>({ settings: { folderNoteType: 'index' } }));
+    const configs = resolveFolderNotePluginConfigs({ app });
+    expect(configs.map((config) => `${config.location}:${resolveNameOf(config)}`)).toEqual(['ParentFolder:charlie', 'InsideFolder:!']);
+  });
+
+  it('should put folder-notes first', () => {
+    initApp(DEFAULT_FILES, { folderNoteName: 'index', storageLocation: 'insideFolder' });
+    appMock.plugins.registerPlugin__(FOLDER_NOTE_PLUGIN_ID, castTo<PluginOriginal>({ settings: { folderNoteName: '_about_', folderNoteType: 'index' } }));
+    expect(resolveFolderNotePluginConfigs({ app }).map((config) => resolveNameOf(config))).toEqual(['index', '_about_']);
   });
 });

@@ -750,11 +750,30 @@ It settles once, and that is the line between it and [Requiring another plugin](
 
 ## Typed APIs of third-party plugins
 
-`Dataview`, `Templater`, `Notebook Navigator` and most other plugins publish nothing through the registry, but each hangs a usable API off its instance under a name of its own choosing. A `ThirdPartyPluginAdapter` (`@mnaoumov/obsidian-lib/plugin/third-party-plugin`) says once, for one plugin, how to get from the instance to that API, and verifies the shape on the way. The library ships three:
+`Dataview`, `Templater`, `Notebook Navigator` and most other plugins publish nothing through the registry, but each hangs a usable API off its instance under a name of its own choosing. A `ThirdPartyPluginAdapter` (`@mnaoumov/obsidian-lib/plugin/third-party-plugin`) says once, for one plugin, how to get from the instance to that API, and verifies the shape on the way. The library ships these:
 
 1. `DATAVIEW_PLUGIN_ADAPTER` in `@mnaoumov/obsidian-lib/dataview`, reading `plugin.api` typed as `DataviewApi` from `@mnaoumov/obsidian-dataview`.
 2. `TEMPLATER_PLUGIN_ADAPTER` in `@mnaoumov/obsidian-lib/templater`, reading `Templater`'s undocumented `plugin.templater`.
 3. `NOTEBOOK_NAVIGATOR_PLUGIN_ADAPTER` in `@mnaoumov/obsidian-lib/notebook-navigator`, reading `plugin.api`.
+4. `FOLDER_NOTES_PLUGIN_ADAPTER`, `FOLDER_NOTE_PLUGIN_ADAPTER`, `WAYPOINT_PLUGIN_ADAPTER` and `FOLDER_INDEX_PLUGIN_ADAPTER` in `@mnaoumov/obsidian-lib/folder-note`, for `Folder notes`, `Folder Note`, `Waypoint` and `Folder Index`. These plugins publish no API at all, so each adapter's API is the plugin's live `settings` object, verified and narrowed to the fields that place and name a folder note.
+
+The folder-note module also maps each of those settings onto a `FolderNoteConfig` (`getFolderNotesPluginFolderNoteConfig`, `getFolderNotePluginFolderNoteConfig`, `getWaypointFolderNoteConfig`, `getFolderIndexFolderNoteConfig`), and `resolveFolderNotePluginConfigs({ app })` answers the configs of every enabled one, so every consumer reads their conventions the same way:
+
+```typescript
+import type { App, TFile, TFolder } from 'obsidian';
+
+import { resolveFolderNote, resolveFolderNotePluginConfigs } from '@mnaoumov/obsidian-lib/folder-note';
+
+export function findFolderNote(app: App, folder: TFolder): null | TFile {
+  for (const config of resolveFolderNotePluginConfigs({ app })) {
+    const folderNote = resolveFolderNote({ app, config, folder });
+    if (folderNote) {
+      return folderNote;
+    }
+  }
+  return null;
+}
+```
 
 An OPTIONAL integration holds a live ref, whose `value` is the typed API or `null` while the plugin is missing, disabled, still loading, too old or the wrong shape. It re-reads on every `app.plugins` `changed` and every lifecycle broadcast, so it follows the plugin through enable, disable and update with no polling:
 
