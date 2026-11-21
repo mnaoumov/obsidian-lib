@@ -251,6 +251,43 @@ describe('LinkAndTagInputSuggest', () => {
     expect(el.hasClass('mod-complex')).toBe(true);
   });
 
+  it('should highlight the matched link text characters in the title', () => {
+    const { inputEl, suggest } = create();
+    typeText(inputEl, '[[plan');
+    const [suggestion] = suggest.suggest();
+    if (!isLink(suggestion)) {
+      throw new Error('Expected a link suggestion');
+    }
+    expect(suggestion.linktextMatches).toEqual([[0, 1], [9, 12]]);
+    expect(suggestion.pathMatches).toBeUndefined();
+    vi.mocked(renderMatches).mockClear();
+    const el = createDiv();
+    suggest.renderSuggestion(suggestion, el);
+    expect(vi.mocked(renderMatches).mock.calls).toEqual([
+      [el.querySelector('.suggestion-title'), 'Project plan', [[0, 1], [9, 12]]],
+      [el.querySelector('.suggestion-note'), 'Folder/Project plan.md', null]
+    ]);
+  });
+
+  it('should highlight the matched path characters in the note when the link text did not match', () => {
+    const { inputEl, suggest } = create();
+    vi.spyOn(app.metadataCache, 'fileToLinktext').mockReturnValue('zzz');
+    typeText(inputEl, '[[other');
+    const [suggestion] = suggest.suggest();
+    if (!isLink(suggestion)) {
+      throw new Error('Expected a link suggestion');
+    }
+    expect(suggestion.linktextMatches).toBeUndefined();
+    expect(suggestion.pathMatches).toEqual([[0, 5]]);
+    vi.mocked(renderMatches).mockClear();
+    const el = createDiv();
+    suggest.renderSuggestion(suggestion, el);
+    expect(vi.mocked(renderMatches).mock.calls).toEqual([
+      [el.querySelector('.suggestion-title'), 'zzz', null],
+      [el.querySelector('.suggestion-note'), 'other.md', [[0, 5]]]
+    ]);
+  });
+
   it('should highlight the matched tag characters past the #', () => {
     const { inputEl, suggest } = create();
     typeText(inputEl, '#home');
