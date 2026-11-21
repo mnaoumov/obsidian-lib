@@ -33,6 +33,28 @@ interface ProbeResult {
   readonly secondForgotClosedPopout: boolean;
 }
 
+describe('Obsidian popout status bar', () => {
+  it('workaround canary popout-has-no-status-bar: a popout still builds no status bar of its own', async () => {
+    const hasStatusBar = await evalInObsidian({
+      async callback({ app, lib: { getMainWindow, waitUntil } }): Promise<boolean> {
+        const mainWindow = getMainWindow(app);
+        const leaf = app.workspace.openPopoutLeaf();
+        const popoutDocument = leaf.getContainer().win.document;
+        try {
+          await waitUntil({ message: 'the popout to load', predicate: () => popoutDocument.readyState === 'complete' });
+          return popoutDocument.body.querySelector(':scope > .app-container > .status-bar') !== null;
+        } finally {
+          leaf.detach();
+          window.activeWindow = mainWindow;
+          window.activeDocument = mainWindow.document;
+        }
+      }
+    });
+
+    expect(hasStatusBar).toBe(false);
+  });
+});
+
 describe('AllWindowsStatusBarItemComponent', () => {
   it('should show, update and remove only its own items in the main window and a real popout', async () => {
     const result = await evalInObsidian<Record<string, never>, ProbeResult>({

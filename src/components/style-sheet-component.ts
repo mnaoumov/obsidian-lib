@@ -9,6 +9,10 @@
  * A constructed sheet can be adopted only by a document of the realm that constructed it, so each window gets its
  * own sheet, built with that window's `CSSStyleSheet` constructor. Constructable stylesheets need Electron 28 or
  * iOS 16.4, both below the oldest runtime Obsidian supports.
+ *
+ * Obsidian workaround `popout-skips-adopted-style-sheets`, seen in Obsidian `1.15.1`: core copies the main head's
+ * `<style>` and `<link>` elements into each popout, but not `document.adoptedStyleSheets`, so this component adds its
+ * sheet to every window itself. Its canary is in `core-popout-relay.desktop.obsidian.integration.test.ts`.
  */
 
 import type {

@@ -16,6 +16,9 @@
  * the user's settings are gone. So when Obsidian answers `undefined` or `null`, {@link PluginDataHandler.loadData}
  * reads the file raw and parses it itself; a file that does not parse is copied into the device-local
  * {@link SettingsRecoveryStore} and reported as a {@link PluginDataParseError}, never as missing.
+ *
+ * Obsidian workaround `load-data-hides-parse-error`, seen in Obsidian `1.15.1`: its canary is in
+ * `data-handler.obsidian.integration.test.ts`.
  */
 
 import type { Plugin } from 'obsidian';

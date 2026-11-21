@@ -154,4 +154,70 @@ describe('core popout relay', () => {
       isAdoptedSheetRelayed: false
     });
   });
+
+  it('workaround canary popout-skips-adopted-style-sheets: a sheet adopted by the main document still does not reach a popout', async () => {
+    const isAdoptedSheetRelayed = await evalInObsidian({
+      async callback({ app, lib: { castTo, getMainWindow, waitUntil } }): Promise<boolean> {
+        const mainWindow = castTo<typeof window>(getMainWindow(app));
+        const leaf = app.workspace.openPopoutLeaf();
+        const popoutWindow = castTo<typeof window>(leaf.getContainer().win);
+        const adoptedSheet = new mainWindow.CSSStyleSheet();
+        adoptedSheet.replaceSync('.obsidian-lib-canary-adopted { color: red; }');
+        const markerEl = mainWindow.document.createElement('style');
+        markerEl.id = 'obsidian-lib-canary-adopted-marker';
+        try {
+          await waitUntil({ message: 'popout ready', predicate: () => popoutWindow.document.readyState === 'complete' });
+          mainWindow.document.adoptedStyleSheets = [...mainWindow.document.adoptedStyleSheets, adoptedSheet];
+          // Core's relay is a MutationObserver; a style element appended after the sheet is relayed only once that observer ran.
+          mainWindow.document.head.append(markerEl);
+          await waitUntil({ message: 'marker relayed', predicate: () => popoutWindow.document.head.querySelector(`#${markerEl.id}`) !== null });
+          return popoutWindow.document.adoptedStyleSheets.some((sheet) => [...sheet.cssRules].some((rule) => rule.cssText.includes('obsidian-lib-canary-adopted')));
+        } finally {
+          markerEl.remove();
+          mainWindow.document.adoptedStyleSheets = mainWindow.document.adoptedStyleSheets.filter((sheet) => sheet !== adoptedSheet);
+          leaf.detach();
+          window.activeWindow = mainWindow;
+          window.activeDocument = mainWindow.document;
+        }
+      }
+    });
+
+    expect(isAdoptedSheetRelayed).toBe(false);
+  });
+
+  it('workaround canary popout-event-relay-partial: events core does not relay still miss the main window and document', async () => {
+    const reachedTypes = await evalInObsidian({
+      async callback({ app, eventConstructorNames, lib: { castTo, getMainWindow, waitUntil } }): Promise<string[]> {
+        const mainWindow = castTo<typeof window>(getMainWindow(app));
+        const leaf = app.workspace.openPopoutLeaf();
+        const popoutWindow = castTo<typeof window>(leaf.getContainer().win);
+        const reached = new Set<string>();
+        function onMain($event: Event): void {
+          reached.add($event.type);
+        }
+        try {
+          await waitUntil({ message: 'popout ready', predicate: () => popoutWindow.document.readyState === 'complete' });
+          for (const [type, constructorName] of Object.entries(eventConstructorNames)) {
+            mainWindow.addEventListener(type, onMain, { capture: true });
+            mainWindow.document.addEventListener(type, onMain, { capture: true });
+            const EventConstructor = castTo<Record<string, typeof Event | undefined>>(popoutWindow)[constructorName] ?? popoutWindow.Event;
+            // Dispatched, not trusted, for the reason the case above gives.
+            popoutWindow.document.body.dispatchEvent(new EventConstructor(type, { bubbles: true }));
+            mainWindow.removeEventListener(type, onMain, { capture: true });
+            mainWindow.document.removeEventListener(type, onMain, { capture: true });
+          }
+          return [...reached].sort();
+        } finally {
+          leaf.detach();
+          window.activeWindow = mainWindow;
+          window.activeDocument = mainWindow.document;
+        }
+      },
+      input: {
+        eventConstructorNames: Object.fromEntries(Object.entries(EVENT_CONSTRUCTOR_NAMES).filter(([type]) => !RELAYED_EVENT_TYPES.has(type)))
+      }
+    });
+
+    expect(reachedTypes).toEqual([]);
+  });
 });

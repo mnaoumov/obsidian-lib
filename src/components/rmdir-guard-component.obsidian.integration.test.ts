@@ -13,7 +13,7 @@
  * directory when `recursive` is `false` — even an empty one. So the native non-recursive call never
  * succeeds on desktop, and (per the mobile `CapacitorAdapter`, which does not accept the argument at all)
  * always removes the whole subtree on mobile. If Obsidian ever fixes `rmdir`, that case goes red and tells
- * us this component is obsolete.
+ * us this component is obsolete: it is the canary of the `adapter-rmdir-ignores-recursive` workaround.
  *
  * Assertions read the vault ADAPTER (`exists`), not the vault file-tree: these folders are created through
  * the adapter, and the tree's reflection of them arrives asynchronously via Obsidian's file watcher.
@@ -45,7 +45,7 @@ interface UnguardedResult {
 const NOT_EMPTY_DIRECTORY_ERROR_CODE = 'ENOTEMPTY';
 
 describe('RmdirGuardComponent', () => {
-  it('should be needed: the native non-recursive rmdir refuses even an empty folder', async () => {
+  it('workaround canary adapter-rmdir-ignores-recursive: the native non-recursive rmdir still refuses even an empty folder', async () => {
     const result = await evalInObsidian<Record<string, never>, UnguardedResult>({
       async callback({ app }) {
         const adapter = app.vault.adapter;
