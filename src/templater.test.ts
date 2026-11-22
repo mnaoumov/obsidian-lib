@@ -10,6 +10,7 @@ import type {
   TFile
 } from 'obsidian';
 
+import { noopAsync } from '@mnaoumov/typescript-lib/function';
 import { castTo } from '@mnaoumov/typescript-lib/object-utils';
 import { ensureNonNullable } from '@mnaoumov/typescript-lib/type-guards';
 import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
@@ -23,6 +24,7 @@ import {
 
 import type {
   TemplaterApi,
+  TemplaterEditorHandler,
   TemplaterRunningConfig
 } from './templater.ts';
 
@@ -32,7 +34,9 @@ import {
   parseTemplate,
   requireTemplaterApi,
   resolveTemplaterApi,
+  resolveTemplaterPluginApi,
   TEMPLATER_PLUGIN_ADAPTER,
+  TEMPLATER_PLUGIN_API_ADAPTER,
   TEMPLATER_PLUGIN_ID,
   TemplaterActiveFileProvider,
   TemplaterRunMode,
@@ -131,17 +135,21 @@ function createTemplaterApiRecorder(options: CreateTemplaterApiRecorderOptions =
       createdConfigs.push(config);
       return config;
     },
+    end_templater_task: (): Promise<void> => noopAsync(),
     functions_generator: {
       generate_object: (config: TemplaterRunningConfig): Promise<object> => {
         generatedFor.push(config);
         return Promise.resolve({ generated: true });
       }
     },
+    overwrite_file_commands: (): Promise<void> => noopAsync(),
+    parse_template: (): Promise<string> => Promise.resolve('rendered'),
     read_and_parse_template: async (config: TemplaterRunningConfig): Promise<string> => {
       parsedConfigs.push(config);
       renderTargetsSeen.push(getTemplaterRenderTargetFile());
       return await (options.parse ?? ((): Promise<string> => Promise.resolve('rendered')))();
     },
+    start_templater_task: (): void => undefined,
     ...(options.currentFunctionsObject && { current_functions_object: options.currentFunctionsObject })
   };
 
@@ -253,6 +261,16 @@ describe('resolveTemplaterApi', () => {
     }]
   ])('should return null for %s', (_description: string, templater: unknown) => {
     setTemplaterPlugin({ templater });
+    expect(resolveTemplaterApi(app)).toBeNull();
+  });
+
+  it.each(['end_templater_task', 'overwrite_file_commands', 'parse_template', 'start_templater_task'])('should return null without %s', (member: string) => {
+    setTemplaterPlugin({ templater: omitMember(createTemplaterApiRecorder().api, member) });
+    expect(resolveTemplaterApi(app)).toBeNull();
+  });
+
+  it.each(['end_templater_task', 'overwrite_file_commands', 'parse_template', 'start_templater_task'])('should return null for a non-callable %s', (member: string) => {
+    setTemplaterPlugin({ templater: { ...createTemplaterApiRecorder().api, [member]: 'nope' } });
     expect(resolveTemplaterApi(app)).toBeNull();
   });
 });
@@ -477,7 +495,57 @@ function createProviderApp(): AppOriginal {
   return strictProxy<AppOriginal>({ workspace: { getActiveFile: (): null | TFile => workspaceActiveFile } });
 }
 
+/**
+ * Copies an object without one of its members.
+ *
+ * @param value - The object.
+ * @param member - The member to leave out.
+ * @returns The copy.
+ */
+function omitMember(value: object, member: string): object {
+  return Object.fromEntries(Object.entries(value).filter(([key]) => key !== member));
+}
+
+describe('resolveTemplaterPluginApi', () => {
+  it('should return the templater object and the editor handler of a loaded Templater', () => {
+    const { api } = createTemplaterApiRecorder();
+    const editorHandler: TemplaterEditorHandler = { jump_to_next_cursor_location: (): Promise<void> => noopAsync() };
+    setTemplaterPlugin({ editor_handler: editorHandler, templater: api });
+    expect(resolveTemplaterPluginApi(app)).toEqual({ editorHandler, templater: api });
+  });
+
+  it('should return null when Templater is not loaded', () => {
+    expect(resolveTemplaterPluginApi(app)).toBeNull();
+  });
+
+  it.each([
+    ['no templater member', { editor_handler: { jump_to_next_cursor_location: (): void => undefined } }],
+    ['no editor_handler', { templater: createTemplaterApiRecorder().api }],
+    ['a null editor_handler', { editor_handler: null, templater: createTemplaterApiRecorder().api }],
+    ['a non-object editor_handler', { editor_handler: 'nope', templater: createTemplaterApiRecorder().api }],
+    ['an editor_handler with no jump_to_next_cursor_location', { editor_handler: {}, templater: createTemplaterApiRecorder().api }],
+    ['a non-callable jump_to_next_cursor_location', {
+      editor_handler: { jump_to_next_cursor_location: 'nope' },
+      templater: createTemplaterApiRecorder().api
+    }]
+  ])('should return null for %s', (_description: string, plugin: object) => {
+    setTemplaterPlugin(plugin);
+    expect(resolveTemplaterPluginApi(app)).toBeNull();
+  });
+});
+
 /* eslint-enable camelcase -- `Templater` API. */
+
+describe('TEMPLATER_PLUGIN_API_ADAPTER', () => {
+  it('should name the Templater plugin', () => {
+    expect(TEMPLATER_PLUGIN_API_ADAPTER.pluginId).toBe(TEMPLATER_PLUGIN_ID);
+    expect(TEMPLATER_PLUGIN_API_ADAPTER.pluginName).toBe('Templater');
+  });
+
+  it('should refuse a plugin without a templater member', () => {
+    expect(TEMPLATER_PLUGIN_API_ADAPTER.getApi(castTo({}))).toBeNull();
+  });
+});
 
 describe('TEMPLATER_PLUGIN_ADAPTER', () => {
   it('should name the Templater plugin', () => {

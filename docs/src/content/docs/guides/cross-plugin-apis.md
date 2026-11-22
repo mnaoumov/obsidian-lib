@@ -753,7 +753,7 @@ It settles once, and that is the line between it and [Requiring another plugin](
 `Dataview`, `Templater`, `Notebook Navigator` and most other plugins publish nothing through the registry, but each hangs a usable API off its instance under a name of its own choosing. A `ThirdPartyPluginAdapter` (`@mnaoumov/obsidian-lib/plugin/third-party-plugin`) says once, for one plugin, how to get from the instance to that API, and verifies the shape on the way. The library ships these:
 
 1. `DATAVIEW_PLUGIN_ADAPTER` in `@mnaoumov/obsidian-lib/dataview`, reading `plugin.api` typed as `DataviewApi` from `@mnaoumov/obsidian-dataview`.
-2. `TEMPLATER_PLUGIN_ADAPTER` in `@mnaoumov/obsidian-lib/templater`, reading `Templater`'s undocumented `plugin.templater`.
+2. `TEMPLATER_PLUGIN_ADAPTER` in `@mnaoumov/obsidian-lib/templater`, reading `Templater`'s undocumented `plugin.templater`, and `TEMPLATER_PLUGIN_API_ADAPTER` beside it, which also hands back the plugin's `editor_handler` for a caller that jumps to `tp.file.cursor()` markers.
 3. `NOTEBOOK_NAVIGATOR_PLUGIN_ADAPTER` in `@mnaoumov/obsidian-lib/notebook-navigator`, reading `plugin.api`.
 4. `FOLDER_NOTES_PLUGIN_ADAPTER`, `FOLDER_NOTE_PLUGIN_ADAPTER`, `WAYPOINT_PLUGIN_ADAPTER` and `FOLDER_INDEX_PLUGIN_ADAPTER` in `@mnaoumov/obsidian-lib/folder-note`, for `Folder notes`, `Folder Note`, `Waypoint` and `Folder Index`. These plugins publish no API at all, so each adapter's API is the plugin's live `settings` object, verified and narrowed to the fields that place and name a folder note.
 
