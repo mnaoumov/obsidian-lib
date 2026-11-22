@@ -65,9 +65,12 @@ jobs:
             docs-gen-
 
       # The token lets the build read the repository's homepage and report one that is not the site's URL.
+      # The default V8 heap ran out on the runner from 12.0.0 on (Starlight 0.43, typescript-dev-toolkit 10),
+      # twice in a row, so the build gets 6 GB of the runner's 16 GB.
       - name: Build documentation site
         env:
           GH_TOKEN: ${{ github.token }}
+          NODE_OPTIONS: --max-old-space-size=6144
         run: npm run docs:build
 
       - name: Upload Pages artifact
