@@ -371,6 +371,45 @@ describe('AbstractFileCommandHandler', () => {
       expect(setSectionSubmenu).not.toHaveBeenCalled();
       expect(addItem).toHaveBeenCalledOnce();
     });
+
+    describe('getDefaultShouldAddCommandToSubmenu', () => {
+      class DefaultOnHandler extends TestAbstractFileHandler {
+        protected override getDefaultShouldAddCommandToSubmenu(): boolean {
+          return true;
+        }
+      }
+
+      async function renderSubmenuCalls(handler: TestAbstractFileHandler, shouldRegistrationAddCommandToSubmenu?: boolean): Promise<unknown[][]> {
+        handler.shouldAddToMenuFunction.mockReturnValue(true);
+        const { context, fileMenuHandlers } = createMockContext();
+        await handler.onRegistered({
+          ...context,
+          shouldAddCommandToSubmenu: shouldRegistrationAddCommandToSubmenu
+        });
+        const setSectionSubmenu = vi.fn();
+        const menu = strictProxy<MenuOriginal>({ addItem: vi.fn(), setSectionSubmenu });
+        fileMenuHandlers[0]?.(menu, createMockFile(), 'file-explorer-context-menu');
+        return setSectionSubmenu.mock.calls;
+      }
+
+      it('should be used when neither the registration nor the constructor set a value', async () => {
+        expect(await renderSubmenuCalls(new DefaultOnHandler(createParams({ fileMenuSection: 'my-section' })))).toHaveLength(1);
+      });
+
+      it('should default to false', async () => {
+        expect(await renderSubmenuCalls(new TestAbstractFileHandler(createParams({ fileMenuSection: 'my-section' })))).toHaveLength(0);
+      });
+
+      it('should lose to a registration that forces the flag off', async () => {
+        expect(await renderSubmenuCalls(new DefaultOnHandler(createParams({ fileMenuSection: 'my-section' })), false)).toHaveLength(0);
+      });
+
+      it('should lose to the constructor value', async () => {
+        expect(
+          await renderSubmenuCalls(new DefaultOnHandler(createParams({ fileMenuSection: 'my-section', shouldAddCommandToSubmenu: false })))
+        ).toHaveLength(0);
+      });
+    });
   });
 
   describe('file menu item details', () => {
