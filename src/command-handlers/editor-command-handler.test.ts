@@ -228,6 +228,49 @@ describe('EditorCommandHandler', () => {
     });
   });
 
+  describe('submenu flag precedence', () => {
+    class DefaultOnHandler extends TestEditorHandler {
+      protected override getDefaultShouldAddCommandToSubmenu(): boolean {
+        return true;
+      }
+    }
+
+    async function renderSubmenuCalls(handler: TestEditorHandler, shouldRegistrationAddCommandToSubmenu?: boolean): Promise<unknown[][]> {
+      handler.shouldAddToEditorMenuFunction.mockReturnValue(true);
+      const { context, editorMenuHandlers } = createMockContext();
+      await handler.onRegistered({
+        ...context,
+        shouldAddCommandToSubmenu: shouldRegistrationAddCommandToSubmenu
+      });
+      const setSectionSubmenu = vi.fn();
+      const menu = strictProxy<MenuOriginal>({ addItem: vi.fn(), setSectionSubmenu });
+      editorMenuHandlers[0]?.(menu, createMockEditor(), createMockMarkdownFileInfo());
+      return setSectionSubmenu.mock.calls;
+    }
+
+    it('should not set section submenu when the registration context forces it off', async () => {
+      expect(await renderSubmenuCalls(new TestEditorHandler(createParams({ editorMenuSection: 's', shouldAddCommandToSubmenu: true })), false))
+        .toHaveLength(0);
+    });
+
+    it('should set section submenu when the registration context forces it on', async () => {
+      expect(await renderSubmenuCalls(new TestEditorHandler(createParams({ editorMenuSection: 's' })), true)).toHaveLength(1);
+    });
+
+    it('should use getDefaultShouldAddCommandToSubmenu when nothing set a value', async () => {
+      expect(await renderSubmenuCalls(new DefaultOnHandler(createParams({ editorMenuSection: 's' })))).toHaveLength(1);
+    });
+
+    it('should let a registration that forces the flag off win over getDefaultShouldAddCommandToSubmenu', async () => {
+      expect(await renderSubmenuCalls(new DefaultOnHandler(createParams({ editorMenuSection: 's' })), false)).toHaveLength(0);
+    });
+
+    it('should let the constructor value win over getDefaultShouldAddCommandToSubmenu', async () => {
+      expect(await renderSubmenuCalls(new DefaultOnHandler(createParams({ editorMenuSection: 's', shouldAddCommandToSubmenu: false }))))
+        .toHaveLength(0);
+    });
+  });
+
   it('should use pluginName as default section', async () => {
     const handler = new TestEditorHandler(createParams());
     handler.shouldAddToEditorMenuFunction.mockReturnValue(true);

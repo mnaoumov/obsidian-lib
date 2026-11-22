@@ -365,16 +365,30 @@ export abstract class AbstractFileCommandHandler extends GlobalCommandHandler {
   }
 
   /**
+   * Gets whether to add the command to a submenu when neither the registration context nor the
+   * constructor set a value.
+   *
+   * @returns Whether to add to a submenu by default; `false` unless overridden.
+   */
+  protected getDefaultShouldAddCommandToSubmenu(): boolean {
+    return false;
+  }
+
+  /**
    * Gets whether to add the command to a submenu.
    *
    * The registration context wins over the constructor value: a menu surface that already wraps every
    * contributed item in a plugin-titled parent entry forces this off, because a section submenu
    * declared here would make `Menu.sort()` nest a second plugin-titled entry inside the first.
    *
+   * When neither sets a value, {@link getDefaultShouldAddCommandToSubmenu} decides. Override that hook, not
+   * this method, to supply a fallback such as a plugin setting, so a registration that forces the flag off
+   * still wins.
+   *
    * @returns Whether to add to a submenu.
    */
   protected shouldAddCommandToSubmenu(): boolean {
-    return this._registrationShouldAddCommandToSubmenu ?? this._shouldAddCommandToSubmenu ?? false;
+    return this._registrationShouldAddCommandToSubmenu ?? this._shouldAddCommandToSubmenu ?? this.getDefaultShouldAddCommandToSubmenu();
   }
 
   /**
