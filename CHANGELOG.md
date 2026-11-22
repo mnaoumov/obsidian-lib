@@ -1,5 +1,45 @@
 # CHANGELOG
 
+## 12.0.0
+
+This release has 1 breaking change, 18 new features, 2 fixes and 3 documentation changes. 8 maintenance commits (tests, build, CI, refactoring, dependencies) are not listed.
+
+### Breaking changes
+
+- remove registerBodyClass, which Obsidian core already covers
+
+### New
+
+- **templater:** widen the Templater adapter to the members plugins call
+- let command handler subclasses supply a submenu fallback
+- find the link at an editor position, inclusive at both ends
+- highlight matched characters in the link suggestions of LinkAndTagInputSuggest
+- **folder-note:** adapters and configs for the folder-note plugins
+- **markdown-code-block-processor-registrar:** tie a processor to a lifetime owner
+- **components:** hand LayoutReadyComponent's onLayoutReady the LayoutReadyWorkspace
+- **settings:** list and restore the data.json recovery copies from the settings tab
+- **monkey-around:** add patchMethod for a scoped, disposable method patch
+- **i18n:** translate one sentence holding DOM nodes with tFragment
+- **modals:** add DialogContext and a scripted dialog driver for tests
+- **bug-report:** report the Electron and Chromium versions, and the Capacitor runtime on mobile
+- **bug-report:** scrub token shapes and the vault and home paths from diagnostics
+- **settings:** reset all settings to defaults, and export and import them as JSON
+- **prompt:** add an isMasked option for passwords and API keys
+- **plugin-notice-component:** add a one-shot Undo action to notices
+- **setting-components:** highlight matched characters in the folder and tag suggests
+- **setting-components:** file suggest and single-file path setting
+
+### Fixed
+
+- **loop:** stop waiting for animation frames while the window is hidden
+- **plugin:** log the swallowed silent error when unloaded during load
+
+### Documentation
+
+- **changelog:** rewrite the 3.0.0, 5.0.0 and 10.5.0 entries for readers
+- drop the null-return cast note from the custom subpaths guide
+- open a sidebar view through ensureSideLeaf
+
 ## 11.0.0
 
 This release has 1 breaking change, 11 new features, 6 fixes and 2 documentation changes. 10 maintenance commits (tests, build, CI, refactoring, dependencies) are not listed.
