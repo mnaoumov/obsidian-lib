@@ -12,7 +12,8 @@
  *
  * **This module is explicitly BEST-EFFORT.** Nothing it binds to is documented or covered by `Templater`'s
  * semantic versioning, so a `Templater` release may rename or reshape any of it without warning. The shapes
- * below were read from `Templater` `2.24.3`. Two deliberate consequences follow:
+ * below were read from `Templater` `2.24.3`; the task pair, `parse_template`, `overwrite_file_commands` and
+ * the plugin's `editor_handler` were added from `2.27.0`. Two deliberate consequences follow:
  *
  * - {@link resolveTemplaterApi} returns `null` — a `Templater` too old, too new or too broken to talk to
  *   reads as "not there" and the integration stays dormant.
@@ -114,9 +115,44 @@ export interface TemplaterApi {
   readonly current_functions_object?: object | undefined;
 
   /**
+   * Closes the task {@link TemplaterApi.start_templater_task} opened. Once the last pending path is closed,
+   * `Templater` triggers `templater:all-templates-executed`, which is the ONLY thing that runs a template's
+   * `tp.hooks.on_all_templates_executed(…)` callbacks, so a caller must reach this even when the render throws.
+   *
+   * @param path - The path the task was opened for.
+   * @returns A {@link Promise} that resolves once the task is closed.
+   */
+  readonly end_templater_task: (path: string) => Promise<void>;
+
+  /**
    * Builds the functions object (`tp`) a template is evaluated against.
    */
   readonly functions_generator: TemplaterFunctionsGenerator;
+
+  /**
+   * `Templater`'s own "render this note in place" entry point: it reads the file, renders it as a template
+   * and writes the result back, bracketed by its own task pair.
+   *
+   * @param file - The file to render in place.
+   * @param active_file - Whether the file is the active one ({@link TemplaterRunMode.OverwriteActiveFile})
+   * rather than any file ({@link TemplaterRunMode.OverwriteFile}). `Templater` defaults it to `false`.
+   * @returns A {@link Promise} that resolves once the file is written.
+   */
+  // eslint-disable-next-line unicorn/consistent-boolean-name -- `Templater` API parameter name.
+  readonly overwrite_file_commands: (file: TFile, active_file?: boolean) => Promise<void>;
+
+  /**
+   * Renders the given template TEXT against a running config and returns the result.
+   *
+   * `Templater` reads the config's `target_file` eagerly while it builds the functions object, so a config
+   * without a real target file throws from inside `Templater`.
+   *
+   * @param config - The {@link TemplaterRunningConfig} describing the render.
+   * @param template_content - The template text to render.
+   * @returns A {@link Promise} resolving to the rendered text.
+   */
+
+  readonly parse_template: (config: TemplaterRunningConfig, template_content: string) => Promise<string>;
 
   /**
    * Reads the config's `template_file` and renders it, returning the resulting text.
@@ -126,6 +162,35 @@ export interface TemplaterApi {
    * @returns A {@link Promise} resolving to the rendered text.
    */
   readonly read_and_parse_template: (config: TemplaterRunningConfig) => Promise<string>;
+
+  /**
+   * Registers a path as having a render in flight. `Templater`'s own entry points bracket every render with
+   * this and {@link TemplaterApi.end_templater_task}; a render that skips the pair works, but never fires the
+   * `tp.hooks` callbacks.
+   *
+   * @param path - The path a render is starting for.
+   */
+  readonly start_templater_task: (path: string) => void;
+}
+
+/**
+ * The `editor_handler` of the `Templater` plugin instance, narrowed to the members callers use.
+ *
+ * Its members are `snake_case` because `Templater`'s are.
+ */
+export interface TemplaterEditorHandler {
+  /**
+   * Consumes the next `tp.file.cursor()` marker in the ACTIVE editor and puts the caret there. Given a file,
+   * it does nothing unless that file is the active one; with `auto_jump` set, it does nothing while
+   * `Templater`'s own `Automatic jump to cursor` setting is off, which is the pair `Templater` itself passes
+   * after rendering a note.
+   *
+   * @param file - The file the jump is for, or `null` / `undefined` for the active editor regardless.
+   * @param auto_jump - Whether to honor `Templater`'s `Automatic jump to cursor` setting.
+   * @returns A {@link Promise} that resolves once the caret has moved, or nothing was done.
+   */
+  // eslint-disable-next-line unicorn/consistent-boolean-name -- `Templater` API parameter name.
+  readonly jump_to_next_cursor_location: (file?: null | TFile, auto_jump?: boolean) => Promise<void>;
 }
 
 /**
@@ -139,6 +204,22 @@ export interface TemplaterFunctionsGenerator {
    * @returns A {@link Promise} resolving to the functions object.
    */
   readonly generate_object: (config: TemplaterRunningConfig) => Promise<object>;
+}
+
+/**
+ * Everything {@link TEMPLATER_PLUGIN_API_ADAPTER} reads off a running `Templater` plugin instance: its
+ * `templater` object and its editor handler.
+ */
+export interface TemplaterPluginApi {
+  /**
+   * The plugin's `editor_handler`.
+   */
+  readonly editorHandler: TemplaterEditorHandler;
+
+  /**
+   * The plugin's `templater` object.
+   */
+  readonly templater: TemplaterApi;
 }
 
 /**
@@ -404,6 +485,29 @@ export const TEMPLATER_PLUGIN_ADAPTER: ThirdPartyPluginAdapter<TemplaterApi> = {
   pluginName: 'Templater'
 };
 
+/**
+ * The {@link ThirdPartyPluginAdapter} of `Templater` for a caller that also drives the plugin's editor
+ * handler (the jump to `tp.file.cursor()` markers). It verifies everything {@link TEMPLATER_PLUGIN_ADAPTER}
+ * does, plus `editor_handler.jump_to_next_cursor_location`.
+ */
+export const TEMPLATER_PLUGIN_API_ADAPTER: ThirdPartyPluginAdapter<TemplaterPluginApi> = {
+  getApi: getTemplaterPluginApiFromPlugin,
+  pluginId: TEMPLATER_PLUGIN_ID,
+  pluginName: 'Templater'
+};
+
+/**
+ * Gets `Templater`'s `templater` object and editor handler, when `Templater` is installed, enabled and still
+ * the shape this library expects.
+ *
+ * @param app - The Obsidian app instance.
+ * @returns The pair, or `null` when `Templater` is not there to talk to.
+ */
+export function resolveTemplaterPluginApi(app: App): null | TemplaterPluginApi {
+  const plugin = app.plugins.getPlugin(TEMPLATER_PLUGIN_ID);
+  return plugin ? getTemplaterPluginApiFromPlugin(plugin) : null;
+}
+
 function getTemplaterApiFromPlugin(plugin: Plugin): null | TemplaterApi {
   if (!('templater' in plugin)) {
     return null;
@@ -413,12 +517,38 @@ function getTemplaterApiFromPlugin(plugin: Plugin): null | TemplaterApi {
   return isTemplaterApi(templater) ? templater : null;
 }
 
+function getTemplaterPluginApiFromPlugin(plugin: Plugin): null | TemplaterPluginApi {
+  const templater = getTemplaterApiFromPlugin(plugin);
+  if (!templater || !('editor_handler' in plugin)) {
+    return null;
+  }
+
+  const editorHandler: unknown = plugin.editor_handler;
+  return isTemplaterEditorHandler(editorHandler) ? { editorHandler, templater } : null;
+}
+
 /*
  * The stack of files in-flight `parseTemplate` calls are rendering for, innermost last. A stack rather
  * than a single slot because a template may render another, and an array rather than a reassigned
  * variable because pushing and popping a `const` needs no write to an outer binding across an `await`.
  */
 const renderTargetFiles: TFile[] = [];
+
+/*
+ * The function members of `TemplaterApi` that `isTemplaterApi` verifies, read from `Templater` `2.27.0`.
+ */
+const TEMPLATER_API_FUNCTION_MEMBERS = [
+  'create_running_config',
+  'end_templater_task',
+  'overwrite_file_commands',
+  'parse_template',
+  'read_and_parse_template',
+  'start_templater_task'
+] as const;
+
+function hasFunctionMember(value: object, member: string): boolean {
+  return typeof Reflect.get(value, member) === 'function';
+}
 
 /**
  * Checks that a value is `Templater`'s internal API, by the members this library actually calls.
@@ -431,10 +561,20 @@ const renderTargetFiles: TFile[] = [];
  * @returns Whether it carries every member this library calls.
  */
 function isTemplaterApi(value: unknown): value is TemplaterApi {
-  if (typeof value !== 'object' || value === null || !('create_running_config' in value) || typeof value.create_running_config !== 'function' || !('read_and_parse_template' in value) || typeof value.read_and_parse_template !== 'function' || !('functions_generator' in value)) {
+  if (typeof value !== 'object' || value === null || !('functions_generator' in value)) {
     return false;
   }
 
+  for (const member of TEMPLATER_API_FUNCTION_MEMBERS) {
+    if (!hasFunctionMember(value, member)) {
+      return false;
+    }
+  }
+
   const functionsGenerator: unknown = value.functions_generator;
-  return typeof functionsGenerator === 'object' && functionsGenerator !== null && 'generate_object' in functionsGenerator && typeof functionsGenerator.generate_object === 'function';
+  return typeof functionsGenerator === 'object' && functionsGenerator !== null && hasFunctionMember(functionsGenerator, 'generate_object');
+}
+
+function isTemplaterEditorHandler(value: unknown): value is TemplaterEditorHandler {
+  return typeof value === 'object' && value !== null && hasFunctionMember(value, 'jump_to_next_cursor_location');
 }
