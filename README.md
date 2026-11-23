@@ -1,5 +1,7 @@
 # @mnaoumov/obsidian-lib
 
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?logo=buy-me-a-coffee&logoColor=black)](https://www.buymeacoffee.com/mnaoumov) [![npm version](https://img.shields.io/npm/v/@mnaoumov/obsidian-lib)](https://www.npmjs.com/package/@mnaoumov/obsidian-lib) [![npm downloads](https://img.shields.io/npm/dm/@mnaoumov/obsidian-lib)](https://www.npmjs.com/package/@mnaoumov/obsidian-lib) [![CI](https://img.shields.io/github/actions/workflow/status/mnaoumov/obsidian-lib/ci.yml?branch=main&label=CI)](https://github.com/mnaoumov/obsidian-lib/actions/workflows/ci.yml) [![Coverage: 100%](https://img.shields.io/badge/coverage-100%25-brightgreen)](https://github.com/mnaoumov/obsidian-lib) [![License](https://img.shields.io/github/license/mnaoumov/obsidian-lib)](https://github.com/mnaoumov/obsidian-lib/blob/main/LICENSE) [![Node.js](https://img.shields.io/node/v/@mnaoumov/obsidian-lib)](https://nodejs.org/) [![Types](https://img.shields.io/npm/types/@mnaoumov/obsidian-lib)](https://www.npmjs.com/package/@mnaoumov/obsidian-lib)
+
 The runtime library for Obsidian plugins: plugin base classes, components, settings tabs and setting components, modals, popovers, and vault, metadata-cache and link helpers. It continues the runtime half of `obsidian-dev-utils`.
 
 ## Installation
