@@ -1,3 +1,5 @@
+// The near-miss cases below misspell names on purpose.
+// cspell:words Recpies Projetc kikoff Repices Projekts sitten kiten iktten wxyz abce
 import {
   describe,
   expect,
@@ -12,6 +14,8 @@ import type {
 import {
   BrokenLinkCandidateFinder,
   BrokenLinkEvidenceKind,
+  getEditDistance,
+  getNearMissMaxDistance,
   getParentPath,
   getPathMapping
 } from './broken-link-candidates.ts';
@@ -168,9 +172,86 @@ describe('BrokenLinkCandidateFinder', () => {
     ]);
   });
 
+  it('should find a near-miss name, keeping only the nearest', () => {
+    const finder = createFinder({ filePaths: ['a/Meeting notes.md', 'a/Meeting nots.md', 'b/Meetings notes.md', 'a/Meting nots.md'] });
+    const candidates = find(finder, 'a/Meeting note.md');
+    expect(candidates.map((candidate) => [candidate.path, kinds(candidate)])).toStrictEqual([
+      ['a/Meeting notes.md', [BrokenLinkEvidenceKind.NearMiss]],
+      ['a/Meeting nots.md', [BrokenLinkEvidenceKind.NearMiss]]
+    ]);
+    expect(candidates[0]?.evidence[0]?.description).toBe('Its name is one edit away from the missing name "Meeting note".');
+  });
+
+  it('should count a swap of two adjacent characters as one edit', () => {
+    const candidates = find(createFinder({ filePaths: ['Recipes.md'] }), 'Recpies.md');
+    expect(candidates.map((candidate) => candidate.path)).toStrictEqual(['Recipes.md']);
+    expect(kinds(candidates[0])).toStrictEqual([BrokenLinkEvidenceKind.NearMiss]);
+  });
+
+  it('should allow two edits for a long name and none for a short one', () => {
+    const candidates = find(createFinder({ filePaths: ['Project kickoff.md'] }), 'Projetc kikoff.md');
+    expect(candidates.map((candidate) => candidate.path)).toStrictEqual(['Project kickoff.md']);
+    expect(candidates[0]?.evidence[0]?.description).toBe('Its name is 2 edits away from the missing name "Projetc kikoff".');
+    expect(find(createFinder({ filePaths: ['Recipes.md'] }), 'Repices2.md')).toStrictEqual([]);
+    expect(find(createFinder({ filePaths: ['log.md', 'cat.md'] }), 'lag.md')).toStrictEqual([]);
+  });
+
+  it('should require the same extension, ignoring its letter case', () => {
+    const finder = createFinder({ filePaths: ['Diagrams.PNG', 'Diagrams.md'] });
+    expect(find(finder, 'Diagram.svg')).toStrictEqual([]);
+    expect(find(finder, 'Diagram.png').map((candidate) => candidate.path)).toStrictEqual(['Diagrams.PNG']);
+  });
+
+  it('should not report the same name in another letter case as a near miss', () => {
+    const candidates = find(createFinder({ filePaths: ['x/RECIPES.md'] }), 'y/Recipes.md');
+    expect(candidates.flatMap((candidate) => kinds(candidate))).not.toContain(BrokenLinkEvidenceKind.NearMiss);
+  });
+
+  it('should compare a folder note by its folder name, among folder notes only', () => {
+    const finder = createFinder({ filePaths: ['x/Projects/!.md', 'x/Projekts.md', '!.md'], folderNoteFileNames: ['!.md'] });
+    expect(find(finder, 'x/Projekts/!.md').map((candidate) => [candidate.path, kinds(candidate)])).toStrictEqual([
+      ['x/Projects/!.md', [BrokenLinkEvidenceKind.RenamedFolder, BrokenLinkEvidenceKind.NearMiss]]
+    ]);
+    // A folder name too short for a near miss finds nothing.
+    expect(find(finder, 'y/!.md')).toStrictEqual([]);
+  });
+
+  it('should rank a near miss below every other evidence', () => {
+    const candidates = find(createFinder({ filePaths: ['x/Recipes.md', 'z/Recipe.md'] }), 'z/Recipes.md');
+    expect(candidates.map((candidate) => [candidate.path, kinds(candidate)])).toStrictEqual([
+      ['x/Recipes.md', [BrokenLinkEvidenceKind.SameName]],
+      ['z/Recipe.md', [BrokenLinkEvidenceKind.NearMiss]]
+    ]);
+  });
+
   it('should answer each missing path once, however often it is asked for', () => {
     const result = createFinder({ filePaths: ['x/b.md'] }).findAll(['a/b.md', 'a/b.md']);
     expect([...result.keys()]).toStrictEqual(['a/b.md']);
+  });
+});
+
+describe('getEditDistance', () => {
+  it('should count insertions, deletions, substitutions and adjacent swaps as one edit each', () => {
+    expect(getEditDistance('kitten', 'kitten')).toBe(0);
+    expect(getEditDistance('kitten', 'sitten')).toBe(1);
+    expect(getEditDistance('kitten', 'kiten')).toBe(1);
+    expect(getEditDistance('kitten', 'kittens')).toBe(1);
+    expect(getEditDistance('kitten', 'iktten')).toBe(1);
+    expect(getEditDistance('kitten', 'sitting')).toBe(3);
+    expect(getEditDistance('', 'abc')).toBe(3);
+  });
+
+  it('should stop past the limit', () => {
+    expect(getEditDistance('kitten', 'sitting', 1)).toBe(2);
+    expect(getEditDistance('a', 'abcd', 2)).toBe(3);
+    expect(getEditDistance('abcd', 'wxyz', 2)).toBe(3);
+    expect(getEditDistance('abcd', 'abce', 1)).toBe(1);
+  });
+});
+
+describe('getNearMissMaxDistance', () => {
+  it('should allow no edit below four characters, one up to seven and two from eight', () => {
+    expect([3, 4, 7, 8, 15, 16, 40].map((length) => getNearMissMaxDistance(length))).toStrictEqual([0, 1, 1, 2, 2, 2, 2]);
   });
 });
 

@@ -7,7 +7,10 @@
  * A rename is not recoverable from the link alone: a link to `alpha/bravo/charlie/!.md` says nothing about
  * `charlie` having become `delta`. So every candidate carries the evidence that produced it, from outside the
  * link, and the finder never picks one of several: a caller offers a one-click fix only when exactly one
- * candidate exists.
+ * candidate exists. The one exception is a near miss, a name a few typing edits from the missing one, which only the
+ * link's own spelling suggests; it ranks below every other kind.
+ *
+ * A link with no candidate at all, near misses included, is most likely a planned note rather than a broken one.
  */
 
 import { ensureNonNullable } from '@mnaoumov/typescript-lib/type-guards';
@@ -32,6 +35,12 @@ export enum BrokenLinkEvidenceKind {
    * The vault's git history records the missing path being renamed to the candidate.
    */
   GitRename = 'GitRename',
+
+  /**
+   * The candidate's name is a few typing edits away from the missing name: a typo, or a small rename that left no
+   * other evidence. The weakest kind, so it never outranks a file the vault itself points to.
+   */
+  NearMiss = 'NearMiss',
 
   /**
    * The missing target's folder is gone, and a sibling folder holds every missing target that was under it.
@@ -60,8 +69,24 @@ const EVIDENCE_KIND_ORDER: readonly BrokenLinkEvidenceKind[] = [
   BrokenLinkEvidenceKind.Alias,
   BrokenLinkEvidenceKind.Title,
   BrokenLinkEvidenceKind.RenamedFolder,
-  BrokenLinkEvidenceKind.SameName
+  BrokenLinkEvidenceKind.SameName,
+  BrokenLinkEvidenceKind.NearMiss
 ];
+
+/**
+ * A name shorter than this has no near miss: one edit to `a.md` or `log.md` reaches too many unrelated names.
+ */
+const NEAR_MISS_MIN_NAME_LENGTH = 4;
+
+/**
+ * Each name this many characters long may be one edit more away, so a long name tolerates two typos.
+ */
+const NEAR_MISS_CHARACTERS_PER_EDIT = 8;
+
+/**
+ * No near miss is further away than this, however long the name: beyond it the name is another name.
+ */
+const NEAR_MISS_MAX_DISTANCE = 2;
 
 /**
  * One file that a missing link target may have become, and why.
@@ -166,6 +191,29 @@ interface MissingSubtree {
   readonly root: string;
 }
 
+interface NameEntry {
+  /**
+   * The name compared: the file name without its extension, or a folder note's folder name, in lower case.
+   */
+  readonly comparedName: string;
+
+  readonly path: string;
+}
+
+interface NearMissKey {
+  readonly comparedName: string;
+
+  /**
+   * The compared name in its own letter case, for the evidence description.
+   */
+  readonly displayName: string;
+
+  /**
+   * What a near miss must share with the missing path: its extension, or, for a folder note, its file name.
+   */
+  readonly group: string;
+}
+
 /**
  * Finds the candidates for missing link targets, from one snapshot of the vault.
  */
@@ -178,6 +226,11 @@ export class BrokenLinkCandidateFinder {
   private readonly folderNoteFileNames: ReadonlySet<string>;
   private readonly folderPaths = new Set<string>(['']);
   private readonly gitRenames: ReadonlyMap<string, GitRename>;
+  /**
+   * The files a near miss may be, keyed by what a near miss must share: the lower-case extension, or a folder note's
+   * file name.
+   */
+  private readonly nameEntriesByNearMissGroup = new Map<string, NameEntry[]>();
   private readonly titlesByPath: ReadonlyMap<string, string>;
 
   /**
@@ -195,6 +248,11 @@ export class BrokenLinkCandidateFinder {
     for (const filePath of params.filePaths) {
       addToMultiMap(this.filesByName, getName(filePath), filePath);
       addToMultiMap(this.filesByLowerCasePath, filePath.toLowerCase(), filePath);
+
+      const nearMissKey = this.getNearMissKey(filePath);
+      if (nearMissKey) {
+        addToMultiMap(this.nameEntriesByNearMissGroup, nearMissKey.group, { comparedName: nearMissKey.comparedName, path: filePath });
+      }
 
       let folder = getParentPath(filePath);
       while (!this.folderPaths.has(folder)) {
@@ -230,6 +288,7 @@ export class BrokenLinkCandidateFinder {
       this.addAliasAndTitleCandidates(missingPath, add);
       this.addRenamedFolderCandidates(missingPath, missingSubtrees, add);
       this.addSameNameCandidates(missingPath, add);
+      this.addNearMissCandidates(missingPath, add);
 
       result.set(missingPath, sortCandidates(evidenceByPath));
     }
@@ -279,6 +338,55 @@ export class BrokenLinkCandidateFinder {
     const gitRename = this.gitRenames.get(missingPath);
     if (gitRename && this.filePathSet.has(gitRename.newPath)) {
       add(gitRename.newPath, BrokenLinkEvidenceKind.GitRename, `Git history records the rename, in commit ${gitRename.commit}.`);
+    }
+  }
+
+  /**
+   * Adds the files whose name is the fewest edits from the missing name, within the name's own tolerance. Only the
+   * nearest are kept, as for a same-name candidate, so one typo never lists every name two edits away beside it.
+   *
+   * @param missingPath - The missing path.
+   * @param add - Adds one piece of evidence.
+   */
+  private addNearMissCandidates(missingPath: string, add: EvidenceAdder): void {
+    const nearMissKey = this.getNearMissKey(missingPath);
+    if (!nearMissKey) {
+      return;
+    }
+
+    const missingName = nearMissKey.comparedName;
+    const maxDistance = getNearMissMaxDistance(missingName.length);
+    if (maxDistance === 0) {
+      return;
+    }
+
+    let bestDistance = maxDistance + 1;
+    let bestEntries: NameEntry[] = [];
+
+    for (const entry of this.nameEntriesByNearMissGroup.get(nearMissKey.group) ?? []) {
+      if (entry.comparedName === missingName) {
+        // The same name, in any letter case, is a same-name or case-change candidate, not a near miss.
+        continue;
+      }
+
+      const distance = getEditDistance(missingName, entry.comparedName, Math.min(bestDistance, maxDistance));
+      if (distance > maxDistance) {
+        continue;
+      }
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        bestEntries = [entry];
+      } else if (distance === bestDistance) {
+        bestEntries.push(entry);
+      }
+    }
+
+    for (const entry of bestEntries) {
+      add(
+        entry.path,
+        BrokenLinkEvidenceKind.NearMiss,
+        `Its name is ${bestDistance === 1 ? 'one edit' : `${String(bestDistance)} edits`} away from the missing name "${nearMissKey.displayName}".`
+      );
     }
   }
 
@@ -362,6 +470,88 @@ export class BrokenLinkCandidateFinder {
 
     return result;
   }
+
+  /**
+   * What a near miss of a path is judged by.
+   *
+   * @param path - A vault path.
+   * @returns The group a near miss must share and the name compared within it; `null` for a root folder note.
+   */
+  private getNearMissKey(path: string): NearMissKey | null {
+    const name = getName(path);
+    if (this.folderNoteFileNames.has(name)) {
+      const folderName = getName(getParentPath(path));
+      return folderName ? { comparedName: folderName.toLowerCase(), displayName: folderName, group: `folder-note:${name}` } : null;
+    }
+
+    const dotIndex = name.lastIndexOf('.');
+    const stem = dotIndex > 0 ? name.slice(0, dotIndex) : name;
+    const extension = dotIndex > 0 ? name.slice(dotIndex + 1) : '';
+    return { comparedName: stem.toLowerCase(), displayName: stem, group: `extension:${extension.toLowerCase()}` };
+  }
+}
+
+/**
+ * The optimal-string-alignment distance: insertions, deletions, substitutions and swaps of two adjacent characters,
+ * each one edit, so the commonest typos (a missed, doubled, wrong or swapped key) all cost one.
+ *
+ * @param source - The first string.
+ * @param target - The second string.
+ * @param limit - The largest distance of interest.
+ * @returns The distance, or `limit + 1` once it is certain to exceed `limit`.
+ */
+export function getEditDistance(source: string, target: string, limit = Infinity): number {
+  const tooFar = limit + 1;
+  if (Math.abs(source.length - target.length) > limit) {
+    return tooFar;
+  }
+
+  // Row `r`, column `c` holds the distance between the first `r` characters of `source` and the first `c` of `target`.
+  let previousPrevious: number[] = [];
+  let previous = Array.from({ length: target.length + 1 }, (_, column) => column);
+
+  for (let sourcePosition = 0; sourcePosition < source.length; sourcePosition++) {
+    const current = [sourcePosition + 1];
+    let rowMinimum = sourcePosition + 1;
+
+    for (let targetPosition = 0; targetPosition < target.length; targetPosition++) {
+      const cost = source[sourcePosition] === target[targetPosition] ? 0 : 1;
+      let value = Math.min(
+        ensureNonNullable(previous[targetPosition + 1]) + 1,
+        ensureNonNullable(current[targetPosition]) + 1,
+        ensureNonNullable(previous[targetPosition]) + cost
+      );
+      const isSwap = sourcePosition > 0 && targetPosition > 0 && source[sourcePosition] === target[targetPosition - 1]
+        && source[sourcePosition - 1] === target[targetPosition];
+      if (isSwap) {
+        value = Math.min(value, ensureNonNullable(previousPrevious[targetPosition - 1]) + 1);
+      }
+      current.push(value);
+      rowMinimum = Math.min(rowMinimum, value);
+    }
+
+    if (rowMinimum > limit) {
+      return tooFar;
+    }
+
+    previousPrevious = previous;
+    previous = current;
+  }
+
+  const distance = ensureNonNullable(previous[target.length]);
+  return distance > limit ? tooFar : distance;
+}
+
+/**
+ * How many edits a name may be from another and still be its near miss.
+ *
+ * @param nameLength - The missing name's length.
+ * @returns The tolerance; `0` for a name too short to have a near miss.
+ */
+export function getNearMissMaxDistance(nameLength: number): number {
+  return nameLength < NEAR_MISS_MIN_NAME_LENGTH
+    ? 0
+    : Math.min(NEAR_MISS_MAX_DISTANCE, 1 + Math.floor(nameLength / NEAR_MISS_CHARACTERS_PER_EDIT));
 }
 
 /**
