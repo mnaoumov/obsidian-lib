@@ -24,7 +24,6 @@ import type {
 } from './monkey-around-component.ts';
 
 import {
-  around,
   hasPatchToken,
   MonkeyAroundComponent,
   patchMethod
@@ -46,8 +45,6 @@ interface TestObject {
   readonly sum: (a: number, b: number) => number;
   readonly value: number;
 }
-
-type TestObjectGreet = TestObject['greet'];
 
 function createTestObject(): TestObject {
   return {
@@ -79,28 +76,9 @@ function registerDeferringPatch(params: RegisterDeferringPatchParams): void {
   });
 }
 
-describe('around', () => {
-  it('should patch a method on the object', () => {
-    const $object = createTestObject();
-    around($object, {
-      greet: (next: TestObjectGreet) => (name: string): string => `patched: ${next(name)}`
-    });
-    expect($object.greet('world')).toBe('patched: hello world');
-  });
-
-  it('should return an uninstaller that restores the original method', () => {
-    const $object = createTestObject();
-    const uninstall = around($object, {
-      greet: (next: TestObject['greet']) => (name: string): string => `patched: ${next(name)}`
-    });
-    expect($object.greet('a')).toBe('patched: hello a');
-    uninstall();
-    expect($object.greet('a')).toBe('hello a');
-  });
-});
-
 describe('MonkeyAroundComponent', () => {
   describe('registerPatch', () => {
+    type TestObjectGreet = TestObject['greet'];
     it('should apply patch when loaded', () => {
       const $object = createTestObject();
       const component = new MonkeyAroundComponent();

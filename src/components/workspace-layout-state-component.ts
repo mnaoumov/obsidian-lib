@@ -27,7 +27,6 @@
 
 import type {
   App,
-  Workspace,
   WorkspaceLeaf
 } from 'obsidian';
 import type {
@@ -41,7 +40,7 @@ import { invokeAsyncSafely } from '@mnaoumov/typescript-lib/async';
 import { isDataStoreJsonValue } from '../data-stores/data-store-replica.ts';
 import { getObsidianLibState } from '../obsidian-lib-state.ts';
 import { ComponentEx } from './component-ex.ts';
-import { around } from './monkey-around-component.ts';
+import { patchMethod } from './monkey-around-component.ts';
 
 /**
  * The top-level key of a serialized layout that holds the records.
@@ -335,7 +334,7 @@ class WorkspaceLayoutStateKeyImpl<T> implements WorkspaceLayoutStateKey<T> {
  * Keeps a plugin's layout-scoped values in the workspace layout, so saved workspaces each restore their own.
  *
  * Any number of these, in any number of plugins, share one installation per {@link App}. Values are restored when a
- * layout loads, which REPLACES every value: write them after {@link Workspace.onLayoutReady}, and re-read them in
+ * layout loads, which REPLACES every value: write them after `Workspace.onLayoutReady`, and re-read them in
  * {@link onLayoutLoad}.
  */
 export class WorkspaceLayoutStateComponent extends ComponentEx {
@@ -586,26 +585,30 @@ function getSharedState(): WorkspaceLayoutStateSharedState {
 
 function installLayoutState(app: App, state: WorkspaceLayoutStateSharedState): () => void {
   let isUninstalled = false;
-  const uninstallPatch = around(app.workspace, {
-    getLayout: (next) =>
-      function patchedGetLayout(this: Workspace): Record<string, unknown> {
-        const layout = next.call(this);
-        const record = serializeWorkspaceLayoutStateRecord(state.record, layout);
-        if (record) {
-          layout[WORKSPACE_LAYOUT_STATE_LAYOUT_KEY] = record;
-        }
-        return layout;
-      },
-    setLayout: (next) =>
-      async function patchedSetLayout(this: Workspace, layout: Parameters<Workspace['setLayout']>[0]): Promise<void> {
-        state.record = parseWorkspaceLayoutStateRecord(getLayoutRecordValue(layout));
-        state.isHydrated = true;
-        try {
-          await next.call(this, layout);
-        } finally {
-          notifyLayoutLoad(state);
-        }
+  const layoutSerializationPatch = patchMethod({
+    $object: app.workspace,
+    methodName: 'getLayout',
+    patchHandler: ({ fallback }) => {
+      const layout = fallback();
+      const record = serializeWorkspaceLayoutStateRecord(state.record, layout);
+      if (record) {
+        layout[WORKSPACE_LAYOUT_STATE_LAYOUT_KEY] = record;
       }
+      return layout;
+    }
+  });
+  const layoutRestorationPatch = patchMethod({
+    $object: app.workspace,
+    methodName: 'setLayout',
+    patchHandler: async ({ fallback, originalArguments: [layout] }) => {
+      state.record = parseWorkspaceLayoutStateRecord(getLayoutRecordValue(layout));
+      state.isHydrated = true;
+      try {
+        await fallback();
+      } finally {
+        notifyLayoutLoad(state);
+      }
+    }
   });
 
   if (!state.isHydrated && app.workspace.layoutReady) {
@@ -623,7 +626,8 @@ function installLayoutState(app: App, state: WorkspaceLayoutStateSharedState): (
 
   return () => {
     isUninstalled = true;
-    uninstallPatch();
+    layoutSerializationPatch.dispose();
+    layoutRestorationPatch.dispose();
   };
 }
 
