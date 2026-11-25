@@ -1,5 +1,5 @@
 // The near-miss cases below misspell names on purpose.
-// cspell:words Recpies Projetc kikoff Repices Projekts sitten kiten iktten wxyz abce
+// cspell:words Recpies Projetc kikoff Repices Projekts sitten kiten iktten wxyz abce gitignor
 import {
   describe,
   expect,
@@ -202,6 +202,12 @@ describe('BrokenLinkCandidateFinder', () => {
     expect(find(finder, 'Diagram.png').map((candidate) => candidate.path)).toStrictEqual(['Diagrams.PNG']);
   });
 
+  it('should compare a name with no extension, or a leading dot only, among such names', () => {
+    const finder = createFinder({ filePaths: ['LICENCE', '.gitignore', 'LICENCE.md'] });
+    expect(find(finder, 'LICENSE').map((candidate) => candidate.path)).toStrictEqual(['LICENCE']);
+    expect(find(finder, '.gitignor').map((candidate) => candidate.path)).toStrictEqual(['.gitignore']);
+  });
+
   it('should not report the same name in another letter case as a near miss', () => {
     const candidates = find(createFinder({ filePaths: ['x/RECIPES.md'] }), 'y/Recipes.md');
     expect(candidates.flatMap((candidate) => kinds(candidate))).not.toContain(BrokenLinkEvidenceKind.NearMiss);
@@ -246,6 +252,8 @@ describe('getEditDistance', () => {
     expect(getEditDistance('a', 'abcd', 2)).toBe(3);
     expect(getEditDistance('abcd', 'wxyz', 2)).toBe(3);
     expect(getEditDistance('abcd', 'abce', 1)).toBe(1);
+    // Every row stays within the limit, yet the full distance is past it.
+    expect(getEditDistance('xa', 'ab', 1)).toBe(2);
   });
 });
 
