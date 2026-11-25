@@ -339,20 +339,6 @@ export class MonkeyAroundComponent extends ComponentEx {
 }
 
 /**
- * Applies a patch to the object.
- * Better strongly-typed version of `monkey-around`.
- *
- * @typeParam $Object - The object to patch.
- * @param $object - The object to patch.
- * @param factories - The factories to apply to the object.
- * @returns The uninstaller that removes the patch when called.
- */
-export function around<$Object extends object>($object: $Object, factories: Factories<$Object>): Uninstaller {
-  type OriginalFactories<$Target extends GenericObject> = Parameters<typeof originalAround<$Target>>[1];
-  return originalAround($object as GenericObject, factories as OriginalFactories<GenericObject>);
-}
-
-/**
  * Checks if a function has a specific patch token.
  *
  * A token is carried by the method a {@link MonkeyAroundComponent#registerMethodPatch} call INSTALLED, so
@@ -421,6 +407,23 @@ export function patchMethod<$Object extends object, const MethodName extends Met
       component.unload();
     }
   });
+}
+
+/**
+ * Applies a patch to the object: the strongly-typed form of `monkey-around`'s `around`.
+ *
+ * Deliberately not exported. A consumer patches through {@link MonkeyAroundComponent}, whose patches end with the
+ * component, or through {@link patchMethod}, whose patch ends with its {@link DisposableEx}; a raw uninstaller is
+ * one more lifetime to remember to end by hand.
+ *
+ * @typeParam $Object - The object to patch.
+ * @param $object - The object to patch.
+ * @param factories - The factories to apply to the object.
+ * @returns The uninstaller that removes the patch when called.
+ */
+function around<$Object extends object>($object: $Object, factories: Factories<$Object>): Uninstaller {
+  type OriginalFactories<$Target extends GenericObject> = Parameters<typeof originalAround<$Target>>[1];
+  return originalAround($object as GenericObject, factories as OriginalFactories<GenericObject>);
 }
 
 function getMonkeyAroundPatches(): WeakMap<GenericFunction, symbol> {

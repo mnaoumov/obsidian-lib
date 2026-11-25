@@ -20,6 +20,7 @@
  * means moves to a new key rather than reinterpreting the old one.
  */
 
+import type { DisposableEx } from '@mnaoumov/typescript-lib/disposable';
 import type { FileExplorerView } from '@obsidian-typings/obsidian-public-latest';
 import type {
   App,
@@ -38,7 +39,7 @@ import {
 
 import { getObsidianLibState } from '../obsidian-lib-state.ts';
 import { ComponentEx } from './component-ex.ts';
-import { around } from './monkey-around-component.ts';
+import { patchMethod } from './monkey-around-component.ts';
 
 /**
  * The elements that stand for the vault root at the top of the left sidebar, in priority order. Obsidian builds
@@ -249,13 +250,14 @@ function dispatch(state: FileExplorerRootMenuSharedState, params: FileExplorerRo
 }
 
 function dispatchBeforeShow(state: FileExplorerRootMenuSharedState, params: FileExplorerRootMenuHandlerParams): void {
-  const uninstallShowPatch = around(params.menu, {
-    showAtMouseEvent: (next) =>
-      function patchedShowAtMouseEvent(this: Menu, showMouseEvent: MouseEvent): Menu {
-        uninstallShowPatch();
-        dispatch(state, params);
-        return params.menu.items.length === 0 ? this : next.call(this, showMouseEvent);
-      }
+  const showPatch = patchMethod({
+    $object: params.menu,
+    methodName: 'showAtMouseEvent',
+    patchHandler: ({ fallback, originalThis }) => {
+      showPatch.dispose();
+      dispatch(state, params);
+      return params.menu.items.length === 0 ? originalThis : fallback();
+    }
   });
 }
 
@@ -272,10 +274,10 @@ function getSharedState(): FileExplorerRootMenuSharedState {
 function installRootMenu(app: App, state: FileExplorerRootMenuSharedState): () => void {
   let isUninstalled = false;
   let pendingSpot: FileExplorerRootMenuSpot | null = null;
-  let uninstallPatch: (() => void) | null = null;
+  let contextMenuPatch: DisposableEx | null = null;
 
   function tryPatch(): void {
-    if (isUninstalled || uninstallPatch) {
+    if (isUninstalled || contextMenuPatch) {
       return;
     }
 
@@ -284,23 +286,22 @@ function installRootMenu(app: App, state: FileExplorerRootMenuSharedState): () =
       return;
     }
 
-    uninstallPatch = around(getPrototypeOf(view), {
-      onFileContextMenu: (next) =>
-        function patchedOnFileContextMenu(this: FileExplorerViewWithContextMenu, mouseEvent: MouseEvent, file: TAbstractFile): void {
-          if (!(file instanceof TFolder) || !file.isRoot()) {
-            next.call(this, mouseEvent, file);
-            return;
-          }
-
-          openRootMenu({
-            mouseEvent,
-            openNative: () => {
-              next.call(this, mouseEvent, file);
-            },
-            rootFolder: file,
-            spot: pendingSpot ?? FileExplorerRootMenuSpot.EmptyArea
-          });
+    contextMenuPatch = patchMethod({
+      $object: getPrototypeOf(view),
+      methodName: 'onFileContextMenu',
+      patchHandler: ({ fallback, originalArguments: [mouseEvent, file] }) => {
+        if (!(file instanceof TFolder) || !file.isRoot()) {
+          fallback();
+          return;
         }
+
+        openRootMenu({
+          mouseEvent,
+          openNative: fallback,
+          rootFolder: file,
+          spot: pendingSpot ?? FileExplorerRootMenuSpot.EmptyArea
+        });
+      }
     });
   }
 
@@ -344,11 +345,14 @@ function installRootMenu(app: App, state: FileExplorerRootMenuSharedState): () =
     }
 
     // Presented as a folder, the root's folder menu replaces the vault menu rather than opening on top of it.
-    function suppressVaultMenuShow(): Menu {
-      uninstallVaultMenuShowPatch();
-      return vaultMenu;
-    }
-    const uninstallVaultMenuShowPatch = around(vaultMenu, { showAtMouseEvent: () => suppressVaultMenuShow });
+    const vaultMenuShowPatch = patchMethod({
+      $object: vaultMenu,
+      methodName: 'showAtMouseEvent',
+      patchHandler: () => {
+        vaultMenuShowPatch.dispose();
+        return vaultMenu;
+      }
+    });
     invokeAsyncSafely(async () => {
       await leaf.loadIfDeferred();
       const view = leaf.view;
@@ -375,7 +379,7 @@ function installRootMenu(app: App, state: FileExplorerRootMenuSharedState): () =
 
   return () => {
     isUninstalled = true;
-    uninstallPatch?.();
+    contextMenuPatch?.dispose();
     app.workspace.offref(layoutChangeEventRef);
     doc.removeEventListener('contextmenu', openFromVaultName, { capture: true });
   };
