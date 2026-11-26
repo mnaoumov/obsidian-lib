@@ -1,13 +1,28 @@
 .obsidian-lib {
   &.code-highlighter-component {
+    // The transparent textarea and the highlighted overlay must lay the text out identically, or the
+    // caret and taps land on other characters than the ones shown. So every rule that moves a glyph is
+    // pinned on both elements: font, wrapping, padding (Obsidian's textarea padding, which `.is-mobile`
+    // raises to 12px 16px), border width, box sizing and the scrollbar gutter.
     textarea, pre, code {
       font-family: var(--font-monospace);
+      letter-spacing: normal;
       line-height: var(--line-height-normal);
       margin: 0;
+      overflow-wrap: break-word;
+      tab-size: 4;
+      white-space: pre-wrap;
+      word-break: normal;
     }
 
-    textarea, code {
+    // `--code-size` is relative to the parent's font size, so it is set on the textarea and the `pre`, which
+    // share a parent, and `code` inherits it rather than shrinking it again.
+    textarea, pre {
       font-size: var(--code-size);
+      border-width: var(--input-border-width);
+      box-sizing: border-box;
+      padding: var(--textarea-padding, var(--input-padding));
+      scrollbar-gutter: stable;
     }
 
     textarea {
@@ -21,10 +36,12 @@
     pre {
       position: absolute;
       pointer-events: none;
-      border: var(--input-border-width) solid transparent;
-      overflow: auto;
+      border-style: solid;
+      border-color: transparent;
+      // The overlay never owns a scrollbar: one that came and went with its own content height would change
+      // its wrap width independently of the textarea's. `handleScroll` copies the textarea's scroll offsets.
+      overflow: hidden;
       inset: 0;
-      padding: var(--size-4-1) var(--size-4-2);
       z-index: 1;
     }
 
@@ -39,6 +56,7 @@
     }
 
     code {
+      font-size: inherit;
       display: block;
       padding: 0;
     }
