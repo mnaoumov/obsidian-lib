@@ -6,7 +6,8 @@ import {
 import { selfSourcePlugin } from './scripts/vitest-self-source.ts';
 
 // The same budget `defineObsidianPluginVitestConfig` gives every plugin's Obsidian projects: it clears the
-// transports' per-eval cap, so an over-long closure fails with the harness's own diagnosis. See AGENTS.md.
+// transports' per-eval cap, so an over-long closure fails with the harness's own diagnosis. See AGENTS.md. Hooks take it
+// too: under heavy load the setup file's one-eval style injection outran the 10 s default hook timeout (2026-11-26).
 const INTEGRATION_TEST_TIMEOUT_IN_MILLISECONDS = 45_000;
 
 const SHARED_RESOLVE = {
@@ -127,6 +128,7 @@ export default defineLibraryVitestConfig({
         ],
         fileParallelism: false,
         globalSetup: ['./scripts/integration-test-obsidian-global-setup.ts'],
+        hookTimeout: INTEGRATION_TEST_TIMEOUT_IN_MILLISECONDS,
         include: [OBSIDIAN_INTEGRATION_TEST_FILES],
         maxWorkers: 1,
         name: 'obsidian-integration-tests',
@@ -144,6 +146,7 @@ export default defineLibraryVitestConfig({
         // Its OWN Obsidian instance and vault, so the bootstrap does not pollute the shared one.
         fileParallelism: false,
         globalSetup: ['./scripts/demo-vault-helper-global-setup.ts'],
+        hookTimeout: INTEGRATION_TEST_TIMEOUT_IN_MILLISECONDS,
         include: [DEMO_VAULT_HELPER_INTEGRATION_TEST_FILE],
         maxWorkers: 1,
         name: 'obsidian-integration-tests:demo-vault-helper',
@@ -159,6 +162,7 @@ export default defineLibraryVitestConfig({
         // would be, and `setupFiles` naming the PUBLISHED setup endpoint on purpose.
         fileParallelism: false,
         globalSetup: ['./scripts/integration-test-consumer-lib-global-setup.ts'],
+        hookTimeout: INTEGRATION_TEST_TIMEOUT_IN_MILLISECONDS,
         include: [CONSUMER_LIB_INTEGRATION_TEST_FILE],
         maxWorkers: 1,
         name: 'obsidian-integration-tests:consumer-lib',
@@ -176,6 +180,7 @@ export default defineLibraryVitestConfig({
         // Two separately bundled plugins in one vault: two copies of the library share one renderer.
         fileParallelism: false,
         globalSetup: ['./scripts/integration-test-plugin-api-global-setup.ts'],
+        hookTimeout: INTEGRATION_TEST_TIMEOUT_IN_MILLISECONDS,
         include: [PLUGIN_API_INTEGRATION_TEST_FILE],
         maxWorkers: 1,
         name: 'obsidian-integration-tests:plugin-api',

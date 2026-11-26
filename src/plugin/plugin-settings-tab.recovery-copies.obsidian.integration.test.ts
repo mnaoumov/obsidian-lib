@@ -67,7 +67,7 @@ const DAMAGED_COPY: RecoveryCopyFixture = {
 };
 
 async function runRecoveryCopies(input: RecoveryCopiesInput): Promise<RecoveryCopiesResult> {
-  // Under the transport's ~30s per-closure cap, not at it: three 5 s waits plus two 300 ms settles.
+  // Under the transport's ~30s per-closure cap, not at it: five 5 s waits (two of them in exclusive branches), three 1 s uncovered checks and two 300 ms settles.
   return await evalInObsidian({
     async callback({ app, choice, copies, lib }): Promise<RecoveryCopiesResult> {
       const {
@@ -93,6 +93,35 @@ async function runRecoveryCopies(input: RecoveryCopiesInput): Promise<RecoveryCo
       }
 
       const SETTLE_DELAY_IN_MILLISECONDS = 300;
+      const UNCOVERED_TIMEOUT_IN_MILLISECONDS = 1000;
+
+      /*
+       * A trusted click lands on whatever is topmost at the element's center. The recovery copies button is the last one
+       * of its row, under the top-right corner where notices stack, so a notice another test left showing took the click
+       * and nothing opened (2026-11-26, three of four release runs). So wait until the element itself is hit, and
+       * name what covers it when it never is.
+       */
+      async function clickWhenUncovered(element: HTMLElement, name: string): Promise<void> {
+        let coveringDescription = '';
+        try {
+          await waitUntil({
+            message: `${name} is not covered`,
+            predicate: () => {
+              const rect = element.getBoundingClientRect();
+              const hitEl = element.doc.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+              if (hitEl !== null && element.contains(hitEl)) {
+                return true;
+              }
+              coveringDescription = hitEl === null ? 'nothing' : `${hitEl.tagName.toLowerCase()}.${hitEl.className}`;
+              return false;
+            },
+            timeoutInMilliseconds: UNCOVERED_TIMEOUT_IN_MILLISECONDS
+          });
+        } catch (error) {
+          throw new Error(`${name} stayed covered by ${coveringDescription}`, { cause: error });
+        }
+        await clickElement({ element });
+      }
 
       const plugin = Object.values(app.plugins.plugins)[0];
       if (!plugin) {
@@ -151,7 +180,7 @@ async function runRecoveryCopies(input: RecoveryCopiesInput): Promise<RecoveryCo
           throw new Error('the recovery copies button vanished');
         }
         const buttonText = recoveryButton.textContent;
-        await clickElement({ element: recoveryButton });
+        await clickWhenUncovered(recoveryButton, 'The recovery copies button');
 
         await waitUntil({
           message: 'The recovery copies modal opens',
@@ -169,7 +198,7 @@ async function runRecoveryCopies(input: RecoveryCopiesInput): Promise<RecoveryCo
           if (!rowButton) {
             throw new Error(`no ${choice} button in the modal: ${rowButtonTexts.join(', ')}`);
           }
-          await clickElement({ element: rowButton });
+          await clickWhenUncovered(rowButton, `The ${choice} button`);
 
           if (choice === 'restore') {
             await waitUntil({
@@ -181,7 +210,7 @@ async function runRecoveryCopies(input: RecoveryCopiesInput): Promise<RecoveryCo
             if (!okButton) {
               throw new Error('the confirmation lost its OK button');
             }
-            await clickElement({ element: okButton });
+            await clickWhenUncovered(okButton, 'The OK button');
             await waitUntil({
               message: `The copy is restored; restored: ${String(restoredIds.length)}`,
               predicate: () => restoredIds.length > 0
