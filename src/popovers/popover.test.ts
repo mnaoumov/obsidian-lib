@@ -287,6 +287,27 @@ describe('showPopover', () => {
     await resultPromise;
   });
 
+  it('should focus and select the input chosen through setInitialFocus', async () => {
+    const resultPromise = showPopover<string>({
+      anchor: createAnchor(),
+      build({ contentEl, setInitialFocus }) {
+        contentEl.createEl('input').value = 'first';
+        const textAreaEl = contentEl.createEl('textarea');
+        textAreaEl.value = 'second';
+        setInitialFocus(textAreaEl);
+        return (): string => textAreaEl.value;
+      }
+    });
+
+    const textAreaEl = ensureNonNullable(requirePopoverEl().querySelector('textarea'));
+    expect(document.activeElement).toBe(textAreaEl);
+    expect(textAreaEl.selectionStart).toBe(0);
+    expect(textAreaEl.selectionEnd).toBe('second'.length);
+
+    clickCancel();
+    await resultPromise;
+  });
+
   it('should not fail when the built content has no input to focus', async () => {
     const resultPromise = showTextPopover();
 

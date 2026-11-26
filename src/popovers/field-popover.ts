@@ -48,6 +48,14 @@ export interface EditFieldsInPopoverParams<Key extends string> {
   readonly fields: readonly PopoverField<Key>[];
 
   /**
+   * The key of the field that takes the initial focus, with its text selected. A key no field carries
+   * falls back to the default.
+   *
+   * @default The first field.
+   */
+  readonly focusedFieldKey?: Key;
+
+  /**
    * A text for the "OK" button.
    */
   readonly okButtonText?: string;
@@ -98,16 +106,22 @@ export async function editFieldsInPopover<Key extends string>(params: EditFields
     cancelButtonText,
     cssClasses,
     fields,
+    focusedFieldKey,
     okButtonText
   } = params;
 
   return await showPopover<Record<Key, string>>(normalizeOptionalProperties<ShowPopoverParams<Record<Key, string>>>({
     anchor,
-    build({ contentEl }) {
+    build({ contentEl, setInitialFocus }) {
       const editors = fields.map((field) => ({
         key: field.key,
         textComponent: addField(contentEl, field)
       }));
+
+      const focusedEditor = editors.find((editor) => editor.key === focusedFieldKey);
+      if (focusedEditor) {
+        setInitialFocus(focusedEditor.textComponent.inputEl);
+      }
 
       return () => {
         // The record is accumulated key by key, so it is only complete — and only typed as such — once every field has been read.

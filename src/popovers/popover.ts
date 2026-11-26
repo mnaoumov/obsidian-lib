@@ -58,6 +58,14 @@ export interface ShowPopoverBuildParams {
    * The element to add the popover's content to. The OK and Cancel buttons are appended after it.
    */
   readonly contentEl: HTMLElement;
+
+  /**
+   * Chooses the input that takes the initial focus and selection once the popover is placed, instead
+   * of the first input of the content.
+   *
+   * @param inputEl - The input to focus and select.
+   */
+  readonly setInitialFocus: (inputEl: HTMLInputElement | HTMLTextAreaElement) => void;
 }
 
 /**
@@ -119,6 +127,7 @@ export async function showPopover<Value>(params: ShowPopoverParams<Value>): Prom
 
   return await new Promise<null | Value>((resolve) => {
     const state = { isClosed: false };
+    let initialFocusEl: HTMLInputElement | HTMLTextAreaElement | null = null;
 
     function close(result: null | Value): void {
       if (state.isClosed) {
@@ -155,7 +164,10 @@ export async function showPopover<Value>(params: ShowPopoverParams<Value>): Prom
     const getValue = build({
       cancel: handleCancel,
       confirm: handleOk,
-      contentEl: popoverEl
+      contentEl: popoverEl,
+      setInitialFocus(inputEl) {
+        initialFocusEl = inputEl;
+      }
     });
 
     popoverEl.addEventListener('keydown', ($event: KeyboardEvent) => {
@@ -190,17 +202,19 @@ export async function showPopover<Value>(params: ShowPopoverParams<Value>): Prom
 
     doc.addEventListener('pointerdown', handlePointerDown, { capture: true });
     positionAtAnchor(popoverEl, anchor, win);
-    focusFirstInput(popoverEl);
+    focusInitialInput(popoverEl, initialFocusEl);
   });
 }
 
 /**
- * Focuses and selects the popover's first text input, so the user can type straight away.
+ * Focuses and selects the input chosen through {@link ShowPopoverBuildParams.setInitialFocus}, or
+ * else the popover's first text input, so the user can type straight away.
  *
  * @param popoverEl - The popover to focus within.
+ * @param initialFocusEl - The input the build chose, or `null` for the first input.
  */
-function focusFirstInput(popoverEl: HTMLElement): void {
-  const inputEl = popoverEl.querySelector('input');
+function focusInitialInput(popoverEl: HTMLElement, initialFocusEl: HTMLInputElement | HTMLTextAreaElement | null): void {
+  const inputEl = initialFocusEl ?? popoverEl.querySelector('input');
   if (!inputEl) {
     return;
   }

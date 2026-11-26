@@ -48,6 +48,11 @@ function editField(index: number, value: string): void {
   castTo<TextComponent>(ensureNonNullable(textInstances[index])).setValue(value);
 }
 
+function getInputEl(index: number): HTMLInputElement {
+  const popoverEl = ensureNonNullable(document.body.querySelector('.popover'));
+  return ensureNonNullable([...popoverEl.querySelectorAll('input')][index]);
+}
+
 describe('editFieldsInPopover', () => {
   beforeEach(() => {
     buttonInstances.length = 0;
@@ -168,6 +173,59 @@ describe('editFieldsInPopover', () => {
     expect(popoverEl.classList.contains('link-editor')).toBe(true);
     expect(popoverEl.querySelector('.ok-button')?.textContent).toBe('Apply');
     expect(popoverEl.querySelector('.cancel-button')?.textContent).toBe('Dismiss');
+
+    clickCancel();
+    await resultPromise;
+  });
+
+  it('should focus and select the first field by default', async () => {
+    const resultPromise = editFieldsInPopover({
+      anchor: ANCHOR,
+      fields: [
+        { defaultValue: 'key', key: 'key', name: 'Key' },
+        { defaultValue: 'value', key: 'value', name: 'Value' }
+      ]
+    });
+
+    const inputEl = getInputEl(0);
+    expect(document.activeElement).toBe(inputEl);
+    expect(inputEl.selectionStart).toBe(0);
+    expect(inputEl.selectionEnd).toBe('key'.length);
+
+    clickCancel();
+    await resultPromise;
+  });
+
+  it('should focus and select the field named by focusedFieldKey', async () => {
+    const resultPromise = editFieldsInPopover({
+      anchor: ANCHOR,
+      fields: [
+        { defaultValue: 'key', key: 'key', name: 'Key' },
+        { defaultValue: 'some value', key: 'value', name: 'Value' }
+      ],
+      focusedFieldKey: 'value'
+    });
+
+    const inputEl = getInputEl(1);
+    expect(document.activeElement).toBe(inputEl);
+    expect(inputEl.selectionStart).toBe(0);
+    expect(inputEl.selectionEnd).toBe('some value'.length);
+
+    clickCancel();
+    await resultPromise;
+  });
+
+  it('should fall back to the first field when focusedFieldKey names no field', async () => {
+    const resultPromise = editFieldsInPopover<string>({
+      anchor: ANCHOR,
+      fields: [
+        { defaultValue: 'key', key: 'key', name: 'Key' },
+        { defaultValue: 'value', key: 'value', name: 'Value' }
+      ],
+      focusedFieldKey: 'missing'
+    });
+
+    expect(document.activeElement).toBe(getInputEl(0));
 
     clickCancel();
     await resultPromise;

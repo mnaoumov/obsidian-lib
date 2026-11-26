@@ -57,6 +57,8 @@ if (values) {
 }
 ```
 
+The first field takes the initial focus, with its text selected. To start the user on a later field, name it with `focusedFieldKey`, for example `focusedFieldKey: 'alias'` above. A popover built with `showPopover` chooses its focused input the same way, by calling `setInitialFocus(inputEl)` from `build`.
+
 ## Build a popover yourself
 
 For anything the declarative form cannot express — a dropdown, a toggle, rendered markdown — use `showPopover` and populate the content element. `build` returns a getter that is read when the popover is confirmed; `cancel` and `confirm` let the content resolve the popover itself.
