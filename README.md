@@ -44,7 +44,7 @@ It is one of five packages that replace [`obsidian-dev-utils`](https://github.co
 | [`obsidian-database-library`](https://github.com/Fevol/obsidian-database-library) | `IndexedDB` database kept in step with vault events; schema rebuilds; optional worker parsing | Overlaps with `obsidian-database-library` in persistent per-file caches; stores data through its own local and synced data stores and incremental file indexes; omits worker parsing |
 | [`obsidian-dev-utils`](https://github.com/mnaoumov/obsidian-dev-utils) (my library) | Runtime helpers for plugins; `esbuild` builder; shared lint configurations; release script | Supersedes the runtime half of `obsidian-dev-utils`, which is retired; its tooling half moved to `@mnaoumov/obsidian-dev-toolkit` |
 
-Last searched for similar libraries on 2026-11-11.
+Last searched for similar libraries on 2026-11-26.
 
 ## Changelog
 
