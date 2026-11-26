@@ -407,7 +407,7 @@
     "@lezer/common": "1.5.2",
     "@mnaoumov/obsidian-dev-toolkit": "^13.0.0",
     "@mnaoumov/typescript-dev-toolkit": "^11.1.0",
-    "@mnaoumov/typescript-test-toolkit": "^1.1.0",
+    "@mnaoumov/typescript-test-toolkit": "^1.2.0",
     "@obsidian-typings/obsidian-public-latest": "^6.64.0",
     "@resvg/resvg-js": "^2.6.2",
     "@stryker-mutator/core": "^10.1.1",
