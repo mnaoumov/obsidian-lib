@@ -140,12 +140,14 @@ export class DataStoreSeeds {
       return false;
     }
     return await this.local.exclusive(async () => {
+      // eslint-disable-next-line obsidian-dev-toolkit/prefer-active-window -- realm-independent, and the main window outlives every popout
       const device = await this.local.getOrCreate('seed-device-v1', window.crypto.randomUUID());
       if (typeof device !== 'string' || !/^[\w-]+$/.test(device)) {
         throw new Error('Invalid local seed identity');
       }
       const root = `${this.transport.root}/seeds/${device}`;
       const files = await this.transport.list();
+      // eslint-disable-next-line obsidian-dev-toolkit/prefer-active-window -- realm-independent, and the main window outlives every popout
       const base = `${root}/seed-${window.crypto.randomUUID()}-manifest`;
       await this.transport.writeSnapshot({ base, payload: { entries, format: 1, time: Date.now() } });
       for (const path of files) {

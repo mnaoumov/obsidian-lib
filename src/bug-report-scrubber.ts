@@ -162,7 +162,7 @@ export function scrubBugReportText(text: string, options: ScrubBugReportTextOpti
     });
   }
 
-  const paths = [...options.paths ?? []]
+  const paths = [...(options.paths ?? [])]
     .map((scrubbedPath) => ({ path: trimTrailingSeparators(scrubbedPath.path), placeholder: scrubbedPath.placeholder }))
     .filter((scrubbedPath) => scrubbedPath.path.length >= MIN_SCRUBBED_PATH_LENGTH)
     .sort((a, b) => b.path.length - a.path.length);

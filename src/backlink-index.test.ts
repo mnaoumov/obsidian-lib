@@ -134,7 +134,7 @@ function fullWalk(vault: FakeVault, file: TFile): Map<string, Reference[]> {
   const metadataCache = vault.app.metadataCache;
   for (const [sourcePath, entry] of Object.entries(metadataCache.fileCache)) {
     const cache = metadataCache.metadataCache[entry.hash];
-    for (const reference of [...cache?.frontmatterLinks ?? [], ...cache?.links ?? [], ...cache?.embeds ?? []]) {
+    for (const reference of [...(cache?.frontmatterLinks ?? []), ...(cache?.links ?? []), ...(cache?.embeds ?? [])]) {
       collect(sourcePath, reference);
     }
   }
@@ -465,7 +465,7 @@ function resolveAll(vault: FakeVault): Map<Reference, null | TFile> {
   const metadataCache = vault.app.metadataCache;
   for (const [sourcePath, entry] of Object.entries(metadataCache.fileCache)) {
     const cache = metadataCache.metadataCache[entry.hash];
-    for (const reference of [...cache?.frontmatterLinks ?? [], ...cache?.links ?? [], ...cache?.embeds ?? []]) {
+    for (const reference of [...(cache?.frontmatterLinks ?? []), ...(cache?.links ?? []), ...(cache?.embeds ?? [])]) {
       result.set(reference, resolve(sourcePath, reference));
     }
   }

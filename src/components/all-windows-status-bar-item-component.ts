@@ -137,8 +137,8 @@ export class AllWindowsStatusBarItemComponent extends ComponentEx {
     this.shouldCreateMissingStatusBar = params.shouldCreateMissingStatusBar ?? true;
     this.itemClasses = [
       STATUS_BAR_ITEM_CSS_CLASS,
-      ...params.pluginId === undefined ? [] : [getPluginStatusBarItemCssClass(params.pluginId)],
-      ...params.cls ?? []
+      ...(params.pluginId === undefined ? [] : [getPluginStatusBarItemCssClass(params.pluginId)]),
+      ...(params.cls ?? [])
     ];
   }
 

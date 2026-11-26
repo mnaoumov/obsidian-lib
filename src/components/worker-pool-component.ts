@@ -160,6 +160,7 @@ export class WorkerPoolComponent<TApi extends WorkerApi<TApi>> extends Component
  * @returns The suggested size.
  */
 export function getDefaultWorkerPoolSize(hardwareConcurrency?: number): number {
+  // eslint-disable-next-line obsidian-dev-toolkit/prefer-active-window -- the processor count is the same in every window
   const processorCount = hardwareConcurrency ?? window.navigator.hardwareConcurrency;
   return Math.max(1, Math.min(MAX_DEFAULT_WORKER_POOL_SIZE, processorCount - 1));
 }

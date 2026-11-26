@@ -144,7 +144,7 @@ export class OpenBugReportCommandHandler extends OpenGitHubCommandHandler {
       diagnostics,
       environment,
       gitHubRepo: this.gitHubRepo,
-      ...this.maxUrlLength !== undefined && { maxUrlLength: this.maxUrlLength }
+      ...(this.maxUrlLength !== undefined && { maxUrlLength: this.maxUrlLength })
     });
 
     if (link.clipboardText !== null && !await this.copyReport(link.clipboardText)) {

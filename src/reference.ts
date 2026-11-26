@@ -156,7 +156,7 @@ export function isReferenceInHeading(reference: Reference, cache: CachedMetadata
   }
 
   return isPositionInsideSome(reference.position, [
-    ...cache.headings ?? [],
+    ...(cache.headings ?? []),
     ...(cache.sections ?? []).filter((section) => section.type === 'heading')
   ]);
 }

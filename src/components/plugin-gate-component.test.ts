@@ -135,7 +135,7 @@ vi.mock('../plugin/plugin-api.ts', async (importOriginal) => {
 });
 
 vi.mock('../plugin/third-party-plugin.ts', async (importOriginal) => ({
-  ...await importOriginal<typeof import('../plugin/third-party-plugin.ts')>(),
+  ...(await importOriginal<typeof import('../plugin/third-party-plugin.ts')>()),
   watchThirdPartyPluginApi: mockWatchThirdPartyPluginApi
 }));
 

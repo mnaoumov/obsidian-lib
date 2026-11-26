@@ -127,6 +127,7 @@ export class DataStoreLocations {
       throw new Error('Data-store relocation loop or location limit');
     }
     const value: Transition = { anchor: this.initial, format: 1, from, to: location };
+    // eslint-disable-next-line obsidian-dev-toolkit/prefer-active-window -- realm-independent, and the main window outlives every popout
     await this.anchor.write(`${this.anchor.root}/locations-v1/${window.crypto.randomUUID()}.json`, value);
     await this.refresh();
   }

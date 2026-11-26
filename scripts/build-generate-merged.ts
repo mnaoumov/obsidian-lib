@@ -97,7 +97,7 @@ interface ExportOrigin {
 await wrapCliTask(async () => {
   const leafFiles = await collectLeafFiles(SRC_DIR);
   for (const packageName of INCLUDED_PACKAGES) {
-    leafFiles.push(...await collectIncludedLeafFiles(toIncludedSourceFolder(packageName)));
+    leafFiles.push(...(await collectIncludedLeafFiles(toIncludedSourceFolder(packageName))));
   }
   leafFiles.sort();
 
@@ -157,7 +157,7 @@ async function collectIncludedLeafFiles(directory: string): Promise<string[]> {
     const full = join(directory, dirent.name);
     if (dirent.isDirectory()) {
       if (!SKIP_DIRS.has(dirent.name)) {
-        out.push(...await collectIncludedLeafFiles(full));
+        out.push(...(await collectIncludedLeafFiles(full)));
       }
       continue;
     }
@@ -176,7 +176,7 @@ async function collectLeafFiles(directory: string): Promise<string[]> {
       if (SKIP_DIRS.has(dirent.name)) {
         continue;
       }
-      out.push(...await collectLeafFiles(full));
+      out.push(...(await collectLeafFiles(full)));
       continue;
     }
     if (isLeafFile(dirent.name)) {

@@ -137,10 +137,11 @@ function getSectionsWithLanguage(previewMode: MarkdownPreviewView, language: str
   const selector = `code.language-${CSS.escape(language)}`;
   const parser = new DOMParser();
   // The header and footer carry no HTML of their own. A section's HTML is parsed into an inert document: nothing runs
-  // and nothing loads.
+  // and nothing loads. The doctype keeps that document out of quirks mode, where a class selector matches ASCII
+  // case-insensitively, so `language-Foo` would count as `language-foo`.
   return renderer.sections.filter((section) =>
     section !== renderer.header && section !== renderer.footer && !!section.html
-    && parser.parseFromString(section.html, 'text/html').querySelector(selector) !== null
+    && parser.parseFromString(`<!doctype html>${section.html}`, 'text/html').querySelector(selector) !== null
   );
 }
 

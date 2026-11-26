@@ -313,7 +313,7 @@ export function buildBugReportIssueFormLink(params: BuildBugReportIssueFormLinkP
       },
       gitHubRepo: params.gitHubRepo,
       template: BUG_REPORT_ISSUE_FORM_TEMPLATE,
-      ...params.title !== undefined && { title: params.title }
+      ...(params.title !== undefined && { title: params.title })
     });
   }
 
@@ -390,7 +390,7 @@ export async function getBugReportIssueFormUrl(params: GetBugReportIssueFormUrlP
     environment,
     gitHubRepo: params.gitHubRepo,
     maxUrlLength: Infinity,
-    ...params.title !== undefined && { title: params.title }
+    ...(params.title !== undefined && { title: params.title })
   }).url;
 }
 
@@ -452,6 +452,7 @@ function getDevice(mobileAppInfo: MobileAppInfo | null): string {
     parts.push(`screen ${String(screen.width)}x${String(screen.height)} at ${String(devicePixelRatio)}x`);
   }
 
+  // eslint-disable-next-line obsidian-dev-toolkit/prefer-active-window -- the navigator reports the same device and browser in every window
   const { deviceMemory } = window.navigator as NavigatorWithDeviceInfo;
   if (typeof deviceMemory === 'number' && deviceMemory > 0) {
     parts.push(`about ${String(deviceMemory)} GB memory`);
@@ -486,6 +487,7 @@ function getPluginInfo(app: App, pluginId: string): BugReportPluginInfo {
 function getRuntime(mobileAppInfo: MobileAppInfo | null): string {
   const windowWithRuntime = window as WindowWithRuntime;
   // The user agent is read for the engine versions only; the platform itself comes from `Platform`.
+  // eslint-disable-next-line obsidian-dev-toolkit/prefer-active-window -- the navigator reports the same device and browser in every window
   const { userAgent } = window.navigator as NavigatorWithDeviceInfo;
   const userAgentText = typeof userAgent === 'string' ? userAgent : '';
 

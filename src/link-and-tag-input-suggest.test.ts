@@ -27,7 +27,7 @@ import {
 } from './link-and-tag-input-suggest.ts';
 
 vi.mock('obsidian', async (importOriginal) => ({
-  ...await importOriginal<typeof import('obsidian')>(),
+  ...(await importOriginal<typeof import('obsidian')>()),
   renderMatches: vi.fn((el: HTMLElement, text: string) => {
     el.appendText(text);
   })

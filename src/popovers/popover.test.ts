@@ -20,6 +20,11 @@ import { showPopover } from './popover.ts';
 
 const buttonInstances: ButtonComponentOriginal[] = [];
 
+interface ShowTextPopoverOptions {
+  readonly anchor?: PopoverAnchor;
+  readonly text?: string;
+}
+
 function clickButton(index: number): void {
   castTo<ButtonComponent>(ensureNonNullable(buttonInstances[index])).simulateClick__();
 }
@@ -52,7 +57,7 @@ function requirePopoverEl(): HTMLElement {
   return ensureNonNullable(getPopoverEl(), 'The popover is not open');
 }
 
-function showTextPopover(text = 'value', anchor = createAnchor()): Promise<null | string> {
+function showTextPopover({ anchor = createAnchor(), text = 'value' }: ShowTextPopoverOptions = {}): Promise<null | string> {
   return showPopover<string>({
     anchor,
     build: () => (): string => text
@@ -79,7 +84,7 @@ describe('showPopover', () => {
   });
 
   it('should resolve the built value when the OK button is clicked', async () => {
-    const resultPromise = showTextPopover('built');
+    const resultPromise = showTextPopover({ text: 'built' });
     clickOk();
 
     await expect(resultPromise).resolves.toBe('built');
@@ -93,7 +98,7 @@ describe('showPopover', () => {
   });
 
   it('should resolve the built value when Enter is pressed', async () => {
-    const resultPromise = showTextPopover('typed');
+    const resultPromise = showTextPopover({ text: 'typed' });
     pressKey('Enter');
 
     await expect(resultPromise).resolves.toBe('typed');
@@ -193,7 +198,7 @@ describe('showPopover', () => {
   });
 
   it('should place the popover just below the anchor', async () => {
-    const resultPromise = showTextPopover('value', createAnchor(200, 120));
+    const resultPromise = showTextPopover({ anchor: createAnchor(200, 120) });
     const popoverEl = requirePopoverEl();
 
     expect(popoverEl.style.left).toBe('120px');
@@ -204,7 +209,7 @@ describe('showPopover', () => {
   });
 
   it('should clamp a popover anchored past the far edges back into the window', async () => {
-    const resultPromise = showTextPopover('value', createAnchor(5000, 5000));
+    const resultPromise = showTextPopover({ anchor: createAnchor(5000, 5000) });
     const popoverEl = requirePopoverEl();
 
     expect(popoverEl.style.left).toBe(`${String(window.innerWidth - 8)}px`);
@@ -215,7 +220,7 @@ describe('showPopover', () => {
   });
 
   it('should clamp a popover anchored past the near edges back into the window', async () => {
-    const resultPromise = showTextPopover('value', createAnchor(-500, -500));
+    const resultPromise = showTextPopover({ anchor: createAnchor(-500, -500) });
     const popoverEl = requirePopoverEl();
 
     expect(popoverEl.style.left).toBe('8px');

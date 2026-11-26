@@ -225,7 +225,7 @@ export class MisplacedAttachmentIndex extends Map<string, MisplacedAttachmentEnt
    */
   public getOtherUserNotePaths(attachmentPath: string, notePath: string): string[] {
     const properNotePaths = this.getProperNotePaths(attachmentPath);
-    const userNotePaths = [...this.userNotePathsByAttachment.get(attachmentPath) ?? []];
+    const userNotePaths = [...(this.userNotePathsByAttachment.get(attachmentPath) ?? [])];
     return [...properNotePaths, ...userNotePaths.filter((path) => !properNotePaths.includes(path))].filter((path) => path !== notePath);
   }
 
@@ -236,7 +236,7 @@ export class MisplacedAttachmentIndex extends Map<string, MisplacedAttachmentEnt
    * @returns The proper notes' paths, empty when the attachment has none.
    */
   public getProperNotePaths(attachmentPath: string): string[] {
-    return [...this.properNotePathsByAttachment.get(attachmentPath) ?? []];
+    return [...(this.properNotePathsByAttachment.get(attachmentPath) ?? [])];
   }
 
   /**

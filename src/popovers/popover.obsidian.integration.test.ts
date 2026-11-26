@@ -108,7 +108,7 @@ describe('editFieldsInPopover', () => {
         }
 
         function getInputEls(): HTMLInputElement[] {
-          return [...getPopoverEl()?.querySelectorAll<HTMLInputElement>('input') ?? []];
+          return [...(getPopoverEl()?.querySelectorAll<HTMLInputElement>('input') ?? [])];
         }
 
         function getPopoverEl(): HTMLElement | null {

@@ -62,6 +62,6 @@ export function getFeatureRequestIssueFormUrl(params: GetFeatureRequestIssueForm
     fields: { [FeatureRequestIssueFormFieldId.PluginVersion]: params.app.plugins.manifests[params.pluginId]?.version ?? 'unknown' },
     gitHubRepo: params.gitHubRepo,
     template: params.template ?? FEATURE_REQUEST_ISSUE_FORM_TEMPLATE,
-    ...params.title !== undefined && { title: params.title }
+    ...(params.title !== undefined && { title: params.title })
   });
 }

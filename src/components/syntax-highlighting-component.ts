@@ -147,16 +147,19 @@ export class SyntaxHighlightingComponent extends ComponentEx {
 
     this.ensureLoaded();
 
+    // eslint-disable-next-line obsidian-dev-toolkit/prefer-active-window -- CodeMirror 5 and its mode registry live on the main window only
     const previousModeFactory = window.CodeMirror.modes[language];
+    // eslint-disable-next-line obsidian-dev-toolkit/prefer-active-window -- CodeMirror 5 and its mode registry live on the main window only
     window.CodeMirror.defineMode(language, (config) => window.CodeMirror.getMode(config, editorMode));
 
     this.register(() => {
       if (previousModeFactory !== undefined) {
+        // eslint-disable-next-line obsidian-dev-toolkit/prefer-active-window -- CodeMirror 5 and its mode registry live on the main window only
         window.CodeMirror.modes[language] = previousModeFactory;
         return;
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-dynamic-delete -- The language is only known at runtime.
+      // eslint-disable-next-line @typescript-eslint/no-dynamic-delete, obsidian-dev-toolkit/prefer-active-window -- The language is only known at runtime, and CodeMirror 5 and its mode registry live on the main window only
       delete window.CodeMirror.modes[language];
     });
   }

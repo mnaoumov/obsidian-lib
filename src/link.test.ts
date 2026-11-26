@@ -2282,7 +2282,7 @@ describe('app-dependent functions', () => {
           async ({ changesProvider, content }) => {
             if (typeof changesProvider === 'function') {
               const changes = await (changesProvider as () => Promise<FileChange[] | null>)();
-              captured.push(...changes ?? []);
+              captured.push(...(changes ?? []));
             }
             return content;
           }
@@ -2300,7 +2300,7 @@ describe('app-dependent functions', () => {
 
             const abortSignal = strictProxy<AbortSignal>({ throwIfAborted: vi.fn() });
             const changes = await resolveValue(changesProvider, { abortSignal, content: CONTENT });
-            captured.push(...changes ?? []);
+            captured.push(...(changes ?? []));
           }
         );
         return captured;
@@ -2551,7 +2551,7 @@ describe('app-dependent functions', () => {
             }
 
             const abortSignal = strictProxy<AbortSignal>({ throwIfAborted: vi.fn() });
-            changes.push(...await resolveValue(changesProvider, { abortSignal, content: CONTENT }) ?? []);
+            changes.push(...(await resolveValue(changesProvider, { abortSignal, content: CONTENT }) ?? []));
           }
         );
 
@@ -2572,7 +2572,7 @@ describe('app-dependent functions', () => {
         vi.mocked(applyContentChanges).mockImplementation(
           async ({ changesProvider, content }) => {
             if (typeof changesProvider === 'function') {
-              changes.push(...await (changesProvider as () => Promise<FileChange[] | null>)() ?? []);
+              changes.push(...(await (changesProvider as () => Promise<FileChange[] | null>)() ?? []));
             }
             return content;
           }
@@ -2612,7 +2612,7 @@ describe('app-dependent functions', () => {
         vi.mocked(applyContentChanges).mockImplementation(
           async ({ changesProvider, content: currentContent }) => {
             if (typeof changesProvider === 'function') {
-              changes.push(...await (changesProvider as () => Promise<FileChange[] | null>)() ?? []);
+              changes.push(...(await (changesProvider as () => Promise<FileChange[] | null>)() ?? []));
             }
             return currentContent;
           }
@@ -2655,7 +2655,7 @@ describe('app-dependent functions', () => {
             }
 
             const abortSignal = strictProxy<AbortSignal>({ throwIfAborted: vi.fn() });
-            changes.push(...await resolveValue(changesProvider, { abortSignal, content: CONTENT }) ?? []);
+            changes.push(...(await resolveValue(changesProvider, { abortSignal, content: CONTENT }) ?? []));
           }
         );
 
@@ -2684,7 +2684,7 @@ describe('app-dependent functions', () => {
         vi.mocked(applyContentChanges).mockImplementation(
           async ({ changesProvider, content }) => {
             if (typeof changesProvider === 'function') {
-              changes.push(...await (changesProvider as () => Promise<FileChange[] | null>)() ?? []);
+              changes.push(...(await (changesProvider as () => Promise<FileChange[] | null>)() ?? []));
             }
             return content;
           }
@@ -2701,7 +2701,7 @@ describe('app-dependent functions', () => {
             }
 
             const abortSignal = strictProxy<AbortSignal>({ throwIfAborted: vi.fn() });
-            changes.push(...await resolveValue(changesProvider, { abortSignal, content: CONTENT }) ?? []);
+            changes.push(...(await resolveValue(changesProvider, { abortSignal, content: CONTENT }) ?? []));
           }
         );
         return changes;
@@ -2919,7 +2919,7 @@ describe('app-dependent functions', () => {
       const capturedChanges: FileChange[] = [];
       vi.mocked(applyContentChanges).mockImplementation(async ({ changesProvider, content }) => {
         if (typeof changesProvider === 'function') {
-          capturedChanges.push(...await (changesProvider as () => Promise<FileChange[]>)());
+          capturedChanges.push(...(await (changesProvider as () => Promise<FileChange[]>)()));
         }
         return content;
       });

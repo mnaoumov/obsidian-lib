@@ -22,17 +22,17 @@ const hoisted = vi.hoisted(() => ({
 }));
 
 vi.mock('@obsidian-typings/obsidian-public-latest/implementations', async (importOriginal) => ({
-  ...await importOriginal<typeof import('@obsidian-typings/obsidian-public-latest/implementations')>(),
+  ...(await importOriginal<typeof import('@obsidian-typings/obsidian-public-latest/implementations')>()),
   getDataAdapterEx: (): DataAdapterExLike => ({ insensitive: hoisted.insensitive })
 }));
 
 vi.mock('./attachment-path.ts', async (importOriginal) => ({
-  ...await importOriginal<typeof import('./attachment-path.ts')>(),
+  ...(await importOriginal<typeof import('./attachment-path.ts')>()),
   getAttachmentFolderPathForAttachment: vi.fn()
 }));
 
 vi.mock('./file-system.ts', async (importOriginal) => ({
-  ...await importOriginal<typeof import('./file-system.ts')>(),
+  ...(await importOriginal<typeof import('./file-system.ts')>()),
   isNote: vi.fn()
 }));
 

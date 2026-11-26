@@ -76,12 +76,12 @@ describe('LinkAndTagInputSuggest', () => {
             message: 'the suggest popover lists the probe tag for the whole query',
             predicate: () => {
               contentEl = [...activeDocument.querySelectorAll('.suggestion-content')].find((el) => el.textContent === `#${tag}`);
-              return [...contentEl?.querySelectorAll(':scope .suggestion-highlight') ?? []].map((el) => el.textContent).join('').length === 'high'.length;
+              return [...(contentEl?.querySelectorAll(':scope .suggestion-highlight') ?? [])].map((el) => el.textContent).join('').length === 'high'.length;
             },
             timeoutInMilliseconds: 10_000
           });
 
-          return [...contentEl?.querySelectorAll(':scope .suggestion-highlight') ?? []].map((el) => el.textContent);
+          return [...(contentEl?.querySelectorAll(':scope .suggestion-highlight') ?? [])].map((el) => el.textContent);
         } finally {
           suggest.close();
           inputEl.remove();
@@ -111,12 +111,12 @@ describe('LinkAndTagInputSuggest', () => {
             message: 'the suggest popover lists the probe note for the whole query',
             predicate: () => {
               titleEl = [...activeDocument.querySelectorAll('.suggestion-title')].find((el) => el.textContent === 'link-and-tag-input-suggest-link-highlight-probe');
-              return [...titleEl?.querySelectorAll(':scope .suggestion-highlight') ?? []].map((el) => el.textContent).join('').length === 'highlight'.length;
+              return [...(titleEl?.querySelectorAll(':scope .suggestion-highlight') ?? [])].map((el) => el.textContent).join('').length === 'highlight'.length;
             },
             timeoutInMilliseconds: 10_000
           });
 
-          return [...titleEl?.querySelectorAll(':scope .suggestion-highlight') ?? []].map((el) => el.textContent);
+          return [...(titleEl?.querySelectorAll(':scope .suggestion-highlight') ?? [])].map((el) => el.textContent);
         } finally {
           suggest.close();
           inputEl.remove();

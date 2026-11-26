@@ -2962,7 +2962,7 @@ async function getFileChanges(params: GetFileChangesParams): Promise<FileChange[
   }
 
   if (cache) {
-    changes.push(...await getReferenceDefinitionFileChanges({ abortSignal, cache, offsetRange, referenceDefinitionConversion }));
+    changes.push(...(await getReferenceDefinitionFileChanges({ abortSignal, cache, offsetRange, referenceDefinitionConversion })));
   }
 
   return changes;
