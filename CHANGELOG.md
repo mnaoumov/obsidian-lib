@@ -1,5 +1,28 @@
 # CHANGELOG
 
+## 13.0.0
+
+This release has 1 breaking change, 3 new features, 1 fix and 2 documentation changes. 6 maintenance commits (tests, build, CI, refactoring, dependencies) are not listed.
+
+### Breaking changes
+
+- **monkey-around:** stop exporting around
+
+### New
+
+- **popovers:** let a later field take the initial focus in editFieldsInPopover
+- **bug-report:** report the device, the Android API level and the real web view version on mobile
+- **broken-link-candidates:** add near-miss evidence for a name a few typing edits away
+
+### Fixed
+
+- **code-highlighter:** align the overlay with the textarea on mobile
+
+### Documentation
+
+- **readme:** refresh the See also search date
+- add the badge line to the README
+
 ## 12.0.0
 
 This release has 1 breaking change, 18 new features, 2 fixes and 3 documentation changes. 8 maintenance commits (tests, build, CI, refactoring, dependencies) are not listed.
