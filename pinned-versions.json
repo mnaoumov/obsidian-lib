@@ -25,9 +25,16 @@
     },
     "@lezer/common": {
       "section": "devDependencies",
-      "why": "Types must match the version bundled in Obsidian; see AGENTS.md for the distinguishing bundle markers.",
+      "why": "Types must match the version bundled in Obsidian; see AGENTS.md for the distinguishing bundle markers. Re-checked against Obsidian 1.15.1 on 2026-11-26: its StructureCursor is still the 1.5.2 shape, while npm moved to 1.5.7.",
       "check": "npm view @lezer/common version",
-      "expect": "1.5.4"
+      "expect": "1.5.7"
+    },
+    "@microsoft/eslint-plugin-sdl": {
+      "section": "overrides",
+      "why": "A nested override, { \"eslint-plugin-n\": \"^17.24.0\" }, clearing GHSA-g3hv-75wg-m249 for the minimatch 9 that eslint-plugin-n 17.10.3 brings under @microsoft/eslint-plugin-sdl (through eslint-plugin-obsidianmd). eslint-plugin-n 17.24.0 is the same major and depends on no minimatch at all.",
+      "check": "node -e \"process.stdout.write(JSON.parse(require('node:fs').readFileSync('node_modules/@microsoft/eslint-plugin-sdl/package.json','utf8')).dependencies['eslint-plugin-n'])\"",
+      "expect": "17.10.3",
+      "manualCheck": "Remove the override when @microsoft/eslint-plugin-sdl admits eslint-plugin-n >=17.22.0, then reinstall and rerun npm audit and npm run lint."
     },
     "@puppeteer/browsers": {
       "section": "overrides",
@@ -35,11 +42,39 @@
       "check": null,
       "manualCheck": "Re-evaluate the inherited override against npm audit and the browser downloader ranges in obsidian-integration-testing. Remove when all parents admit the patched version."
     },
+    "@stryker-mutator/core": {
+      "section": "overrides",
+      "why": "A nested override, { \"minimatch\": \"^11.0.5\" }, clearing GHSA-g3hv-75wg-m249 for @stryker-mutator/core alone, which declares minimatch ~10.2.4 and calls only minimatch() and new Minimatch().match(), which minimatch 11 keeps. Scoped rather than global because typedoc 0.28.20 calls Minimatch#set with matchOne, which minimatch 11 removed (T6738 tracks typedoc's own copy upstream, TypeStrong/typedoc#3151).",
+      "check": "node -e \"process.stdout.write(JSON.parse(require('node:fs').readFileSync('node_modules/@stryker-mutator/core/package.json','utf8')).dependencies['minimatch'])\"",
+      "expect": "~10.2.4",
+      "manualCheck": "Remove the override when @stryker-mutator/core admits minimatch >=11.0.1, then reinstall and rerun npm audit and npm run test:mutation on one module."
+    },
+    "@ts-morph/common": {
+      "section": "overrides",
+      "why": "A nested override, { \"minimatch\": \"^11.0.5\" }, clearing GHSA-g3hv-75wg-m249 for @ts-morph/common 0.29 alone, which declares minimatch ^10.0.1 and calls only minimatch() / new Minimatch().match(), which minimatch 11 keeps (P21 note minimatch-11-scoped-override.md). Scoped rather than global because typedoc 0.28.20 calls Minimatch#set with matchOne, which minimatch 11 removed (T6738 tracks typedoc's own copy upstream, TypeStrong/typedoc#3151).",
+      "check": "node -e \"process.stdout.write(JSON.parse(require('node:fs').readFileSync('node_modules/@ts-morph/common/package.json','utf8')).dependencies['minimatch'])\"",
+      "expect": "^10.0.1",
+      "manualCheck": "Remove the override when @ts-morph/common admits minimatch >=11.0.1, then reinstall and rerun npm audit and npm run build."
+    },
     "deepmerge-ts": {
       "section": "overrides",
       "why": "Keep the Webdriver integration tooling on the patched 8.x line.",
       "check": null,
       "manualCheck": "Re-evaluate the inherited override against npm audit and Webdriver's dependency ranges. Remove when all parents admit the patched version."
+    },
+    "eslint-plugin-obsidianmd": {
+      "section": "devDependencies",
+      "why": "Must be the copy @mnaoumov/obsidian-dev-toolkit brings (its dependency ^0.5.1), or ESLint aborts with ConfigError: Cannot redefine plugin \"obsidianmd\", because the shared config and this repo would register two copies. The sweep's ^0.6.0 did exactly that on 2026-11-26.",
+      "check": "npm view @mnaoumov/obsidian-dev-toolkit@latest dependencies.eslint-plugin-obsidianmd",
+      "expect": "^0.5.1",
+      "manualCheck": "When the toolkit takes 0.6, move to its range and run npm run lint."
+    },
+    "eslint-plugin-tsdoc": {
+      "section": "overrides",
+      "why": "A nested override, { \"minimatch\": \"^11.0.5\" }, clearing GHSA-g3hv-75wg-m249 (minimatch >=7.0.0 <11.0.1) for the copy under eslint-plugin-tsdoc alone. eslint-plugin-tsdoc 0.5.4 pins @typescript-eslint/utils ~8.56.0, whose typescript-estree keeps minimatch 10 and calls only minimatch(filePath, pattern, { dot: true }), which minimatch 11 keeps. Scoped rather than global because typedoc 0.28.20 calls Minimatch#set with matchOne, which minimatch 11 removed (T6738 tracks typedoc's own copy upstream, TypeStrong/typedoc#3151).",
+      "check": "node -e \"process.stdout.write(JSON.parse(require('node:fs').readFileSync('node_modules/eslint-plugin-tsdoc/package.json','utf8')).dependencies['@typescript-eslint/utils'])\"",
+      "expect": "~8.56.0",
+      "manualCheck": "Remove the override when eslint-plugin-tsdoc moves to a typescript-eslint that takes minimatch 11, then reinstall and rerun npm audit and npm run lint."
     },
     "glob": {
       "section": "overrides",
@@ -60,23 +95,18 @@
       "check": "npm view micromark-extension-math@latest dependencies.katex",
       "expect": "^0.16.0"
     },
-    "markdown-it@>=15.0.0": {
-      "section": "overrides",
-      "why": "markdownlint-cli2 0.23.3 pins 15.0.1, affected by https://github.com/advisories/GHSA-r7fv-28h4-cvq7, https://github.com/advisories/GHSA-vfgh-jcmw-g37q and https://github.com/advisories/GHSA-gfr2-rv44-r23c. Force the patched 15.x release while preserving TypeDoc's 14.x dependency.",
-      "check": "node -p \"require('./node_modules/markdownlint-cli2/package.json').dependencies['markdown-it']\"",
-      "expect": "15.0.1"
-    },
-    "moment": {
-      "section": "overrides",
-      "why": "https://github.com/advisories/GHSA-4p3w-j4w9-5jqw is fixed in 2.31.0; eslint-plugin-obsidianmd's nested obsidian 1.12.3 pins a vulnerable Moment release. Obsidian's runtime Moment is supplied by the host.",
-      "check": "npm view eslint-plugin-obsidianmd@latest dependencies.obsidian",
-      "expect": "1.12.3"
-    },
     "smol-toml": {
       "section": "overrides",
       "why": "Keep transitive TOML parsers on a patched release; https://github.com/advisories/GHSA-r4xh-jqrq-34v2 affects versions through 1.8.0.",
       "check": null,
       "manualCheck": "Check all parent TOML parser ranges against npm audit; remove the override when every parent admits a patched release."
+    },
+    "type-fest": {
+      "section": "dependencies",
+      "why": "obsidian-integration-testing 18.1.0 declares peer type-fest ^5.6.0, so the sweep's ^6.0.3 fails npm install with ERESOLVE. 5.10.0 is the last 5.x release, so the exact pin resolves exactly as ^5.10.0 would for consumers. T7002-P2 moves the harness to type-fest 6.",
+      "check": "npm view obsidian-integration-testing@latest peerDependencies.type-fest",
+      "expect": "^5.6.0",
+      "manualCheck": "When the harness peer admits type-fest 6, move this dependency to ^6 and run the gate, including tsc over the public declarations."
     },
     "typescript": {
       "section": "devDependencies",
