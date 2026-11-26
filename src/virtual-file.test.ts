@@ -49,6 +49,8 @@ vi.mock('./metadata-cache.ts', async (importOriginal) => ({
   parseMetadata: vi.fn(() => Promise.resolve({ features: [] }))
 }));
 
+const EDITOR_TEST_TIMEOUT_IN_MILLISECONDS = 30_000;
+
 let app: AppOriginal;
 let mockApp: App;
 const disposables: Disposable[] = [];
@@ -174,7 +176,10 @@ describe('registerVirtualFile', () => {
     expect(await app.vault.adapter.read('other.md')).toBe('Other');
   });
 
-  it('locks Markdown editors after loading and rebuilding them and closes owned leaves', async () => {
+  // Reading `view.editor.cm` builds this worker's first CodeMirror `EditorView` under jsdom, a one-time cost
+  // (about 0.7 s idle, measured at over 5 s on a loaded machine; a second view takes about 70 ms), so the default
+  // 5 s test timeout is too tight.
+  it('locks Markdown editors after loading and rebuilding them and closes owned leaves', { timeout: EDITOR_TEST_TIMEOUT_IN_MILLISECONDS }, async () => {
     const leaf = WorkspaceLeaf.create2__(mockApp);
     const view = MarkdownView.create2__(leaf).asOriginalType7__();
     const prototype = castTo<MarkdownViewOriginal>(Object.getPrototypeOf(view));
