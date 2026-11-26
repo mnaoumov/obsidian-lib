@@ -30,6 +30,20 @@ interface RealClipboardRunResult {
 }
 
 describe('OpenBugReportCommandHandler on Android', () => {
+  it('should read the Android version, the web view and the device from the real device info', async () => {
+    const environment = await evalInObsidian({
+      async callback({ app, lib: { getBugReportEnvironment } }) {
+        return await getBugReportEnvironment({ app, pluginId: 'obsidian-lib-integration-test' });
+      }
+    });
+
+    expect(environment.platform).toBe('Android');
+    expect(environment.operatingSystem).toMatch(/^Android \d+(?:\.\d+)* \(API \d+\)$/);
+    expect(environment.runtime).toMatch(/^Capacitor android, Chromium \d+\.\d+\.\d+\.\d+$/);
+    // The harness boots an emulator, which the device info names as such, and never the user-given device name.
+    expect(environment.device).toMatch(/\bemulator, (?:phone|tablet), screen \d+x\d+ at [\d.]+x\b/);
+  });
+
   it('should hand an oversized report to the real clipboard or to the manual-copy modal', async () => {
     const result = await evalInObsidian({
       async callback({ app, lib: { clickElement, OpenBugReportCommandHandler, pressKey, waitUntil } }): Promise<RealClipboardRunResult> {

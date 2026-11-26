@@ -1,5 +1,5 @@
 // Every real browser user agent string below carries the `KHTML` token.
-// cspell:words KHTML
+// cspell:words KHTML gphone
 
 import type { App as AppOriginal } from 'obsidian';
 
@@ -34,6 +34,7 @@ interface PlatformState {
   readonly isLinux: boolean;
   readonly isMacOS: boolean;
   readonly isMobileApp: boolean;
+  readonly isTablet: boolean;
   readonly isWin: boolean;
 }
 
@@ -91,6 +92,7 @@ function setPlatform(state: Partial<PlatformState>): void {
     isLinux: false,
     isMacOS: false,
     isMobileApp: false,
+    isTablet: false,
     isWin: false,
     ...state
   });
@@ -122,6 +124,7 @@ afterEach(() => {
 describe('getBugReportEnvironment', () => {
   it('should read the desktop environment', async () => {
     expect(await getBugReportEnvironment({ app: createApp(), pluginId: PLUGIN_ID })).toEqual({
+      device: 'unknown',
       enabledPlugins: [
         { id: 'alpha', version: '2.0.0' },
         { id: 'zeta', version: '0.1.0' }
@@ -156,7 +159,58 @@ describe('getBugReportEnvironment', () => {
     vi.stubGlobal('Capacitor', { getPlatform: (): unknown => 42 });
     setUserAgent('Mozilla/5.0 (iPhone; CPU iPhone OS 18_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148');
     const environment = await getBugReportEnvironment({ app: createApp(), pluginId: PLUGIN_ID });
-    expect(environment.runtime).toBe('Capacitor unknown, WebKit 605.1.15');
+    expect(environment.runtime).toBe('Capacitor unknown, WebKit of iOS 18.1');
+  });
+
+  it('should take the Android web view version from the device info over the user agent', async () => {
+    setPlatform({ isAndroidApp: true, isMobileApp: true });
+    mockGetMobileAppInfo.mockResolvedValue({ device: null, installerVersion: null, operatingSystem: null, webViewVersion: '141.0.7390.10' });
+    vi.stubGlobal('Capacitor', { getPlatform: (): string => 'android' });
+    setUserAgent('Mozilla/5.0 (Linux; Android 10; K; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/140.0.0.0 Mobile Safari/537.36');
+    const environment = await getBugReportEnvironment({ app: createApp(), pluginId: PLUGIN_ID });
+    expect(environment.runtime).toBe('Capacitor android, Chromium 141.0.7390.10');
+  });
+
+  it('should take the iOS version from the device info over the user agent', async () => {
+    setPlatform({ isIosApp: true, isMobileApp: true });
+    mockGetMobileAppInfo.mockResolvedValue({ device: null, installerVersion: null, operatingSystem: null, webViewVersion: '17.4' });
+    setUserAgent('Mozilla/5.0 (iPhone; CPU iPhone OS 18_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148');
+    const environment = await getBugReportEnvironment({ app: createApp(), pluginId: PLUGIN_ID });
+    expect(environment.runtime).toBe('WebKit of iOS 17.4');
+  });
+
+  it('should keep the WebKit token on iOS when neither the device nor the user agent names the iOS version', async () => {
+    setPlatform({ isIosApp: true, isMobileApp: true });
+    mockGetMobileAppInfo.mockResolvedValue(null);
+    // An iPad asking for the desktop site says it is a Mac.
+    setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko)');
+    const environment = await getBugReportEnvironment({ app: createApp(), pluginId: PLUGIN_ID });
+    expect(environment.runtime).toBe('WebKit 605.1.15');
+  });
+
+  it('should describe a desktop device by its screen and memory', async () => {
+    vi.stubGlobal('screen', { height: 1080, width: 1920 });
+    vi.stubGlobal('devicePixelRatio', 1.5);
+    vi.stubGlobal('navigator', { deviceMemory: 8, userAgent: DESKTOP_USER_AGENT });
+    const environment = await getBugReportEnvironment({ app: createApp(), pluginId: PLUGIN_ID });
+    expect(environment.device).toBe('screen 1920x1080 at 1.5x, about 8 GB memory');
+  });
+
+  it('should describe a mobile device by its model and form factor, and ignore a memory that is not a number', async () => {
+    setPlatform({ isAndroidApp: true, isMobileApp: true, isTablet: true });
+    mockGetMobileAppInfo.mockResolvedValue({ device: 'Google sdk_gphone64_x86_64, emulator', installerVersion: null, operatingSystem: null, webViewVersion: null });
+    vi.stubGlobal('screen', { height: 1280, width: 800 });
+    vi.stubGlobal('devicePixelRatio', 2);
+    vi.stubGlobal('navigator', { deviceMemory: 'lots', userAgent: '' });
+    const environment = await getBugReportEnvironment({ app: createApp(), pluginId: PLUGIN_ID });
+    expect(environment.device).toBe('Google sdk_gphone64_x86_64, emulator, tablet, screen 800x1280 at 2x');
+  });
+
+  it('should call a mobile device without a model a phone', async () => {
+    setPlatform({ isAndroidApp: true, isMobileApp: true });
+    mockGetMobileAppInfo.mockResolvedValue(null);
+    const environment = await getBugReportEnvironment({ app: createApp(), pluginId: PLUGIN_ID });
+    expect(environment.device).toMatch(/^phone\b/);
   });
 
   it('should read the runtime as unknown when nothing says', async () => {
@@ -250,6 +304,19 @@ describe('formatBugReportEnvironment', () => {
       plugin: { id: PLUGIN_ID, version: '1.2.3' },
       runtime: 'Electron 37.2.0, Chromium 138.0.7204.100'
     })).toContain('- Operating system: Windows 11\n- Runtime: Electron 37.2.0, Chromium 138.0.7204.100\n- Other enabled plugins: none');
+  });
+
+  it('should render the device after the runtime when the environment has one', () => {
+    expect(formatBugReportEnvironment({
+      device: 'Google Pixel 8, phone',
+      enabledPlugins: [],
+      installerVersion: '1.15.0 (291)',
+      obsidianVersion: '1.15.0',
+      operatingSystem: 'Android 15 (API 35)',
+      platform: 'Android',
+      plugin: { id: PLUGIN_ID, version: '1.2.3' },
+      runtime: 'Capacitor android, Chromium 140.0.7339.51'
+    })).toContain('- Runtime: Capacitor android, Chromium 140.0.7339.51\n- Device: Google Pixel 8, phone\n- Other enabled plugins: none');
   });
 
   it('should say none when no other plugin is enabled', () => {

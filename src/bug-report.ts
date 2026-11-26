@@ -14,7 +14,14 @@
  * The runtime line reads `process.versions` (Electron, Chromium) only behind `Platform.isDesktopApp`, since
  * `process` exists only in the desktop renderer, and falls back to the user agent's `Electron/`, `Chrome/`
  * and `AppleWebKit/` tokens. On mobile it also names the Capacitor platform, read structurally from the
- * `Capacitor` bridge's `getPlatform`.
+ * `Capacitor` bridge's `getPlatform`, and takes the web view from Capacitor's device info: the Android
+ * System WebView's version, and on iOS the iOS version, since WKWebView ships with the OS and its
+ * `AppleWebKit/605.1.15` token is frozen.
+ *
+ * The device line holds only coarse values: the model and whether it is a phone, a tablet or a virtual
+ * device on mobile, the screen size in CSS pixels and the pixel ratio, and `navigator.deviceMemory`, which
+ * Chromium rounds to a power of two. Nothing is read before the user invokes the report, and nothing is
+ * sent anywhere: the report only becomes an issue-form link the user reviews.
  */
 
 import type { App } from 'obsidian';
@@ -25,6 +32,7 @@ import {
 } from 'obsidian';
 
 import type { BugReportDiagnosticSection } from './bug-report-diagnostics.ts';
+import type { MobileAppInfo } from './mobile-app-info.ts';
 
 import { formatBugReportDiagnostics } from './bug-report-diagnostics.ts';
 import { getMobileAppInfo } from './mobile-app-info.ts';
@@ -128,6 +136,16 @@ export const BUG_REPORT_PASTE_INSTRUCTIONS = 'The full environment and diagnosti
  */
 export interface BugReportEnvironment {
   /**
+   * The device, from coarse values only: the model, `phone` or `tablet`, and `emulator` or `simulator` on
+   * mobile, then the screen size in CSS pixels with the pixel ratio and the approximate memory, such as
+   * `Google Pixel 8, phone, screen 412x915 at 2.625x, about 8 GB memory`. `unknown` when nothing says.
+   *
+   * Optional, so an environment built by hand before it existed still type-checks;
+   * {@link getBugReportEnvironment} always sets it.
+   */
+  readonly device?: string;
+
+  /**
    * The other loaded plugins, sorted by id.
    */
   readonly enabledPlugins: readonly BugReportPluginInfo[];
@@ -160,7 +178,8 @@ export interface BugReportEnvironment {
   /**
    * The runtime under Obsidian: the Electron and Chromium versions on desktop, such as
    * `Electron 37.2.0, Chromium 138.0.7204.100`, or the Capacitor platform and its web view on mobile, such
-   * as `Capacitor android, Chromium 140.0.7339.51`. `unknown` when nothing says.
+   * as `Capacitor android, Chromium 140.0.7339.51` or `Capacitor ios, WebKit of iOS 18.1`. `unknown` when
+   * nothing says.
    *
    * Optional, so an environment built by hand before it existed still type-checks;
    * {@link getBugReportEnvironment} always sets it.
@@ -247,7 +266,8 @@ interface CapacitorWithPlatform {
   readonly getPlatform?: unknown;
 }
 
-interface NavigatorWithUserAgent {
+interface NavigatorWithDeviceInfo {
+  readonly deviceMemory?: unknown;
   readonly userAgent?: unknown;
 }
 
@@ -320,22 +340,27 @@ export function formatBugReportEnvironment(environment: BugReportEnvironment): s
   if (environment.runtime !== undefined) {
     lines.push(`- Runtime: ${environment.runtime}`);
   }
+  if (environment.device !== undefined) {
+    lines.push(`- Device: ${environment.device}`);
+  }
   lines.push(`- Other enabled plugins: ${enabledPlugins}`);
   return lines.join('\n');
 }
 
 /**
  * Gets the environment a bug report needs: the plugin's version, the other enabled plugins, the
- * Obsidian and installer versions, the platform and the operating system.
+ * Obsidian and installer versions, the platform, the operating system, the runtime and the device.
  *
  * @param params - The parameters.
  * @returns The environment.
  */
 export async function getBugReportEnvironment(params: GetBugReportEnvironmentParams): Promise<BugReportEnvironment> {
   const { app, pluginId } = params;
-  const { installerVersion, operatingSystem } = await getAppAndOperatingSystem();
+  const mobileAppInfo = Platform.isMobileApp ? await getMobileAppInfo() : null;
+  const { installerVersion, operatingSystem } = await getAppAndOperatingSystem(mobileAppInfo);
 
   return {
+    device: getDevice(mobileAppInfo),
     // The loaded plugins, as Obsidian's Show debug info lists them: `enabledPlugins` also holds an id
     // whose folder was deleted, or whose load failed.
     enabledPlugins: Object.keys(app.plugins.plugins)
@@ -347,7 +372,7 @@ export async function getBugReportEnvironment(params: GetBugReportEnvironmentPar
     operatingSystem,
     platform: getPlatformName(),
     plugin: getPluginInfo(app, pluginId),
-    runtime: getRuntime()
+    runtime: getRuntime(mobileAppInfo)
   };
 }
 
@@ -392,9 +417,8 @@ function formatPluginInfo(pluginInfo: BugReportPluginInfo): string {
   return `\`${pluginInfo.id}\` ${pluginInfo.version ?? UNKNOWN}`;
 }
 
-async function getAppAndOperatingSystem(): Promise<AppAndOperatingSystem> {
+async function getAppAndOperatingSystem(mobileAppInfo: MobileAppInfo | null): Promise<AppAndOperatingSystem> {
   if (Platform.isMobileApp) {
-    const mobileAppInfo = await getMobileAppInfo();
     return {
       installerVersion: mobileAppInfo?.installerVersion ?? UNKNOWN,
       operatingSystem: mobileAppInfo?.operatingSystem ?? UNKNOWN
@@ -412,6 +436,28 @@ async function getAppAndOperatingSystem(): Promise<AppAndOperatingSystem> {
     installerVersion: typeof build === 'string' ? build : UNKNOWN,
     operatingSystem: getDesktopOperatingSystem()
   };
+}
+
+function getDevice(mobileAppInfo: MobileAppInfo | null): string {
+  const parts: string[] = [];
+  if (Platform.isMobileApp) {
+    if (mobileAppInfo?.device) {
+      parts.push(mobileAppInfo.device);
+    }
+    parts.push(Platform.isTablet ? 'tablet' : 'phone');
+  }
+
+  const { devicePixelRatio, screen } = window;
+  if (screen.width > 0 && screen.height > 0) {
+    parts.push(`screen ${String(screen.width)}x${String(screen.height)} at ${String(devicePixelRatio)}x`);
+  }
+
+  const { deviceMemory } = window.navigator as NavigatorWithDeviceInfo;
+  if (typeof deviceMemory === 'number' && deviceMemory > 0) {
+    parts.push(`about ${String(deviceMemory)} GB memory`);
+  }
+
+  return parts.length === 0 ? UNKNOWN : parts.join(', ');
 }
 
 function getPlatformName(): string {
@@ -437,10 +483,10 @@ function getPluginInfo(app: App, pluginId: string): BugReportPluginInfo {
   };
 }
 
-function getRuntime(): string {
+function getRuntime(mobileAppInfo: MobileAppInfo | null): string {
   const windowWithRuntime = window as WindowWithRuntime;
   // The user agent is read for the engine versions only; the platform itself comes from `Platform`.
-  const { userAgent } = window.navigator as NavigatorWithUserAgent;
+  const { userAgent } = window.navigator as NavigatorWithDeviceInfo;
   const userAgentText = typeof userAgent === 'string' ? userAgent : '';
 
   function readVersion(processVersionKey: string, userAgentToken: string): null | string {
@@ -464,7 +510,20 @@ function getRuntime(): string {
     parts.push(`Electron ${electronVersion}`);
   }
 
-  const chromiumVersion = readVersion('chrome', 'Chrome');
+  const webViewVersion = mobileAppInfo?.webViewVersion ?? null;
+  if (Platform.isIosApp) {
+    // WKWebView ships with iOS, and its `AppleWebKit/605.1.15` token is frozen, so the iOS version is the
+    // engine's version. Capacitor's device info answers it as the web view version on iOS.
+    const iosVersion = webViewVersion ?? readIosVersionFromUserAgent(userAgentText);
+    if (iosVersion !== null) {
+      parts.push(`WebKit of iOS ${iosVersion}`);
+      return parts.join(', ');
+    }
+  }
+
+  // On Android the device's own answer is the System WebView's version: the user agent's `Chrome/` token
+  // carries the same number unless the web view reports a reduced or frozen one.
+  const chromiumVersion = (Platform.isAndroidApp ? webViewVersion : null) ?? readVersion('chrome', 'Chrome');
   const webKitVersion = readVersion('webkit', 'AppleWebKit');
   if (chromiumVersion !== null) {
     parts.push(`Chromium ${chromiumVersion}`);
@@ -473,4 +532,8 @@ function getRuntime(): string {
   }
 
   return parts.length === 0 ? UNKNOWN : parts.join(', ');
+}
+
+function readIosVersionFromUserAgent(userAgentText: string): null | string {
+  return /\bOS (?<iosVersion>\d+(?:_\d+)*) like Mac OS X\b/.exec(userAgentText)?.groups?.['iosVersion']?.replaceAll('_', '.') ?? null;
 }
