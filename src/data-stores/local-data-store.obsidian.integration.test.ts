@@ -12,11 +12,18 @@ const PLUGIN_ID = 'obsidian-lib-test';
 /*
  * The per-key reset is ONE commit, so it runs in one closure under the transport's ~30 s per-eval cap. At 90,000
  * records it took 13 to 21 s on a quiet machine and went over the cap under load, which failed the release
- * preflight (the guide's 90,000-record figures were measured then). At a third of that the comparison below still
- * holds by an order of magnitude, with room left for a loaded machine.
+ * preflight (the guide's 90,000-record figures were measured then). At 30,000 the per-key reset took 2.5 to 3.2 s
+ * on a quiet machine but 18.7 s with five bulk jobs sharing two processors (2026-11-26), too close to the cap again,
+ * so the count is halved once more. The comparison below still holds by an order of magnitude at this size.
  */
-const RECORD_COUNT = 30_000;
+const RECORD_COUNT = 15_000;
 const LARGE_STORE_TEST_TIMEOUT_IN_MILLISECONDS = 180_000;
+/*
+ * The seed is written in batches, one closure each. As one 30,000-record commit it took a few seconds on a quiet machine,
+ * but went over the 30 s per-eval cap in a release preflight on a machine running five other jobs (2026-11-26), and the
+ * seed is setup rather than what this test measures.
+ */
+const SEED_BATCH_SIZE = 5000;
 
 interface ReadMeasurement {
   readonly count: number;
@@ -213,42 +220,72 @@ async function measureReads(largeStoreId: string): Promise<ReadMeasurement> {
   });
 }
 
+/*
+ * The reset closure holds the one commit being measured and nothing else: reading the keys beforehand and the records
+ * afterwards run in closures of their own. With all three in one closure, the per-key reset of 15,000 records went over
+ * the 30 s cap on a machine so loaded that a style injection in the setup also timed out (2026-11-26).
+ */
 async function measureReset(largeStoreId: string, isClearing: boolean): Promise<ResetMeasurement> {
-  return await evalInObsidian({
-    async callback({ app, lib: { LocalDataStore }, pluginId, shouldClear, storeId }) {
+  const removedKeys = isClearing
+    ? []
+    : await evalInObsidian({
+      async callback({ app, lib: { LocalDataStore }, pluginId, storeId }) {
+        const store = await LocalDataStore.open({ pluginId, storeId, vaultId: app.appId });
+        try {
+          const entries = await store.entries();
+          return entries.map(([key]) => key);
+        } finally {
+          store.close();
+        }
+      },
+      input: { pluginId: PLUGIN_ID, storeId: largeStoreId }
+    });
+
+  const elapsed = await evalInObsidian({
+    async callback({ app, keys, lib: { LocalDataStore }, pluginId, shouldClear, storeId }) {
       const store = await LocalDataStore.open({ pluginId, storeId, vaultId: app.appId });
       try {
         const start = performance.now();
-        if (shouldClear) {
-          await store.commit({ entries: [['marker', 2]], shouldClear: true });
-        } else {
-          const existingEntries = await store.entries();
-          await store.commit({ entries: [['marker', 2]], removedKeys: existingEntries.map(([key]) => key) });
-        }
-        const elapsed = performance.now() - start;
-        return { elapsed, remaining: await store.entries() };
+        await (store.commit(shouldClear ? { entries: [['marker', 2]], shouldClear: true } : { entries: [['marker', 2]], removedKeys: keys }));
+        return performance.now() - start;
       } finally {
         store.close();
       }
     },
-    input: { pluginId: PLUGIN_ID, shouldClear: isClearing, storeId: largeStoreId }
+    input: { keys: removedKeys, pluginId: PLUGIN_ID, shouldClear: isClearing, storeId: largeStoreId }
   });
+
+  const remaining = await evalInObsidian({
+    async callback({ app, lib: { LocalDataStore }, pluginId, storeId }) {
+      const store = await LocalDataStore.open({ pluginId, storeId, vaultId: app.appId });
+      try {
+        return await store.entries();
+      } finally {
+        store.close();
+      }
+    },
+    input: { pluginId: PLUGIN_ID, storeId: largeStoreId }
+  });
+
+  return { elapsed, remaining };
 }
 
 async function seed(largeStoreId: string): Promise<void> {
-  await evalInObsidian({
-    async callback({ app, count, lib: { LocalDataStore }, pluginId, storeId }) {
-      const store = await LocalDataStore.open({ pluginId, storeId, vaultId: app.appId });
-      try {
-        const entries: [string, unknown][] = [];
-        for (let index = 0; index < count; index++) {
-          entries.push([`folder-${String(index % 100)}/note-${String(index)}.md`, { hidden: index % 2 === 0, mtime: index }]);
+  for (let start = 0; start < RECORD_COUNT; start += SEED_BATCH_SIZE) {
+    await evalInObsidian({
+      async callback({ app, end, lib: { LocalDataStore }, pluginId, start: batchStart, storeId }) {
+        const store = await LocalDataStore.open({ pluginId, storeId, vaultId: app.appId });
+        try {
+          const entries: [string, unknown][] = [];
+          for (let index = batchStart; index < end; index++) {
+            entries.push([`folder-${String(index % 100)}/note-${String(index)}.md`, { hidden: index % 2 === 0, mtime: index }]);
+          }
+          await store.commit({ entries, shouldClear: batchStart === 0 });
+        } finally {
+          store.close();
         }
-        await store.commit({ entries, shouldClear: true });
-      } finally {
-        store.close();
-      }
-    },
-    input: { count: RECORD_COUNT, pluginId: PLUGIN_ID, storeId: largeStoreId }
-  });
+      },
+      input: { end: Math.min(start + SEED_BATCH_SIZE, RECORD_COUNT), pluginId: PLUGIN_ID, start, storeId: largeStoreId }
+    });
+  }
 }

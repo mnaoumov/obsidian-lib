@@ -70,6 +70,24 @@ afterEach(async () => {
 });
 
 /*
+ * A notice outlives the test that raised it by seconds, and notices stack down the top-right corner of the window, which
+ * is also where a modal's or a settings row's rightmost button sits. A trusted click is delivered to whatever is topmost
+ * at its point, so a notice left by the previous file took the click meant for the recovery copies button, and the
+ * modal it should have opened never did (measured 2026-11-26: three stacked notices covered that button's center, and
+ * the case failed in three of four release runs, each time right after a file that raises notices). This net
+ * removes every notice still showing, so a later test starts with the corner clear.
+ */
+afterEach(async () => {
+  await evalInObsidian({
+    callback(): void {
+      for (const noticeEl of document.querySelectorAll('.notice-container .notice')) {
+        noticeEl.remove();
+      }
+    }
+  });
+});
+
+/*
  * A `MinimizableModal` left minimized keeps the app in its peek-only lock, which blocks EVERY later modal open
  * and every keystroke. One `minimizable-modal` case that threw mid-test did exactly that, and the alert, confirm,
  * prompt, select-item and select-option suites behind it then failed on flat 12 s waits for modals that were
