@@ -212,6 +212,7 @@ export class LocalDataStore {
    * @returns The callback result after releasing the lock.
    */
   public async exclusive<T>(callback: () => Promise<T>): Promise<T> {
+    // eslint-disable-next-line obsidian-dev-toolkit/prefer-active-window -- Web Locks are per origin, the same from any window, and the main window outlives every popout
     return await window.navigator.locks.request(this.database.name, callback);
   }
 

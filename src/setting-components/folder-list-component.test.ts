@@ -22,7 +22,7 @@ vi.mock('../plugin/plugin-context.ts', () => ({
 }));
 
 vi.mock('obsidian', async (importOriginal) => ({
-  ...await importOriginal<typeof import('obsidian')>(),
+  ...(await importOriginal<typeof import('obsidian')>()),
   renderMatches: vi.fn((el: HTMLElement, text: string) => {
     el.appendText(text);
   })

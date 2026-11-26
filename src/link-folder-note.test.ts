@@ -65,7 +65,7 @@ function update(params: UpdateParams): string {
     app,
     linkPathStyle: LinkPathStyle.AbsolutePathInVault,
     reference,
-    ...linkStyle && { linkStyle },
+    ...(linkStyle && { linkStyle }),
     newSourcePathOrFile: 'note.md',
     newTargetPathOrFile: newTargetPath,
     oldTargetPathOrFile: oldTargetPath,

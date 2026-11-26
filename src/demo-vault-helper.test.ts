@@ -158,8 +158,8 @@ function createApp(options: CreateAppOptions = {}): AppMock {
   // A live set the enable/disable mocks mutate, so the real community-plugin helpers observe the change
   // (an already-enabled plugin is seen as enabled until disabled, and vice versa).
   const enabledPlugins = new Set<string>([
-    ...options.isCodeScriptToolkitEnabled ? [CODE_SCRIPT_TOOLKIT_PLUGIN_ID] : [],
-    ...options.isFolderNotesEnabled ? [FOLDER_NOTES_PLUGIN_ID] : []
+    ...(options.isCodeScriptToolkitEnabled ? [CODE_SCRIPT_TOOLKIT_PLUGIN_ID] : []),
+    ...(options.isFolderNotesEnabled ? [FOLDER_NOTES_PLUGIN_ID] : [])
   ]);
   const installPlugin = vi.fn<App['plugins']['installPlugin']>().mockResolvedValue();
   const checkEnablePluginAndSave = vi.fn<App['plugins']['enablePluginAndSave']>().mockImplementation((id: string) => {

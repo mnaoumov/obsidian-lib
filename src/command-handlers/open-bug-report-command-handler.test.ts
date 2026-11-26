@@ -38,7 +38,7 @@ const {
 }));
 
 vi.mock('obsidian', async (importOriginal) => ({
-  ...await importOriginal<typeof import('obsidian')>(),
+  ...(await importOriginal<typeof import('obsidian')>()),
   Notice: mockNotice
 }));
 
@@ -50,7 +50,7 @@ vi.mock('../bug-report.ts', () => ({
 }));
 
 vi.mock('../bug-report-scrubber.ts', async (importOriginal) => ({
-  ...await importOriginal<typeof import('../bug-report-scrubber.ts')>(),
+  ...(await importOriginal<typeof import('../bug-report-scrubber.ts')>()),
   getBugReportScrubbedPaths: mockGetBugReportScrubbedPaths
 }));
 

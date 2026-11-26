@@ -106,7 +106,7 @@ export function findWorkaroundRegistryProblems(files: readonly SourceFile[]): st
   const problems: string[] = [];
   const markerPathsById = new Map<string, string[]>();
   for (const marker of markers) {
-    markerPathsById.set(marker.id, [...markerPathsById.get(marker.id) ?? [], marker.path]);
+    markerPathsById.set(marker.id, [...(markerPathsById.get(marker.id) ?? []), marker.path]);
   }
   const canaryIds = new Set(canaries.map((canary) => canary.id));
 

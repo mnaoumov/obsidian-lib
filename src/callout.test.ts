@@ -78,7 +78,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('@mnaoumov/typescript-lib/object-utils', async (importOriginal) => ({
-  ...await importOriginal<typeof import('@mnaoumov/typescript-lib/object-utils')>(),
+  ...(await importOriginal<typeof import('@mnaoumov/typescript-lib/object-utils')>()),
   normalizeOptionalProperties: vi.fn(($unknown: unknown) => $unknown)
 }));
 

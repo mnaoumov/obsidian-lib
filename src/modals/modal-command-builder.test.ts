@@ -554,11 +554,11 @@ describe('ModalCommandBuilder', () => {
       expect(instructionsEl).toBeTruthy();
       expect(instructionsEl?.querySelectorAll(`.${CssClass.PromptInstruction}`)).toHaveLength(2);
       expect(instructionsEl?.querySelector('input[type="checkbox"]')).toBeTruthy();
-      expect([...instructionsEl?.querySelectorAll(`.${CssClass.PromptInstruction} > span:first-child`) ?? []].map((el) => el.textContent))
+      expect([...(instructionsEl?.querySelectorAll(`.${CssClass.PromptInstruction} > span:first-child`) ?? [])].map((el) => el.textContent))
         .toEqual(['↵', 'alt 1']);
       // Without this class the key hint has no `margin-inline-end`, so it renders welded to its purpose
       // text: `alt 1Fix footnotes`.
-      expect([...instructionsEl?.querySelectorAll(`.${CssClass.PromptInstruction} > span:first-child`) ?? []].every((el) => el.hasClass(CssClass.PromptInstructionCommand)))
+      expect([...(instructionsEl?.querySelectorAll(`.${CssClass.PromptInstruction} > span:first-child`) ?? [])].every((el) => el.hasClass(CssClass.PromptInstructionCommand)))
         .toBe(true);
       expect(instructionsEl?.querySelector('input[type="checkbox"]')?.hasClass(CssClass.ModalCommandControl)).toBe(true);
     });

@@ -62,7 +62,7 @@ describe('showCodeBlockBuilder', () => {
             predicate: () => getModalEl() !== null
           });
 
-          const gridSettingEl = [...getModalEl()?.querySelectorAll<HTMLElement>('.setting-item') ?? []]
+          const gridSettingEl = [...(getModalEl()?.querySelectorAll<HTMLElement>('.setting-item') ?? [])]
             .find((settingEl) => settingEl.querySelector('.setting-item-name')?.textContent === 'Grid');
           const toggleEl = gridSettingEl?.querySelector<HTMLElement>('.checkbox-container');
           if (!toggleEl) {

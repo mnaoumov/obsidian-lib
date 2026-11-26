@@ -70,7 +70,7 @@ describe('selectSettingsRecoveryCopy', () => {
   it('should list each copy with its date, reason and a preview, and resolve Restore for a valid one', async () => {
     const resultPromise = selectSettingsRecoveryCopy({ app, copies: [VALID_COPY, DAMAGED_COPY] });
     queueMicrotask(() => {
-      const copyEls = [...modalContentEl?.querySelectorAll<HTMLElement>('.settings-recovery-copy') ?? []];
+      const copyEls = [...(modalContentEl?.querySelectorAll<HTMLElement>('.settings-recovery-copy') ?? [])];
       expect(copyEls.map((copyEl) => copyEl.dataset['copyId'])).toEqual(['valid', 'damaged']);
       expect(copyEls[0]?.querySelector('h3')?.textContent).toBe(
         `${formatKeptAt(VALID_COPY.keptAt)}: kept before the settings were replaced or rewritten`

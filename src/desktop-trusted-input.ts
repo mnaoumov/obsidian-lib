@@ -506,6 +506,7 @@ function getElementWindow(element: Element): Window {
  */
 function getTargetWebContents(targetWindow: undefined | Window): CurrentWebContents {
   if (targetWindow === undefined || targetWindow === window) {
+    // eslint-disable-next-line obsidian-dev-toolkit/prefer-active-window -- this branch is the main window: the target is undefined or the main window itself
     return window.electron.remote.getCurrentWebContents();
   }
 

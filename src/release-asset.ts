@@ -212,6 +212,7 @@ const inFlightOperations = new Map<string, Promise<null | ReleaseAsset>>();
  * @returns The SHA-256 as 64 lowercase hexadecimal digits.
  */
 export async function computeSha256(data: ArrayBuffer): Promise<string> {
+  // eslint-disable-next-line obsidian-dev-toolkit/prefer-active-window -- realm-independent, and the main window outlives every popout
   const hash = await window.crypto.subtle.digest('SHA-256', data);
   return [...new Uint8Array(hash)].map((byte) => byte.toString(HEX_RADIX).padStart(HEX_BYTE_LENGTH, '0')).join('');
 }

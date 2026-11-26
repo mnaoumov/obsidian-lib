@@ -217,6 +217,7 @@ export async function openDemoVault(params: OpenDemoVaultParams): Promise<void> 
     version: versionToOpen
   });
 
+  // eslint-disable-next-line obsidian-dev-toolkit/prefer-active-window -- the vault-open IPC and the Node require belong to the main window bridge
   window.electron.ipcRenderer.sendSync('vault-open', vaultDirectory, false);
 }
 
@@ -267,6 +268,7 @@ function cleanupOrphanedExtractedVaults(): void {
  * @param targetDirectory - The directory to extract into.
  */
 function extractDemoVaultArchive(archive: Buffer, targetDirectory: string): void {
+  // eslint-disable-next-line obsidian-dev-toolkit/prefer-active-window -- the vault-open IPC and the Node require belong to the main window bridge
   const originalFs = window.require('node:original-fs') as typeof import('node:fs');
   extractZipArchive({
     archive,

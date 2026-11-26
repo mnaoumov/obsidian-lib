@@ -467,7 +467,7 @@ export function getFolderNotesPluginFolderNoteConfig(settings: FolderNotesPlugin
     // order reproduced here. Markdown is kept last, the extension it cannot be configured without.
     extensions: normalizeExtensions([
       settings.folderNoteType ?? MARKDOWN_FILE_EXTENSION,
-      ...settings.supportedFileTypes ?? [],
+      ...(settings.supportedFileTypes ?? []),
       MARKDOWN_FILE_EXTENSION
     ]),
     isHidden: settings.hideFolderNote === true,

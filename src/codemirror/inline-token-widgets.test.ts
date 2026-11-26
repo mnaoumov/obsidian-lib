@@ -70,7 +70,7 @@ describe('createInlineTokenWidgetsExtension', () => {
         extensions: [
           editorLivePreviewField.init(() => params.isLivePreview ?? true),
           createInlineTokenWidgetsExtension({ regExp: /:(?<name>\w+):/, render: renderName, ...params.widgetParams }),
-          ...params.extensions ?? []
+          ...(params.extensions ?? [])
         ],
         selection: EditorSelection.cursor(params.selection ?? 0)
       })

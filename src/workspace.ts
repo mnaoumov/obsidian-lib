@@ -121,12 +121,16 @@ export function switchToMainWindow(app: App): DisposableEx {
 export function switchToWindow(win: Window): DisposableEx {
   const previousActiveWindow = activeWindow;
   const previousActiveDocument = activeDocument;
+  // eslint-disable-next-line obsidian-dev-toolkit/prefer-active-window -- these are the main window activeWindow and activeDocument globals, which this helper sets and restores
   window.activeWindow = win;
+  // eslint-disable-next-line obsidian-dev-toolkit/prefer-active-window -- these are the main window activeWindow and activeDocument globals, which this helper sets and restores
   window.activeDocument = win.document;
 
   return new CallbackDisposable({
     callback: (): void => {
+      // eslint-disable-next-line obsidian-dev-toolkit/prefer-active-window -- these are the main window activeWindow and activeDocument globals, which this helper sets and restores
       window.activeWindow = previousActiveWindow;
+      // eslint-disable-next-line obsidian-dev-toolkit/prefer-active-window -- these are the main window activeWindow and activeDocument globals, which this helper sets and restores
       window.activeDocument = previousActiveDocument;
     }
   });

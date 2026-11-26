@@ -174,7 +174,7 @@ function getCachedMetadata(app: App, sourcePath: string): CachedMetadata | null 
  * @returns The note's references.
  */
 function getCacheReferences(cache: CachedMetadata | null): Reference[] {
-  return cache ? [...cache.frontmatterLinks ?? [], ...cache.links ?? [], ...cache.embeds ?? []] : [];
+  return cache ? [...(cache.frontmatterLinks ?? []), ...(cache.links ?? []), ...(cache.embeds ?? [])] : [];
 }
 
 /**

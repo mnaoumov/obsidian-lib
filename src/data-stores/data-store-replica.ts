@@ -75,6 +75,7 @@ export class DataStoreReplica {
     if (!isDataStoreOperation(value)) {
       throw new Error('Invalid data-store operation');
     }
+    // eslint-disable-next-line obsidian-dev-toolkit/prefer-active-window -- realm-independent, and the main window outlives every popout
     const operation = window.structuredClone(value);
     if (this.kind === 'observed-remove-set') {
       this.applySet(operation);
@@ -101,6 +102,7 @@ export class DataStoreReplica {
     }
     return [...this.registers.values()].filter((operation) => !operation.deleted)
       .sort((first, second) => first.key.localeCompare(second.key))
+      // eslint-disable-next-line obsidian-dev-toolkit/prefer-active-window -- realm-independent, and the main window outlives every popout
       .map((operation) => [operation.key, window.structuredClone(operation.value)]);
   }
 
@@ -111,6 +113,7 @@ export class DataStoreReplica {
    */
   public export(): DataStoreOperation[] {
     return [...this.registers.values(), ...this.activeAdditions(), ...this.removals.values()]
+      // eslint-disable-next-line obsidian-dev-toolkit/prefer-active-window -- realm-independent, and the main window outlives every popout
       .sort((first, second) => tag(first).localeCompare(tag(second))).map((operation) => window.structuredClone(operation));
   }
 
@@ -125,6 +128,7 @@ export class DataStoreReplica {
       return this.activeAdditions().some((operation) => operation.key === key) || undefined;
     }
     const operation = this.registers.get(key);
+    // eslint-disable-next-line obsidian-dev-toolkit/prefer-active-window -- realm-independent, and the main window outlives every popout
     return operation && !operation.deleted ? window.structuredClone(operation.value) : undefined;
   }
 

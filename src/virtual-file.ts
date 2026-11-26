@@ -117,6 +117,7 @@ function installVirtualFile(params: InstallVirtualFileParams): VirtualFile {
   const file = getFile({ app, pathOrFile: path, shouldIncludeNonExisting: true });
   const bytes = new TextEncoder().encode(content);
   file.stat = { ctime: Date.now(), mtime: Date.now(), size: bytes.byteLength };
+  // eslint-disable-next-line obsidian-dev-toolkit/prefer-active-window -- an object URL created in a popout realm is revoked when that popout closes; the main window outlives them all
   const url = window.URL.createObjectURL(new Blob([bytes], { type: path.endsWith('.md') ? 'text/markdown;charset=utf-8' : 'text/plain;charset=utf-8' }));
   const patches = new MonkeyAroundComponent();
   patches.load();
@@ -259,6 +260,7 @@ function installVirtualFile(params: InstallVirtualFileParams): VirtualFile {
         metadata.dispose();
       }
       patches.unload();
+      // eslint-disable-next-line obsidian-dev-toolkit/prefer-active-window -- an object URL created in a popout realm is revoked when that popout closes; the main window outlives them all
       window.URL.revokeObjectURL(url);
       reservations.delete(path.toLowerCase());
     },

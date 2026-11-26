@@ -245,7 +245,7 @@ describe('resolveFolderNote', () => {
     return resolveFolderNote({
       app,
       folder: getFolder(folderPath),
-      ...config && { config }
+      ...(config && { config })
     })?.path ?? null;
   }
 
@@ -331,7 +331,7 @@ describe('getFolderNoteFolder', () => {
     return getFolderNoteFolder({
       app,
       file: getFile({ app, pathOrFile: filePath, shouldIncludeNonExisting: true }),
-      ...config && { config }
+      ...(config && { config })
     })?.path ?? null;
   }
 

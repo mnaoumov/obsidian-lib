@@ -125,7 +125,7 @@ describe('plugin instance helpers', () => {
           });
 
           await waitUntil({ message: 'The requirement notice appears', predicate: () => findNotice() !== null, timeoutInMilliseconds: 5000 });
-          const buttonEl = [...findNotice()?.querySelectorAll('button') ?? []].find((el) => el.textContent === 'Enable');
+          const buttonEl = [...(findNotice()?.querySelectorAll('button') ?? [])].find((el) => el.textContent === 'Enable');
           if (!buttonEl) {
             throw new Error('The notice has no Enable button.');
           }

@@ -149,7 +149,7 @@ vi.mock('./frontmatter-link-cache-with-offsets.ts', () => ({
 vi.mock('@obsidian-typings/obsidian-public-latest/implementations', async (importOriginal) => {
   const actual = await importOriginal();
   return {
-    ...actual as object,
+    ...(actual as object),
     CustomArrayDictImpl: class {
       public data = new Map<string, unknown[]>();
       public add(key: string, value: unknown): void {

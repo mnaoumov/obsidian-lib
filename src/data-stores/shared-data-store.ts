@@ -179,6 +179,7 @@ export class SharedDataStore {
    * @returns A synchronized query replica.
    */
   public static async open(params: SharedDataStoreOpenParams): Promise<SharedDataStore> {
+    // eslint-disable-next-line obsidian-dev-toolkit/prefer-active-window -- realm-independent, and the main window outlives every popout
     const device = await params.local.getOrCreate('shared-device-v1', window.crypto.randomUUID());
     if (typeof device !== 'string' || !DEVICE_ID_REG_EXP.test(device)) {
       throw new Error('Invalid local data-store identity');
@@ -203,6 +204,7 @@ export class SharedDataStore {
         return;
       }
       const files = await this.transport.list();
+      // eslint-disable-next-line obsidian-dev-toolkit/prefer-active-window -- realm-independent, and the main window outlives every popout
       const base = `${this.deviceRoot()}/snapshot-${window.crypto.randomUUID()}-manifest`;
       await this.transport.writeSnapshot({ base, payload: this.checkpoint() });
       const acknowledgements = await this.acknowledgements(files);
@@ -599,6 +601,7 @@ export class SharedDataStore {
       return;
     }
     if (this.hasUnpublishedChanges) {
+      // eslint-disable-next-line obsidian-dev-toolkit/prefer-active-window -- realm-independent, and the main window outlives every popout
       await this.transport.writeSnapshot({ base: `${this.deviceRoot()}/snapshot-${window.crypto.randomUUID()}-manifest`, payload: checkpoint });
       await this.params.local.set('shared-unpublished-v1', false);
       this.hasUnpublishedChanges = false;

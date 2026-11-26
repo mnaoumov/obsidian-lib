@@ -48,6 +48,11 @@ interface FakePlugin extends PluginOriginal {
   readonly marker?: string;
 }
 
+interface LoadOptions {
+  readonly extra?: Partial<FakePlugin>;
+  readonly version?: string;
+}
+
 interface MarkedPlugin extends PluginOriginal {
   readonly marker: string;
 }
@@ -63,7 +68,7 @@ interface Vault {
   readonly enabledPlugins: Set<string>;
   readonly finishLayout: () => void;
   readonly install: (version?: string) => void;
-  readonly load: (version?: string, extra?: Partial<FakePlugin>) => FakePlugin;
+  readonly load: (options?: LoadOptions) => FakePlugin;
   readonly plugins: Events;
   readonly setLayoutReady: (isReady: boolean) => void;
   readonly setLoadingPluginId: (value: null | string) => void;
@@ -85,7 +90,7 @@ const {
 }));
 
 vi.mock('./plugin-install-state.ts', async (importOriginal) => ({
-  ...await importOriginal<typeof import('./plugin-install-state.ts')>(),
+  ...(await importOriginal<typeof import('./plugin-install-state.ts')>()),
   installAndEnablePlugin: mockInstallAndEnablePlugin,
   updatePlugin: mockUpdatePlugin
 }));
@@ -186,7 +191,7 @@ function createVault(): Vault {
       }
     },
     install,
-    load(version = '1.0.0', extra = {}): FakePlugin {
+    load({ extra = {}, version = '1.0.0' }: LoadOptions = {}): FakePlugin {
       install(version);
       enabledPlugins.add(PLUGIN_ID);
       const plugin = castTo<FakePlugin>({
@@ -243,22 +248,22 @@ describe('getPluginAvailability', () => {
   });
 
   it('should accept a release at or above the minimum', () => {
-    vault.load('2.0.0');
+    vault.load({ version: '2.0.0' });
     expect(getPluginAvailability({ app: vault.app, minPluginVersion: '2.0.0', pluginId: PLUGIN_ID })).toBe(PluginAvailability.Available);
   });
 
   it('should report a release below the minimum as outdated', () => {
-    vault.load('1.9.9');
+    vault.load({ version: '1.9.9' });
     expect(getPluginAvailability({ app: vault.app, minPluginVersion: '2.0.0', pluginId: PLUGIN_ID })).toBe(PluginAvailability.Outdated);
   });
 
   it('should report an unparseable release as an invalid version', () => {
-    vault.load('');
+    vault.load({ version: '' });
     expect(getPluginAvailability({ app: vault.app, minPluginVersion: '2.0.0', pluginId: PLUGIN_ID })).toBe(PluginAvailability.InvalidVersion);
   });
 
   it('should ignore the release when no minimum is declared', () => {
-    vault.load('');
+    vault.load({ version: '' });
     expect(getPluginAvailability({ app: vault.app, pluginId: PLUGIN_ID })).toBe(PluginAvailability.Available);
   });
 
@@ -268,14 +273,14 @@ describe('getPluginAvailability', () => {
   });
 
   it('should accept an instance passing the guard', () => {
-    vault.load('1.0.0', { marker: 'x' });
+    vault.load({ extra: { marker: 'x' }, version: '1.0.0' });
     expect(getPluginAvailability({ app: vault.app, isPlugin: isMarkedPlugin, pluginId: PLUGIN_ID })).toBe(PluginAvailability.Available);
   });
 });
 
 describe('getLoadedPlugin', () => {
   it('should return the instance when it is available', () => {
-    const plugin = vault.load('1.0.0', { marker: 'x' });
+    const plugin = vault.load({ extra: { marker: 'x' }, version: '1.0.0' });
     const loaded = getLoadedPlugin<MarkedPlugin>({ app: vault.app, isPlugin: isMarkedPlugin, pluginId: PLUGIN_ID });
     expect(loaded).toBe(plugin);
     expect(loaded?.marker).toBe('x');
@@ -328,7 +333,7 @@ describe('waitForPlugin', () => {
 
   it('should reject with the availability at the moment the timeout elapses', async () => {
     vi.useFakeTimers();
-    vault.load('1.0.0');
+    vault.load({ version: '1.0.0' });
     const promise = waitForPlugin({ app: vault.app, minPluginVersion: '2.0.0', pluginId: PLUGIN_ID, timeoutInMilliseconds: 100 });
     const assertion = expect(promise).rejects.toMatchObject({
       availability: PluginAvailability.Outdated,
@@ -500,7 +505,7 @@ describe('requirePlugin', () => {
     await settle();
     expect(mockInstallAndEnablePlugin).toHaveBeenCalledTimes(1);
 
-    vault.load('1.0.0');
+    vault.load({ version: '1.0.0' });
     vault.setLoadingPluginId(PLUGIN_ID);
     vault.plugins.trigger('changed');
     expect(messages).toHaveLength(1);
@@ -515,14 +520,14 @@ describe('requirePlugin', () => {
     await settle();
     expect(mockUpdatePlugin).toHaveBeenCalledWith(expect.objectContaining({ pluginId: PLUGIN_ID, requestingPluginName: REQUESTING_PLUGIN_NAME }));
 
-    const plugin = vault.load('2.0.0');
+    const plugin = vault.load({ version: '2.0.0' });
     vault.plugins.trigger('changed');
     await expect(promise).resolves.toBe(plugin);
     expect(hide).toHaveBeenCalledTimes(2);
   });
 
   it('should explain an invalid version and a shape mismatch, and open the community plugins tab', async () => {
-    vault.load('');
+    vault.load({ version: '' });
     const { messages, pluginNoticeComponent } = createNoticeComponent();
     const component = new Component();
     component.load();
@@ -538,7 +543,7 @@ describe('requirePlugin', () => {
     });
     expect(messages[0]).toContain('cannot be read');
 
-    vault.load('2.0.0');
+    vault.load({ version: '2.0.0' });
     vault.plugins.trigger('changed');
     expect(messages[1]).toContain('not in a form');
 

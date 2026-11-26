@@ -45,7 +45,7 @@ function setViewFile(view: MarkdownViewOriginal, file: null | TFileOriginal): vo
 
 vi.mock('./editor.ts', () => ({ toggleEditorReadOnly: vi.fn() }));
 vi.mock('./metadata-cache.ts', async (importOriginal) => ({
-  ...await importOriginal<typeof import('./metadata-cache.ts')>(),
+  ...(await importOriginal<typeof import('./metadata-cache.ts')>()),
   parseMetadata: vi.fn(() => Promise.resolve({ features: [] }))
 }));
 

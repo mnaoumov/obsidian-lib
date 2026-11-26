@@ -83,7 +83,7 @@ const {
 }));
 
 vi.mock('obsidian', async (importOriginal) => ({
-  ...await importOriginal<typeof import('obsidian')>(),
+  ...(await importOriginal<typeof import('obsidian')>()),
   Notice: mockNotice
 }));
 
@@ -100,7 +100,7 @@ vi.mock('../modals/prompt.ts', () => ({
 }));
 
 vi.mock('../modals/settings-recovery-copies.ts', async (importOriginal) => ({
-  ...await importOriginal<typeof import('../modals/settings-recovery-copies.ts')>(),
+  ...(await importOriginal<typeof import('../modals/settings-recovery-copies.ts')>()),
   selectSettingsRecoveryCopy: mockSelectSettingsRecoveryCopy
 }));
 

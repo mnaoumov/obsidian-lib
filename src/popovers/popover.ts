@@ -123,7 +123,7 @@ export async function showPopover<Value>(params: ShowPopoverParams<Value>): Prom
   const doc = anchor.doc;
   const win = getDocumentWindow(doc);
   const popoverEl = doc.body.createDiv({ cls: 'menu' });
-  addPluginCssClasses(popoverEl, [CssClass.Popover, ...cssClasses ?? []]);
+  addPluginCssClasses(popoverEl, [CssClass.Popover, ...(cssClasses ?? [])]);
 
   return await new Promise<null | Value>((resolve) => {
     const state = { isClosed: false };

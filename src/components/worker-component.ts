@@ -314,13 +314,16 @@ export class WorkerComponent<TApi extends WorkerApi<TApi>> extends ComponentEx {
     if (this.workerUrl === null) {
       return;
     }
+    // eslint-disable-next-line obsidian-dev-toolkit/prefer-active-window -- a worker or object URL built in a popout realm dies when that popout closes; the main window outlives them all
     window.URL.revokeObjectURL(this.workerUrl);
     this.workerUrl = null;
   }
 
   private startWorker(): void {
+    // eslint-disable-next-line obsidian-dev-toolkit/prefer-active-window -- a worker or object URL built in a popout realm dies when that popout closes; the main window outlives them all
     this.workerUrl = window.URL.createObjectURL(new Blob([this.source], { type: 'text/javascript' }));
     const workerOptions: WorkerOptions = this.name === null ? {} : { name: this.name };
+    // eslint-disable-next-line obsidian-dev-toolkit/prefer-active-window -- a worker or object URL built in a popout realm dies when that popout closes; the main window outlives them all
     const worker = new window.Worker(this.workerUrl, workerOptions);
     this.worker = worker;
     worker.addEventListener('message', this.handleMessage);
