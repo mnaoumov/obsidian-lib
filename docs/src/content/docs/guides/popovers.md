@@ -59,6 +59,33 @@ if (values) {
 
 The first field takes the initial focus, with its text selected. To start the user on a later field, name it with `focusedFieldKey`, for example `focusedFieldKey: 'alias'` above. A popover built with `showPopover` chooses its focused input the same way, by calling `setInitialFocus(inputEl)` from `build`.
 
+### Suggest a value for a field
+
+A field's `onCreate` hook receives its `TextComponent` once the field is built and filled, so any `AbstractInputSuggest` can be attached to its input. `LinkPathInputSuggest` completes the whole value as a link path: vault files before a `#`, then the headings of the file the path resolves to.
+
+<!-- snippet-check: context declare const linkEl: HTMLAnchorElement; -->
+<!-- snippet-check: context declare const target: string; -->
+<!-- snippet-check: context declare const sourcePath: string; -->
+```ts
+import { LinkPathInputSuggest } from '@mnaoumov/obsidian-lib/link-path-input-suggest';
+import { editFieldsInPopover } from '@mnaoumov/obsidian-lib/popovers/field-popover';
+import { createAnchorFromElement } from '@mnaoumov/obsidian-lib/popovers/popover-anchor';
+
+const values = await editFieldsInPopover({
+  anchor: createAnchorFromElement(linkEl),
+  fields: [{
+    defaultValue: target,
+    key: 'target',
+    name: 'Target',
+    onCreate: (textComponent) => {
+      new LinkPathInputSuggest({ app, inputEl: textComponent.inputEl, sourcePath });
+    }
+  }]
+});
+```
+
+The suggest's list renders outside the popover, so a pointer gesture inside it does not dismiss the popover. While the list is open, Obsidian's keymap takes `Enter` and `Escape`: the first `Enter` picks a suggestion, and only the next one confirms the popover.
+
 ## Build a popover yourself
 
 For anything the declarative form cannot express — a dropdown, a toggle, rendered markdown — use `showPopover` and populate the content element. `build` returns a getter that is read when the popover is confirmed; `cancel` and `confirm` let the content resolve the popover itself.
@@ -112,6 +139,6 @@ export class MyPlugin extends Plugin {
 
 ## Dismissal
 
-A popover is dismissed by `Escape`, by its Cancel button, or by the next pointer gesture that starts outside it — resolving with `null` in each case. `Enter` and the OK button confirm it.
+A popover is dismissed by `Escape`, by its Cancel button, or by the next pointer gesture that starts outside it and outside the list of a suggest open in its document, resolving with `null` in each case. `Enter` and the OK button confirm it.
 
 The outside dismissal listens for `pointerdown` rather than `click` deliberately. A popover is typically opened from a `click` handler, and the very same click would otherwise reach the listener and close the popover the instant it appears.

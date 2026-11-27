@@ -10,7 +10,11 @@
     min-width: 320px;
     padding: var(--size-4-2) var(--size-4-3);
     position: absolute;
-    z-index: var(--layer-menu);
+    // Obsidian's suggest list sits on `--layer-notice` (read from Obsidian 1.15.1). On that same
+    // layer, a suggest attached to a field, whose list is appended to the body after the popover,
+    // paints above it; on `--layer-menu` the list was hidden behind the popover and a click on it
+    // hit the popover's buttons. Both still sit above modals (`--layer-modal`).
+    z-index: var(--layer-notice);
 
     // Setting rows are built for a full-width settings tab; compact them for a popover.
     .setting-item {

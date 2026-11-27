@@ -167,6 +167,28 @@ const TAG_PREFIX = '#';
 const TAG_BEFORE_CARET_REG_EXP = /(?:^|\s)#[\p{L}\p{N}_/-]*$/u;
 
 /**
+ * Parameters for {@link getVaultLinkSuggestions}.
+ */
+export interface GetVaultLinkSuggestionsParams {
+  /**
+   * The Obsidian app.
+   */
+  readonly app: App;
+
+  /**
+   * The link path typed so far.
+   */
+  readonly query: string;
+
+  /**
+   * The path the link text is made relative to.
+   *
+   * @default `''`
+   */
+  readonly sourcePath?: string;
+}
+
+/**
  * Parameters for {@link getVaultTagSuggestions}.
  */
 export interface GetVaultTagSuggestionsParams {
@@ -246,10 +268,7 @@ export class LinkAndTagInputSuggest extends AbstractInputSuggest<LinkAndTagSugge
    */
   public renderSuggestion(suggestion: LinkAndTagSuggestion, el: HTMLElement): void {
     if (suggestion.kind === LinkAndTagCompletionKind.Link) {
-      renderMatches(el.createDiv('suggestion-title'), suggestion.linktext, suggestion.linktextMatches ?? null);
-      if (suggestion.linktext !== suggestion.file.path) {
-        renderMatches(el.createDiv('suggestion-note'), suggestion.file.path, suggestion.pathMatches ?? null);
-      }
+      renderLinkSuggestion(suggestion, el);
       return;
     }
 
@@ -304,25 +323,7 @@ export class LinkAndTagInputSuggest extends AbstractInputSuggest<LinkAndTagSugge
    * @returns The suggestions, best match first.
    */
   protected getLinkSuggestions(query: string): LinkSuggestion[] {
-    const fuzzySearch = prepareFuzzySearch(query);
-    const results: SuggestionSearchResult<LinkSuggestion>[] = [];
-    for (const file of this.app.vault.getFiles()) {
-      const linktext = this.app.metadataCache.fileToLinktext(file, this.sourcePath, true);
-      const linktextMatch = fuzzySearch(linktext);
-      if (linktextMatch) {
-        results.push({
-          match: linktextMatch,
-          suggestion: { file, kind: LinkAndTagCompletionKind.Link, linktext, linktextMatches: linktextMatch.matches }
-        });
-        continue;
-      }
-      const pathMatch = fuzzySearch(file.path);
-      if (pathMatch) {
-        results.push({ match: pathMatch, suggestion: { file, kind: LinkAndTagCompletionKind.Link, linktext, pathMatches: pathMatch.matches } });
-      }
-    }
-    sortSearchResults(results);
-    return results.map((result) => result.suggestion);
+    return getVaultLinkSuggestions({ app: this.app, query, sourcePath: this.sourcePath });
   }
 
   /**
@@ -394,6 +395,37 @@ export function getLinkAndTagCompletionTrigger(text: string, caret: number): Lin
 }
 
 /**
+ * Gets the vault files matching a query, as {@link LinkAndTagInputSuggest} suggests them after `[[`: by the link text
+ * relative to the source path first, and by the full path when the link text does not match.
+ *
+ * @param params - The parameters.
+ * @returns The suggestions, best match first.
+ */
+export function getVaultLinkSuggestions(params: GetVaultLinkSuggestionsParams): LinkSuggestion[] {
+  const { app, query } = params;
+  const sourcePath = params.sourcePath ?? '';
+  const fuzzySearch = prepareFuzzySearch(query);
+  const results: SuggestionSearchResult<LinkSuggestion>[] = [];
+  for (const file of app.vault.getFiles()) {
+    const linktext = app.metadataCache.fileToLinktext(file, sourcePath, true);
+    const linktextMatch = fuzzySearch(linktext);
+    if (linktextMatch) {
+      results.push({
+        match: linktextMatch,
+        suggestion: { file, kind: LinkAndTagCompletionKind.Link, linktext, linktextMatches: linktextMatch.matches }
+      });
+      continue;
+    }
+    const pathMatch = fuzzySearch(file.path);
+    if (pathMatch) {
+      results.push({ match: pathMatch, suggestion: { file, kind: LinkAndTagCompletionKind.Link, linktext, pathMatches: pathMatch.matches } });
+    }
+  }
+  sortSearchResults(results);
+  return results.map((result) => result.suggestion);
+}
+
+/**
  * Gets the tags of every note matching a query, as {@link LinkAndTagInputSuggest} and {@link TagListComponent}
  * suggest them.
  *
@@ -422,6 +454,20 @@ export function getVaultTagSuggestions(params: GetVaultTagSuggestionsParams): Ta
   }
   sortSearchResults(results);
   return results.map((result) => result.suggestion);
+}
+
+/**
+ * Renders a link suggestion the way {@link LinkAndTagInputSuggest} shows it: the link text with the matched characters
+ * highlighted, and the file path below it when it differs.
+ *
+ * @param suggestion - The link suggestion.
+ * @param el - The suggestion element to render into.
+ */
+export function renderLinkSuggestion(suggestion: LinkSuggestion, el: HTMLElement): void {
+  renderMatches(el.createDiv('suggestion-title'), suggestion.linktext, suggestion.linktextMatches ?? null);
+  if (suggestion.linktext !== suggestion.file.path) {
+    renderMatches(el.createDiv('suggestion-note'), suggestion.file.path, suggestion.pathMatches ?? null);
+  }
 }
 
 /**

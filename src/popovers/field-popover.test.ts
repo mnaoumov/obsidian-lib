@@ -231,6 +231,31 @@ describe('editFieldsInPopover', () => {
     await resultPromise;
   });
 
+  it('should hand each field its built text component through onCreate', async () => {
+    const createdInputs: HTMLInputElement[] = [];
+    const resultPromise = editFieldsInPopover({
+      anchor: ANCHOR,
+      fields: [
+        {
+          defaultValue: 'target',
+          key: 'target',
+          name: 'Target',
+          onCreate: (textComponent): void => {
+            createdInputs.push(textComponent.inputEl);
+          }
+        },
+        { key: 'alias', name: 'Alias' }
+      ]
+    });
+
+    expect(createdInputs).toStrictEqual([getInputEl(0)]);
+    expect(createdInputs[0]?.value, 'the hook runs once the field is filled').toBe('target');
+    expect(document.activeElement, 'the hook does not change which field takes the focus').toBe(getInputEl(0));
+
+    clickCancel();
+    await resultPromise;
+  });
+
   it('should resolve an empty record when there are no fields', async () => {
     const resultPromise = editFieldsInPopover({
       anchor: ANCHOR,

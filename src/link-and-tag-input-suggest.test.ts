@@ -22,6 +22,7 @@ import type {
 
 import {
   getLinkAndTagCompletionTrigger,
+  getVaultLinkSuggestions,
   LinkAndTagCompletionKind,
   LinkAndTagInputSuggest
 } from './link-and-tag-input-suggest.ts';
@@ -286,6 +287,13 @@ describe('LinkAndTagInputSuggest', () => {
       [el.querySelector('.suggestion-title'), 'zzz', null],
       [el.querySelector('.suggestion-note'), 'other.md', [[0, 5]]]
     ]);
+  });
+
+  it('should make vault link suggestions relative to the vault root when no source path is given', () => {
+    const fileToLinktext = vi.spyOn(app.metadataCache, 'fileToLinktext');
+    const suggestions = getVaultLinkSuggestions({ app, query: 'plan' });
+    expect(suggestions.map((suggestion) => suggestion.file.path)).toEqual(['Folder/Project plan.md']);
+    expect(fileToLinktext).toHaveBeenCalledWith(expect.anything(), '', true);
   });
 
   it('should highlight the matched tag characters past the #', () => {
