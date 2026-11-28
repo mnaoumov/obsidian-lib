@@ -139,6 +139,17 @@ describe('showPopover', () => {
     await expect(resultPromise).resolves.toBeNull();
   });
 
+  it('should stay open when a pointer gesture starts in the list of a suggest attached to one of its inputs', async () => {
+    const resultPromise = showTextPopover();
+    const suggestionEl = document.body.createDiv('suggestion-container').createDiv('suggestion-item');
+
+    startPointerGestureOn(suggestionEl);
+    expect(getPopoverEl(), 'picking a suggestion must not dismiss the popover the suggest belongs to').not.toBeNull();
+
+    clickCancel();
+    await expect(resultPromise).resolves.toBeNull();
+  });
+
   it('should resolve only once even when confirmed repeatedly', async () => {
     let value = 'first';
     const resultPromise = showPopover<string>({

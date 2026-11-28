@@ -607,6 +607,26 @@ new SettingEx(containerEl)
 - `shouldSuggestLinks: false` or `shouldSuggestTags: false` turns one trigger off.
 - The insertion dispatches an `input` event, so the text component's own `onChange` sees it. `onSelect` still reports the chosen suggestion.
 
+## Link path completion
+
+`LinkPathInputSuggest` is the opposite case: an `<input>` whose WHOLE value is a link target, such as the target field of a link editor. It needs no `[[` trigger.
+
+<!-- snippet-check: context declare const sourcePath: string; -->
+```ts
+import { LinkPathInputSuggest } from '@mnaoumov/obsidian-lib/link-path-input-suggest';
+import { SettingEx } from '@mnaoumov/obsidian-lib/setting-ex';
+
+new SettingEx(containerEl)
+  .addText((text) => {
+    new LinkPathInputSuggest({ app, inputEl: text.inputEl, sourcePath });
+  });
+```
+
+- Before a `#`, it suggests vault files the way `[[` does, and a pick sets the value to the link text relative to `sourcePath`.
+- After `<path>#`, it suggests the headings of the file that path resolves to, and after a bare `#` those of the `sourcePath` file. A pick sets the value to `<path>#<heading>`, the heading stripped for a link with `stripHeadingForLink`. In a nested heading path only the last heading is completed. A block subpath (`#^`) gets no suggestions.
+- The value is the link path as Obsidian resolves it, not URL-encoded, so a caller writing it into a Markdown link encodes it there.
+- A pick dispatches an `input` event, like `LinkAndTagInputSuggest`. Inside a popover, attach it through a field's `onCreate`, as [Popovers](/obsidian-lib/guides/popovers/) shows.
+
 ## Settings tabs
 
 `SettingsTabs` splits a settings tab into tabbed sections: a row of tab buttons and one panel, which renders only the selected tab and is emptied each time another is selected. The first tab added is selected, `selectTab` ignores an id it does not know (such as a stored id whose tab was since removed), and the arrow keys, Home and End move between tabs.

@@ -85,6 +85,14 @@ export interface PopoverField<Key extends string> {
   readonly name: string;
 
   /**
+   * Called with the field's text component once it is built and filled, before the popover is placed. Use it to attach
+   * a suggest to the input, such as a `LinkPathInputSuggest`; a pick in its list does not dismiss the popover.
+   *
+   * @param textComponent - The field's text component.
+   */
+  readonly onCreate?: (textComponent: TextComponent) => void;
+
+  /**
    * A placeholder text for the field.
    *
    * @default `''`
@@ -153,5 +161,6 @@ function addField<Key extends string>(containerEl: HTMLElement, field: PopoverFi
   textComponent.setValue(field.defaultValue ?? '');
   textComponent.setPlaceholder(field.placeholder ?? '');
   textComponent.inputEl.addClass(CssClass.TextBox);
+  field.onCreate?.(textComponent);
   return textComponent;
 }

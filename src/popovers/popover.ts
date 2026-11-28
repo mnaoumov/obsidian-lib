@@ -33,6 +33,11 @@ const ANCHOR_GAP_IN_PIXELS = 4;
 const VIEWPORT_MARGIN_IN_PIXELS = 8;
 
 /**
+ * The class of the list element Obsidian's `PopoverSuggest` renders.
+ */
+const SUGGESTION_CONTAINER_CLASS = 'suggestion-container';
+
+/**
  * Reads the value the popover resolves with when it is confirmed.
  *
  * @typeParam Value - The type of the value resolved by the popover.
@@ -155,7 +160,8 @@ export async function showPopover<Value>(params: ShowPopoverParams<Value>): Prom
      * @param $event - The pointer event.
      */
     function handlePointerDown($event: PointerEvent): void {
-      if ($event.composedPath().includes(popoverEl)) {
+      const insideTargets = new Set<EventTarget>([popoverEl, ...getSuggestionContainers(doc)]);
+      if ($event.composedPath().some((target) => insideTargets.has(target))) {
         return;
       }
       close(null);
@@ -221,6 +227,19 @@ function focusInitialInput(popoverEl: HTMLElement, initialFocusEl: HTMLInputElem
 
   inputEl.focus();
   inputEl.select();
+}
+
+/**
+ * Gets the lists of the Obsidian suggests open in a document. A suggest attached to one of the popover's inputs renders
+ * its list in the document body, outside the popover, so a pick there must not count as an outside gesture. Its keys
+ * need no such care: Obsidian's keymap handles Enter and Escape for an open suggest in the capture phase on the window
+ * and stops them there, so they never reach the popover (read from Obsidian `1.15.1`).
+ *
+ * @param doc - The document of the popover.
+ * @returns The suggest lists.
+ */
+function getSuggestionContainers(doc: Document): Element[] {
+  return [...doc.querySelectorAll(`.${SUGGESTION_CONTAINER_CLASS}`)];
 }
 
 /**
